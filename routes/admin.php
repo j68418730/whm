@@ -20,6 +20,22 @@ $router->post('/admin/theme/update', 'Admin\Controllers\ThemeController@update')
 
 // Admin Radio Settings Routes
 $router->get('/admin/radiosettings', 'Admin\Controllers\RadioSettingsController@index');
+$router->post('/admin/radiosettings/update', 'Admin\Controllers\RadioSettingsController@update');
+
+// Admin Radio Dashboard Routes
+$router->get('/admin/radio_dashboard', 'Admin\Controllers\RadioDashboardController@index');
+
+// Admin Streams Management Routes
+$router->get('/admin/streams', 'Admin\Controllers\StreamsController@index');
+$router->get('/admin/streams/create', 'Admin\Controllers\StreamsController@create');
+$router->post('/admin/streams/create', 'Admin\Controllers\StreamsController@store');
+$router->get('/admin/streams/edit/{id}', 'Admin\Controllers\StreamsController@edit');
+$router->post('/admin/streams/edit/{id}', 'Admin\Controllers\StreamsController@update');
+$router->get('/admin/streams/delete/{id}', 'Admin\Controllers\StreamsController@delete');
+$router->get('/admin/streams/restart/{id}', 'Admin\Controllers\StreamsController@restart');
+$router->get('/admin/streams/suspend/{id}', 'Admin\Controllers\StreamsController@suspend');
+$router->get('/admin/streams/unsuspend/{id}', 'Admin\Controllers\StreamsController@unsuspend');
+$router->get('/admin/streams/clone/{id}', 'Admin\Controllers\StreamsController@clone');
 
 // Admin Server Overview Routes
 $router->get('/admin/server', 'Admin\Controllers\ServerOverviewController@index');
