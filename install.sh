@@ -59,12 +59,12 @@ detect_package_manager() {
     fi
 
     # Determine package manager
-    if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]] || [[ "$OS" == *"Linux Mint"* ]]; then
+  elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Red Hat"* ]] || [[ "$OS" == *"Fedora"* ]] || [[ "$OS" == *"Amazon"* ]] || [[ "$OS" == *"AlmaLinux"* ]] || [[ "$OS" == *"Rocky"* ]]; then
         PM="apt"
         PM_UPDATE="update"
         PM_INSTALL="install -y"
         PM_REMOVE="remove -y"
-    elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Red Hat"* ]] || [[ "$OS" == *"Fedora"* ]] || [[ "$OS" == *"Amazon"* ]]; then
+ elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Red Hat"* ]] || [[ "$OS" == *"Fedora"* ]] || [[ "$OS" == *"Amazon"* ]] || [[ "$OS" == *"AlmaLinux"* ]] || [[ "$OS" == *"Rocky"* ]]; then
         if [ -f /usr/bin/dnf ]; then
             PM="dnf"
         else
