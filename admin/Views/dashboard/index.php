@@ -146,9 +146,36 @@
         <nav class="nav">
             <h2>Admin Navigation</h2>
             <ul>
-                <li><a href="/admin/streams">Manage Streams</a></li>
-                <li><a href="/admin/settings">Radio Settings</a></li>
-                <li><a href="/admin/theme">Customize Theme</a></li>
+                <li><a href="/admin/dashboard">SERVER OVERVIEW</a></li>
+                <li><a href="/admin/account">ACCOUNT FUNCTIONS</a></li>
+                <li><a href="/admin/packages">PACKAGE MANAGEMENT</a></li>
+                <li><a href="/admin/reseller">RESELLER MANAGEMENT</a></li>
+                <li><a href="/admin/dns">DNS FUNCTIONS</a></li>
+                <li><a href="/admin/email">EMAIL ADMINISTRATION</a></li>
+                <li><a href="/admin/apache">APACHE CONFIGURATION</a></li>
+                <li><a href="/admin/php">PHP MANAGEMENT</a></li>
+                <li><a href="/admin/mysql">MYSQL / DATABASE MANAGEMENT</a></li>
+                <li><a href="/admin/ftp">FTP MANAGEMENT</a></li>
+                <li><a href="/admin/ssl">SSL/TLS MANAGEMENT</a></li>
+                <li><a href="/admin/security">SECURITY CENTER</a></li>
+                <li><a href="/admin/backup">BACKUP SYSTEM</a></li>
+                <li><a href="/admin/server">SERVER CONFIGURATION</a></li>
+                <li><a href="/admin/network">NETWORK FUNCTIONS</a></li>
+                <li><a href="/admin/monitoring">MONITORING SYSTEM</a></li>
+                <li><a href="/admin/software">SOFTWARE MANAGEMENT</a></li>
+                <li><a href="/admin/api">API SYSTEM</a></li>
+                <li><a href="/admin/branding">BRANDING SYSTEM</a></li>
+                <li><a href="/admin/clustering">CLUSTERING & HIGH AVAILABILITY</a></li>
+                <li><a href="/admin/filesystem">FILESYSTEM & USER MANAGEMENT</a></li>
+                <li><a href="/admin/terminal">TERMINAL & SHELL ACCESS</a></li>
+                <li><a href="/admin/metrics">METRICS & ANALYTICS</a></li>
+                <li><a href="/admin/installers">INSTALLERS & APPLICATIONS</a></li>
+                <li><a href="/admin/userfeatures">USER FEATURE MANAGEMENT</a></li>
+                <li><a href="/admin/cron">CRON & TASK AUTOMATION</a></li>
+                <li><a href="/admin/git">GIT & DEPLOYMENT</a></li>
+                <li><a href="/admin/container">CONTAINER & VIRTUALIZATION SUPPORT</a></li>
+                <li><a href="/admin/licensing">LICENSING SYSTEM</a></li>
+                <li><a href="/admin/radiosettings">SONI RADIO</a></li>
                 <li><a href="/admin/logout">Logout</a></li>
             </ul>
         </nav>
