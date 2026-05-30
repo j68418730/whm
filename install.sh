@@ -41,6 +41,20 @@ fi
 echo "Updating system packages..."
 yum check-update || true  # yum check-update returns non-zero if updates available
 
+# Set up firewall (firewalld)
+echo "Setting up firewall with firewalld..."
+yum install -y firewalld -y
+systemctl start firewalld
+systemctl enable firewalld
+
+# Open required ports for radio hosting panel
+firewall-cmd --permanent --add-service=http
+firewall-cmd --permanent --add-service=https
+firewall-cmd --permanent --add-port=8000/tcp  # Icecast HTTP
+firewall-cmd --permanent --add-port=8001/tcp  # Icecast HTTPS (if used)
+firewall-cmd --permanent --add-port=8080/tcp  # Common alternative for web panels
+firewall-cmd --reload
+
 # Install required packages
 echo "Installing Apache, MariaDB, PHP, and dependencies..."
 yum install -y httpd mariadb-server php php-mysqlnd php-cli php-curl php-gd php-mbstring php-xml php-zip unzip
@@ -258,9 +272,9 @@ echo "   IMPORTANT: Change the password after first login using 'passwd radiopan
 echo "   To update the hash file after changing the password, run:"
 echo "   sudo /path/to/whm/update_panel_hash.sh"
 echo ""
-echo "Important: For security, please consider setting up a firewall (e.g., CSF, firewalld)."
+echo "Firewall configured: firewalld is active with ports 80 (HTTP), 443 (HTTPS), 8000 (Icecast HTTP), 8001 (Icecast HTTPS), and 8080 (alternative web panel) open."
 echo ""
-echo "The radio hosting services (Icecast, Liquidsoap, ezstream, Shoutcast not installed) are installed and ready to be managed by the panel."
+echo "The radio hosting services (Icecast, Liquidsoap, ezstream, ffmpeg) are installed and ready to be managed by the panel."
 echo ""
 echo "Note: Shoutcast was removed per user request; Icecast and Liquidsoap are installed for modern stack."
 echo ""
