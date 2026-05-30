@@ -45,23 +45,27 @@ yum check-update || true  # yum check-update returns non-zero if updates availab
 echo "Installing Apache, MariaDB, PHP, and dependencies..."
 yum install -y httpd mariadb-server php php-mysqlnd php-cli php-curl php-gd php-mbstring php-xml php-zip unzip
 
-# Install Icecast and Shoutcast for radio streaming
-echo "Installing Icecast and Shoutcast..."
+# Install Icecast (removed Shoutcast per user request)
+echo "Installing Icecast..."
 # Enable EPEL repository for additional packages
-yum install -y epel-release
-yum install -y icecast shoutcast
+yum install -y epel-release -y
+yum install -y icecast -y
 
-# Install ezstream for AutoDJ
+# Install Liquidsoap for advanced automation (modern stack)
+echo "Installing Liquidsoap..."
+yum install -y liquidsoap -y
+
+# Install ezstream for AutoDJ (kept for compatibility; can be replaced by Liquidsoap in future)
 echo "Installing ezstream..."
-yum install -y ezstream
+yum install -y ezstream -y
 
 # Install ffmpeg for transcoding
 echo "Installing ffmpeg..."
-yum install -y ffmpeg ffmpeg-devel
+yum install -y ffmpeg ffmpeg-devel -y
 
 # Install phpMyAdmin
 echo "Installing phpMyAdmin..."
-yum install -y phpMyAdmin
+yum install -y phpMyAdmin -y
 
 # Enable Apache modules (httpd)
 echo "Enabling Apache modules..."
@@ -249,11 +253,16 @@ echo "Next steps:"
 echo "1. Transfer the panel code to the server if you haven't already (to /tmp/radiohosting_panel/whm)."
 echo "2. Run this installer again to copy the files and complete the setup."
 echo "3. After installation, visit http://radiohosting.local/ in a web browser to access the panel."
-echo "4. Log in with the default administrator credentials (to be set in the panel installer or via database)."
+echo "4. Log in with the system user 'radiopanel' and the password shown above."
+echo "   IMPORTANT: Change the password after first login using 'passwd radiopanel' and then update the hash file."
+echo "   To update the hash file after changing the password, run:"
+echo "   sudo /path/to/whm/update_panel_hash.sh"
 echo ""
-echo "Important: For security, please change the default passwords and consider setting up a firewall."
+echo "Important: For security, please consider setting up a firewall (e.g., CSF, firewalld)."
 echo ""
-echo "The radio hosting services (Icecast, Shoutcast) are installed and ready to be managed by the panel."
+echo "The radio hosting services (Icecast, Liquidsoap, ezstream, Shoutcast not installed) are installed and ready to be managed by the panel."
+echo ""
+echo "Note: Shoutcast was removed per user request; Icecast and Liquidsoap are installed for modern stack."
 echo ""
 echo "To access phpMyAdmin, visit http://radiohosting.local/phpmyadmin"
 echo ""
