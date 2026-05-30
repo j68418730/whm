@@ -176,6 +176,7 @@
                 <li><a href="/admin/container">CONTAINER & VIRTUALIZATION SUPPORT</a></li>
                 <li><a href="/admin/licensing">LICENSING SYSTEM</a></li>
                 <li><a href="/admin/radiosettings">SONI RADIO</a></li>
+                <li><a href="/admin/radio_dashboard">RADIO DASHBOARD</a></li>
                 <li><a href="/admin/logout">Logout</a></li>
             </ul>
         </nav>
