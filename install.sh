@@ -43,7 +43,7 @@ yum check-update || true  # yum check-update returns non-zero if updates availab
 
 # Install required packages
 echo "Installing Apache, MariaDB, PHP, and dependencies..."
-yum install -y httpd mariadb-server php php-mysql php-cli php-curl php-gd php-mbstring php-xml php-zip unzip
+yum install -y httpd mariadb-server php php-mysqlnd php-cli php-curl php-gd php-mbstring php-xml php-zip unzip
 
 # Install Icecast and Shoutcast for radio streaming
 echo "Installing Icecast and Shoutcast..."
