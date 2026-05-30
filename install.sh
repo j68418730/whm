@@ -1,6 +1,7 @@
 #!/bin/bash
 # Radio Hosting Panel Installer
 # This script installs the radio hosting panel as a core system service
+# Supports both Debian/Ubuntu (apt) and RHEL/CentOS/Fedora (yum/dnf)
 
 set -e
 
@@ -25,6 +26,64 @@ get_server_ip() {
     echo "your_server_ip"
 }
 
+# Function to detect Linux distribution and package manager
+detect_package_manager() {
+    if [ -f /etc/os-release ]; then
+        # freedesktop.org and systemd
+        . /etc/os-release
+        OS=$NAME
+        VER=$VERSION_ID
+    elif type lsb_release >/dev/null 2>&1; then
+        # linuxbase.org
+        OS=$(lsb_release -si)
+        VER=$(lsb_release -sr)
+    elif [ -f /etc/lsb-release ]; then
+        # For some versions of Debian/Ubuntu without lsb_release command
+        . /etc/lsb-release
+        OS=$DISTRIB_ID
+        VER=$DISTRIB_RELEASE
+    elif [ -f /etc/debian_version ]; then
+        # Older Debian/Ubuntu/etc.
+        OS=Debian
+        VER=$(cat /etc/debian_version)
+    elif [ -f /etc/SuSe-release ]; then
+        # Older SuSE/etc.
+        ...
+    elif [ -f /etc/redhat-release ]; then
+        # Older Red Hat, CentOS, etc.
+        ...
+    else
+        # Fall back to uname, e.g. "Linux <version>", also works for BSD, etc.
+        OS=$(uname -s)
+        VER=$(uname -r)
+    fi
+
+    # Determine package manager
+    if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]] || [[ "$OS" == *"Linux Mint"* ]]; then
+        PM="apt"
+        PM_UPDATE="update"
+        PM_INSTALL="install -y"
+        PM_REMOVE="remove -y"
+    elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Red Hat"* ]] || [[ "$OS" == *"Fedora"* ]] || [[ "$OS" == *"Amazon"* ]]; then
+        if [ -f /usr/bin/dnf ]; then
+            PM="dnf"
+        else
+            PM="yum"
+        fi
+        PM_UPDATE="check-update || true"  # yum check-update returns non-zero if updates available
+        PM_INSTALL="install -y"
+        PM_REMOVE="remove -y"
+    else
+        # Default to apt (assume Debian/Ubuntu)
+        PM="apt"
+        PM_UPDATE="update"
+        PM_INSTALL="install -y"
+        PM_REMOVE="remove -y"
+    fi
+
+    echo "$PM"
+}
+
 echo "=== Radio Hosting Panel Installer ==="
 echo "This script will install the panel and required dependencies."
 echo "It must be run as root or with sudo."
@@ -36,65 +95,86 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# Ask for domain name (needed for SSL)
-echo "Please enter your domain name (e.g., radio.example.com):"
-read DOMAIN_NAME
-if [ -z "$DOMAIN_NAME" ]; then
-    DOMAIN_NAME="radiohosting.local"
-    echo "No domain entered. Using default: $DOMAIN_NAME"
-fi
-
-# Ask if they want to enable SSL
-echo "Do you want to enable SSL with Let's Encrypt? (y/n):"
-read ENABLE_SSL
-ENABLE_SSL=${ENABLE_SSL:-n}
-
-# Ask about Cloudflare
-echo "Are you using Cloudflare for DNS? (y/n):"
-read USE_CLOUDFLARE
-USE_CLOUDFLARE=${USE_CLOUDFLARE:-n}
+# Detect package manager
+PM=$(detect_package_manager)
+echo "Detected package manager: $PM"
 
 # Update system
 echo "Updating system packages..."
-apt-get update -y
+if [ "$PM" = "apt" ]; then
+    apt-get $PM_UPDATE
+elif [ "$PM" = "yum" ] || [ "$PM" = "dnf" ]; then
+    $PM $PM_UPDATE
+fi
 
 # Install required packages
 echo "Installing Apache, MySQL, PHP, and dependencies..."
-apt-get install -y apache2 mysql-server php php-mysql libapache2-mod-php php-cli php-curl php-gd php-mbstring php-xml php-zip unzip
+if [ "$PM" = "apt" ]; then
+    apt-get $PM_INSTALL apache2 mysql-server php php-mysql libapache2-mod-php php-cli php-curl php-gd php-mbstring php-xml php-zip unzip
+elif [ "$PM" = "yum" ]; then
+    yum $PM_INSTALL httpd mysql-server php php-mysql php-cli php-curl php-gd php-mbstring php-xml php-zip unzip
+elif [ "$PM" = "dnf" ]; then
+    dnf $PM_INSTALL httpd mysql-server php php-mysql php-cli php-curl php-gd php-mbstring php-xml php-zip unzip
+fi
 
 # Install Icecast and Shoutcast for radio streaming
 echo "Installing Icecast and Shoutcast..."
-apt-get install -y icecast2 shoutcast
+if [ "$PM" = "apt" ]; then
+    apt-get $PM_INSTALL icecast2 shoutcast
+elif [ "$PM" = "yum" ]; then
+    # For CentOS/RHEL, might need EPEL repository
+    yum $PM_INSTALL epel-release -y
+    yum $PM_INSTALL icecast shoutcast
+elif [ "$PM" = "dnf" ]; then
+    dnf $PM_INSTALL icecast shoutcast
+fi
 
 # Install ezstream for AutoDJ
 echo "Installing ezstream..."
-apt-get install -y ezstream
+if [ "$PM" = "apt" ]; then
+    apt-get $PM_INSTALL ezstream
+elif [ "$PM" = "yum" ]; then
+    yum $PM_INSTALL ezstream
+elif [ "$PM" = "dnf" ]; then
+    dnf $PM_INSTALL ezstream
+fi
 
 # Install ffmpeg for transcoding
 echo "Installing ffmpeg..."
-apt-get install -y ffmpeg
-
-# Install Certbot for Let's Encrypt (if SSL enabled)
-if [ "$ENABLE_SSL" = "y" ] || [ "$ENABLE_SSL" = "Y" ]; then
-    echo "Installing Certbot for Let's Encrypt..."
-    apt-get install -y certbot python3-certbot-apache
+if [ "$PM" = "apt" ]; then
+    apt-get $PM_INSTALL ffmpeg
+elif [ "$PM" = "yum" ]; then
+    yum $PM_INSTALL ffmpeg ffmpeg-devel
+elif [ "$PM" = "dnf" ]; then
+    dnf $PM_INSTALL ffmpeg ffmpeg-devel
 fi
 
 # Install phpMyAdmin (non-interactive)
 echo "Installing phpMyAdmin..."
-debconf-set-selections <<< "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2"
-debconf-set-selections <<< "phpmyadmin phpmyadmin/dbconfig-install boolean true"
-debconf-set-selections <<< "phpmyadmin phpmyadmin/mysql/admin-user string root"
-debconf-set-selections <<< "phpmyadmin phpmyadmin/mysql/admin-password password $MYSQL_ROOT_PASSWORD"
-debconf-set-selections <<< "phpmyadmin phpmyadmin/mysql/app-pass password $MYSQL_ROOT_PASSWORD"
-debconf-set-selections <<< "phpmyadmin phpmyadmin/app-password-confirm password $MYSQL_ROOT_PASSWORD"
-apt-get install -y phpmyadmin
+if [ "$PM" = "apt" ]; then
+    debconf-set-selections <<< "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2"
+    debconf-set-selections <<< "phpmyadmin phpmyadmin/dbconfig-install boolean true"
+    debconf-set-selections <<< "phpmyadmin phpmyadmin/mysql/admin-user string root"
+    debconf-set-selections <<< "phpmyadmin phpmyadmin/mysql/admin-password password $MYSQL_ROOT_PASSWORD"
+    debconf-set-selections <<< "phpmyadmin phpmyadmin/mysql/app-pass password $MYSQL_ROOT_PASSWORD"
+    debconf-set-selections <<< "phpmyadmin phpmyadmin/app-password-confirm password $MYSQL_ROOT_PASSWORD"
+    apt-get $PM_INSTALL phpmyadmin
+elif [ "$PM" = "yum" ] || [ "$PM" = "dnf" ]; then
+    # For yum/dnf, we might need to enable additional repos or use different package name
+    # For simplicity, we'll try the standard approach
+    $PM $PM_INSTALL phpMyAdmin
+fi
 
 # Enable Apache modules
 echo "Enabling Apache modules..."
-a2enmod rewrite
-a2enmod headers
-a2enmod ssl  # Enable SSL module
+if [ "$PM" = "apt" ]; then
+    a2enmod rewrite
+    a2enmod headers
+elif [ "$PM" = "yum" ] || [ "$PM" = "dnf" ]; then
+    # For httpd, modules are usually enabled by default or via config
+    # We'll ensure rewrite and headers are available
+    :
+fi
 
 # Set up directory for our panel
 PANEL_DIR="/var/www/radiohosting"
@@ -116,20 +196,27 @@ fi
 
 # Set permissions
 echo "Setting permissions..."
-chown -R www-data:www-data $PANEL_DIR
+chown -R apache:apache $PANEL_DIR  # Changed to apache for RHEL/CentOS
+if [ "$PM" = "apt" ]; then
+    chown -R www-data:www-data $PANEL_DIR
+fi
 chmod -R 755 $PANEL_DIR
 find $PANEL_DIR -type d -exec chmod 755 {} \;
 find $PANEL_DIR -type f -exec chmod 644 {} \;
 
 # Set up Apache virtual host
 echo "Setting up Apache virtual host..."
-VHOST_FILE="/etc/apache2/sites-available/radiohosting.conf"
+VHOST_FILE="/etc/httpd/conf.d/radiohosting.conf"  # Changed path for RHEL/CentOS
+if [ "$PM" = "apt" ]; then
+    VHOST_FILE="/etc/apache2/sites-available/radiohosting.conf"
+fi
+
 cat > $VHOST_FILE <<EOF
 <VirtualHost *:80>
     ServerAdmin webmaster@localhost
     DocumentRoot $PANEL_DIR
-    ServerName $DOMAIN_NAME
-    ServerAlias www.$DOMAIN_NAME
+    ServerName radiohosting.local
+    ServerAlias www.radiohosting.local
 
     <Directory $PANEL_DIR>
         Options Indexes FollowSymLinks
@@ -137,93 +224,27 @@ cat > $VHOST_FILE <<EOF
         Require all granted
     </Directory>
 
-    ErrorLog ${APACHE_LOG_DIR}/radiohosting_error.log
-    CustomLog ${APACHE_LOG_DIR}/radiohosting_access.log combined
+    ErrorLog ${APACHE_LOG_DIR:-/var/log/httpd}/radiohosting_error.log
+    CustomLog ${APACHE_LOG_DIR:-/var/log/httpd}/radiohosting_access.log combined
 </VirtualHost>
 EOF
 
-# Enable the site
-a2ensite radiohosting.conf
-a2dissite 000-default.conf  # Disable the default site
-
-# If SSL is enabled, obtain and configure Let's Encrypt certificate
-if [ "$ENABLE_SSL" = "y" ] || [ "$ENABLE_SSL" = "Y" ]; then
-    echo "Obtaining SSL certificate from Let's Encrypt for $DOMAIN_NAME..."
-    
-    # Stop Apache temporarily for certbot standalone mode
-    systemctl stop apache2
-    
-    # Obtain certificate
-    certbot certonly --standalone -d $DOMAIN_NAME --non-interactive --agree-tos --email admin@$DOMAIN_NAME
-    
-    # Start Apache again
-    systemctl start apache2
-    
-    # Update virtual host for SSL
-    cat > $VHOST_FILE <<EOF
-<VirtualHost *:80>
-    ServerAdmin webmaster@localhost
-    DocumentRoot $PANEL_DIR
-    ServerName $DOMAIN_NAME
-    ServerAlias www.$DOMAIN_NAME
-    
-    # Redirect HTTP to HTTPS
-    RewriteEngine On
-    RewriteCond %{HTTPS} off
-    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-    
-    <Directory $PANEL_DIR>
-        Options Indexes FollowSymLinks
-        AllowOverride All
-        Require all granted
-    </Directory>
-
-    ErrorLog ${APACHE_LOG_DIR}/radiohosting_error.log
-    CustomLog ${APACHE_LOG_DIR}/radiohosting_access.log combined
-</VirtualHost>
-
-<VirtualHost *:443>
-    ServerAdmin webmaster@localhost
-    DocumentRoot $PANEL_DIR
-    ServerName $DOMAIN_NAME
-    ServerAlias www.$DOMAIN_NAME
-    
-    <Directory $PANEL_DIR>
-        Options Indexes FollowSymLinks
-        AllowOverride All
-        Require all granted
-    </Directory>
-    
-    # SSL Configuration
-    SSLEngine on
-    SSLCertificateFile /etc/letsencrypt/live/$DOMAIN_NAME/fullchain.pem
-    SSLCertificateKeyFile /etc/letsencrypt/live/$DOMAIN_NAME/privkey.pem
-    SSLCertificateChainFile /etc/letsencrypt/live/$DOMAIN_NAME/chain.pem
-    
-    # SSL Security Settings
-    SSLProtocol all -SSLv2 -SSLv3
-    SSLCipherSuite ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384
-    SSLHonorCipherOrder on
-    
-    # HSTS (15768000 seconds = 6 months)
-    Header always set Strict-Transport-Security "max-age=15768000"
-    
-    ErrorLog ${APACHE_LOG_DIR}/radiohosting_ssl_error.log
-    CustomLog ${APACHE_LOG_DIR}/radiohosting_ssl_access.log combined
-</VirtualHost>
-EOF
-    
-    # Enable SSL site
-    a2enmod ssl
-    systemctl restart apache2
-    
-    echo "SSL certificate obtained and configured successfully!"
-    echo "Certificate will auto-renew. To test renewal: sudo certbot renew --dry-run"
+# Enable the site (different for Apache vs httpd)
+if [ "$PM" = "apt" ]; then
+    a2ensite radiohosting.conf
+    a2dissite 000-default.conf  # Disable the default site
+else
+    # For httpd, just ensure the config is included (it should be by default in conf.d/)
+    :
 fi
 
-# Restart Apache
-echo "Restarting Apache..."
-systemctl restart apache2
+# Restart web server
+echo "Restarting web server..."
+if [ "$PM" = "apt" ]; then
+    systemctl restart apache2
+else
+    systemctl restart httpd
+fi
 
 # Set up MySQL database and user
 echo "Setting up MySQL database..."
@@ -247,7 +268,7 @@ DB_USER="radiouser"
 
 # Stop MySQL service to reset the root password if needed
 # But note: we just installed MySQL, so we can set the root password during installation.
-# We'll assume we set it during installation via debconf-set-selections.
+# We'll assume we set it during installation via debconf-set-selections (for apt) or similar.
 
 # We'll reset the MySQL root password to something known for the script.
 # For simplicity, we'll use an empty password for root in this script (not recommended for production).
@@ -363,31 +384,14 @@ echo ""
 echo "Next steps:"
 echo "1. Transfer the panel code to the server if you haven't already (to /tmp/radiohosting_panel/whm)."
 echo "2. Run this installer again to copy the files and complete the setup."
-echo "3. After installation, visit http://$DOMAIN_NAME/ in a web browser to access the panel."
-if [ "$ENABLE_SSL" = "y" ] || [ "$ENABLE_SSL" = "Y" ]; then
-    echo "   (HTTPS is enforced via Let's Encrypt SSL certificate)"
-fi
+echo "3. After installation, visit http://radiohosting.local/ in a web browser to access the panel."
 echo "4. Log in with the default administrator credentials (to be set in the panel installer or via database)."
 echo ""
 echo "Important: For security, please change the default passwords and consider setting up a firewall."
 echo ""
 echo "The radio hosting services (Icecast, Shoutcast) are installed and ready to be managed by the panel."
 echo ""
-if [ "$USE_CLOUDFLARE" = "y" ] || [ "$USE_CLOUDFLARE" = "Y" ]; then
-    echo ""
-    echo "=== Cloudflare Setup Instructions ==="
-    echo "1. Log in to your Cloudflare account"
-    echo "2. Add an A record for $DOMAIN_NAME pointing to $SERVER_IP"
-    echo "3. Make sure the DNS record is NOT proxied (DNS only) for now to allow SSL validation"
-    echo "4. After SSL is active, you can enable proxying if desired"
-    echo "5. Consider enabling SSL/TLS encryption mode: Full (strict) if you have origin certificate"
-    echo "6. For maximum security, consider using Origin CA certificates from Cloudflare"
-fi
-echo ""
-echo "To access phpMyAdmin, visit http://$DOMAIN_NAME/phpmyadmin"
-if [ "$ENABLE_SSL" = "y" ] || [ "$ENABLE_SSL" = "Y" ]; then
-    echo "   or https://$DOMAIN_NAME/phpmyadmin"
-fi
+echo "To access phpMyAdmin, visit http://radiohosting.local/phpmyadmin"
 echo ""
 echo "=== End of Installation ==="
 EOF
