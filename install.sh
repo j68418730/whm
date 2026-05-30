@@ -1,7 +1,7 @@
 #!/bin/bash
 # Radio Hosting Panel Installer
 # This script installs the radio hosting panel as a core system service
-# Supports both Debian/Ubuntu (apt) and RHEL/CentOS/Fedora (yum/dnf)
+# For RHEL/CentOS/Fedora systems (yum/dnf)
 
 set -e
 
@@ -26,64 +26,6 @@ get_server_ip() {
     echo "your_server_ip"
 }
 
-# Function to detect Linux distribution and package manager
-detect_package_manager() {
-    if [ -f /etc/os-release ]; then
-        # freedesktop.org and systemd
-        . /etc/os-release
-        OS=$NAME
-        VER=$VERSION_ID
-    elif type lsb_release >/dev/null 2>&1; then
-        # linuxbase.org
-        OS=$(lsb_release -si)
-        VER=$(lsb_release -sr)
-    elif [ -f /etc/lsb-release ]; then
-        # For some versions of Debian/Ubuntu without lsb_release command
-        . /etc/lsb-release
-        OS=$DISTRIB_ID
-        VER=$DISTRIB_RELEASE
-    elif [ -f /etc/debian_version ]; then
-        # Older Debian/Ubuntu/etc.
-        OS=Debian
-        VER=$(cat /etc/debian_version)
-    elif [ -f /etc/SuSe-release ]; then
-        # Older SuSE/etc.
-        ...
-    elif [ -f /etc/redhat-release ]; then
-        # Older Red Hat, CentOS, etc.
-        ...
-    else
-        # Fall back to uname, e.g. "Linux <version>", also works for BSD, etc.
-        OS=$(uname -s)
-        VER=$(uname -r)
-    fi
-
-    # Determine package manager
-  elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Red Hat"* ]] || [[ "$OS" == *"Fedora"* ]] || [[ "$OS" == *"Amazon"* ]] || [[ "$OS" == *"AlmaLinux"* ]] || [[ "$OS" == *"Rocky"* ]]; then
-        PM="apt"
-        PM_UPDATE="update"
-        PM_INSTALL="install -y"
-        PM_REMOVE="remove -y"
- elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Red Hat"* ]] || [[ "$OS" == *"Fedora"* ]] || [[ "$OS" == *"Amazon"* ]] || [[ "$OS" == *"AlmaLinux"* ]] || [[ "$OS" == *"Rocky"* ]]; then
-        if [ -f /usr/bin/dnf ]; then
-            PM="dnf"
-        else
-            PM="yum"
-        fi
-        PM_UPDATE="check-update || true"  # yum check-update returns non-zero if updates available
-        PM_INSTALL="install -y"
-        PM_REMOVE="remove -y"
-    else
-        # Default to apt (assume Debian/Ubuntu)
-        PM="apt"
-        PM_UPDATE="update"
-        PM_INSTALL="install -y"
-        PM_REMOVE="remove -y"
-    fi
-
-    echo "$PM"
-}
-
 echo "=== Radio Hosting Panel Installer ==="
 echo "This script will install the panel and required dependencies."
 echo "It must be run as root or with sudo."
@@ -95,86 +37,37 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# Detect package manager
-PM=$(detect_package_manager)
-echo "Detected package manager: $PM"
-
 # Update system
 echo "Updating system packages..."
-if [ "$PM" = "apt" ]; then
-    apt-get $PM_UPDATE
-elif [ "$PM" = "yum" ] || [ "$PM" = "dnf" ]; then
-    $PM $PM_UPDATE
-fi
+yum check-update || true  # yum check-update returns non-zero if updates available
 
 # Install required packages
-echo "Installing Apache, MySQL, PHP, and dependencies..."
-if [ "$PM" = "apt" ]; then
-    apt-get $PM_INSTALL apache2 mysql-server php php-mysql libapache2-mod-php php-cli php-curl php-gd php-mbstring php-xml php-zip unzip
-elif [ "$PM" = "yum" ]; then
-    yum $PM_INSTALL httpd mysql-server php php-mysql php-cli php-curl php-gd php-mbstring php-xml php-zip unzip
-elif [ "$PM" = "dnf" ]; then
-    dnf $PM_INSTALL httpd mysql-server php php-mysql php-cli php-curl php-gd php-mbstring php-xml php-zip unzip
-fi
+echo "Installing Apache, MariaDB, PHP, and dependencies..."
+yum install -y httpd mariadb-server php php-mysql php-cli php-curl php-gd php-mbstring php-xml php-zip unzip
 
 # Install Icecast and Shoutcast for radio streaming
 echo "Installing Icecast and Shoutcast..."
-if [ "$PM" = "apt" ]; then
-    apt-get $PM_INSTALL icecast2 shoutcast
-elif [ "$PM" = "yum" ]; then
-    # For CentOS/RHEL, might need EPEL repository
-    yum $PM_INSTALL epel-release -y
-    yum $PM_INSTALL icecast shoutcast
-elif [ "$PM" = "dnf" ]; then
-    dnf $PM_INSTALL icecast shoutcast
-fi
+# Enable EPEL repository for additional packages
+yum install -y epel-release
+yum install -y icecast shoutcast
 
 # Install ezstream for AutoDJ
 echo "Installing ezstream..."
-if [ "$PM" = "apt" ]; then
-    apt-get $PM_INSTALL ezstream
-elif [ "$PM" = "yum" ]; then
-    yum $PM_INSTALL ezstream
-elif [ "$PM" = "dnf" ]; then
-    dnf $PM_INSTALL ezstream
-fi
+yum install -y ezstream
 
 # Install ffmpeg for transcoding
 echo "Installing ffmpeg..."
-if [ "$PM" = "apt" ]; then
-    apt-get $PM_INSTALL ffmpeg
-elif [ "$PM" = "yum" ]; then
-    yum $PM_INSTALL ffmpeg ffmpeg-devel
-elif [ "$PM" = "dnf" ]; then
-    dnf $PM_INSTALL ffmpeg ffmpeg-devel
-fi
+yum install -y ffmpeg ffmpeg-devel
 
-# Install phpMyAdmin (non-interactive)
+# Install phpMyAdmin
 echo "Installing phpMyAdmin..."
-if [ "$PM" = "apt" ]; then
-    debconf-set-selections <<< "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2"
-    debconf-set-selections <<< "phpmyadmin phpmyadmin/dbconfig-install boolean true"
-    debconf-set-selections <<< "phpmyadmin phpmyadmin/mysql/admin-user string root"
-    debconf-set-selections <<< "phpmyadmin phpmyadmin/mysql/admin-password password $MYSQL_ROOT_PASSWORD"
-    debconf-set-selections <<< "phpmyadmin phpmyadmin/mysql/app-pass password $MYSQL_ROOT_PASSWORD"
-    debconf-set-selections <<< "phpmyadmin phpmyadmin/app-password-confirm password $MYSQL_ROOT_PASSWORD"
-    apt-get $PM_INSTALL phpmyadmin
-elif [ "$PM" = "yum" ] || [ "$PM" = "dnf" ]; then
-    # For yum/dnf, we might need to enable additional repos or use different package name
-    # For simplicity, we'll try the standard approach
-    $PM $PM_INSTALL phpMyAdmin
-fi
+yum install -y phpMyAdmin
 
-# Enable Apache modules
+# Enable Apache modules (httpd)
 echo "Enabling Apache modules..."
-if [ "$PM" = "apt" ]; then
-    a2enmod rewrite
-    a2enmod headers
-elif [ "$PM" = "yum" ] || [ "$PM" = "dnf" ]; then
-    # For httpd, modules are usually enabled by default or via config
-    # We'll ensure rewrite and headers are available
-    :
-fi
+# For httpd, rewrite and headers modules are usually available by default
+# We'll ensure they're enabled in the config if needed
+# No explicit enabling needed for most modules in httpd
 
 # Set up directory for our panel
 PANEL_DIR="/var/www/radiohosting"
@@ -196,20 +89,14 @@ fi
 
 # Set permissions
 echo "Setting permissions..."
-chown -R apache:apache $PANEL_DIR  # Changed to apache for RHEL/CentOS
-if [ "$PM" = "apt" ]; then
-    chown -R www-data:www-data $PANEL_DIR
-fi
+chown -R apache:apache $PANEL_DIR
 chmod -R 755 $PANEL_DIR
 find $PANEL_DIR -type d -exec chmod 755 {} \;
 find $PANEL_DIR -type f -exec chmod 644 {} \;
 
 # Set up Apache virtual host
 echo "Setting up Apache virtual host..."
-VHOST_FILE="/etc/httpd/conf.d/radiohosting.conf"  # Changed path for RHEL/CentOS
-if [ "$PM" = "apt" ]; then
-    VHOST_FILE="/etc/apache2/sites-available/radiohosting.conf"
-fi
+VHOST_FILE="/etc/httpd/conf.d/radiohosting.conf"
 
 cat > $VHOST_FILE <<EOF
 <VirtualHost *:80>
@@ -224,65 +111,42 @@ cat > $VHOST_FILE <<EOF
         Require all granted
     </Directory>
 
-    ErrorLog ${APACHE_LOG_DIR:-/var/log/httpd}/radiohosting_error.log
-    CustomLog ${APACHE_LOG_DIR:-/var/log/httpd}/radiohosting_access.log combined
+    ErrorLog /var/log/httpd/radiohosting_error.log
+    CustomLog /var/log/httpd/radiohosting_access.log combined
 </VirtualHost>
 EOF
 
-# Enable the site (different for Apache vs httpd)
-if [ "$PM" = "apt" ]; then
-    a2ensite radiohosting.conf
-    a2dissite 000-default.conf  # Disable the default site
-else
-    # For httpd, just ensure the config is included (it should be by default in conf.d/)
-    :
+# Disable the default site (by renaming or overriding)
+# For httpd, we'll just make sure our config is loaded
+# The default welcome page is in /etc/httpd/conf.d/welcome.conf
+# We can disable it by renaming or overriding
+if [ -f /etc/httpd/conf.d/welcome.conf ]; then
+    mv /etc/httpd/conf.d/welcome.conf /etc/httpd/conf.d/welcome.conf.disabled
 fi
 
-# Restart web server
-echo "Restarting web server..."
-if [ "$PM" = "apt" ]; then
-    systemctl restart apache2
-else
-    systemctl restart httpd
-fi
+# Restart Apache
+echo "Restarting Apache..."
+systemctl restart httpd
+systemctl enable httpd
 
-# Set up MySQL database and user
-echo "Setting up MySQL database..."
-# We'll create a database and user for the panel
-# In a real scenario, we would ask for credentials or use a secure method.
-# For simplicity, we'll create a database 'radiohosting' and user 'radiouser' with a random password.
+# Set up MariaDB database and user
+echo "Setting up MariaDB database..."
+# Start and enable MariaDB
+systemctl start mariadb
+systemctl enable mariadb
 
 # Generate a random password for the database user
 DB_PASSWORD=$(openssl rand -base64 12)
 DB_NAME="radiohosting"
 DB_USER="radiouser"
 
-# MySQL root password - we assume it's not set or we can set it.
-# We'll prompt the user for the MySQL root password or use a default.
-# Since we are in an automated script, we'll set the MySQL root password if not set.
-# However, note that the MySQL installation might have prompted for a password.
-# We'll check if we can connect without a password (if the setup was non-interactive).
-
-# Let's try to set the MySQL root password to empty for simplicity in this script.
-# In production, you should set a strong password.
-
-# Stop MySQL service to reset the root password if needed
-# But note: we just installed MySQL, so we can set the root password during installation.
-# We'll assume we set it during installation via debconf-set-selections (for apt) or similar.
-
-# We'll reset the MySQL root password to something known for the script.
-# For simplicity, we'll use an empty password for root in this script (not recommended for production).
-# Alternatively, we can ask the user.
-
-# We'll create the database and user with the root account (assuming we can connect as root without password for now)
-# If the installation prompted for a root password, we would need to use it.
-
-# Let's attempt to connect as root without password and if it fails, we'll prompt.
+# Secure MariaDB installation (set root password if not set)
+# We'll check if we can connect as root without password
 if mysqladmin -u root ping >/dev/null 2>&1; then
   MYSQL_ROOT_OPTS="-u root"
 else
-  echo "Cannot connect to MySQL as root without password."
-  echo "Please enter the MySQL root password:"
+  echo "Cannot connect to MariaDB as root without password."
+  echo "Please enter the MariaDB root password:"
   read -s MYSQL_ROOT_PASSWORD
   MYSQL_ROOT_OPTS="-u root -p$MYSQL_ROOT_PASSWORD"
 fi
@@ -329,7 +193,7 @@ EOF
 chown www-data:www-data $CONFIG_FILE
 chmod 640 $CONFIG_FILE
 
-# Initialize the database schema (we would have migrations, but for simplicity we'll run a schema script)
+# Initialize the database schema
 # We assume there is a schema.sql file in the panel code.
 SCHEMA_FILE="$PANEL_DIR/database/schema.sql"
 if [ -f "$SCHEMA_FILE" ]; then
@@ -355,16 +219,16 @@ CRON_FILE="/etc/cron.d/radiohosting"
 cat > $CRON_FILE <<EOF
 # Radio Hosting Panel Cron Jobs
 # Run listener analytics every 5 minutes
-*/5 * * * * www-data php $PANEL_DIR/artisan radio:analytics >> $PANEL_DIR/logs/cron.log 2>&1
+*/5 * * * * apache php $PANEL_DIR/artisan radio:analytics >> $PANEL_DIR/logs/cron.log 2>&1
 
 # Check for stopped streams and restart them if needed (example)
-0 * * * * www-data php $PANEL_DIR/artisan radio:restart-stopped-streams >> $PANEL_DIR/logs/cron.log 2>&1
+0 * * * * apache php $PANEL_DIR/artisan radio:restart-stopped-streams >> $PANEL_DIR/logs/cron.log 2>&1
 EOF
 chmod 644 $CRON_FILE
 
 # Create log directory and set permissions
 mkdir -p $PANEL_DIR/logs
-chown -R www-data:www-data $PANEL_DIR/logs
+chown -R apache:apache $PANEL_DIR/logs
 chmod -R 755 $PANEL_DIR/logs
 
 # Get server IP for display
