@@ -130,6 +130,7 @@ echo "Updating system packages..."
 # Set up firewall (firewalld)
 echo "Setting up firewall with firewalld..."
 install_required_package "firewalld" firewalld
+FIREWALLD_INSTALLED=1
 systemctl start firewalld || { echo "Failed to start firewalld"; exit 1; }
 systemctl enable firewalld || { echo "Failed to enable firewalld"; exit 1; }
 
@@ -144,6 +145,9 @@ firewall-cmd --reload || { echo "Warning: Could not reload firewalld"; }
 # Install required packages
 echo "Installing Apache, MariaDB, PHP, and dependencies..."
 install_required_package "base packages" httpd mariadb-server php php-mysqlnd php-cli php-curl php-gd php-mbstring php-xml php-zip unzip
+   HTTPD_INSTALLED=1
+   MARIADB_INSTALLED=1
+   PHP_INSTALLED=1
 
 # Install Icecast (removed Shoutcast per user request)
 echo "Installing Icecast..."
@@ -340,6 +344,28 @@ chmod -R 755 $PANEL_DIR/logs || { echo "Warning: Could not set logs permissions"
 # Get server IP for display
 SERVER_IP=$(get_server_ip)
 
+# Initialize installation tracking variables
+HTTPD_INSTALLED=0
+MARIADB_INSTALLED=0
+PHP_INSTALLED=0
+FIREWALLD_INSTALLED=0
+ICECAST_INSTALLED=0
+LIQUIDSOAP_INSTALLED=0
+EZSTREAM_INSTALLED=0
+FFMPEG_INSTALLED=0
+PHPMYADMIN_INSTALLED=0
+
+# Initialize installation tracking variables
+HTTPD_INSTALLED=0
+MARIADB_INSTALLED=0
+PHP_INSTALLED=0
+FIREWALLD_INSTALLED=0
+ICECAST_INSTALLED=0
+LIQUIDSOAP_INSTALLED=0
+EZSTREAM_INSTALLED=0
+FFMPEG_INSTALLED=0
+PHPMYADMIN_INSTALLED=0
+
 # Final instructions
 echo ""
 echo "=== Installation Complete ==="
@@ -361,6 +387,21 @@ echo "   To update the hash file after changing the password, run:"
 echo "   sudo /path/to/whm/update_panel_hash.sh"
 echo ""
 echo "Firewall configured: firewalld is active with ports 80 (HTTP), 443 (HTTPS), 8000 (Icecast HTTP), 8001 (Icecast HTTPS), and 8080 (alternative web panel) open."
+echo ""
+echo "=== INSTALLATION STATUS ==="
+echo "The following components have been processed:"
+echo "  [${HTTPD_INSTALLED:-0}] Apache Web Server (httpd)"
+echo "  [${MARIADB_INSTALLED:-0}] MariaDB Database Server"
+echo "  [${PHP_INSTALLED:-0}] PHP and Extensions"
+echo "  [${FIREWALLD_INSTALLED:-0}] FirewallD (firewalld)"
+echo "  [${ICECAST_INSTALLED:-0}] Icecast Streaming Server"
+echo "  [${LIQUIDSOAP_INSTALLED:-0}] Liquidsoap Automation Engine"
+echo "  [${EZSTREAM_INSTALLED:-0}] ezstream AutoDJ Tool"
+echo "  [${FFMPEG_INSTALLED:-0}] FFmpeg Transcoding Suite"
+echo "  [${PHPMYADMIN_INSTALLED:-0}] phpMyAdmin Web Interface"
+echo ""
+echo "Note: [1] indicates installed/configured, [0] indicates not installed or optional component not available."
+echo ""
 echo ""
 echo "Radio service install status:"
 if [ "$ICECAST_INSTALLED" -eq 1 ]; then
