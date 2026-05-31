@@ -3,6 +3,12 @@
 # This script installs the radio hosting panel as a core system service
 # For RHEL/CentOS/Fedora systems (yum/dnf)
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PKG_MGR="yum"
+if command -v dnf >/dev/null 2>&1; then
+    PKG_MGR="dnf"
+fi
+
 # Function to get server IP address
 get_server_ip() {
     # Try to get public IP from external service
@@ -24,6 +30,85 @@ get_server_ip() {
     echo "your_server_ip"
 }
 
+install_optional_package() {
+    local label="$1"
+    shift
+
+    echo "Installing $label..."
+    if ! "$PKG_MGR" install -y "$@"; then
+        echo "Warning: $label not available from enabled repositories"
+        return 1
+    fi
+
+    return 0
+}
+
+install_required_package() {
+    local label="$1"
+    shift
+
+    echo "Installing $label..."
+    "$PKG_MGR" install -y "$@" || { echo "Failed to install $label"; exit 1; }
+}
+
+setup_repositories() {
+    echo "Setting up repositories..."
+
+    if [ "$PKG_MGR" = "dnf" ]; then
+        dnf install -y dnf-plugins-core || echo "Warning: Failed to install dnf plugins"
+
+        if [ -f /etc/os-release ]; then
+            . /etc/os-release
+        fi
+
+        if [ "${ID:-}" = "fedora" ]; then
+            dnf install -y \
+                "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm" \
+                || echo "Warning: Failed to install RPM Fusion for Fedora"
+        else
+            /usr/bin/crb enable 2>/dev/null || dnf config-manager --set-enabled crb 2>/dev/null || dnf config-manager --set-enabled powertools 2>/dev/null || true
+            dnf install -y epel-release || echo "Warning: Failed to install epel-release"
+            dnf install -y \
+                "https://download1.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm" \
+                || echo "Warning: Failed to install RPM Fusion for Enterprise Linux"
+        fi
+
+        dnf clean all || true
+        dnf makecache || true
+    else
+        yum install -y epel-release || echo "Warning: Failed to install epel-release"
+    fi
+}
+
+install_icecast_from_source() {
+    local source_installer="$SCRIPT_DIR/scripts/icecast_install_source.sh"
+
+    if [ ! -f "$source_installer" ]; then
+        echo "Warning: Icecast source installer not found at $source_installer"
+        return 1
+    fi
+
+    echo "Installing Icecast from source because no repository package was available..."
+    bash "$source_installer"
+}
+
+install_ffmpeg_stack() {
+    echo "Installing ffmpeg..."
+
+    "$PKG_MGR" install -y ladspa rubberband ffmpeg ffmpeg-devel && return 0
+
+    echo "Initial ffmpeg install failed; retrying with Enterprise Linux resolver options..."
+    if [ "$PKG_MGR" = "dnf" ]; then
+        dnf install -y --allowerasing --nobest ladspa rubberband ffmpeg ffmpeg-devel && return 0
+        dnf install -y --allowerasing --nobest ladspa rubberband ffmpeg && return 0
+    else
+        yum install -y ladspa rubberband ffmpeg && return 0
+    fi
+
+    echo "Failed to install ffmpeg after retrying repository dependency fixes"
+    exit 1
+}
+
 echo "=== Radio Hosting Panel Installer ==="
 echo "This script will install the panel and required dependencies."
 echo "It must be run as root or with sudo."
@@ -36,21 +121,15 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # ===== REPOSITORY SETUP - MUST RUN FIRST =====
-echo "Setting up repositories..."
-dnf install dnf-plugins-core -y
-/usr/bin/crb enable
-dnf install epel-release -y
-dnf install -y https://download1.rpmfusion.org/free/el/rpmfusion-free-release-9.noarch.rpm
-dnf clean all
-dnf makecache
+setup_repositories
 
 # Update system
 echo "Updating system packages..."
-yum update -y
+"$PKG_MGR" update -y
 
 # Set up firewall (firewalld)
 echo "Setting up firewall with firewalld..."
-yum install -y firewalld || { echo "Failed to install firewalld"; exit 1; }
+install_required_package "firewalld" firewalld
 systemctl start firewalld || { echo "Failed to start firewalld"; exit 1; }
 systemctl enable firewalld || { echo "Failed to enable firewalld"; exit 1; }
 
@@ -64,43 +143,46 @@ firewall-cmd --reload || { echo "Warning: Could not reload firewalld"; }
 
 # Install required packages
 echo "Installing Apache, MariaDB, PHP, and dependencies..."
-yum install -y httpd mariadb-server php php-mysqlnd php-cli php-curl php-gd php-mbstring php-xml php-zip unzip || { echo "Failed to install base packages"; exit 1; }
+install_required_package "base packages" httpd mariadb-server php php-mysqlnd php-cli php-curl php-gd php-mbstring php-xml php-zip unzip
 
 # Install Icecast (removed Shoutcast per user request)
 echo "Installing Icecast..."
-# Enable EPEL repository for additional packages
-yum install -y epel-release || { echo "Warning: Failed to install epel-release"; }
-# Install icecast, but continue if it fails (may not be available in all repos)
-if ! yum install -y icecast -y; then
+# Install icecast from repos first, then compile from the bundled source installer if needed.
+ICECAST_INSTALLED=0
+if "$PKG_MGR" install -y icecast; then
+    echo "Icecast installed successfully from repositories."
+    ICECAST_INSTALLED=1
+elif install_icecast_from_source; then
+    echo "Icecast installed successfully from source."
+    ICECAST_INSTALLED=1
+else
     echo ""
-    echo "===== WARNING: ICECAST NOT INSTALLED VIA YUM ====="
-    echo "The Icecast package was not found in your repositories."
-    echo "This can happen on some RHEL/CentOS/Fedora versions."
+    echo "===== WARNING: ICECAST NOT INSTALLED ====="
+    echo "Icecast was not found in your repositories and the source installer failed."
     echo ""
     echo "The installer will continue with all other components."
     echo "You will need to manually install Icecast after this script completes."
     echo "See the 'MANUAL ICECAST INSTALLATION' section at the end of this script."
-    echo "===================================================="
+    echo "=========================================="
     echo ""
-else
-    echo "Icecast installed successfully via yum."
 fi
 
 # Install Liquidsoap for advanced automation (modern stack)
-echo "Installing Liquidsoap..."
-yum install -y liquidsoap -y || { echo "Warning: Liquidsoap not available"; }
+LIQUIDSOAP_INSTALLED=0
+install_optional_package "Liquidsoap" liquidsoap && LIQUIDSOAP_INSTALLED=1
 
 # Install ezstream for AutoDJ (kept for compatibility; can be replaced by Liquidsoap in future)
-echo "Installing ezstream..."
-yum install -y ezstream -y || { echo "Warning: ezstream not available"; }
+EZSTREAM_INSTALLED=0
+install_optional_package "ezstream" ezstream && EZSTREAM_INSTALLED=1
 
 # Install ffmpeg for transcoding
-echo "Installing ffmpeg..."
-yum install -y ffmpeg ffmpeg-devel -y || { echo "Failed to install ffmpeg"; exit 1; }
+FFMPEG_INSTALLED=0
+install_ffmpeg_stack
+FFMPEG_INSTALLED=1
 
 # Install phpMyAdmin
 echo "Installing phpMyAdmin..."
-yum install -y phpMyAdmin -y || { echo "Warning: phpMyAdmin not available"; }
+install_optional_package "phpMyAdmin" phpMyAdmin
 
 # Enable Apache modules (httpd)
 echo "Enabling Apache modules..."
@@ -295,42 +377,40 @@ echo "   sudo /path/to/whm/update_panel_hash.sh"
 echo ""
 echo "Firewall configured: firewalld is active with ports 80 (HTTP), 443 (HTTPS), 8000 (Icecast HTTP), 8001 (Icecast HTTPS), and 8080 (alternative web panel) open."
 echo ""
-echo "The radio hosting services (Icecast, Liquidsoap, ezstream, ffmpeg) are installed and ready to be managed by the panel."
+echo "Radio service install status:"
+if [ "$ICECAST_INSTALLED" -eq 1 ]; then
+    echo " - Icecast: installed"
+else
+    echo " - Icecast: not installed"
+fi
+if [ "$LIQUIDSOAP_INSTALLED" -eq 1 ]; then
+    echo " - Liquidsoap: installed"
+else
+    echo " - Liquidsoap: not available from enabled repositories"
+fi
+if [ "$EZSTREAM_INSTALLED" -eq 1 ]; then
+    echo " - ezstream: installed"
+else
+    echo " - ezstream: not available from enabled repositories"
+fi
+if [ "$FFMPEG_INSTALLED" -eq 1 ]; then
+    echo " - ffmpeg: installed"
+fi
 echo ""
-echo "Note: Shoutcast was removed per user request; Liquidsoap is installed for automation."
+echo "Note: Shoutcast was removed per user request; Liquidsoap is used for automation when available."
 echo ""
 echo "==== IMPORTANT NOTE ABOUT ICECAST ===="
-echo "If you saw 'No package icecast available' above, Icecast was not installed via yum."
-echo "This can happen on some RHEL/CentOS/Fedora versions where Icecast isn't in the default/EPEL repos."
-echo ""
-echo "To enable radio streaming features, you must manually install Icecast after this installer completes:"
-echo ""
-echo "1. Install build dependencies:"
-echo "   sudo yum groupinstall \"Development Tools\" -y"
-echo "   sudo yum install -y gcc gcc-c++ make autoconf automake libtool libxml2-devel curl-devel openssl-devel libxslt-devel pcre2-devel libvorbis-devel sqlite-devel wget tar"
-echo ""
-echo "2. Download and compile Icecast:"
-echo "   cd /usr/local/src"
-echo "   wget https://downloads.xiph.org/releases/icecast/icecast-2.5.0.tar.gz"
-echo "   tar -xzf icecast-2.5.0.tar.gz"
-echo "   cd icecast-2.5.0"
-echo "   ./configure"
-echo "   make -j$(nproc)"
-echo "   sudo make install"
-echo ""
-echo "3. Configure Icecast:"
-echo "   sudo mkdir -p /usr/local/etc/icecast"
-echo "   sudo cp conf/icecast.xml.dist /usr/local/etc/icecast/icecast.xml"
-echo ""
-echo "4. Start Icecast:"
-echo "   /usr/local/bin/icecast -c /usr/local/etc/icecast/icecast.xml &"
-echo ""
-echo "5. Open firewall port (if not already open):"
-echo "   sudo firewall-cmd --permanent --add-port=8000/tcp"
-echo "   sudo firewall-cmd --reload"
-echo ""
-echo "Once Icecast is manually installed, all radio streaming features will work in the panel."
-echo "The panel will continue to work for all other hosting features while you set up Icecast manually."
+if [ "$ICECAST_INSTALLED" -eq 1 ]; then
+    echo "Icecast is installed and ready for radio streaming."
+else
+    echo "Icecast could not be installed automatically."
+    echo "This can happen on some RHEL/CentOS/Fedora versions where Icecast isn't in the default/EPEL repos."
+    echo ""
+    echo "To enable radio streaming features, manually run the bundled source installer:"
+    echo "   sudo bash $PANEL_DIR/scripts/icecast_install_source.sh"
+    echo ""
+    echo "The panel will continue to work for all other hosting features while you set up Icecast manually."
+fi
 echo "================================"
 echo ""
 echo "To access phpMyAdmin, visit http://radiohosting.local/phpmyadmin"
