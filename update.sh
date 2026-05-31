@@ -54,4 +54,3 @@ fi
 
 echo ""
 echo "=== Update Check Complete ==="
-EOF

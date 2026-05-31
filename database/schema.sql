@@ -170,4 +170,129 @@ ON DUPLICATE KEY UPDATE global_enabled=VALUES(global_enabled), enabled=VALUES(en
 -- In production, you should change this password immediately after first login.
 INSERT INTO admins (name, email, password_hash, theme_settings) 
 VALUES ('Administrator', 'admin@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '{}')
-ON DUPLICATE KEY UPDATE email=VALUES(email);
+ON DUPLICATE KEY UPDATE email=VALUES(email);-- Resellers Table
+CREATE TABLE IF NOT EXISTS resellers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    admin_id INT NOT NULL,
+    company_name VARCHAR(100) NOT NULL,
+    contact_name VARCHAR(100),
+    email VARCHAR(100) NOT NULL UNIQUE,
+    phone VARCHAR(20),
+    website VARCHAR(100),
+    theme_settings JSON NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE,
+    INDEX idx_admin_id (admin_id),
+    INDEX idx_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Hosting Packages Table (for reseller to assign to users)
+CREATE TABLE IF NOT EXISTS hosting_packages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    reseller_id INT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    monthly_price DECIMAL(10,2) NOT NULL,
+    disk_space BIGINT NOT NULL,
+    bandwidth BIGINT NOT NULL,
+    email_accounts INT NOT NULL,
+    ftp_accounts INT NOT NULL,
+    databases INT NOT NULL,
+    subdomains INT NOT NULL,
+    parked_domains INT NOT NULL,
+    addon_domains INT NOT NULL,
+    monthly_fee DECIMAL(10,2) DEFAULT 0.00,
+    setup_fee DECIMAL(10,2) DEFAULT 0.00,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (reseller_id) REFERENCES resellers(id) ON DELETE SET NULL,
+    INDEX idx_reseller_id (reseller_id),
+    INDEX idx_is_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Hosting Users Table (cPanel users)
+CREATE TABLE IF NOT EXISTS hosting_users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    reseller_id INT NOT NULL,
+    package_id INT NULL,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    phone VARCHAR(20),
+    status ENUM('active', 'suspended', 'terminated') DEFAULT 'active',
+    theme_settings JSON NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (reseller_id) REFERENCES resellers(id) ON DELETE CASCADE,
+    FOREIGN KEY (package_id) REFERENCES hosting_packages(id) ON DELETE SET NULL,
+    INDEX idx_reseller_id (reseller_id),
+    INDEX idx_package_id (package_id),
+    INDEX idx_status (status),
+    INDEX idx_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- User Radio Settings (per hosting user radio settings)
+CREATE TABLE IF NOT EXISTS user_radio_settings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    reseller_id INT NULL,
+    global_enabled BOOLEAN DEFAULT FALSE,
+    enabled BOOLEAN DEFAULT FALSE,
+    server_type ENUM('icecast', 'shoutcast') DEFAULT 'icecast',
+    listener_limit INT DEFAULT 100,
+    bandwidth_limit BIGINT DEFAULT 1073741824000,
+    storage_limit BIGINT DEFAULT 10737418240,
+    dj_accounts_limit INT DEFAULT 5,
+    playlists_limit INT DEFAULT 10,
+    autodj_enabled BOOLEAN DEFAULT TRUE,
+    transcoding_enabled BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES hosting_users(id) ON DELETE CASCADE,
+    FOREIGN KEY (reseller_id) REFERENCES resellers(id) ON DELETE SET NULL,
+    UNIQUE KEY unique_user_reseller (user_id, reseller_id),
+    INDEX idx_user_id (user_id),
+    INDEX idx_reseller_id (reseller_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Plugins Table (Admin-created plugins)
+CREATE TABLE IF NOT EXISTS plugins (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    creator_admin_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    version VARCHAR(20) NOT NULL,
+    license_type ENUM('open_source', 'commercial', 'custom') DEFAULT 'open_source',
+    price DECIMAL(10,2) DEFAULT 0.00,
+    file_path VARCHAR(255), -- Path to plugin zip/file
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (creator_admin_id) REFERENCES admins(id) ON DELETE CASCADE,
+    INDEX idx_creator_admin_id (creator_admin_id),
+    INDEX idx_is_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Invoices Table (WHMCS-style billing)
+CREATE TABLE IF NOT EXISTS invoices (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL, -- hosting_users.id, NULL for reseller invoices
+    reseller_id INT NULL, -- For reseller-to-admin invoices
+    invoice_number VARCHAR(50) NOT NULL UNIQUE,
+    date DATE NOT NULL,
+    due_date DATE NOT NULL,
+    subtotal DECIMAL(10,2) NOT NULL,
+    tax_rate DECIMAL(5,4) DEFAULT 0.0000,
+    tax_amount DECIMAL(10,2) DEFAULT 0.00,
+    total DECIMAL(10,2) NOT NULL,
+    status ENUM('draft', 'sent', 'paid', 'overdue', 'cancelled', 'refunded') DEFAULT 'draft',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES hosting_users(id) ON DELETE SET NULL,
+    FOREIGN KEY (reseller_id) REFERENCES resellers(id) ON DELETE SET NULL,
+    INDEX idx_user_id (user_id),
+    INDEX idx_reseller_id (reseller_id),
+    INDEX idx_status (status),
+    INDEX idx_date (date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
