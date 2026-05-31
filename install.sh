@@ -3,8 +3,6 @@
 # This script installs the radio hosting panel as a core system service
 # For RHEL/CentOS/Fedora systems (yum/dnf)
 
-set -e
-
 # Function to get server IP address
 get_server_ip() {
     # Try to get public IP from external service
@@ -43,43 +41,57 @@ yum check-update || true  # yum check-update returns non-zero if updates availab
 
 # Set up firewall (firewalld)
 echo "Setting up firewall with firewalld..."
-yum install -y firewalld -y
-systemctl start firewalld
-systemctl enable firewalld
+yum install -y firewalld || { echo "Failed to install firewalld"; exit 1; }
+systemctl start firewalld || { echo "Failed to start firewalld"; exit 1; }
+systemctl enable firewalld || { echo "Failed to enable firewalld"; exit 1; }
 
 # Open required ports for radio hosting panel
-firewall-cmd --permanent --add-service=http
-firewall-cmd --permanent --add-service=https
+firewall-cmd --permanent --add-service=http || echo "Warning: Could not add HTTP service"
+firewall-cmd --permanent --add-service=https || echo "Warning: Could not add HTTPS service"
 firewall-cmd --permanent --add-port=8000/tcp  # Icecast HTTP
 firewall-cmd --permanent --add-port=8001/tcp  # Icecast HTTPS (if used)
 firewall-cmd --permanent --add-port=8080/tcp  # Common alternative for web panels
-firewall-cmd --reload
+firewall-cmd --reload || { echo "Warning: Could not reload firewalld"; }
 
 # Install required packages
 echo "Installing Apache, MariaDB, PHP, and dependencies..."
-yum install -y httpd mariadb-server php php-mysqlnd php-cli php-curl php-gd php-mbstring php-xml php-zip unzip
+yum install -y httpd mariadb-server php php-mysqlnd php-cli php-curl php-gd php-mbstring php-xml php-zip unzip || { echo "Failed to install base packages"; exit 1; }
 
 # Install Icecast (removed Shoutcast per user request)
 echo "Installing Icecast..."
 # Enable EPEL repository for additional packages
-yum install -y epel-release -y
-yum install -y icecast -y
+yum install -y epel-release || { echo "Warning: Failed to install epel-release"; }
+# Install icecast, but continue if it fails (may not be available in all repos)
+if ! yum install -y icecast -y; then
+    echo ""
+    echo "===== WARNING: ICECAST NOT INSTALLED VIA YUM ====="
+    echo "The Icecast package was not found in your repositories."
+    echo "This can happen on some RHEL/CentOS/Fedora versions."
+    echo ""
+    echo "The installer will continue with all other components."
+    echo "You will need to manually install Icecast after this script completes."
+    echo "See the 'MANUAL ICECAST INSTALLATION' section at the end of this script."
+    echo "===================================================="
+    echo ""
+else
+    echo "Icecast installed successfully via yum."
+fi
 
 # Install Liquidsoap for advanced automation (modern stack)
 echo "Installing Liquidsoap..."
-yum install -y liquidsoap -y
+yum install -y liquidsoap -y || { echo "Warning: Liquidsoap not available"; }
 
 # Install ezstream for AutoDJ (kept for compatibility; can be replaced by Liquidsoap in future)
 echo "Installing ezstream..."
-yum install -y ezstream -y
+yum install -y ezstream -y || { echo "Warning: ezstream not available"; }
 
 # Install ffmpeg for transcoding
 echo "Installing ffmpeg..."
-yum install -y ffmpeg ffmpeg-devel -y
+yum install -y ffmpeg ffmpeg-devel -y || { echo "Failed to install ffmpeg"; exit 1; }
 
 # Install phpMyAdmin
 echo "Installing phpMyAdmin..."
-yum install -y phpMyAdmin -y
+yum install -y phpMyAdmin -y || { echo "Warning: phpMyAdmin not available"; }
 
 # Enable Apache modules (httpd)
 echo "Enabling Apache modules..."
@@ -90,14 +102,14 @@ echo "Enabling Apache modules..."
 # Set up directory for our panel
 PANEL_DIR="/var/www/radiohosting"
 echo "Setting up panel directory at $PANEL_DIR..."
-mkdir -p $PANEL_DIR
+mkdir -p $PANEL_DIR || { echo "Failed to create panel directory"; exit 1; }
 
 # Copy the panel files
 SOURCE_DIR="/tmp/radiohosting_panel/whm"
 
 if [ -d "$SOURCE_DIR" ]; then
   echo "Copying panel files from $SOURCE_DIR to $PANEL_DIR..."
-  cp -r $SOURCE_DIR/* $PANEL_DIR/
+  cp -r $SOURCE_DIR/* $PANEL_DIR/ || { echo "Failed to copy panel files"; exit 1; }
 else
   echo "Source directory $SOURCE_DIR not found."
   echo "Please ensure the panel code is available at $SOURCE_DIR"
@@ -107,10 +119,10 @@ fi
 
 # Set permissions
 echo "Setting permissions..."
-chown -R apache:apache $PANEL_DIR
-chmod -R 755 $PANEL_DIR
-find $PANEL_DIR -type d -exec chmod 755 {} \;
-find $PANEL_DIR -type f -exec chmod 644 {} \;
+chown -R apache:apache $PANEL_DIR || { echo "Warning: Could not set ownership"; }
+chmod -R 755 $PANEL_DIR || { echo "Warning: Could not set permissions"; }
+find $PANEL_DIR -type d -exec chmod 755 {} \; || { echo "Warning: Could not set directory permissions"; }
+find $PANEL_DIR -type f -exec chmod 644 {} \; || { echo "Warning: Could not set file permissions"; }
 
 # Set up Apache virtual host
 echo "Setting up Apache virtual host..."
@@ -139,19 +151,19 @@ EOF
 # The default welcome page is in /etc/httpd/conf.d/welcome.conf
 # We can disable it by renaming or overriding
 if [ -f /etc/httpd/conf.d/welcome.conf ]; then
-    mv /etc/httpd/conf.d/welcome.conf /etc/httpd/conf.d/welcome.conf.disabled
+    mv /etc/httpd/conf.d/welcome.conf /etc/httpd/conf.d/welcome.conf.disabled || { echo "Warning: Could not disable welcome.conf"; }
 fi
 
 # Restart Apache
 echo "Restarting Apache..."
-systemctl restart httpd
-systemctl enable httpd
+systemctl restart httpd || { echo "Failed to restart Apache"; exit 1; }
+systemctl enable httpd || { echo "Failed to enable Apache"; exit 1; }
 
 # Set up MariaDB database and user
 echo "Setting up MariaDB database..."
 # Start and enable MariaDB
-systemctl start mariadb
-systemctl enable mariadb
+systemctl start mariadb || { echo "Failed to start MariaDB"; exit 1; }
+systemctl enable mariadb || { echo "Failed to enable MariaDB"; exit 1; }
 
 # Generate a random password for the database user
 DB_PASSWORD=$(openssl rand -base64 12)
@@ -171,52 +183,52 @@ fi
 
 # Create database and user
 echo "Creating database and user..."
-mysql $MYSQL_ROOT_OPTS -e "CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql $MYSQL_ROOT_OPTS -e "CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';"
-mysql $MYSQL_ROOT_OPTS -e "GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';"
-mysql $MYSQL_ROOT_OPTS -e "FLUSH PRIVILEGES;"
+mysql $MYSQL_ROOT_OPTS -e "CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" || { echo "Failed to create database"; exit 1; }
+mysql $MYSQL_ROOT_OPTS -e "CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';" || { echo "Failed to create user"; exit 1; }
+mysql $MYSQL_ROOT_OPTS -e "GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';" || { echo "Failed to grant privileges"; exit 1; }
+mysql $MYSQL_ROOT_OPTS -e "FLUSH PRIVILEGES;" || { echo "Failed to flush privileges"; exit 1; }
 
 # Save the database credentials to a configuration file
 echo "Saving database configuration..."
 CONFIG_FILE="$PANEL_DIR/config/database.php"
-mkdir -p $(dirname $CONFIG_FILE)
+mkdir -p $(dirname $CONFIG_FILE) || { echo "Failed to create config directory"; exit 1; }
 cat > $CONFIG_FILE <<EOF
 <?php
 return [
-
+    
     'default' => 'mysql',
-
+    
     'connections' => [
-
+    
         'mysql' => [
             'driver' => 'mysql',
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
             'database' => env('DB_DATABASE', '$DB_NAME'),
             'username' => env('DB_USERNAME', '$DB_USER'),
-            'password' = env('DB_PASSWORD', '$DB_PASSWORD'),
-            'charset' = 'utf8mb4',
-            'collation' = 'utf8mb4_unicode_ci',
-            'prefix' = '',
-            'strict' = true,
-            'engine' = null,
+            'password' => env('DB_PASSWORD', '$DB_PASSWORD'),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
         ],
-
+    
     ],
-
+    
 ];
 EOF
 
 # Set permissions on the config file
-chown www-data:www-data $CONFIG_FILE
-chmod 640 $CONFIG_FILE
+chown apache:apache $CONFIG_FILE || { echo "Warning: Could not set config ownership"; }
+chmod 640 $CONFIG_FILE || { echo "Warning: Could not set config permissions"; }
 
 # Initialize the database schema
 # We assume there is a schema.sql file in the panel code.
 SCHEMA_FILE="$PANEL_DIR/database/schema.sql"
 if [ -f "$SCHEMA_FILE" ]; then
   echo "Importing database schema..."
-  mysql $MYSQL_ROOT_OPTS $DB_NAME < $SCHEMA_FILE
+  mysql $MYSQL_ROOT_OPTS $DB_NAME < $SCHEMA_FILE || { echo "Warning: Failed to import schema"; }
 else
   echo "Schema file not found at $SCHEMA_FILE. Skipping database schema import."
 fi
@@ -226,7 +238,7 @@ echo "Enabling radio hosting in configuration..."
 CONFIG_FILE="$PANEL_DIR/config/radio.php"
 if [ -f "$CONFIG_FILE" ]; then
   # We'll ensure global_enabled is true
-  sed -i "s/'global_enabled' => false/'global_enabled' => true/" $CONFIG_FILE
+  sed -i "s/'global_enabled' => false/'global_enabled' => true/" $CONFIG_FILE || { echo "Warning: Could not update radio config"; }
 else
   echo "Radio config file not found. Skipping."
 fi
@@ -242,12 +254,12 @@ cat > $CRON_FILE <<EOF
 # Check for stopped streams and restart them if needed (example)
 0 * * * * apache php $PANEL_DIR/artisan radio:restart-stopped-streams >> $PANEL_DIR/logs/cron.log 2>&1
 EOF
-chmod 644 $CRON_FILE
+chmod 644 $CRON_FILE || { echo "Warning: Could not set cron file permissions"; }
 
 # Create log directory and set permissions
-mkdir -p $PANEL_DIR/logs
-chown -R apache:apache $PANEL_DIR/logs
-chmod -R 755 $PANEL_DIR/logs
+mkdir -p $PANEL_DIR/logs || { echo "Failed to create logs directory"; exit 1; }
+chown -R apache:apache $PANEL_DIR/logs || { echo "Warning: Could not set logs ownership"; }
+chmod -R 755 $PANEL_DIR/logs || { echo "Warning: Could not set logs permissions"; }
 
 # Get server IP for display
 SERVER_IP=$(get_server_ip)
@@ -276,9 +288,42 @@ echo "Firewall configured: firewalld is active with ports 80 (HTTP), 443 (HTTPS)
 echo ""
 echo "The radio hosting services (Icecast, Liquidsoap, ezstream, ffmpeg) are installed and ready to be managed by the panel."
 echo ""
-echo "Note: Shoutcast was removed per user request; Icecast and Liquidsoap are installed for modern stack."
+echo "Note: Shoutcast was removed per user request; Liquidsoap is installed for automation."
+echo ""
+echo "==== IMPORTANT NOTE ABOUT ICECAST ===="
+echo "If you saw 'No package icecast available' above, Icecast was not installed via yum."
+echo "This can happen on some RHEL/CentOS/Fedora versions where Icecast isn't in the default/EPEL repos."
+echo ""
+echo "To enable radio streaming features, you must manually install Icecast after this installer completes:"
+echo ""
+echo "1. Install build dependencies:"
+echo "   sudo yum groupinstall \"Development Tools\" -y"
+echo "   sudo yum install -y gcc gcc-c++ make autoconf automake libtool libxml2-devel curl-devel openssl-devel libxslt-devel pcre2-devel libvorbis-devel sqlite-devel wget tar"
+echo ""
+echo "2. Download and compile Icecast:"
+echo "   cd /usr/local/src"
+echo "   wget https://downloads.xiph.org/releases/icecast/icecast-2.5.0.tar.gz"
+echo "   tar -xzf icecast-2.5.0.tar.gz"
+echo "   cd icecast-2.5.0"
+echo "   ./configure"
+echo "   make -j$(nproc)"
+echo "   sudo make install"
+echo ""
+echo "3. Configure Icecast:"
+echo "   sudo mkdir -p /usr/local/etc/icecast"
+echo "   sudo cp conf/icecast.xml.dist /usr/local/etc/icecast/icecast.xml"
+echo ""
+echo "4. Start Icecast:"
+echo "   /usr/local/bin/icecast -c /usr/local/etc/icecast/icecast.xml &"
+echo ""
+echo "5. Open firewall port (if not already open):"
+echo "   sudo firewall-cmd --permanent --add-port=8000/tcp"
+echo "   sudo firewall-cmd --reload"
+echo ""
+echo "Once Icecast is manually installed, all radio streaming features will work in the panel."
+echo "The panel will continue to work for all other hosting features while you set up Icecast manually."
+echo "================================"
 echo ""
 echo "To access phpMyAdmin, visit http://radiohosting.local/phpmyadmin"
 echo ""
 echo "=== End of Installation ==="
-EOF
