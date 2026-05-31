@@ -35,9 +35,18 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
+# ===== REPOSITORY SETUP - MUST RUN FIRST =====
+echo "Setting up repositories..."
+dnf install dnf-plugins-core -y
+/usr/bin/crb enable
+dnf install epel-release -y
+dnf install -y https://download1.rpmfusion.org/free/el/rpmfusion-free-release-9.noarch.rpm
+dnf clean all
+dnf makecache
+
 # Update system
 echo "Updating system packages..."
-yum check-update || true  # yum check-update returns non-zero if updates available
+yum update -y
 
 # Set up firewall (firewalld)
 echo "Setting up firewall with firewalld..."
