@@ -70,12 +70,52 @@ class StreamManager
         ];
     }
 
+    public function getUserStreams($userId)
+    {
+        $streams = $this->db->table('radio_streams')->where('user_id', $userId)->get();
+
+        return array_map(function ($stream) {
+            return $this->presentStream($stream);
+        }, $streams);
+    }
+
+    public function getStream($streamId, $userId = null)
+    {
+        $query = $this->db->table('radio_streams')->where('id', $streamId);
+        if ($userId !== null) {
+            $query->where('user_id', $userId);
+        }
+
+        $stream = $query->first();
+        return $stream ? $this->presentStream($stream) : null;
+    }
+
+    public function startStream($streamId, $userId = null)
+    {
+        $stream = $this->getStream($streamId, $userId);
+        if (!$stream) {
+            throw new \Exception("Stream not found.");
+        }
+
+        $this->startServer($stream['server_type'], $stream['config_path']);
+        $this->db->table('radio_streams')->where('id', $streamId)->update([
+            'status' => 'running',
+            'updated_at' => now(),
+        ]);
+
+        return true;
+    }
+
     /**
      * Stop a stream
      */
-    public function stopStream($streamId)
+    public function stopStream($streamId, $userId = null)
     {
-        $stream = $this->db->table('radio_streams')->where('id', $streamId)->first();
+        $query = $this->db->table('radio_streams')->where('id', $streamId);
+        if ($userId !== null) {
+            $query->where('user_id', $userId);
+        }
+        $stream = $query->first();
 
         if (!$stream) {
             throw new \Exception("Stream not found.");
@@ -93,6 +133,21 @@ class StreamManager
             ]);
 
         return true;
+    }
+
+    protected function presentStream($stream)
+    {
+        return [
+            'id' => $stream->id,
+            'user_id' => $stream->user_id,
+            'server_type' => $stream->server_type,
+            'port' => $stream->port,
+            'config_path' => $stream->config_path,
+            'status' => $stream->status,
+            'listener_count' => $stream->listener_count ?? 0,
+            'bandwidth_used' => $stream->bandwidth_used ?? 0,
+            'mount_point' => '/live',
+        ];
     }
 
     /**
@@ -206,7 +261,7 @@ CONF;
 
         // Execute the command in the background
         // In a real system, we would use a process manager like Supervisor
-        exec("nohug {$command} > /dev/null 2>&1 &");
+        exec("nohup {$command} > /dev/null 2>&1 &");
 
         return $command;
     }

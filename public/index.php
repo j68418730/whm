@@ -7,6 +7,15 @@
 // Define constants
 define('BASE_PATH', realpath(__DIR__.'/../'));
 
+require BASE_PATH . '/core/helpers.php';
+
+spl_autoload_register(function ($class) {
+    $file = BASE_PATH . '/' . str_replace('\\', '/', $class) . '.php';
+    if (is_file($file)) {
+        require $file;
+    }
+});
+
 // Load core classes
 require BASE_PATH . '/core/Application.php';
 require BASE_PATH . '/core/Config.php';
@@ -31,7 +40,7 @@ require BASE_PATH . '/Providers/RadioServiceProvider.php';
 // Load configuration
 $config = require BASE_PATH . '/config/app.php';
 $config['radio'] = require BASE_PATH . '/config/radio.php';
-$config['database'] = require BASE_PATH . '/config/database.php'; // We'll create this
+$config['database'] = require BASE_PATH . '/config/database.php';
 
 // Create and run the application
 $app = new Core\Application(BASE_PATH, $config);

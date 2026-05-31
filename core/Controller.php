@@ -16,8 +16,6 @@ class Controller
 
     protected function view($view, $data = [])
     {
-        // Assuming the view is in the user views by default for user controllers
-        // In a real system, we might have a way to specify admin vs user
         $viewObject = new View($view);
         if (!empty($data)) {
             $viewObject->with($data);

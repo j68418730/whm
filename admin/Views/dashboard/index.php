@@ -3,194 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Radio Hosting Panel</title>
+    <title>Spectre WHM - Hosting & Radio Management</title>
     <link rel="stylesheet" href="/css/admin.css">
-    <style>
-        <?php 
-        // Set CSS variables from theme settings
-        $bgColor = !empty($theme_settings['background']['color']) ? $theme_settings['background']['color'] : '#ffffff';
-        $headerColor = !empty($theme_settings['header']['color']) ? $theme_settings['header']['color'] : '#000000';
-        $footerColor = !empty($theme_settings['footer']['color']) ? $theme_settings['footer']['color'] : '#000000';
-        $primaryColor = !empty($theme_settings['colors']['primary']) ? $theme_settings['colors']['primary'] : '#007bff';
-        $secondaryColor = !empty($theme_settings['colors']['secondary']) ? $theme_settings['colors']['secondary'] : '#6c757d';
-        $headerHeight = !empty($theme_settings['header']['height']) ? $theme_settings['header']['height'] : '60px';
-        $footerHeight = !empty($theme_settings['footer']['height']) ? $theme_settings['footer']['height'] : '40px';
-        ?>
-        :root {
-            --primary-color: <?php echo $primaryColor; ?>;
-            --secondary-color: <?php echo $secondaryColor; ?>;
-            --background-color: <?php echo $bgColor; ?>;
-            --header-color: <?php echo $headerColor; ?>;
-            --footer-color: <?php echo $footerColor; ?>;
-            --header-height: <?php echo $headerHeight; ?>;
-            --footer-height: <?php echo $footerHeight; ?>;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            background-color: var(--background-color);
-            color: #333;
-        }
-        header {
-            background-color: var(--header-color);
-            color: white;
-            height: var(--header-height);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .container {
-            padding: 2rem;
-        }
-        .stats {
-            display: flex;
-            gap: 2rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-        .stat-card {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 1.5rem;
-            flex: 1;
-            min-width: 200px;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .stat-card h3 {
-            margin: 0 0 0.5rem 0;
-            color: var(--primary-color);
-        }
-        .stat-card .value {
-            font-size: 2rem;
-            font-weight: bold;
-        }
-        .nav {
-            background: white;
-            padding: 1rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-        }
-        .nav h2 {
-            margin-top: 0;
-        }
-        .nav ul {
-            list-style: none;
-            padding: 0;
-            display: flex;
-            gap: 2rem;
-            flex-wrap: wrap;
-        }
-        .nav ul li a {
-            text-decoration: none;
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-        .nav ul li a:hover {
-            text-decoration: underline;
-        }
-        footer {
-            background-color: var(--footer-color);
-            color: white;
-            height: var(--footer-height);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-top: 2rem;
-        }
-        .btn {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            background: var(--primary-color);
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            margin-top: 1rem;
-        }
-        .btn:hover {
-            background: #0056b3;
-        }
-        .welcome-message {
-            text-align: center;
-            padding: 2rem;
-        }
-    </style>
 </head>
-<body>
-    <header>
-        <h1>Radio Hosting Panel - Admin Dashboard</h1>
-    </header>
+<body class="whm-body">
+<?php
+$userName = htmlspecialchars($user->name ?? 'Administrator', ENT_QUOTES, 'UTF-8');
+$stats = array_merge([
+    'total_streams' => 0,
+    'active_streams' => 0,
+    'total_listeners' => 0,
+    'bandwidth_used' => 0,
+], $stats ?? []);
 
-    <div class="container">
-        <div class="stats">
-            <div class="stat-card">
-                <h3>Total Streams</h3>
-                <div class="value"><?php echo $stats['total_streams']; ?></div>
+$moduleGroups = [
+    'Account Functions' => [
+        ['Create a New Account', '/admin/account'],
+        ['List Accounts', '/admin/account'],
+        ['Suspend / Unsuspend Accounts', '/admin/account'],
+        ['Feature Manager', '/admin/userfeatures'],
+    ],
+    'Reseller Center' => [
+        ['Manage Resellers', '/admin/reseller'],
+        ['Assign Account Ownership', '/admin/reseller'],
+        ['Reseller Privileges', '/admin/reseller'],
+        ['Branding', '/admin/branding'],
+    ],
+    'Packages & Billing' => [
+        ['Package Manager', '/admin/packages'],
+        ['Upgrade / Downgrade Accounts', '/admin/packages'],
+        ['API Access', '/admin/api'],
+        ['Licensing', '/admin/licensing'],
+    ],
+    'Radio Management' => [
+        ['Radio Dashboard', '/admin/radio_dashboard'],
+        ['Manage Streams', '/admin/streams'],
+        ['Create Stream', '/admin/streams/create'],
+        ['Radio Settings', '/admin/radiosettings'],
+    ],
+    'Server Configuration' => [
+        ['Server Overview', '/admin/server'],
+        ['Apache Configuration', '/admin/apache'],
+        ['PHP Management', '/admin/php'],
+        ['MySQL Databases', '/admin/mysql'],
+    ],
+    'Security & Operations' => [
+        ['SSL/TLS', '/admin/ssl'],
+        ['Security Center', '/admin/security'],
+        ['Backup System', '/admin/backup'],
+        ['Monitoring', '/admin/monitoring'],
+    ],
+    'Developer Tools' => [
+        ['Terminal', '/admin/terminal'],
+        ['Git Deployment', '/admin/git'],
+        ['Containers', '/admin/container'],
+        ['Installers', '/admin/installers'],
+    ],
+];
+?>
+    <main class="whm-shell">
+        <aside class="whm-sidebar">
+            <div class="brand">
+                <span class="brand-mark">S</span>
+                <div>
+                    <strong>Spectre WHM</strong>
+                    <small>Hosting + Radio</small>
+                </div>
             </div>
-            <div class="stat-card">
-                <h3>Active Streams</h3>
-                <div class="value"><?php echo $stats['active_streams']; ?></div>
-            </div>
-            <div class="stat-card">
-                <h3>Total Listeners</h3>
-                <div class="value"><?php echo $stats['total_listeners']; ?></div>
-            </div>
-            <div class="stat-card">
-                <h3>Bandwidth Used</h3>
-                <div class="value"><?php echo number_format($stats['bandwidth_used'] / (1024*1024), 2); ?> MB</div>
-            </div>
-        </div>
+            <a href="/admin/dashboard" class="active">Dashboard</a>
+            <a href="/admin/account">Account Functions</a>
+            <a href="/admin/reseller">Reseller Center</a>
+            <a href="/admin/packages">Packages</a>
+            <a href="/admin/streams">Radio Streams</a>
+            <a href="/admin/radio_dashboard">Radio Dashboard</a>
+            <a href="/admin/server">Server Overview</a>
+            <a href="/admin/security">Security Center</a>
+            <a href="/admin/backup">Backups</a>
+            <a href="/admin/logout">Logout</a>
+        </aside>
 
-        <nav class="nav">
-            <h2>Admin Navigation</h2>
-            <ul>
-                <li><a href="/admin/dashboard">SERVER OVERVIEW</a></li>
-                <li><a href="/admin/account">ACCOUNT FUNCTIONS</a></li>
-                <li><a href="/admin/packages">PACKAGE MANAGEMENT</a></li>
-                <li><a href="/admin/reseller">RESELLER MANAGEMENT</a></li>
-                <li><a href="/admin/dns">DNS FUNCTIONS</a></li>
-                <li><a href="/admin/email">EMAIL ADMINISTRATION</a></li>
-                <li><a href="/admin/apache">APACHE CONFIGURATION</a></li>
-                <li><a href="/admin/php">PHP MANAGEMENT</a></li>
-                <li><a href="/admin/mysql">MYSQL / DATABASE MANAGEMENT</a></li>
-                <li><a href="/admin/ftp">FTP MANAGEMENT</a></li>
-                <li><a href="/admin/ssl">SSL/TLS MANAGEMENT</a></li>
-                <li><a href="/admin/security">SECURITY CENTER</a></li>
-                <li><a href="/admin/backup">BACKUP SYSTEM</a></li>
-                <li><a href="/admin/server">SERVER CONFIGURATION</a></li>
-                <li><a href="/admin/network">NETWORK FUNCTIONS</a></li>
-                <li><a href="/admin/monitoring">MONITORING SYSTEM</a></li>
-                <li><a href="/admin/software">SOFTWARE MANAGEMENT</a></li>
-                <li><a href="/admin/api">API SYSTEM</a></li>
-                <li><a href="/admin/branding">BRANDING SYSTEM</a></li>
-                <li><a href="/admin/clustering">CLUSTERING & HIGH AVAILABILITY</a></li>
-                <li><a href="/admin/filesystem">FILESYSTEM & USER MANAGEMENT</a></li>
-                <li><a href="/admin/terminal">TERMINAL & SHELL ACCESS</a></li>
-                <li><a href="/admin/metrics">METRICS & ANALYTICS</a></li>
-                <li><a href="/admin/installers">INSTALLERS & APPLICATIONS</a></li>
-                <li><a href="/admin/userfeatures">USER FEATURE MANAGEMENT</a></li>
-                <li><a href="/admin/cron">CRON & TASK AUTOMATION</a></li>
-                <li><a href="/admin/git">GIT & DEPLOYMENT</a></li>
-                <li><a href="/admin/container">CONTAINER & VIRTUALIZATION SUPPORT</a></li>
-                <li><a href="/admin/licensing">LICENSING SYSTEM</a></li>
-                <li><a href="/admin/radiosettings">SONI RADIO</a></li>
-                <li><a href="/admin/radio_dashboard">RADIO DASHBOARD</a></li>
-                <li><a href="/admin/logout">Logout</a></li>
-            </ul>
-        </nav>
+        <section class="whm-content">
+            <div class="topbar">
+                <div>
+                    <span class="eyebrow">Root Administrator</span>
+                    <h1>WHM Control Center</h1>
+                    <p>Welcome, <?php echo $userName; ?>. Manage hosting accounts, resellers, packages, services, and radio streaming from one panel.</p>
+                </div>
+                <div class="quick-actions">
+                    <a class="btn" href="/admin/account">Create Account</a>
+                    <a class="btn btn-secondary" href="/admin/streams/create">Create Radio Stream</a>
+                </div>
+            </div>
 
-        <div class="welcome-message">
-            <h2>Welcome to the Radio Hosting Panel Admin Dashboard</h2>
-            <p>Welcome, <?php echo htmlspecialchars($user->name); ?>! From here you can manage all aspects of the radio hosting system.</p>
-            <a href="/admin/theme" class="btn">Customize Your Theme</a>
-            <a href="/admin/streams" class="btn">Manage Radio Streams</a>
-        </div>
-    </div>
+            <div class="stats whm-stats">
+                <div class="stat-card">
+                    <h3>Hosting Accounts</h3>
+                    <div class="value">128</div>
+                    <p>Active cPanel-style accounts</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Resellers</h3>
+                    <div class="value">12</div>
+                    <p>Delegated account owners</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Radio Streams</h3>
+                    <div class="value"><?php echo (int)$stats['total_streams']; ?></div>
+                    <p><?php echo (int)$stats['active_streams']; ?> currently active</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Listeners</h3>
+                    <div class="value"><?php echo (int)$stats['total_listeners']; ?></div>
+                    <p><?php echo number_format($stats['bandwidth_used'] / (1024 * 1024), 2); ?> MB used</p>
+                </div>
+            </div>
 
-    <footer>
-        <p>&copy; <?php echo date('Y'); ?> Radio Hosting Panel. All rights reserved.</p>
-    </footer>
+            <section class="radio-command">
+                <div>
+                    <span class="eyebrow">Built-In Radio Hosting</span>
+                    <h2>Icecast, AutoDJ, DJs, playlists, transcoding, and reseller limits</h2>
+                    <p>Radio is treated as a native hosting feature, so admins and resellers can provision stations alongside normal web hosting accounts.</p>
+                </div>
+                <div class="radio-actions">
+                    <a class="btn" href="/admin/radio_dashboard">Open Radio Dashboard</a>
+                    <a class="btn btn-secondary" href="/admin/radiosettings">Global Radio Settings</a>
+                </div>
+            </section>
+
+            <div class="module-grid">
+                <?php foreach ($moduleGroups as $group => $links): ?>
+                    <section class="module-card">
+                        <h2><?php echo htmlspecialchars($group, ENT_QUOTES, 'UTF-8'); ?></h2>
+                        <div class="module-links">
+                            <?php foreach ($links as $link): ?>
+                                <a href="<?php echo htmlspecialchars($link[1], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($link[0], ENT_QUOTES, 'UTF-8'); ?></a>
+                            <?php endforeach; ?>
+                        </div>
+                    </section>
+                <?php endforeach; ?>
+            </div>
+        </section>
+    </main>
 </body>
 </html>
