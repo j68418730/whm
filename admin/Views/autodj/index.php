@@ -209,25 +209,25 @@
         <div class="stats-grid">
             <div class="stat-card">
                 <h3>🎵 Total Tracks</h3>
-                <div class="value><?php echo $autodjStats['total_tracks']; ?></div>
+                <div class="value"><?php echo $autodjStats['total_tracks']; ?></div>
                 <div class="label">Music tracks in library</div>
             </div>
 
             <div class="stat-card">
                 <h3>📋 Total Playlists</h3>
-                <div class="value><?php echo $autodjStats['total_playlists']; ?></div>
+                <div class="value"><?php echo $autodjStats['total_playlists']; ?></div>
                 <div class="label">Playlists created</div>
             </div>
 
             <div class="stat-card">
                 <h3>⏰ Scheduled Playlists</h3>
-                <div class="value><?php echo $autodjStats['scheduled_playlists']; ?></div>
+                <div class="value"><?php echo $autodjStats['scheduled_playlists']; ?></div>
                 <div class="label">Playlists with active schedules</div>
             </div>
 
             <div class="stat-card">
                 <h3>💾 Storage Used</h3>
-                <div class="value><?php echo $autodjStats['storage_used']; ?> GB</div>
+                <div class="value"><?php echo $autodjStats['storage_used']; ?> GB</div>
                 <div class="label">Disk space used by music library</div>
             </div>
         </div>

@@ -8,28 +8,42 @@ namespace Core;
 
 class Application
 {
+    protected static $instance;
     protected $config = [];
     protected $services = [];
     protected $router;
     protected $basePath;
 
-    public function __construct($basePath, $configPath)
+    public function __construct($basePath, $config)
     {
+        self::$instance = $this;
         $this->basePath = $basePath;
-        $this->loadConfig($configPath);
+        $this->loadConfig($config);
         $this->registerCoreServices();
         $this->boot();
     }
 
-    protected function loadConfig($configPath)
+    public static function getInstance()
     {
-        $this->config = require $configPath;
+        return self::$instance;
+    }
+
+    protected function loadConfig($config)
+    {
+        $this->config = is_array($config) ? $config : require $config;
     }
 
     protected function registerCoreServices()
     {
+        $this->services['config'] = new \Core\Config($this->config);
+
+        $dbConfig = $this->config['database'] ?? [];
+        if (isset($dbConfig['connections']['mysql'])) {
+            $dbConfig = $dbConfig['connections']['mysql'];
+        }
+
         // Register core services
-        $this->services['db'] = new \Core\Database($this->config['database']);
+        $this->services['db'] = new \Core\Database($dbConfig);
         $this->services['request'] = new \Core\Request();
         $this->services['response'] = new \Core\Response();
         $this->services['session'] = new \Core\Session();
@@ -53,14 +67,14 @@ class Application
     protected function boot()
     {
         // Load service providers
-        foreach ($this->config['providers'] as $provider) {
+        foreach (($this->config['providers'] ?? []) as $provider) {
             $instance = new $provider($this);
             $instance->register();
             $instance->boot();
         }
         
         // Boot radio service provider if enabled
-        if ($this->config['radio.global_enabled']) {
+        if (($this->config['radio']['global_enabled'] ?? false) && !in_array(\Providers\RadioServiceProvider::class, $this->config['providers'] ?? [], true)) {
             $radioProvider = new \Providers\RadioServiceProvider($this);
             $radioProvider->register();
             $radioProvider->boot();

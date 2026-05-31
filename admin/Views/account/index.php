@@ -208,13 +208,13 @@
 
             <div class="stat-card">
                 <h3>⏸️ Suspended Accounts</h3>
-                <div class="value><?php echo $accountsStats['suspended_accounts']; ?></div>
+                <div class="value"><?php echo $accountsStats['suspended_accounts']; ?></div>
                 <div class="label">Temporarily suspended accounts</div>
             </div>
 
             <div class="stat-card">
                 <h3>🗑️ Terminated Accounts</h3>
-                <div class="value><?php echo $accountsStats['terminated_accounts']; ?></div>
+                <div class="value"><?php echo $accountsStats['terminated_accounts']; ?></div>
                 <div class="label">Permanently terminated accounts</div>
             </div>
         </div>

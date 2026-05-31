@@ -213,19 +213,19 @@
 
             <div class="stat-card">
                 <h3>💾 Disk Usage</h3>
-                <div class="value><?php echo $serverStats['disk_usage']; ?>%</div>
+                <div class="value"><?php echo $serverStats['disk_usage']; ?>%</div>
                 <div class="label">Storage utilization</div>
             </div>
 
             <div class="stat-card">
                 <h3>🌐 Network Usage</h3>
-                <div class="value><?php echo $serverStats['network_usage']; ?> Mbps</div>
+                <div class="value"><?php echo $serverStats['network_usage']; ?> Mbps</div>
                 <div class="label">Current network throughput</div>
             </div>
 
             <div class="stat-card">
                 <h3>👥 Active Accounts</h3>
-                <div class="value><?php echo $serverStats['active_accounts']; ?></div>
+                <div class="value"><?php echo $serverStats['active_accounts']; ?></div>
                 <div class="label">Currently active hosting accounts</div>
             </div>
         </div>
@@ -255,7 +255,7 @@
 
             <div class="stat-card">
                 <h3>🔄 Update Alerts</h3>
-                <div class="value><?php echo $serverStats['update_alerts']; ?></div>
+                <div class="value"><?php echo $serverStats['update_alerts']; ?></div>
                 <div class="label">Available system updates</div>
             </div>
         </div>

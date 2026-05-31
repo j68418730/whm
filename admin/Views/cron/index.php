@@ -192,25 +192,25 @@
         <div class="stats-grid">
             <div class="stat-card">
                 <h3>⏰ Total Cron Jobs</h3>
-                <div class="value><?php echo $cronStats['total_cron_jobs']; ?></div>
+                <div class="value"><?php echo $cronStats['total_cron_jobs']; ?></div>
                 <div class="label">All cron jobs configured</div>
             </div>
 
             <div class="stat-card">
                 <h3>✅ Active Cron Jobs</h3>
-                <div class="value><?php echo $cronStats['active_cron_jobs']; ?></div>
+                <div class="value"><?php echo $cronStats['active_cron_jobs']; ?></div>
                 <div class="label">Currently active cron jobs</div>
             </div>
 
             <div class="stat-card">
                 <h3>❌ Failed Cron Jobs</h3>
-                <div class="value><?php echo $cronStats['failed_cron_jobs']; ?></div>
+                <div class="value"><?php echo $cronStats['failed_cron_jobs']; ?></div>
                 <div class="label">Cron jobs that failed on last run</div>
             </div>
 
             <div class="stat-card">
                 <h3>🕒 Last Run</h3>
-                <div class="value><?php echo $cronStats['last_run']; ?></div>
+                <div class="value"><?php echo $cronStats['last_run']; ?></div>
                 <div class="label">Most recent cron job execution</div>
             </div>
         </div>

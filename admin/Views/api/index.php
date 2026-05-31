@@ -192,25 +192,25 @@
         <div class="stats-grid">
             <div class="stat-card">
                 <h3>🔑 Total API Tokens</h3>
-                <div class="value><?php echo $apiStats['total_api_tokens']; ?></div>
+                <div class="value"><?php echo $apiStats['total_api_tokens']; ?></div>
                 <div class="label">All API tokens created</div>
             </div>
 
             <div class="stat-card">
                 <h3>✅ Active API Tokens</h3>
-                <div class="value><?php echo $apiStats['active_api_tokens']; ?></div>
+                <div class="value"><?php echo $apiStats['active_api_tokens']; ?></div>
                 <div class="label">Currently active API tokens</div>
             </div>
 
             <div class="stat-card">
                 <h3>📡 API Requests Today</h3>
-                <div class="value><?php echo $apiStats['api_requests_today']; ?></div>
+                <div class="value"><?php echo $apiStats['api_requests_today']; ?></div>
                 <div class="label">API requests processed today</div>
             </div>
 
             <div class="stat-card">
                 <h3>🚫 Blocked Requests</h3>
-                <div class="value><?php echo $apiStats['blocked_api_requests']; ?></div>
+                <div class="value"><?php echo $apiStats['blocked_api_requests']; ?></div>
                 <div class="label">Blocked or denied API requests</div>
             </div>
         </div>

@@ -19,7 +19,7 @@ class Database
         $dsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['database']};charset={$config['charset']}";
         $options = [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ,
             PDO::ATTR_EMULATE_PREPARES   => false,
         ];
 
@@ -53,7 +53,7 @@ class Database
         return (int)$this->pdo->lastInsertId();
     }
 
-    public function where($column, $operator = null, $value = null)
+    public function where($column = null, $operator = null, $value = null)
     {
         // Simplified where - in a real system we would build a query builder
         // For now, we'll just return a mock object that can chain
@@ -70,6 +70,10 @@ class Database
 
             public function where($column, $operator = null, $value = null)
             {
+                if ($column === null) {
+                    return $this;
+                }
+
                 if (func_num_args() === 2) {
                     $value = $operator;
                     $operator = '=';
@@ -166,7 +170,7 @@ class Database
             public function value($column)
             {
                 $result = $this->first();
-                return $result[$column] ?? null;
+                return $result->{$column} ?? null;
             }
         };
     }

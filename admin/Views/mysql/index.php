@@ -204,25 +204,25 @@
 
             <div class="stat-card">
                 <h3>👥 Total DB Users</h3>
-                <div class="value><?php echo $mysqlStats['total_db_users']; ?></div>
+                <div class="value"><?php echo $mysqlStats['total_db_users']; ?></div>
                 <div class="label">Total MySQL users</div>
             </div>
 
             <div class="stat-card">
                 <h3>💾 Database Size</h3>
-                <div class="value><?php echo $mysqlStats['database_size']; ?> GB</div>
+                <div class="value"><?php echo $mysqlStats['database_size']; ?> GB</div>
                 <div class="label">Total database storage used</div>
             </div>
 
             <div class="stat-card">
                 <h3>⚡ Queries/sec</h3>
-                <div class="value><?php echo $mysqlStats['queries_per_second']; ?></div>
+                <div class="value"><?php echo $mysqlStats['queries_per_second']; ?></div>
                 <div class="label">Average queries per second</div>
             </div>
 
             <div class="stat-card">
                 <h3>🐢 Slow Queries</h3>
-                <div class="value><?php echo $mysqlStats['slow_queries']; ?></div>
+                <div class="value"><?php echo $mysqlStats['slow_queries']; ?></div>
                 <div class="label">Slow queries detected</div>
             </div>
         </div>

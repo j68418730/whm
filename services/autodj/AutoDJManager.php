@@ -53,6 +53,16 @@ class AutoDJManager
         return $autodjId;
     }
 
+    public function getByStreamId($streamId)
+    {
+        return $this->db->table('radio_autodj')->where('stream_id', $streamId)->first();
+    }
+
+    public function getById($autodjId)
+    {
+        return $this->db->table('radio_autodj')->where('id', $autodjId)->first();
+    }
+
     /**
      * Disable AutoDJ for a stream
      */
@@ -192,7 +202,7 @@ CONF;
         $command = "{$binary} -c {$configPath}";
 
         // Execute the command in the background
-        exec("nohug {$command} > /dev/null 2>&1 &");
+        exec("nohup {$command} > /dev/null 2>&1 &");
 
         return $command;
     }

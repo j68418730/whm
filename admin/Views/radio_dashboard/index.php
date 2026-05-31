@@ -190,7 +190,7 @@
 
             <div class="stat-card">
                 <h3>📈 Peak Listeners Today</h3>
-                <div class="value><?php echo $radioStats['peak_listeners_today']; ?></div>
+                <div class="value"><?php echo $radioStats['peak_listeners_today']; ?></div>
                 <div class="label">Highest listener count today</div>
             </div>
 
@@ -211,25 +211,25 @@
             <!-- System Resource Stats -->
             <div class="stat-card">
                 <h3>💻 CPU Usage</h3>
-                <div class="value><?php echo $radioStats['cpu_usage']; ?>%</div>
+                <div class="value"><?php echo $radioStats['cpu_usage']; ?>%</div>
                 <div class="label">Radio server CPU utilization</div>
             </div>
 
             <div class="stat-card">
                 <h3>💾 RAM Usage</h3>
-                <div class="value><?php echo $radioStats['ram_usage']; ?>%</div>
+                <div class="value"><?php echo $radioStats['ram_usage']; ?>%</div>
                 <div class="label">Radio server memory utilization</div>
             </div>
 
             <div class="stat-card">
                 <h3>🌐 Bandwidth Usage</h3>
-                <div class="value><?php echo $radioStats['bandwidth_usage']; ?> Mbps</div>
+                <div class="value"><?php echo $radioStats['bandwidth_usage']; ?> Mbps</div>
                 <div class="label">Current network throughput</div>
             </div>
 
             <div class="stat-card">
                 <h3>⏱️ Stream Uptime</h3>
-                <div class="value><?php echo $radioStats['stream_uptime']; ?></div>
+                <div class="value"><?php echo $radioStats['stream_uptime']; ?></div>
                 <div class="label">How long stream has been running</div>
             </div>
         </div>
@@ -238,13 +238,13 @@
             <!-- Stream Count Stats -->
             <div class="stat-card">
                 <h3>📊 Total Streams</h3>
-                <div class="value><?php echo $radioStats['total_streams']; ?></div>
+                <div class="value"><?php echo $radioStats['total_streams']; ?></div>
                 <div class="label">Total radio streams configured</div>
             </div>
 
             <div class="stat-card">
                 <h3>🟢 Active Streams</h3>
-                <div class="value><?php echo $radioStats['active_streams']; ?></div>
+                <div class="value"><?php echo $radioStats['active_streams']; ?></div>
                 <div class="label">Currently active streams</div>
             </div>
         </div>

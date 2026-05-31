@@ -221,19 +221,19 @@
 
             <div class="stat-card">
                 <h3>📡 Total Streams</h3>
-                <div class="value><?php echo $radioStats['total_streams']; ?></div>
+                <div class="value"><?php echo $radioStats['total_streams']; ?></div>
                 <div class="label">Total radio streams created</div>
             </div>
 
             <div class="stat-card">
                 <h3>🟢 Active Streams</h3>
-                <div class="value><?php echo $radioStats['active_streams']; ?></div>
+                <div class="value"><?php echo $radioStats['active_streams']; ?></div>
                 <div class="label">Currently active streams</div>
             </div>
 
             <div class="stat-card">
                 <h3>🤖 AutoDJ Status</h3>
-                <div class="value><?php echo $radioStats['auto_dj_enabled'] ? 'Enabled' : 'Disabled'; ?></div>
+                <div class="value"><?php echo $radioStats['auto_dj_enabled'] ? 'Enabled' : 'Disabled'; ?></div>
                 <div class="label">Automatic DJ functionality</div>
             </div>
         </div>
