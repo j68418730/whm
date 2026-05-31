@@ -200,7 +200,7 @@ echo "Setting up panel directory at $PANEL_DIR..."
 mkdir -p $PANEL_DIR || { echo "Failed to create panel directory"; exit 1; }
 
 # Copy the panel files
-SOURCE_DIR="/tmp/radiohosting_panel/whm"
+SOURCE_DIR="$SCRIPT_DIR"
 
 if [ -d "$SOURCE_DIR" ]; then
   echo "Copying panel files from $SOURCE_DIR to $PANEL_DIR..."
@@ -355,17 +355,6 @@ EZSTREAM_INSTALLED=0
 FFMPEG_INSTALLED=0
 PHPMYADMIN_INSTALLED=0
 
-# Initialize installation tracking variables
-HTTPD_INSTALLED=0
-MARIADB_INSTALLED=0
-PHP_INSTALLED=0
-FIREWALLD_INSTALLED=0
-ICECAST_INSTALLED=0
-LIQUIDSOAP_INSTALLED=0
-EZSTREAM_INSTALLED=0
-FFMPEG_INSTALLED=0
-PHPMYADMIN_INSTALLED=0
-
 # Final instructions
 echo ""
 echo "=== Installation Complete ==="
@@ -378,8 +367,8 @@ echo ""
 echo "Please note the database credentials above. You will need them for the panel configuration."
 echo ""
 echo "Next steps:"
-echo "1. Transfer the panel code to the server if you haven't already (to /tmp/radiohosting_panel/whm)."
-echo "2. Run this installer again to copy the files and complete the setup."
+echo "1. If you haven't already, ensure the panel code is in the same directory as this installer."
+echo "2. Run this installer to copy the files and complete the setup."
 echo "3. After installation, visit http://$SERVER_IP/ in a web browser to access the panel."
 echo "4. Log in with the system user 'radiopanel' and the password shown above."
 echo "   IMPORTANT: Change the password after first login using 'passwd radiopanel' and then update the hash file."
