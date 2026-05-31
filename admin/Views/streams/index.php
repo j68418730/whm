@@ -196,19 +196,19 @@
         <div class="stats-grid">
             <div class="stat-card">
                 <h3>📊 Total Streams</h3>
-                <div class="value><?php echo $streamsStats['total_streams']; ?></div>
+                <div class="value"><?php echo $streamsStats['total_streams']; ?></div>
                 <div class="label">Total streams configured</div>
             </div>
 
             <div class="stat-card">
                 <h3>🟢 Active Streams</h3>
-                <div class="value><?php echo $streamsStats['active_streams']; ?></div>
+                <div class="value"><?php echo $streamsStats['active_streams']; ?></div>
                 <div class="label">Currently active streams</div>
             </div>
 
             <div class="stat-card">
                 <h3>⏸️ Suspended Streams</h3>
-                <div class="value><?php echo $streamsStats['suspended_streams']; ?></div>
+                <div class="value"><?php echo $streamsStats['suspended_streams']; ?></div>
                 <div class="label">Temporarily suspended streams</div>
             </div>
         </div>

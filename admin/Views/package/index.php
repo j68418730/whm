@@ -191,13 +191,13 @@
         <div class="stats-grid">
             <div class="stat-card">
                 <h3>📦 Total Packages</h3>
-                <div class="value><?php echo $packagesStats['total_packages']; ?></div>
+                <div class="value"><?php echo $packagesStats['total_packages']; ?></div>
                 <div class="label">All hosting packages</div>
             </div>
 
             <div class="stat-card">
                 <h3>✅ Active Packages</h3>
-                <div class="value><?php echo $packagesStats['active_packages']; ?></div>
+                <div class="value"><?php echo $packagesStats['active_packages']; ?></div>
                 <div class="label">Currently available packages</div>
             </div>
         </div>

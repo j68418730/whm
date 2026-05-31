@@ -231,3 +231,180 @@ footer p {
         margin: 0 0.5rem;
     }
 }
+
+/* WHM/cPanel-style shell */
+.whm-body {
+    background: #07111f;
+    color: #d8e7f7;
+}
+
+.whm-shell {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    min-height: 100vh;
+}
+
+.whm-sidebar {
+    background: #0b1728;
+    border-right: 1px solid rgba(0, 212, 255, 0.2);
+    padding: 18px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 18px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brand-mark {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #00d4ff;
+    border-radius: 8px;
+    color: #00d4ff;
+    font-weight: 800;
+    box-shadow: 0 0 18px rgba(0, 212, 255, 0.35);
+}
+
+.brand strong,
+.brand small {
+    display: block;
+}
+
+.brand small,
+.eyebrow {
+    color: #7ea4c7;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.whm-sidebar a {
+    display: block;
+    color: #c9ddf3;
+    text-decoration: none;
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+}
+
+.whm-sidebar a:hover,
+.whm-sidebar a.active {
+    background: rgba(0, 212, 255, 0.12);
+    color: #fff;
+}
+
+.whm-content {
+    padding: 28px;
+}
+
+.topbar,
+.module-header,
+.radio-command {
+    background: #0d1b2e;
+    border: 1px solid rgba(0, 212, 255, 0.18);
+    border-radius: 8px;
+    padding: 22px;
+    margin-bottom: 22px;
+}
+
+.topbar,
+.radio-command {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+}
+
+.topbar h1,
+.module-header h1,
+.radio-command h2 {
+    color: #fff;
+    margin: 4px 0 8px;
+}
+
+.topbar p,
+.radio-command p,
+.module-header p,
+.module-card p,
+.stat-card p {
+    color: #9bb4cf;
+}
+
+.quick-actions,
+.radio-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.whm-stats .stat-card,
+.module-card {
+    background: #0d1b2e;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+    color: #d8e7f7;
+}
+
+.whm-stats .stat-card h3,
+.module-card h2,
+.module-card h3 {
+    color: #00d4ff;
+}
+
+.whm-stats .stat-card .value {
+    color: #fff;
+}
+
+.module-grid,
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.module-links {
+    display: grid;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.module-links a {
+    color: #d8e7f7;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    padding: 10px;
+    text-decoration: none;
+}
+
+.module-links a:hover {
+    border-color: rgba(0, 212, 255, 0.45);
+    color: #fff;
+}
+
+@media (max-width: 900px) {
+    .whm-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .whm-sidebar {
+        position: static;
+        height: auto;
+    }
+
+    .topbar,
+    .radio-command {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}

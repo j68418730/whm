@@ -91,4 +91,22 @@ class TranscodingManager
     {
         return $this->config->get('radio.transcoding.enabled');
     }
+
+    public function getOptions()
+    {
+        $formats = $this->config->get('radio.transcoding.supported_formats', []);
+        $bitrates = $this->config->get('radio.transcoding.default_bitrates', []);
+        $options = [];
+
+        foreach ($formats as $format) {
+            foreach ($bitrates as $bitrate) {
+                $options[] = [
+                    'format' => $format,
+                    'bitrate' => $bitrate,
+                ];
+            }
+        }
+
+        return $options;
+    }
 }

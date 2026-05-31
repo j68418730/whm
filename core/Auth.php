@@ -40,6 +40,7 @@ class Auth
                 'id' => $admin->id,
                 'email' => $admin->email,
                 'name' => $admin->name,
+                'theme_settings' => $admin->theme_settings ?? '{}',
                 'is_admin' => true
             ];
             $this->session->put('user', $user);

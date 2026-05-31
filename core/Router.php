@@ -31,6 +31,9 @@ class Router
     public function dispatch()
     {
         $uri = $this->request->path();
+        if ($uri === '') {
+            $uri = '/';
+        }
         $method = $this->request->method();
 
         if (isset($this->routes[$method][$uri])) {
@@ -38,8 +41,9 @@ class Router
         }
 
         // Try to match with parameters (simplified)
-        foreach ($this->routes[$method] as $route => $action) {
-            if (preg_match('#^' . $route . '$#', $uri, $matches)) {
+        foreach (($this->routes[$method] ?? []) as $route => $action) {
+            $pattern = preg_replace('#\{[A-Za-z_][A-Za-z0-9_]*\}#', '([^/]+)', $route);
+            if (preg_match('#^' . $pattern . '$#', $uri, $matches)) {
                 array_shift($matches); // Remove the full match
                 return $this->callAction($action, $matches);
             }
@@ -74,6 +78,16 @@ class Router
         }
 
         // Call the method with parameters
-        return call_user_func_array([$controller, $method], $parameters);
+        $result = call_user_func_array([$controller, $method], $parameters);
+
+        if ($result instanceof Response) {
+            return $result->send();
+        }
+
+        if (is_string($result)) {
+            return $this->response->setContent($result)->send();
+        }
+
+        return $result;
     }
 }

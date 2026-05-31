@@ -205,7 +205,7 @@
 
             <div class="stat-card">
                 <h3>📋 Total DNS Records</h3>
-                <div class="value><?php echo $dnsStats['total_records']; ?></div>
+                <div class="value"><?php echo $dnsStats['total_records']; ?></div>
                 <div class="label">All DNS records across zones</div>
             </div>
         </div>

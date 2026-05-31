@@ -196,19 +196,19 @@
         <div class="stats-grid">
             <div class="stat-card">
                 <h3>👨‍💼 Total DJs</h3>
-                <div class="value><?php echo $djStats['total_djs']; ?></div>
+                <div class="value"><?php echo $djStats['total_djs']; ?></div>
                 <div class="label">Total DJs registered</div>
             </div>
 
             <div class="stat-card">
                 <h3>🟢 Active DJs</h3>
-                <div class="value><?php echo $djStats['active_djs']; ?></div>
+                <div class="value"><?php echo $djStats['active_djs']; ?></div>
                 <div class="label">DJs currently active</div>
             </div>
 
             <div class="stat-card">
                 <h3>⏰ Scheduled DJs</h3>
-                <div class="value><?php echo $djStats['scheduled_djs']; ?></div>
+                <div class="value"><?php echo $djStats['scheduled_djs']; ?></div>
                 <div class="label">DJs with scheduled shows</div>
             </div>
         </div>
