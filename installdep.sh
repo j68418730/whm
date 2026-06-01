@@ -83,8 +83,8 @@ echo ""
 echo "[7/10] Installing build dependencies..."
 
 sudo dnf install -y \
-pkgconfig \
-pkgconfig-glib2 \
+pkgconf-pkg-config \
+glib2-devel \
 libxml2-devel \
 libxslt-devel \
 libshout-devel \
