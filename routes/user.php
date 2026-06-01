@@ -6,6 +6,11 @@
 use Core\Request;
 use Core\Response;
 
+// Ensure $router is available (set by caller or resolve from Application)
+if (!isset($router)) {
+    $router = \Core\Application::getInstance()->get('router');
+}
+
 // User Radio Routes
 $router->get('/radio', 'User\Controllers\RadioController@index');
 $router->get('/radio/create', 'User\Controllers\RadioController@create');

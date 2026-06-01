@@ -24,9 +24,13 @@ class AutoDJManager
     /**
      * Enable AutoDJ for a stream
      */
-    public function enableAutodj($streamId)
+    public function enableAutodj($streamId, $userId = null)
     {
-        $stream = $this->db->table('radio_streams')->where('id', $streamId)->first();
+        $query = $this->db->table('radio_streams')->where('id', $streamId);
+        if ($userId !== null) {
+            $query->where('user_id', $userId);
+        }
+        $stream = $query->first();
 
         if (!$stream) {
             throw new \Exception("Stream not found.");
@@ -38,13 +42,17 @@ class AutoDJManager
             return $existing->id;
         }
 
+        // Generate a plaintext password for AutoDJ (ezstream needs plaintext)
+        $autodjPassword = $this->generatePassword();
+
         // Create AutoDJ configuration
-        $configPath = $this->generateAutodjConfig($streamId);
+        $configPath = $this->generateAutodjConfig($streamId, $autodjPassword);
 
         // Save AutoDJ record
         $autodjId = $this->db->table('radio_autodj')->insertGetId([
             'stream_id' => $streamId,
             'config_path' => $configPath,
+            'autodj_password' => $autodjPassword,
             'status' => 'stopped',
             'created_at' => now(),
             'updated_at' => now(),
@@ -66,8 +74,14 @@ class AutoDJManager
     /**
      * Disable AutoDJ for a stream
      */
-    public function disableAutodj($streamId)
+    public function disableAutodj($streamId, $userId = null)
     {
+        if ($userId !== null) {
+            $stream = $this->db->table('radio_streams')->where('id', $streamId)->where('user_id', $userId)->first();
+            if (!$stream) {
+                throw new \Exception("Stream not found.");
+            }
+        }
         $autodj = $this->db->table('radio_autodj')->where('stream_id', $streamId)->first();
 
         if (!$autodj) {
@@ -139,28 +153,19 @@ class AutoDJManager
     /**
      * Generate AutoDJ configuration file (for ezstream)
      */
-    protected function generateAutodjConfig($streamId)
+    protected function generateAutodjConfig($streamId, $autodjPassword)
     {
         $stream = $this->db->table('radio_streams')->where('id', $streamId)->first();
-        $configDir = storage_path("radio/autodj/{$stream->user_id}");
+        $username = $this->getUsernameById($stream->user_id);
+        $configDir = "/home/{$username}/radio/autodj";
         if (!is_dir($configDir)) {
             mkdir($configDir, 0755, true);
         }
 
         $configFile = "{$configDir}/autodj_{$streamId}.cfg";
 
-        // Get stream details for mount point and password
-        $mountPoint = "/live"; // This could be configurable
-        $password = $this->db->table('radio_streams')
-            ->where('id', $streamId)
-            ->value('password'); // Note: This is hashed, but ezstream needs plaintext. We'll need to handle this differently.
-
-        // For security, we should store a separate plaintext password for AutoDJ or use a token.
-        // For simplicity in this example, we'll assume we have a way to get the plaintext.
-        // In reality, we might store a separate AutoDJ password or use a different mechanism.
-
-        // Since we don't have the plaintext password in this example, we'll note that this is a simplification.
-        // In a real system, you would have a secure way to retrieve the password for AutoDJ.
+        // Get stream details for mount point
+        $mountPoint = "/live";
 
         $config = <<<CONF
 [input]
@@ -176,7 +181,7 @@ format = mp3
 bitrate = 128
 server = localhost
 port = {$stream->port}
-password = {$password}  // NOTE: In reality, we need the plaintext password
+password = {$autodjPassword}
 mountPoint = {$mountPoint}
 name = AutoDJ Stream
 description = AutoDJ generated stream
@@ -213,6 +218,29 @@ CONF;
     protected function stopAutodjProcess($configPath)
     {
         // In a real system, we would track the process ID and kill it
-        exec("pkill -f \"{$configPath}\"");
+        exec("pkill -f " . escapeshellarg($configPath));
+    }
+
+    /**
+     * Generate a random password
+     */
+    protected function generatePassword($length = 16)
+    {
+        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $charactersLength = strlen($characters);
+        $randomString = '';
+        for ($i = 0; $i < $length; $i++) {
+            $randomString .= $characters[random_int(0, $charactersLength - 1)];
+        }
+        return $randomString;
+    }
+
+    protected function getUsernameById($userId)
+    {
+        $user = $this->db->table('hosting_users')->where('id', $userId)->first();
+        if ($user && !empty($user->username)) {
+            return $user->username;
+        }
+        return "user_{$userId}";
     }
 }

@@ -7,6 +7,30 @@
 // Define constants
 define('BASE_PATH', realpath(__DIR__.'/../'));
 
+// Load .env file if it exists
+$envFile = BASE_PATH . '/.env';
+if (is_file($envFile)) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || str_starts_with($line, '#')) {
+            continue;
+        }
+        if (str_contains($line, '=')) {
+            [$key, $value] = explode('=', $line, 2);
+            $key = trim($key);
+            $value = trim($value);
+            // Remove surrounding quotes if present
+            if ((str_starts_with($value, '"') && str_ends_with($value, '"')) ||
+                (str_starts_with($value, "'") && str_ends_with($value, "'"))) {
+                $value = substr($value, 1, -1);
+            }
+            putenv("$key=$value");
+            $_ENV[$key] = $value;
+        }
+    }
+}
+
 require BASE_PATH . '/core/helpers.php';
 
 spl_autoload_register(function ($class) {

@@ -155,7 +155,8 @@ class StreamManager
      */
     protected function generateConfigFile($userId, $serverType, $port, $password)
     {
-        $configDir = storage_path("radio/streams/{$userId}");
+        $username = $this->getUsernameById($userId);
+        $configDir = "/home/{$username}/radio/streams";
         if (!is_dir($configDir)) {
             mkdir($configDir, 0755, true);
         }
@@ -221,10 +222,10 @@ class StreamManager
 
     <security>
         <chroot>0</chroot>
-        <changeo>
+        <changeowner>
             <user>nobody</user>
             <group>nogroup</group>
-        </changeo>
+        </changeowner>
     </security>
 </icecast>
 XML;
@@ -261,7 +262,8 @@ CONF;
 
         // Execute the command in the background
         // In a real system, we would use a process manager like Supervisor
-        exec("nohup {$command} > /dev/null 2>&1 &");
+        $safeCommand = implode(' ', array_map('escapeshellarg', explode(' ', $command)));
+        exec("nohup {$safeCommand} > /dev/null 2>&1 &");
 
         return $command;
     }
@@ -274,7 +276,7 @@ CONF;
         // In a real system, we would track the process ID and kill it
         // For now, we'll just note that the stream is stopped
         // A more robust implementation would use PID files or a process manager
-        exec("pkill -f \"{$configPath}\"");
+        exec("pkill -f " . escapeshellarg($configPath));
     }
 
     /**
@@ -286,8 +288,20 @@ CONF;
         $charactersLength = strlen($characters);
         $randomString = '';
         for ($i = 0; $i < $length; $i++) {
-            $randomString .= $characters[rand(0, $charactersLength - 1)];
+            $randomString .= $characters[random_int(0, $charactersLength - 1)];
         }
         return $randomString;
+    }
+
+    /**
+     * Get the system username for a user ID
+     */
+    protected function getUsernameById($userId)
+    {
+        $user = $this->db->table('hosting_users')->where('id', $userId)->first();
+        if ($user && !empty($user->username)) {
+            return $user->username;
+        }
+        return "user_{$userId}";
     }
 }
