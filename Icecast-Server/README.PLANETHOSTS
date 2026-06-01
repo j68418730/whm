@@ -1,0 +1,12 @@
+This directory contains upstream Icecast source code.
+
+Planet Hosts does not own or claim ownership of this software.
+
+Icecast is included only to simplify automated installation
+and compatibility with the Planet Hosts installer.
+
+Original project:
+https://icecast.org/
+
+Original source:
+https://gitlab.xiph.org/xiph/icecast-server
