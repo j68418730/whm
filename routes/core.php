@@ -8,7 +8,7 @@ if (!isset($router)) {
 }
 
 // Core WHM Routes (non-plugin)
-$router->get('/', 'Admin\Controllers\AuthController@login');
+$router->get('/', 'Admin\Controllers\AuthController@landing');
 $router->get('/admin', 'Admin\Controllers\DashboardController@index');
 $router->get('/admin/login', 'Admin\Controllers\AuthController@login');
 $router->post('/admin/login/post', 'Admin\Controllers\AuthController@postLogin');
