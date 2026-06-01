@@ -201,7 +201,7 @@ CREATE TABLE IF NOT EXISTS hosting_packages (
     bandwidth BIGINT NOT NULL,
     email_accounts INT NOT NULL,
     ftp_accounts INT NOT NULL,
-    databases INT NOT NULL,
+    `databases` INT NOT NULL,
     subdomains INT NOT NULL,
     parked_domains INT NOT NULL,
     addon_domains INT NOT NULL,

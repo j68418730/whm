@@ -37,7 +37,7 @@ class View
         if (!is_file($viewFile)) {
             // Only apply the legacy path rewrite if this isn't already a plugin path
             if (!str_contains($viewFile, '/Views/')) {
-                $viewFile = preg_replace('#/(admin|user)/#', '/$1/Views/', $viewFile, 1);
+                $viewFile = preg_replace('#/(admin|user)/#i', '/$1/Views/', $viewFile, 1);
             }
         }
 

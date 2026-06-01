@@ -353,6 +353,34 @@ mysql $MYSQL_ROOT_OPTS -e \
 mysql $MYSQL_ROOT_OPTS -e \
 "FLUSH PRIVILEGES;" || true
 
+# Create .env file with database credentials
+echo "Creating .env file..."
+cat > "$PANEL_DIR/.env" <<EOF
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=$DB_NAME
+DB_USERNAME=$DB_USER
+DB_PASSWORD=$DB_PASSWORD
+EOF
+chown apache:apache "$PANEL_DIR/.env" 2>/dev/null || true
+chmod 600 "$PANEL_DIR/.env"
+echo ".env file created."
+
+# Import database schema
+echo "Importing database schema..."
+if [ -f "$SCRIPT_DIR/database/schema.sql" ]; then
+    mysql $MYSQL_ROOT_OPTS "$DB_NAME" < "$SCRIPT_DIR/database/schema.sql" || true
+    echo "Core schema imported."
+fi
+
+# Import plugin schemas
+for schema in "$SCRIPT_DIR"/plugins/*/database/schema.sql; do
+    if [ -f "$schema" ]; then
+        mysql $MYSQL_ROOT_OPTS "$DB_NAME" < "$schema" || true
+        echo "  Schema imported: $schema"
+    fi
+done
+
 # =========================================================
 # Cron Jobs
 # =========================================================

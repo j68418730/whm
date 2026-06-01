@@ -28,9 +28,19 @@ if (is_file($envFile)) {
 require BASE_PATH . '/core/helpers.php';
 
 spl_autoload_register(function ($class) {
-    $file = BASE_PATH . '/' . str_replace('\\', '/', $class) . '.php';
+    $relative = str_replace('\\', '/', $class) . '.php';
+    // Try exact match first
+    $file = BASE_PATH . '/' . $relative;
     if (is_file($file)) {
         require $file;
+        return;
+    }
+    // Fallback: convert first directory segment to lowercase (Linux case fix)
+    $parts = explode('/', $relative);
+    $parts[0] = strtolower($parts[0]);
+    $lowerFile = BASE_PATH . '/' . implode('/', $parts);
+    if (is_file($lowerFile)) {
+        require $lowerFile;
     }
 });
 
