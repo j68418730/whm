@@ -21,6 +21,14 @@ $router->get('/admin/streams/restart/{id}', 'Plugins\Radio\Controllers\Admin\Str
 $router->get('/admin/streams/suspend/{id}', 'Plugins\Radio\Controllers\Admin\StreamsController@suspend');
 $router->get('/admin/streams/unsuspend/{id}', 'Plugins\Radio\Controllers\Admin\StreamsController@unsuspend');
 $router->get('/admin/streams/clone/{id}', 'Plugins\Radio\Controllers\Admin\StreamsController@clone');
+// Nav link routes (redirect to index — these pages need a stream ID)
+$router->get('/admin/streams/list', 'Plugins\Radio\Controllers\Admin\StreamsController@index');
+$router->get('/admin/streams/edit', 'Plugins\Radio\Controllers\Admin\StreamsController@index');
+$router->get('/admin/streams/delete', 'Plugins\Radio\Controllers\Admin\StreamsController@index');
+$router->get('/admin/streams/restart', 'Plugins\Radio\Controllers\Admin\StreamsController@index');
+$router->get('/admin/streams/suspend', 'Plugins\Radio\Controllers\Admin\StreamsController@index');
+$router->get('/admin/streams/unsuspend', 'Plugins\Radio\Controllers\Admin\StreamsController@index');
+$router->get('/admin/streams/clone', 'Plugins\Radio\Controllers\Admin\StreamsController@index');
 $router->get('/admin/autodj', 'Plugins\Radio\Controllers\Admin\AutodjController@index');
 $router->get('/admin/djs', 'Plugins\Radio\Controllers\Admin\DjController@index');
 
