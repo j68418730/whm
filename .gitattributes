@@ -1,0 +1,14 @@
+# Force LF line endings for shell scripts
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Force LF for PHP too (avoid CRLF in Linux containers)
+*.php text eol=lf
+*.sql text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+
+# Binary files
+*.pem binary
+*.key binary
