@@ -1,10 +1,4 @@
-nano install2.sh
 
-````
-
-Paste everything below into the file:
-
-```bash
 #!/bin/bash
 
 # =========================================================
