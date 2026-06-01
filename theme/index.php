@@ -3,6 +3,7 @@ $showLogin = isset($_GET['login']);
 $loginError = isset($loginError) ? $loginError : null;
 $loggedIn = isset($loggedIn) ? $loggedIn : false;
 $user = isset($user) ? $user : null;
+$packagesByType = isset($packagesByType) ? $packagesByType : [];
 if ($loggedIn && $user):
 ?><!DOCTYPE html>
 <html lang="en">
