@@ -1,9 +1,9 @@
 #!/bin/bash
 
-=========================================================
-Planet Hosts Master Panel - install2.sh
-AlmaLinux 9 Icecast/FFmpeg Dependency Installer
-=========================================================
+#=========================================================
+#Planet Hosts Master Panel - install2.sh
+#AlmaLinux 9 Icecast/FFmpeg Dependency Installer
+#=========================================================
 
 set -eo pipefail
 
@@ -15,9 +15,9 @@ echo " AlmaLinux 9 Dependency Installer"
 echo "=================================================="
 echo ""
 
-=========================================================
-Install Repositories
-=========================================================
+#=========================================================
+#Install Repositories
+#=========================================================
 
 echo "[1/10] Installing EPEL..."
 
@@ -31,7 +31,7 @@ sudo dnf config-manager --set-enabled crb
 echo ""
 echo "[3/10] Installing RPM Fusion..."
 
-sudo dnf install -y
+sudo dnf install -y \
 https://download1.rpmfusion.org/free/el/rpmfusion-free-release-9.noarch.rpm
 
 echo ""
@@ -40,9 +40,9 @@ echo "[4/10] Refreshing repositories..."
 sudo dnf clean all
 sudo dnf makecache
 
-=========================================================
-Check Icecast Availability
-=========================================================
+#=========================================================
+#Check Icecast Availability
+#=========================================================
 
 echo ""
 echo "[5/10] Checking for Icecast package..."
