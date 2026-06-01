@@ -30,14 +30,28 @@ class AuthController extends Controller
      */
     public function landing()
     {
-        $themeFile = BASE_PATH . '/theme/index.html';
+        $themeFile = BASE_PATH . '/theme/index.php';
         if (is_file($themeFile)) {
-            $content = file_get_contents($themeFile);
+            $user = $this->auth->user();
+            $loggedIn = $this->auth->check();
+            $loginError = $_SESSION['login_error'] ?? null;
+            unset($_SESSION['login_error']);
+            // Capture output from the theme file
+            ob_start();
+            require $themeFile;
+            $content = ob_get_clean();
             $this->response->setContent($content);
             $this->response->send();
             exit;
         }
-        // Fallback to login if no theme
+        // Fallback to theme HTML if PHP doesn't exist
+        $themeHtml = BASE_PATH . '/theme/index.html';
+        if (is_file($themeHtml)) {
+            $content = file_get_contents($themeHtml);
+            $this->response->setContent($content);
+            $this->response->send();
+            exit;
+        }
         $this->login();
     }
 
