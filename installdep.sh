@@ -1,3 +1,10 @@
+nano install2.sh
+
+````
+
+Paste everything below into the file:
+
+```bash
 #!/bin/bash
 
 # =========================================================
@@ -19,34 +26,38 @@ echo ""
 # Install Repositories
 # =========================================================
 
-echo "[1/10] Installing EPEL..."
+echo "[1/9] Installing EPEL..."
 
 sudo dnf install -y epel-release
 
 echo ""
-echo "[2/10] Enabling CRB..."
+echo "[2/9] Installing DNF plugins..."
 
 sudo dnf install -y dnf-plugins-core
+
+echo ""
+echo "[3/9] Enabling CRB..."
+
 sudo dnf config-manager --set-enabled crb
 
 echo ""
-echo "[3/10] Installing RPM Fusion..."
+echo "[4/9] Installing RPM Fusion..."
 
 sudo dnf install -y \
 https://download1.rpmfusion.org/free/el/rpmfusion-free-release-9.noarch.rpm
 
 echo ""
-echo "[4/10] Refreshing repositories..."
+echo "[5/9] Refreshing repositories..."
 
 sudo dnf clean all
 sudo dnf makecache
 
 # =========================================================
-# Check Icecast Availability
+# Install Icecast
 # =========================================================
 
 echo ""
-echo "[5/10] Checking for Icecast package..."
+echo "[6/9] Checking for Icecast package..."
 
 ICECAST_FOUND=$(dnf search icecast 2>/dev/null | grep -i "icecast.x86_64" || true)
 
@@ -54,34 +65,16 @@ if [[ -n "$ICECAST_FOUND" ]]; then
 
     echo ""
     echo "Icecast package found."
-    echo ""
-    echo "Installing Icecast..."
 
     sudo dnf install -y icecast
 
 else
 
     echo ""
-    echo "=================================================="
-    echo " Icecast package not found in repositories."
-    echo " Switching to source compilation..."
-    echo "=================================================="
-    echo ""
-
-    # =====================================================
-    # Development Tools
-    # =====================================================
-
-    echo "[6/10] Installing Development Tools..."
+    echo "Icecast package NOT found."
+    echo "Installing build dependencies instead..."
 
     sudo dnf groupinstall -y "Development Tools"
-
-    # =====================================================
-    # Dependencies
-    # =====================================================
-
-    echo ""
-    echo "[7/10] Installing build dependencies..."
 
     sudo dnf install -y \
     pkgconf-pkg-config \
@@ -96,6 +89,10 @@ else
     curl-devel \
     openssl-devel \
     sqlite-devel \
+    autoconf-archive \
+    m4 \
+    gettext \
+    gettext-devel \
     git \
     gcc \
     gcc-c++ \
@@ -104,72 +101,30 @@ else
     autoconf \
     libtool
 
-    # =====================================================
-    # Install libigloo
-    # =====================================================
-
     echo ""
-    echo "[8/10] Installing libigloo..."
-
-    cd /usr/local/src
-
-    rm -rf igloo
-
-    git clone https://github.com/xiph/igloo.git
-
-    cd igloo
-
-    autoreconf -fi
-
-    ./configure
-
-    make -j$(nproc)
-
-    sudo make install
-
-    sudo ldconfig
-
-    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
-
+    echo "Dependencies installed."
     echo ""
-    echo "Installed libigloo successfully."
-
+    echo "NOTE:"
+    echo "Compile Icecast manually or use Docker."
     echo ""
-    echo "Installed igloo version:"
-    pkg-config --modversion igloo || true
-
-    # =====================================================
-    # Build Icecast from Source
-    # =====================================================
-
-    echo ""
-    echo "[9/10] Building Icecast from source..."
-
-    if [ -f /var/www/radiohosting/scripts/icecast_install_source.sh ]; then
-
-        chmod +x /var/www/radiohosting/scripts/icecast_install_source.sh
-
-        sudo bash /var/www/radiohosting/scripts/icecast_install_source.sh
-
-    else
-
-        echo ""
-        echo "ERROR:"
-        echo "/var/www/radiohosting/scripts/icecast_install_source.sh not found."
-        echo ""
-
-        exit 1
-
-    fi
 
 fi
+
+# =========================================================
+# Install FFmpeg
+# =========================================================
+
+echo ""
+echo "[7/9] Installing FFmpeg..."
+
+sudo dnf install -y ffmpeg ffmpeg-devel || true
 
 # =========================================================
 # Continue Main Installer
 # =========================================================
 
 echo ""
-echo "[10/10] Continuing main panel installer..."
+echo "[8/9] Continuing main panel installer..."
 
 if [ -f ./install.sh ]; then
 
@@ -187,7 +142,14 @@ else
 
 fi
 
+# =========================================================
+# Done
+# =========================================================
+
+echo ""
+echo "[9/9] Installation Complete"
 echo ""
 echo "=================================================="
-echo " Installation Complete"
+echo " Planet Hosts Installation Finished"
 echo "=================================================="
+
