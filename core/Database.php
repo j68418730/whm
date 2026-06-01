@@ -55,17 +55,25 @@ class Database
 
     public function where($column = null, $operator = null, $value = null)
     {
-        // Simplified where - in a real system we would build a query builder
-        // For now, we'll just return a mock object that can chain
-        return new class($this->pdo, $this->table) {
+        // Apply the 2-arg shorthand before passing to the builder
+        if ($column !== null && func_num_args() === 2) {
+            $value = $operator;
+            $operator = '=';
+        }
+        $pdo = $this->pdo;
+        $table = $this->table;
+        return new class($pdo, $table, $column, $operator, $value) {
             protected $pdo;
             protected $table;
             protected $wheres = [];
 
-            public function __construct($pdo, $table)
+            public function __construct($pdo, $table, $column, $operator, $value)
             {
                 $this->pdo = $pdo;
                 $this->table = $table;
+                if ($column !== null) {
+                    $this->wheres[] = [$column, $operator, $value];
+                }
             }
 
             public function where($column, $operator = null, $value = null)
