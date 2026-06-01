@@ -26,7 +26,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Show landing page (theme)
+     * Show landing page (theme) with packages
      */
     public function landing()
     {
@@ -36,7 +36,18 @@ class AuthController extends Controller
             $loggedIn = $this->auth->check();
             $loginError = $_SESSION['login_error'] ?? null;
             unset($_SESSION['login_error']);
-            // Capture output from the theme file
+
+            // Fetch active packages grouped by type
+            $app = \Core\Application::getInstance();
+            $db = $app->get('db');
+            $allPackages = $db->table('hosting_packages')->where('is_active', 1)->get();
+            $types = ['web_hosting', 'web_reseller', 'shoutcast', 'shoutcast_reseller', 'icecast', 'icecast_reseller', 'vps', 'dedicated'];
+            $packagesByType = [];
+            foreach ($types as $type) {
+                $items = array_filter($allPackages, function($p) use ($type) { return $p->type === $type; });
+                if ($items) $packagesByType[$type] = array_values($items);
+            }
+
             ob_start();
             require $themeFile;
             $content = ob_get_clean();
@@ -44,7 +55,6 @@ class AuthController extends Controller
             $this->response->send();
             exit;
         }
-        // Fallback to theme HTML if PHP doesn't exist
         $themeHtml = BASE_PATH . '/theme/index.html';
         if (is_file($themeHtml)) {
             $content = file_get_contents($themeHtml);

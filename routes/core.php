@@ -64,13 +64,13 @@ $router->get('/admin/account/sort', 'Admin\Controllers\AccountController@index')
 
 // -- Package sub-routes --
 $router->get('/admin/package/create', 'Admin\Controllers\PackageController@index');
-$router->get('/admin/package/edit', 'Admin\Controllers\PackageController@index');
-$router->get('/admin/package/edit/{name}', 'Admin\Controllers\PackageController@index');
-$router->get('/admin/package/delete', 'Admin\Controllers\PackageController@index');
-$router->get('/admin/package/delete/{name}', 'Admin\Controllers\PackageController@index');
-$router->get('/admin/package/limits', 'Admin\Controllers\PackageController@index');
-$router->get('/admin/package/features', 'Admin\Controllers\PackageController@index');
-$router->get('/admin/package/featurelists', 'Admin\Controllers\PackageController@index');
+$router->get('/admin/package/create', 'Admin\Controllers\PackageController@create');
+$router->post('/admin/package/create', 'Admin\Controllers\PackageController@store');
+$router->get('/admin/package/edit/{id}', 'Admin\Controllers\PackageController@edit');
+$router->post('/admin/package/edit/{id}', 'Admin\Controllers\PackageController@update');
+$router->get('/admin/package/delete/{id}', 'Admin\Controllers\PackageController@destroy');
+// JSON endpoint for landing page
+$router->get('/api/packages', 'Admin\Controllers\PackageController@apiList');
 
 // -- Reseller sub-routes --
 $router->get('/admin/reseller/create', 'Admin\Controllers\ResellerController@index');
