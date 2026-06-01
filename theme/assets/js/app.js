@@ -1,1 +1,2 @@
-console.log('Planet Hosts Loaded');
+
+console.log('Planet Hosts Theme Loaded');
