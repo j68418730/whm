@@ -370,6 +370,23 @@ EOF
 chmod 644 /etc/cron.d/radiohosting
 
 # =========================================================
+# Generate License Key
+# =========================================================
+
+echo ""
+echo "[13/12] Generating license key..."
+chmod +x "$SCRIPT_DIR/keygen.sh"
+"$SCRIPT_DIR/keygen.sh" --auto
+# Copy license files to panel dir
+if [ -f "$SCRIPT_DIR/license.key" ]; then
+    cp "$SCRIPT_DIR/license.key" "$PANEL_DIR/license.key"
+    echo "License key generated and deployed."
+fi
+if [ -f "$SCRIPT_DIR/config/license_public.pem" ]; then
+    cp "$SCRIPT_DIR/config/license_public.pem" "$PANEL_DIR/config/license_public.pem"
+fi
+
+# =========================================================
 # Final Output
 # =========================================================
 
