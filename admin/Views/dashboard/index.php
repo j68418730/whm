@@ -98,12 +98,12 @@ $moduleGroups = [
             <div class="stats whm-stats">
                 <div class="stat-card">
                     <h3>Hosting Accounts</h3>
-                    <div class="value">128</div>
+                    <div class="value">0</div>
                     <p>Active cPanel-style accounts</p>
                 </div>
                 <div class="stat-card">
                     <h3>Resellers</h3>
-                    <div class="value">12</div>
+                    <div class="value">0</div>
                     <p>Delegated account owners</p>
                 </div>
                 <div class="stat-card">

@@ -39,10 +39,9 @@ class PackageController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get packages stats (for demo, we'll use dummy data)
         $packagesStats = [
-            'total_packages' => rand(5, 20),
-            'active_packages' => rand(3, 15),
+            'total_packages' => 0,
+            'active_packages' => 0,
         ];
 
         // Get admin theme settings

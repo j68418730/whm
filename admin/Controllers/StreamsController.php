@@ -39,11 +39,10 @@ class StreamsController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get streams stats (for demo, we'll use dummy data)
         $streamsStats = [
-            'total_streams' => rand(5, 25),
-            'active_streams' => rand(3, 20),
-            'suspended_streams' => rand(0, 5),
+            'total_streams' => 0,
+            'active_streams' => 0,
+            'suspended_streams' => 0,
         ];
 
         // Get admin theme settings
@@ -120,7 +119,6 @@ class StreamsController extends Controller
         // Get admin theme settings
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
 
-        // Render the edit stream view (with dummy data for now)
         return $this->view('admin.streams.edit', [
             'user' => $user,
             'streamId' => $id,

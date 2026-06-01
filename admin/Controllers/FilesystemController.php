@@ -39,13 +39,12 @@ class FilesystemController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get filesystem stats (for demo, we'll use dummy data)
         $fsStats = [
-            'total_users' => rand(10, 100),
-            'shell_users' => rand(5, 50),
-            'jailed_shell_users' => rand(0, 20),
-            'users_with_sudo' => rand(2, 15),
-            'disk_partitions' => rand(3, 8),
+            'total_users' => 0,
+            'shell_users' => 0,
+            'jailed_shell_users' => 0,
+            'users_with_sudo' => 0,
+            'disk_partitions' => 0,
         ];
 
         // Get admin theme settings

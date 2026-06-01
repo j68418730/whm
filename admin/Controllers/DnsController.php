@@ -39,11 +39,10 @@ class DnsController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get DNS stats (for demo, we'll use dummy data)
         $dnsStats = [
-            'total_zones' => rand(5, 50),
-            'active_zones' => rand(4, 45),
-            'total_records' => rand(20, 200),
+            'total_zones' => 0,
+            'active_zones' => 0,
+            'total_records' => 0,
         ];
 
         // Get admin theme settings

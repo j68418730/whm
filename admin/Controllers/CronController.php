@@ -39,12 +39,11 @@ class CronController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get cron stats (for demo, we'll use dummy data)
         $cronStats = [
-            'total_cron_jobs' => rand(10, 100),
-            'active_cron_jobs' => rand(8, 90),
-            'failed_cron_jobs' => rand(0, 10),
-            'last_run' => rand(0, 60) . ' minutes ago',
+            'total_cron_jobs' => 0,
+            'active_cron_jobs' => 0,
+            'failed_cron_jobs' => 0,
+            'last_run' => 'Never',
         ];
 
         // Get admin theme settings

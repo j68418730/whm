@@ -25,10 +25,10 @@ class AutodjController extends Controller
         }
         $user = $this->auth->user();
         $autodjStats = [
-            'total_tracks' => rand(100, 1000),
-            'total_playlists' => rand(5, 50),
-            'scheduled_playlists' => rand(2, 20),
-            'storage_used' => rand(5, 50),
+            'total_tracks' => 0,
+            'total_playlists' => 0,
+            'scheduled_playlists' => 0,
+            'storage_used' => 0,
         ];
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         return $this->view('Plugins.Radio.Views.admin.autodj.index', [

@@ -223,51 +223,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Sample data - in real implementation, this would come from database -->
-                    <tr>
-                        <td>example.com</td>
-                        <td><span class="record-type A">A</span></td>
-                        <td>@</td>
-                        <td>192.168.1.100</td>
-                        <td>3600</td>
-                        <td>
-                            <a href="/admin/dns/edit/example.com/A/@" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/dns/delete/example.com/A/@" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>example.com</td>
-                        <td><span class="record-type MX">MX</span></td>
-                        <td>@</td>
-                        <td>mail.example.com</td>
-                        <td>3600</td>
-                        <td>
-                            <a href="/admin/dns/edit/example.com/MX/@" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/dns/delete/example.com/MX/@" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>example.com</td>
-                        <td><span class="record-type CNAME">CNAME</span></td>
-                        <td>www</td>
-                        <td>example.com</td>
-                        <td>3600</td>
-                        <td>
-                            <a href="/admin/dns/edit/example.com/CNAME/www" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/dns/delete/example.com/CNAME/www" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>example.com</td>
-                        <td><span class="record-type TXT">TXT</span></td>
-                        <td>@</td>
-                        <td>"v=spf1 a mx ~all"</td>
-                        <td>3600</td>
-                        <td>
-                            <a href="/admin/dns/edit/example.com/TXT/@" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/dns/delete/example.com/TXT/@" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
+                    <tr><td colspan="6" style="text-align:center;padding:2rem;color:#999;">No DNS zones configured yet.</td></tr>
                 </tbody>
             </table>
         </div>

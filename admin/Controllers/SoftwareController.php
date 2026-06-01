@@ -39,17 +39,16 @@ class SoftwareController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get software stats (for demo, we'll use dummy data)
         $softwareStats = [
             'os_version' => 'CentOS Linux release 7.9.2009 (Core)',
             'kernel_version' => '3.10.0-1127.el7.x86_64',
-            'updates_available' => rand(0, 50),
-            'security_updates' => rand(0, 10),
-            'reboot_required' => rand(0, 1) ? 'Yes' : 'No',
-            'installed_plugins' => rand(5, 25),
-            'available_plugins' => rand(10, 50),
-            'apache_modules' => rand(20, 40),
-            'php_modules' => rand(15, 30),
+            'updates_available' => 0,
+            'security_updates' => 0,
+            'reboot_required' => 'No',
+            'installed_plugins' => 0,
+            'available_plugins' => 0,
+            'apache_modules' => 0,
+            'php_modules' => 0,
         ];
 
         // Get admin theme settings

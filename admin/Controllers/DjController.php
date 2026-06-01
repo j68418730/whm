@@ -39,11 +39,10 @@ class DjController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get DJ stats (for demo, we'll use dummy data)
         $djStats = [
-            'total_djs' => rand(5, 50),
-            'active_djs' => rand(3, 40),
-            'scheduled_djs' => rand(2, 20),
+            'total_djs' => 0,
+            'active_djs' => 0,
+            'scheduled_djs' => 0,
         ];
 
         // Get admin theme settings

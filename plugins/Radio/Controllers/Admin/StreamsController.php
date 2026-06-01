@@ -25,9 +25,9 @@ class StreamsController extends Controller
         }
         $user = $this->auth->user();
         $streamsStats = [
-            'total_streams' => rand(5, 25),
-            'active_streams' => rand(3, 20),
-            'suspended_streams' => rand(0, 5),
+            'total_streams' => 0,
+            'active_streams' => 0,
+            'suspended_streams' => 0,
         ];
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         return $this->view('Plugins.Radio.Views.admin.streams.index', [

@@ -39,14 +39,13 @@ class MysqlController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get MySQL stats (for demo, we'll use dummy data)
         $mysqlStats = [
             'mysql_version' => '5.7.31',
-            'total_databases' => rand(20, 200),
-            'total_db_users' => rand(15, 150),
-            'database_size' => rand(1, 50), // GB
-            'queries_per_second' => rand(10, 1000),
-            'slow_queries' => rand(0, 10),
+            'total_databases' => 0,
+            'total_db_users' => 0,
+            'database_size' => 0,
+            'queries_per_second' => 0,
+            'slow_queries' => 0,
         ];
 
         // Get admin theme settings

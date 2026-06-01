@@ -39,13 +39,12 @@ class ClusteringController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get clustering stats (for demo, we'll use dummy data)
         $clusteringStats = [
-            'dns_clusters' => rand(0, 5),
-            'backup_clusters' => rand(0, 3),
-            'server_nodes' => rand(1, 10),
-            'load_balancers' => rand(0, 2),
-            'failover_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
+            'dns_clusters' => 0,
+            'backup_clusters' => 0,
+            'server_nodes' => 0,
+            'load_balancers' => 0,
+            'failover_enabled' => 'disabled',
         ];
 
         // Get admin theme settings

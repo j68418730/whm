@@ -254,43 +254,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Sample data - in real implementation, this would come from database -->
-                    <tr>
-                        <td>Sunset Vibes</td>
-                        <td>Chillout Artist</td>
-                        <td>Summer Collection</td>
-                        <td>Chillout</td>
-                        <td>4:32</td>
-                        <td>320 kbps</td>
-                        <td>
-                            <a href="/admin/autodj/edit-track/1" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/autodj/delete-track/1" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Morning Energy</td>
-                        <td>Upbeat Band</td>
-                        <td>Morning Mix</td>
-                        <td>Pop</td>
-                        <td>3:45</td>
-                        <td>256 kbps</td>
-                        <td>
-                            <a href="/admin/autodj/edit-track/2" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/autodj/delete-track/2" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Night Drive</td>
-                        <td>Electronic Duo</td>
-                        <td>Nightlife</td>
-                        <td>Electronic</td>
-                        <td>5:18</td>
-                        <td>192 kbps</td>
-                        <td>
-                            <a href="/admin/autodj/edit-track/3" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/autodj/delete-track/3" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
+                    <tr><td colspan="5" style="text-align:center;padding:2rem;color:#999;">No tracks uploaded yet.</td></tr>
                 </tbody>
             </table>
         </div>

@@ -39,12 +39,11 @@ class SslController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get SSL stats (for demo, we'll use dummy data)
         $sslStats = [
-            'total_certificates' => rand(5, 50),
-            'active_certificates' => rand(4, 45),
-            'expiring_soon' => rand(0, 5),
-            'autossl_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
+            'total_certificates' => 0,
+            'active_certificates' => 0,
+            'expiring_soon' => 0,
+            'autossl_enabled' => 'disabled',
         ];
 
         // Get admin theme settings

@@ -39,12 +39,11 @@ class AccountController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get accounts stats (for demo, we'll use dummy data)
         $accountsStats = [
-            'total_accounts' => rand(10, 100),
-            'active_accounts' => rand(8, 90),
-            'suspended_accounts' => rand(0, 10),
-            'terminated_accounts' => rand(0, 5),
+            'total_accounts' => 0,
+            'active_accounts' => 0,
+            'suspended_accounts' => 0,
+            'terminated_accounts' => 0,
         ];
 
         // Get admin theme settings

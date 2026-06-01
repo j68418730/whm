@@ -39,14 +39,13 @@ class ApacheController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get Apache stats (for demo, we'll use dummy data)
         $apacheStats = [
             'apache_version' => '2.4.41',
             'php_version' => '7.4.3',
             'mpm' => 'prefork',
-            'enabled_modules' => rand(50, 100),
-            'total_vhosts' => rand(10, 100),
-            'ssl_vhosts' => rand(5, 50),
+            'enabled_modules' => 0,
+            'total_vhosts' => 0,
+            'ssl_vhosts' => 0,
         ];
 
         // Get admin theme settings

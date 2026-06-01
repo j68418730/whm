@@ -39,12 +39,11 @@ class EmailController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get email stats (for demo, we'll use dummy data)
         $emailStats = [
-            'total_email_accounts' => rand(50, 500),
-            'active_email_accounts' => rand(40, 450),
-            'mail_queue_size' => rand(0, 50),
-            'spam_blocked_today' => rand(100, 1000),
+            'total_email_accounts' => 0,
+            'active_email_accounts' => 0,
+            'mail_queue_size' => 0,
+            'spam_blocked_today' => 0,
         ];
 
         // Get admin theme settings

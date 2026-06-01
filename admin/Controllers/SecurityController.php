@@ -39,15 +39,14 @@ class SecurityController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get security stats (for demo, we'll use dummy data)
         $securityStats = [
-            'brute_force_attacks' => rand(0, 100),
-            'malware_scans' => rand(0, 50),
-            'firewall_blocks' => rand(0, 200),
-            'modsecurity_hits' => rand(0, 500),
-            'two_factor_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
-            'shell_access' => rand(0, 1) ? 'enabled' : 'disabled',
-            'compiler_access' => rand(0, 1) ? 'enabled' : 'disabled',
+            'brute_force_attacks' => 0,
+            'malware_scans' => 0,
+            'firewall_blocks' => 0,
+            'modsecurity_hits' => 0,
+            'two_factor_enabled' => 'disabled',
+            'shell_access' => 'disabled',
+            'compiler_access' => 'disabled',
         ];
 
         // Get admin theme settings

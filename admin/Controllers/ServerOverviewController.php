@@ -39,22 +39,21 @@ class ServerOverviewController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get server stats (for demo, we'll use dummy data - in real implementation, these would come from system commands)
         $serverStats = [
-            'cpu_load' => rand(0, 100),
-            'ram_usage' => rand(0, 100),
-            'disk_usage' => rand(0, 100),
-            'network_usage' => rand(0, 1000), // Mbps
-            'active_accounts' => rand(0, 50),
+            'cpu_load' => 0,
+            'ram_usage' => 0,
+            'disk_usage' => 0,
+            'network_usage' => 0,
+            'active_accounts' => 0,
             'service_status' => [
-                'apache' => rand(0, 1) ? 'running' : 'stopped',
-                'mysql' => rand(0, 1) ? 'running' : 'stopped',
-                'exim' => rand(0, 1) ? 'running' : 'stopped',
-                'ftp' => rand(0, 1) ? 'running' : 'stopped',
-                'dns' => rand(0, 1) ? 'running' : 'stopped',
+                'apache' => 'stopped',
+                'mysql' => 'stopped',
+                'exim' => 'stopped',
+                'ftp' => 'stopped',
+                'dns' => 'stopped',
             ],
-            'security_alerts' => rand(0, 5),
-            'update_alerts' => rand(0, 3),
+            'security_alerts' => 0,
+            'update_alerts' => 0,
         ];
 
         // Get admin theme settings

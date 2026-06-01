@@ -39,12 +39,11 @@ class RadioSettingsController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get radio settings stats (for demo, we'll use dummy data)
         $radioStats = [
-            'global_enabled' => rand(0, 1) ? true : false,
-            'total_streams' => rand(0, 50),
-            'active_streams' => rand(0, 30),
-            'auto_dj_enabled' => rand(0, 1) ? true : false,
+            'global_enabled' => false,
+            'total_streams' => 0,
+            'active_streams' => 0,
+            'auto_dj_enabled' => false,
             'bitrate' => '128kbps',
             'format' => 'mp3',
         ];

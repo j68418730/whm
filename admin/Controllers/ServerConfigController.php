@@ -39,13 +39,12 @@ class ServerConfigController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get server config stats (for demo, we'll use dummy data)
         $serverConfigStats = [
             'hostname' => 'server.example.com',
             'kernel_version' => '5.4.0-42-generic',
             'architecture' => 'x86_64',
             'timezone' => 'UTC',
-            'services_enabled' => rand(5, 15),
+            'services_enabled' => 0,
         ];
 
         // Get admin theme settings

@@ -39,23 +39,22 @@ class MonitoringController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get monitoring stats (for demo, we'll use dummy data)
         $monitoringStats = [
-            'cpu_load' => rand(0, 100),
-            'ram_usage' => rand(0, 100),
-            'disk_usage' => rand(0, 100),
-            'running_processes' => rand(50, 200),
-            'total_processes' => rand(100, 300),
-            'uptime' => rand(1, 365) . ' days',
+            'cpu_load' => 0,
+            'ram_usage' => 0,
+            'disk_usage' => 0,
+            'running_processes' => 0,
+            'total_processes' => 0,
+            'uptime' => '0 days',
             'load_average' => [
-                '1min' => rand(0, 10) / 10,
-                '5min' => rand(0, 10) / 10,
-                '15min' => rand(0, 10) / 10,
+                '1min' => 0,
+                '5min' => 0,
+                '15min' => 0,
             ],
-            'services_monitored' => rand(5, 15),
-            'services_ok' => rand(4, 12),
-            'services_warning' => rand(0, 3),
-            'services_critical' => rand(0, 2),
+            'services_monitored' => 0,
+            'services_ok' => 0,
+            'services_warning' => 0,
+            'services_critical' => 0,
         ];
 
         // Get admin theme settings

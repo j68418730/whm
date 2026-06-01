@@ -39,18 +39,17 @@ class RadioDashboardController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get radio dashboard stats (for demo, we'll use dummy data)
         $radioStats = [
-            'current_listeners' => rand(0, 100),
-            'peak_listeners_today' => rand(0, 150),
-            'stream_status' => rand(0, 1) ? 'online' : 'offline',
+            'current_listeners' => 0,
+            'peak_listeners_today' => 0,
+            'stream_status' => 'offline',
             'current_song' => 'Unknown - Unknown Artist',
-            'cpu_usage' => rand(0, 100),
-            'ram_usage' => rand(0, 100),
-            'bandwidth_usage' => rand(0, 1000), // Mbps
-            'stream_uptime' => rand(0, 720) . ' minutes', // Up to 12 hours
-            'total_streams' => rand(5, 25),
-            'active_streams' => rand(3, 20),
+            'cpu_usage' => 0,
+            'ram_usage' => 0,
+            'bandwidth_usage' => 0,
+            'stream_uptime' => '0 minutes',
+            'total_streams' => 0,
+            'active_streams' => 0,
         ];
 
         // Get admin theme settings
