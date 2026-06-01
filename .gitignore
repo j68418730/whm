@@ -4,3 +4,6 @@ license_private.key
 
 # Each installation generates its own license
 license.key
+
+# Environment file with DB credentials
+.env
