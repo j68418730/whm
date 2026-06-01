@@ -1,20 +1,16 @@
 <?php
 $showLogin = isset($_GET['login']);
-$loggedIn = isset($loggedIn) ? $loggedIn : false;
 $loginError = isset($loginError) ? $loginError : null;
 ?><!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Planet-Hosts</title>
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<title>Planet Hosts</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<style>
 
 *{
     margin:0;
@@ -22,816 +18,411 @@ $loginError = isset($loginError) ? $loginError : null;
     box-sizing:border-box;
 }
 
-html{
-    scroll-behavior:smooth;
-}
-
 body{
-    font-family:'Inter',sans-serif;
-    background:#000;
+    background:#020817;
     color:#fff;
+    font-family:'Inter',sans-serif;
     overflow-x:hidden;
     position:relative;
 }
 
-/* BACKGROUND */
-
-.bg-image{
+.bg-overlay{
     position:fixed;
     inset:0;
     background:
-    linear-gradient(
-    to bottom,
-    rgba(0,0,0,.2),
-    rgba(0,0,0,.94)
-    ),
-    url('/theme/assets/img/background.png')
-    center center/cover no-repeat;
-    z-index:-5;
+        linear-gradient(rgba(2,8,23,.88),rgba(2,8,23,.96)),
+        url('../img/background.png');
+    background-size:cover;
+    background-position:center;
+    z-index:-2;
 }
 
-.grid-overlay{
-    position:fixed;
-    inset:0;
-    background-image:
-    linear-gradient(rgba(0,140,255,.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,140,255,.04) 1px, transparent 1px);
-    background-size:80px 80px;
-    z-index:-4;
-    opacity:.35;
-}
-
-/* NAVBAR */
-
-.navbar-custom{
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    z-index:1000;
-    padding:26px 0;
-    backdrop-filter:blur(20px);
-    background:rgba(0,0,0,.35);
-    border-bottom:1px solid rgba(255,255,255,.05);
-}
-
-.container-custom{
-    width:min(1450px,92%);
+.container{
+    width:90%;
+    max-width:1400px;
     margin:auto;
 }
 
-.nav-wrapper{
-    display:flex;
-    align-items:center;
-    justify-content:flex-end;
+.header{
+    padding:25px 0;
+    position:sticky;
+    top:0;
+    z-index:100;
+    backdrop-filter:blur(10px);
+    background:rgba(2,8,23,.5);
+    border-bottom:1px solid rgba(0,191,255,.1);
 }
 
-.nav-buttons{
+.nav{
     display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.logo{
+    display:flex;
+    align-items:center;
     gap:18px;
 }
 
-.btn-custom{
-    border:none;
-    text-decoration:none;
-    color:#fff;
-    padding:16px 34px;
-    border-radius:18px;
-    font-weight:700;
-    transition:.35s ease;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    letter-spacing:.3px;
+.logo img{
+    width:70px;
 }
 
-.btn-outline-custom{
-    border:1px solid rgba(255,255,255,.15);
-    background:rgba(255,255,255,.02);
+.logo h1{
+    font-family:'Orbitron',sans-serif;
+    font-size:2rem;
 }
 
-.btn-outline-custom:hover{
-    background:rgba(255,255,255,.06);
-    transform:translateY(-2px);
+.logo span{
+    color:#0A84FF;
 }
 
-.btn-primary-custom{
-    background:linear-gradient(135deg,#008cff,#3bb8ff);
-    box-shadow:
-    0 0 20px rgba(0,140,255,.45),
-    0 0 60px rgba(0,140,255,.15);
-}
-
-.btn-primary-custom:hover{
-    transform:translateY(-2px);
-    box-shadow:
-    0 0 30px rgba(0,140,255,.75),
-    0 0 80px rgba(0,140,255,.2);
-}
-
-/* HERO */
-
-.hero{
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    position:relative;
-    padding:180px 0 120px;
-}
-
-.hero-content{
-    max-width:900px;
-}
-
-.hero-tag{
-    display:inline-flex;
-    align-items:center;
-    gap:12px;
-    padding:12px 24px;
-    border-radius:999px;
-    background:rgba(0,140,255,.08);
-    border:1px solid rgba(0,140,255,.18);
-    margin-bottom:35px;
-    color:#5ec5ff;
-    font-weight:600;
-    font-size:14px;
-    letter-spacing:1px;
+.logo p{
+    color:#94a3b8;
+    letter-spacing:4px;
     text-transform:uppercase;
 }
 
-.hero h1{
-    font-size:96px;
-    line-height:.95;
-    font-weight:900;
-    margin-bottom:34px;
-    letter-spacing:-4px;
+nav a{
+    color:#fff;
+    text-decoration:none;
+    margin-left:24px;
+    transition:.3s;
 }
 
-.hero h1 span{
-    color:#1ea7ff;
-    text-shadow:0 0 25px rgba(30,167,255,.45);
+nav a:hover{
+    color:#00BFFF;
 }
 
-.hero p{
-    max-width:760px;
-    color:#9fb2c8;
-    font-size:22px;
+.hero{
+    min-height:90vh;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    align-items:center;
+    gap:50px;
+    padding:80px 0;
+}
+
+.hero-text h2{
+    font-size:4.4rem;
+    line-height:1.1;
+    margin-bottom:20px;
+}
+
+.hero-text h2 span{
+    color:#0A84FF;
+}
+
+.hero-text p{
+    color:#cbd5e1;
     line-height:1.9;
+    margin-bottom:35px;
+    max-width:650px;
+}
+
+.hero-buttons{
+    display:flex;
+    gap:20px;
     margin-bottom:50px;
 }
 
-.hero-buttons{
+.btn{
+    padding:15px 28px;
+    border-radius:14px;
+    text-decoration:none;
+    transition:.3s;
+    font-weight:600;
+}
+
+.primary{
+    background:linear-gradient(135deg,#0A84FF,#00E5FF);
+    box-shadow:0 0 35px rgba(0,191,255,.35);
+    color:#fff;
+}
+
+.secondary{
+    border:1px solid rgba(0,191,255,.2);
+    background:rgba(255,255,255,.03);
+    color:#fff;
+}
+
+.btn:hover{
+    transform:translateY(-3px);
+}
+
+.hero-image img{
+    width:100%;
+    border-radius:22px;
+    border:1px solid rgba(0,191,255,.2);
+    box-shadow:0 0 80px rgba(0,191,255,.18);
+}
+
+.stats{
     display:flex;
     gap:20px;
-    flex-wrap:wrap;
 }
 
-/* FLOATING STATS */
-
-.floating-panel{
-    margin-top:90px;
-    background:rgba(5,10,20,.6);
-    border:1px solid rgba(0,140,255,.14);
-    border-radius:34px;
-    backdrop-filter:blur(24px);
-    overflow:hidden;
-    position:relative;
+.stat-card,
+.feature-card,
+.panel{
+    background:rgba(255,255,255,.03);
+    border:1px solid rgba(0,191,255,.15);
+    backdrop-filter:blur(12px);
+    border-radius:20px;
 }
 
-.floating-panel::before{
-    content:'';
-    position:absolute;
-    width:450px;
-    height:450px;
-    background:radial-gradient(circle,rgba(0,140,255,.22),transparent);
-    right:-180px;
-    top:-180px;
+.stat-card{
+    padding:25px;
+    width:170px;
 }
 
-.stats-grid{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
+.stat-card h3{
+    color:#00BFFF;
+    font-size:2rem;
+    margin-bottom:10px;
 }
 
-.stat-item{
-    padding:45px;
-    border-right:1px solid rgba(255,255,255,.05);
-}
-
-.stat-item:last-child{
-    border-right:none;
-}
-
-.stat-item h2{
-    font-size:54px;
-    color:#28a9ff;
-    font-weight:800;
-    margin-bottom:12px;
-}
-
-.stat-item p{
+.stat-card p{
     margin:0;
-    color:#94a3b8;
-    font-size:16px;
 }
-
-/* FEATURES */
 
 .features{
-    padding:140px 0;
-}
-
-.section-header{
-    text-align:center;
-    margin-bottom:80px;
-}
-
-.section-header span{
-    color:#4cbcff;
-    text-transform:uppercase;
-    letter-spacing:2px;
-    font-weight:700;
-    font-size:14px;
-}
-
-.section-header h2{
-    font-size:70px;
-    margin-top:20px;
-    font-weight:900;
-    letter-spacing:-3px;
-}
-
-.section-header p{
-    max-width:780px;
-    margin:auto;
-    margin-top:24px;
-    color:#94a3b8;
-    line-height:1.9;
-    font-size:20px;
-}
-
-.feature-card{
-    background:
-    linear-gradient(
-    180deg,
-    rgba(8,16,28,.9),
-    rgba(3,7,15,.92)
-    );
-
-    border:1px solid rgba(0,140,255,.12);
-    border-radius:36px;
-    padding:50px;
-    height:100%;
-    position:relative;
-    overflow:hidden;
-    transition:.4s ease;
-}
-
-.feature-card::before{
-    content:'';
-    position:absolute;
-    inset:0;
-    background:
-    radial-gradient(circle at top right,
-    rgba(0,140,255,.12),
-    transparent 45%);
-}
-
-.feature-card:hover{
-    transform:translateY(-10px);
-    border-color:#18a0ff;
-    box-shadow:
-    0 0 40px rgba(0,140,255,.12),
-    0 20px 80px rgba(0,0,0,.45);
-}
-
-.feature-icon{
-    width:90px;
-    height:90px;
-    border-radius:28px;
-    background:rgba(0,140,255,.08);
-    border:1px solid rgba(0,140,255,.18);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:38px;
-    margin-bottom:34px;
-}
-
-.feature-card h3{
-    font-size:34px;
-    margin-bottom:20px;
-    font-weight:800;
-}
-
-.feature-card p{
-    color:#98abc1;
-    line-height:2;
-    font-size:17px;
-}
-
-/* CTA */
-
-.cta{
-    padding:80px 0 160px;
-}
-
-.cta-box{
-    position:relative;
-    overflow:hidden;
-    border-radius:44px;
-    padding:100px;
-    background:
-    linear-gradient(
-    135deg,
-    rgba(0,140,255,.14),
-    rgba(0,0,0,.85)
-    );
-
-    border:1px solid rgba(0,140,255,.18);
-}
-
-.cta-box::before{
-    content:'';
-    position:absolute;
-    width:600px;
-    height:600px;
-    background:
-    radial-gradient(circle,
-    rgba(0,140,255,.24),
-    transparent);
-
-    top:-300px;
-    right:-200px;
-}
-
-.cta-content{
-    position:relative;
-    z-index:2;
-    max-width:900px;
-}
-
-.cta h2{
-    font-size:76px;
-    line-height:1;
-    font-weight:900;
-    margin-bottom:30px;
-    letter-spacing:-3px;
-}
-
-.cta p{
-    font-size:21px;
-    line-height:1.9;
-    color:#a2b5c8;
-    margin-bottom:45px;
-}
-
-/* FOOTER */
-
-footer{
-    padding:0 0 60px;
-}
-
-.footer-box{
-
-    min-height:240px;
-
-    display:flex;
-    align-items:flex-end;
-
-    background:
-    linear-gradient(
-    rgba(0,0,0,.55),
-    rgba(0,0,0,.75)
-    ),
-    url('/theme/assets/img/footer.png')
-    center center/cover no-repeat;
-
-    border-radius:34px;
-
-    border:1px solid rgba(0,140,255,.25);
-
-    padding:40px 50px;
-
-    position:relative;
-
-    overflow:hidden;
-}
-
-.footer-line{
-    width:100%;
-    height:1px;
-
-    background:
-    linear-gradient(
-    90deg,
-    transparent,
-    #1da5ff,
-    transparent
-    );
-
-    position:relative;
-
-    margin-bottom:30px;
-}
-
-.footer-line::after{
-    content:'';
-
-    width:140px;
-    height:5px;
-
-    background:#1da5ff;
-
-    position:absolute;
-
-    left:50%;
-    top:50%;
-
-    transform:translate(-50%,-50%);
-
-    filter:blur(12px);
-}
-
-.footer-bottom{
-    width:100%;
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:center;
-
-    flex-wrap:wrap;
-
-    gap:20px;
-}
-
-.footer-bottom p{
-    margin:0;
-    color:#a4b5c7;
-}
-
-/* RESPONSIVE */
-
-@media(max-width:1200px){
-
-.hero h1{
-    font-size:72px;
-}
-
-.section-header h2,
-.cta h2{
-    font-size:56px;
-}
-
-.stats-grid{
-    grid-template-columns:1fr 1fr;
-}
-
-}
-
-@media(max-width:768px){
-
-.hero{
-    text-align:center;
-}
-
-.hero-buttons{
-    justify-content:center;
-}
-
-.hero h1{
-    font-size:54px;
-}
-
-.hero p{
-    font-size:18px;
-}
-
-.stats-grid{
-    grid-template-columns:1fr;
-}
-
-.stat-item{
-    border-right:none;
-    border-bottom:1px solid rgba(255,255,255,.05);
-}
-
-.stat-item:last-child{
-    border-bottom:none;
-}
-
-.section-header h2,
-.cta h2{
-    font-size:42px;
-}
-
-.cta-box{
-    padding:60px 35px;
-}
-
-.footer-bottom{
-    flex-direction:column;
-    text-align:center;
-}
-
-.nav-wrapper{
-    justify-content:center;
-}
-
-}
-
-@media(max-width:576px){
-
-.hero h1{
-    font-size:42px;
-    letter-spacing:-2px;
-}
-
-.btn-custom{
-    width:100%;
-}
-
-.hero-buttons{
-    flex-direction:column;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:30px;
+    padding:60px 0 100px;
 }
 
 .feature-card{
     padding:35px;
+    transition:.35s;
 }
 
+.feature-card:hover{
+    transform:translateY(-8px);
+    box-shadow:0 0 40px rgba(0,191,255,.15);
 }
 
-</style>
+.icon{
+    font-size:2rem;
+    margin-bottom:18px;
+}
+
+.feature-card h3{
+    margin-bottom:15px;
+    color:#0A84FF;
+}
+
+.feature-card p{
+    color:#94a3b8;
+    line-height:1.8;
+}
+
+.dashboard-preview{
+    padding:50px 0 100px;
+}
+
+.panel{
+    padding:20px;
+}
+
+.panel img{
+    width:100%;
+    border-radius:18px;
+}
+
+.footer{
+    padding:80px 0;
+    text-align:center;
+    border-top:1px solid rgba(0,191,255,.1);
+}
+
+.footer img{
+    width:110px;
+    margin-bottom:20px;
+}
+
+.footer h2{
+    font-family:'Orbitron',sans-serif;
+    font-size:2.2rem;
+}
+
+.footer span{
+    color:#0A84FF;
+}
+
+.footer p{
+    color:#94a3b8;
+    margin:18px 0 30px;
+}
+
+.footer-links{
+    margin-bottom:30px;
+}
+
+.footer-links a{
+    color:#fff;
+    text-decoration:none;
+    margin:0 14px;
+}
+
+.copyright{
+    color:#64748b;
+}
+
+@media(max-width:992px){
+
+    .hero{
+        grid-template-columns:1fr;
+        text-align:center;
+    }
+
+    .hero-buttons,
+    .stats{
+        justify-content:center;
+        flex-wrap:wrap;
+    }
+
+    .nav{
+        flex-direction:column;
+        gap:20px;
+    }
+
+    nav{
+        display:flex;
+        flex-wrap:wrap;
+        justify-content:center;
+    }
+
+    .hero-text h2{
+        font-size:3rem;
+    }
+}
+
 </head>
 <body>
 
-<div class="bg-image"></div>
-<div class="grid-overlay"></div>
+<div class="bg-overlay"></div>
 
-<!-- NAVBAR -->
-
-<nav class="navbar-custom">
-
-    <div class="container-custom">
-
-        <div class="nav-wrapper">
-
-            <div class="nav-buttons">
-
-                <a href="#" class="btn-custom btn-outline-custom">
-                    Documentation
-                </a>
-
-                <a href="?login" class="btn-custom btn-primary-custom">
-                    Launch Panel
-                </a>
-
+<header class="header">
+    <div class="container nav">
+        <div class="logo">
+            <img src="assets/img/logo.png" alt="logo">
+            <div>
+                <h1>PLANET-<span>HOSTS</span></h1>
+                <p>Hosting Panel</p>
             </div>
-
         </div>
 
+        <nav>
+            <a href="#">Home</a>
+            <a href="#">Hosting</a>
+            <a href="#">Servers</a>
+            <a href="#">Domains</a>
+            <a href="#">Billing</a>
+            <a href="#">Contact</a>
+        </nav>
+    </div>
+</header>
+
+<section class="hero container">
+
+    <div class="hero-text">
+        <h2>Modern Hosting<br><span>Built For The Future</span></h2>
+
+        <p>
+            Futuristic cloud hosting platform with powerful infrastructure,
+            domain management, VPS solutions and enterprise-grade security.
+        </p>
+
+        <div class="hero-buttons">
+            <a href="?login" class="btn primary">Get Started</a>
+            <a href="?login" class="btn secondary">Admin Login</a>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <h3>99.99%</h3>
+                <p>Uptime</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>24/7</h3>
+                <p>Support</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>12K+</h3>
+                <p>Clients</p>
+            </div>
+        </div>
     </div>
 
-</nav>
-
-<!-- HERO -->
-
-<section class="hero">
-
-    <div class="container-custom">
-
-        <div class="hero-content">
-
-            <div class="hero-tag">
-                Enterprise Infrastructure
-            </div>
-
-            <h1>
-                The Future Of <span>Hosting</span> Infrastructure
-            </h1>
-
-            <p>
-                Planet-Hosts delivers modern cloud hosting,
-                DNS automation, radio streaming, enterprise
-                analytics and infrastructure management in one
-                powerful unified platform.
-            </p>
-
-            <div class="hero-buttons">
-
-                <a href="?login" class="btn-custom btn-primary-custom">
-                    Launch Platform
-                </a>
-
-                <a href="?login" class="btn-custom btn-outline-custom">
-                    Admin Login
-                </a>
-
-            </div>
-
-        </div>
-
-        <!-- STATS -->
-
-        <div class="floating-panel">
-
-            <div class="stats-grid">
-
-                <div class="stat-item">
-                    <h2>99.99%</h2>
-                    <p>Global Network Uptime</p>
-                </div>
-
-                <div class="stat-item">
-                    <h2>2.5K+</h2>
-                    <p>Managed Domains</p>
-                </div>
-
-                <div class="stat-item">
-                    <h2>542</h2>
-                    <p>Radio Stations</p>
-                </div>
-
-                <div class="stat-item">
-                    <h2>1.2K+</h2>
-                    <p>Enterprise Clients</p>
-                </div>
-
-            </div>
-
-        </div>
-
+    <div class="hero-image">
+        <img src="assets/img/dashboard.png" alt="dashboard">
     </div>
 
 </section>
 
-<!-- FEATURES -->
+<section class="features container">
 
-<section class="features">
+    <div class="feature-card">
+        <div class="icon">☁</div>
+        <h3>Cloud Hosting</h3>
+        <p>Deploy scalable cloud hosting infrastructure optimized for performance.</p>
+    </div>
 
-    <div class="container-custom">
+    <div class="feature-card">
+        <div class="icon">🖥</div>
+        <h3>Dedicated Servers</h3>
+        <p>Enterprise dedicated servers with lightning-fast network speeds.</p>
+    </div>
 
-        <div class="section-header">
+    <div class="feature-card">
+        <div class="icon">🌐</div>
+        <h3>Domain Management</h3>
+        <p>Manage domains, DNS records and SSL certificates easily.</p>
+    </div>
 
-            <span>Complete Platform</span>
-
-            <h2>
-                Everything Included
-            </h2>
-
-            <p>
-                Designed for hosting providers, enterprise
-                cloud infrastructure, streaming networks
-                and high-performance deployments.
-            </p>
-
-        </div>
-
-        <div class="row g-4">
-
-            <div class="col-lg-4">
-
-                <div class="feature-card">
-
-                    <div class="feature-icon">⚡</div>
-
-                    <h3>
-                        High Performance
-                    </h3>
-
-                    <p>
-                        Enterprise-grade infrastructure with
-                        advanced networking, optimized routing,
-                        intelligent caching and ultra-fast
-                        deployment systems.
-                    </p>
-
-                </div>
-
-            </div>
-
-            <div class="col-lg-4">
-
-                <div class="feature-card">
-
-                    <div class="feature-icon">🌐</div>
-
-                    <h3>
-                        DNS & Domains
-                    </h3>
-
-                    <p>
-                        Full DNS clustering, SSL automation,
-                        domain routing and enterprise
-                        infrastructure management tools.
-                    </p>
-
-                </div>
-
-            </div>
-
-            <div class="col-lg-4">
-
-                <div class="feature-card">
-
-                    <div class="feature-icon">📡</div>
-
-                    <h3>
-                        Streaming Platform
-                    </h3>
-
-                    <p>
-                        Integrated SHOUTcast systems, AutoDJ,
-                        analytics and radio streaming
-                        infrastructure management.
-                    </p>
-
-                </div>
-
-            </div>
-
-        </div>
-
+    <div class="feature-card">
+        <div class="icon">🔒</div>
+        <h3>Advanced Security</h3>
+        <p>Firewall protection, backups and enterprise monitoring included.</p>
     </div>
 
 </section>
 
-<!-- CTA -->
-
-<section class="cta">
-
-    <div class="container-custom">
-
-        <div class="cta-box">
-
-            <div class="cta-content">
-
-                <h2>
-                    Ready To Deploy At Scale?
-                </h2>
-
-                <p>
-                    Build and scale powerful hosting infrastructure
-                    with enterprise-grade automation, networking
-                    and global deployment systems.
-                </p>
-
-                <a href="?login"
-                class="btn-custom btn-primary-custom">
-
-                    Start Building
-
-                </a>
-
-            </div>
-
-        </div>
-
+<section class="dashboard-preview container">
+    <div class="panel">
+        <img src="assets/img/dashboard.png" alt="preview">
     </div>
-
 </section>
 
-<!-- FOOTER -->
+<footer class="footer">
+    <div class="container">
+        <img src="assets/img/logo.png" alt="logo">
 
-<footer>
+        <h2>PLANET-<span>HOSTS</span></h2>
 
-    <div class="container-custom">
+        <p>Building the future of hosting infrastructure.</p>
 
-        <div class="footer-box">
-
-            <div style="width:100%;">
-
-                <div class="footer-line"></div>
-
-                <div class="footer-bottom">
-
-                    <p>
-                        © 2026 Planet-Hosts.
-                        All rights reserved.
-                    </p>
-
-                    <p>
-                        Enterprise Hosting Infrastructure
-                    </p>
-
-                </div>
-
-            </div>
-
+        <div class="footer-links">
+            <a href="#">Terms</a>
+            <a href="#">Privacy</a>
+            <a href="#">Support</a>
+            <a href="#">API</a>
         </div>
 
+        <div class="copyright">
+            © 2024 Planet-Hosts. All rights reserved.
+        </div>
     </div>
-
 </footer>
 
-    </div>
-
-</footer>
+<script src="/theme/assets/js/app.js"></script>
 
 <?php if ($showLogin): ?>
-<!-- LOGIN MODAL -->
 <div id="loginModal" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);">
     <div style="background:#0b1728;border:1px solid rgba(0,140,255,.2);border-radius:24px;padding:48px;width:400px;max-width:92vw;">
         <div style="text-align:center;margin-bottom:32px;">
@@ -845,7 +436,7 @@ footer{
         <?php endif; ?>
         <form method="POST" action="/admin/login/post">
             <div style="margin-bottom:20px;">
-                <label style="display:block;margin-bottom:8px;font-weight:600;font-size:14px;color:#b0c4db;">Email Address</label>
+                <label style="display:block;margin-bottom:8px;font-weight:600;font-size:14px;color:#b0c4db;">Email</label>
                 <input type="email" name="email" value="admin@example.com" required style="width:100%;padding:14px 18px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:16px;outline:none;">
             </div>
             <div style="margin-bottom:28px;">
@@ -856,16 +447,10 @@ footer{
                 Sign In
             </button>
         </form>
-        <div style="text-align:center;margin-top:20px;">
-            <a href="/" style="color:#5e8eb0;text-decoration:none;font-size:14px;">Back to home</a>
-        </div>
+        <div style="text-align:center;margin-top:20px;"><a href="/" style="color:#5e8eb0;text-decoration:none;font-size:14px;">Back</a></div>
     </div>
 </div>
-<script>
-document.getElementById('loginModal')?.addEventListener('click', function(e) {
-    if (e.target === this) window.location.href = '/';
-});
-</script>
+<script>document.getElementById('loginModal')?.addEventListener('click',function(e){if(e.target===this)window.location.href='/';});</script>
 <?php endif; ?>
 
 </body>
