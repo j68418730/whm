@@ -270,27 +270,28 @@ nav a:hover{
     line-height:1.8;
 }
 
-.services{
-    padding:80px 0;
-}
-.services .section-title{
-    text-align:center;margin-bottom:50px;
-}
-.services .section-title h2{font-size:2.6rem;margin-bottom:10px;}
-.services .section-title p{color:#94a3b8;font-size:1.1rem;}
-.type-group{margin-bottom:50px;}
-.type-group h3{font-size:1.5rem;color:#0A84FF;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid rgba(0,191,255,.15);text-transform:capitalize;}
-.pkg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;}
-.pkg-card{background:rgba(8,16,28,.9);border:1px solid rgba(0,191,255,.12);border-radius:16px;padding:28px;transition:.35s;}
-.pkg-card:hover{transform:translateY(-4px);border-color:#0A84FF;box-shadow:0 0 30px rgba(0,191,255,.08);}
-.pkg-card h4{font-size:1.3rem;margin-bottom:6px;}
-.pkg-card .price{font-size:1.8rem;font-weight:800;color:#00BFFF;margin-bottom:12px;}
-.pkg-card .price small{font-size:.9rem;font-weight:400;color:#94a3b8;}
-.pkg-card p{color:#94a3b8;font-size:.9rem;line-height:1.7;margin-bottom:15px;}
-.pkg-card .features-list{list-style:none;padding:0;margin-bottom:18px;}
-.pkg-card .features-list li{color:#cbd5e1;font-size:.85rem;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);}
-.pkg-card .features-list li:last-child{border-bottom:none;}
-.pkg-card .btn{display:block;text-align:center;}
+/* SERVICES TAB MENU */
+.services{padding:60px 0 100px}
+.services .section-title{text-align:center;margin-bottom:40px}
+.services .section-title h2{font-size:2.6rem;margin-bottom:10px}
+.services .section-title p{color:#94a3b8;font-size:1.1rem}
+.tab-menu{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:50px}
+.tab-btn{padding:12px 24px;border-radius:12px;border:1px solid rgba(0,191,255,.15);background:rgba(8,16,28,.8);color:#94a3b8;cursor:pointer;font-size:14px;font-weight:600;transition:.3s;white-space:nowrap}
+.tab-btn:hover{color:#fff;border-color:#0A84FF;background:rgba(0,191,255,.08)}
+.tab-btn.active{background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff;border-color:#008cff;box-shadow:0 0 20px rgba(0,140,255,.3)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.pkg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
+.pkg-card{background:rgba(8,16,28,.9);border:1px solid rgba(0,191,255,.12);border-radius:16px;padding:28px;transition:.35s}
+.pkg-card:hover{transform:translateY(-4px);border-color:#0A84FF;box-shadow:0 0 30px rgba(0,191,255,.08)}
+.pkg-card h4{font-size:1.3rem;margin-bottom:6px}
+.pkg-card .price{font-size:1.8rem;font-weight:800;color:#00BFFF;margin-bottom:12px}
+.pkg-card .price small{font-size:.9rem;font-weight:400;color:#94a3b8}
+.pkg-card p{color:#94a3b8;font-size:.9rem;line-height:1.7;margin-bottom:15px}
+.pkg-card .features-list{list-style:none;padding:0;margin-bottom:18px}
+.pkg-card .features-list li{color:#cbd5e1;font-size:.85rem;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.pkg-card .features-list li:last-child{border-bottom:none}
+.pkg-card .btn{display:block;text-align:center}
 
 .dashboard-preview{
     padding:50px 0 100px;
@@ -446,25 +447,25 @@ nav a:hover{
 </div>
 <?php
 $typeLabels = [
-    'web_hosting' => 'Web Hosting',
-    'web_reseller' => 'Web Hosting Reseller',
-    'shoutcast' => 'SHOUTcast Streaming',
-    'shoutcast_reseller' => 'SHOUTcast Reseller',
-    'icecast' => 'Icecast Streaming',
-    'icecast_reseller' => 'Icecast Reseller',
-    'vps' => 'VPS Servers',
-    'dedicated' => 'Dedicated Servers',
+    'web_hosting' => '🌐 Web Hosting',
+    'web_reseller' => '🏢 Web Hosting Reseller',
+    'shoutcast' => '📡 SHOUTcast Streaming',
+    'shoutcast_reseller' => '📡 SHOUTcast Reseller',
+    'icecast' => '🎵 Icecast Streaming',
+    'icecast_reseller' => '🎵 Icecast Reseller',
+    'vps' => '🖥 VPS Servers',
+    'dedicated' => '🔧 Dedicated Servers',
 ];
-$typeIcons = [
-    'web_hosting' => '🌐', 'web_reseller' => '🏢',
-    'shoutcast' => '📡', 'shoutcast_reseller' => '📡',
-    'icecast' => '🎵', 'icecast_reseller' => '🎵',
-    'vps' => '🖥', 'dedicated' => '🔧',
-];
-foreach ($packagesByType as $type => $pkgs):
+$firstTab = true;
 ?>
-<div class="type-group">
-<h3><?php echo $typeIcons[$type] ?? '📦'; ?> <?php echo $typeLabels[$type] ?? $type; ?></h3>
+<div class="tab-menu" id="tabMenu">
+<?php foreach ($packagesByType as $type => $pkgs): ?>
+<button class="tab-btn<?php if ($firstTab): ?> active<?php $firstTab = false; endif; ?>" onclick="showTab('<?php echo $type; ?>')"><?php echo $typeLabels[$type] ?? $type; ?></button>
+<?php endforeach; ?>
+</div>
+<?php $firstTab = true; ?>
+<?php foreach ($packagesByType as $type => $pkgs): ?>
+<div class="tab-content<?php if ($firstTab): ?> active<?php $firstTab = false; endif; ?>" id="tab-<?php echo $type; ?>">
 <div class="pkg-grid">
 <?php foreach ($pkgs as $pkg): ?>
 <div class="pkg-card">
@@ -488,6 +489,14 @@ foreach ($packagesByType as $type => $pkgs):
 </div>
 <?php endforeach; ?>
 </section>
+<script>
+function showTab(type) {
+    document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+    document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+    document.getElementById('tab-' + type).classList.add('active');
+    document.querySelector('.tab-btn[onclick*="' + type + '"]').classList.add('active');
+}
+</script>
 <?php endif; ?>
 
 <section class="features container">
