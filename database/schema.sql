@@ -170,7 +170,7 @@ ON DUPLICATE KEY UPDATE global_enabled=VALUES(global_enabled), enabled=VALUES(en
 -- Insert a default admin user (email: admin@example.com, password: admin) - hashed
 -- In production, you should change this password immediately after first login.
 INSERT INTO admins (name, email, password_hash, theme_settings) 
-VALUES ('Administrator', 'admin@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '{}')
+VALUES ('Administrator', 'admin@example.com', '$2y$10$F46vzX9GSw/7b6Ul65Jj1uYBBy/QYmCuxC6NdwOKiwXf6W0DxX4gy', '{}')
 ON DUPLICATE KEY UPDATE email=VALUES(email);
 
 -- Resellers Table
