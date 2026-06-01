@@ -49,7 +49,6 @@ class License
 
         // Verify the signature
         $result = openssl_verify($payload, $signature, $pubKeyId, OPENSSL_ALGO_SHA256);
-        openssl_free_key($pubKeyId);
 
         if ($result !== 1) {
             return ['valid' => false, 'error' => 'Signature mismatch - license is invalid or tampered'];
