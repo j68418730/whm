@@ -127,6 +127,42 @@ ldconfig
 
 export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 
+# Updated igloo + Icecast Build Section for install2.sh
+
+```bash
+# =====================================================
+# Fix igloo Requirement
+# =====================================================
+
+echo ""
+echo "[8/10] Installing libigloo..."
+
+cd /usr/local/src
+
+# Use GitHub mirror instead of old Xiph GitLab
+if [ ! -d igloo ]; then
+
+    git clone https://github.com/xiph/igloo.git
+
+fi
+
+cd igloo
+
+autoreconf -fi
+./configure
+make
+make install
+
+ldconfig
+
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+
+echo ""
+echo "Installed libigloo successfully."
+
+# Verify install
+pkg-config --modversion igloo || true
+
 # =====================================================
 # Build Icecast from Source
 # =====================================================
@@ -150,8 +186,7 @@ else
     exit 1
 
 fi
-
-fi
+```
 
 =========================================================
 Continue Main Installer
