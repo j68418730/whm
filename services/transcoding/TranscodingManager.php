@@ -78,7 +78,8 @@ class TranscodingManager
 
         // We'll return a command that could be used to start the transcoding process.
         $ffmpegPath = $this->config->get('radio.transcoding.ffmpeg_path');
-        $command = "{$ffmpegPath} -re -i http://localhost:{$sourceMount} -b:a {$bitrate}k -f {$targetFormat} icecast://source:hackme@localhost:8001/{$targetMount}";
+        $icecastPassword = $this->config->get('radio.servers.icecast.admin_password', 'hackme');
+        $command = "{$ffmpegPath} -re -i http://localhost:{$sourceMount} -b:a {$bitrate}k -f {$targetFormat} icecast://source:{$icecastPassword}@localhost:8001/{$targetMount}";
 
         // Note: This is a simplified example. In reality, we would need to handle authentication, etc.
         return $command;

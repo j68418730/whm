@@ -5,7 +5,7 @@ This guide shows how to modify the panel to create actual Linux system users wit
 ## Where to Add the Code
 
 You need to add account creation methods to:
-**File:** `D:\New_WoW\whm\admin\Controllers\AccountController.php`
+**File:** `admin/Controllers/AccountController.php`
 
 ## Step-by-Step Implementation
 
@@ -233,7 +233,7 @@ Add these methods to the AccountController class (after the `index()` method):
 ### 2. Create the View File
 
 Create the account creation form view:
-**File:** `D:\New_WoW\whm\admin\Views\account\create.php`
+**File:** `admin/Views/account/create.php`
 
 ```php
 <?php $this->extend('admin.layouts.app') ?>
@@ -374,7 +374,7 @@ Create the account creation form view:
 ### 3. Add Route
 
 Add this route to your routes file:
-**File:** `D:\New_WoW\whm\routes\web.php` (or equivalent)
+**File:** `routes/admin.php` (or equivalent)
 
 ```php
 // Account management routes

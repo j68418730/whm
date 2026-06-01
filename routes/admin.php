@@ -6,6 +6,11 @@
 use Core\Request;
 use Core\Response;
 
+// Ensure $router is available (set by caller or resolve from Application)
+if (!isset($router)) {
+    $router = \Core\Application::getInstance()->get('router');
+}
+
 // Admin Auth Routes
 $router->get('/', 'Admin\Controllers\AuthController@login');
 $router->get('/admin', 'Admin\Controllers\DashboardController@index');
