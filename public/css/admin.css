@@ -234,7 +234,7 @@ footer p {
 
 /* WHM/cPanel-style shell */
 .whm-body {
-    background: #07111f;
+    background: transparent !important;
     color: #d8e7f7;
 }
 
