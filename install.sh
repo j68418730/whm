@@ -300,11 +300,14 @@ cat > /etc/httpd/conf.d/radiohosting.conf <<EOF
 <VirtualHost *:80>
     ServerAdmin webmaster@localhost
     DocumentRoot $PANEL_DIR/public
+    ServerName radiohosting.local
+    ServerAlias www.radiohosting.local localhost
 
     <Directory $PANEL_DIR/public>
         Options Indexes FollowSymLinks
         AllowOverride All
         Require all granted
+        DirectoryIndex index.php index.html
     </Directory>
 
     ErrorLog /var/log/httpd/radiohosting_error.log

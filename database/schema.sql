@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS radio_autodj (
     id INT AUTO_INCREMENT PRIMARY KEY,
     stream_id INT NOT NULL,
     config_path VARCHAR(255) NOT NULL,
+    autodj_password VARCHAR(255) NOT NULL,
     status ENUM('stopped', 'running') NOT NULL DEFAULT 'stopped',
     song_count INT DEFAULT 0,
     last_song VARCHAR(255),
@@ -170,7 +171,9 @@ ON DUPLICATE KEY UPDATE global_enabled=VALUES(global_enabled), enabled=VALUES(en
 -- In production, you should change this password immediately after first login.
 INSERT INTO admins (name, email, password_hash, theme_settings) 
 VALUES ('Administrator', 'admin@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '{}')
-ON DUPLICATE KEY UPDATE email=VALUES(email);-- Resellers Table
+ON DUPLICATE KEY UPDATE email=VALUES(email);
+
+-- Resellers Table
 CREATE TABLE IF NOT EXISTS resellers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     admin_id INT NOT NULL,

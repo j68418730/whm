@@ -31,6 +31,8 @@ return [
             'config_path' => '/etc/icecast2/icecast.xml',
             'default_port' => 8000,
             'admin_port' => 8001,
+            'source_password' => 'hackme',
+            'admin_password' => 'hackme',
         ],
         'shoutcast' => [
             'enabled' => true,
@@ -51,9 +53,9 @@ return [
     'autodj' => [
         'enabled' => true,
         'binary_path' => '/usr/bin/ezstream',
-        'temp_directory' => storage_path('radio/autodj/temp'),
-        'music_directory' => storage_path('radio/autodj/music'),
-        'playlist_directory' => storage_path('radio/autodj/playlists'),
+        'temp_directory' => '/home/{user}/radio/autodj/temp',
+        'music_directory' => '/home/{user}/radio/autodj/music',
+        'playlist_directory' => '/home/{user}/radio/autodj/playlists',
         'bitrate' => 128,
         'format' => 'mp3',
     ],

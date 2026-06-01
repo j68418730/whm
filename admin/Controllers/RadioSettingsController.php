@@ -72,10 +72,10 @@ class RadioSettingsController extends Controller
         }
 
         // Get form data
-        $global_enabled = isset($_POST['global_enabled']) && $_POST['global_enabled'] == 'on';
-        $auto_dj_enabled = isset($_POST['auto_dj_enabled']) && $_POST['auto_dj_enabled'] == 'on';
-        $bitrate = $_POST['bitrate'] ?? '128kbps';
-        $format = $_POST['format'] ?? 'mp3';
+        $global_enabled = $this->request->post('global_enabled') === 'on';
+        $auto_dj_enabled = $this->request->post('auto_dj_enabled') === 'on';
+        $bitrate = $this->request->post('bitrate', '128kbps');
+        $format = $this->request->post('format', 'mp3');
 
         // In a real implementation, we would save these to the database
         // For now, we'll just redirect back with a success message

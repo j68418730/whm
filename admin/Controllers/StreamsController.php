@@ -93,9 +93,9 @@ class StreamsController extends Controller
         }
 
         // Process form data (in real implementation, save to database)
-        $name = $_POST['name'] ?? '';
-        $mount_point = $_POST['mount_point'] ?? '';
-        $bitrate = $_POST['bitrate'] ?? '128kbps';
+        $name = $this->request->post('name', '');
+        $mount_point = $this->request->post('mount_point', '');
+        $bitrate = $this->request->post('bitrate', '128kbps');
 
         // Redirect back with success message
         $_SESSION['success_message'] = 'Stream created successfully!';
@@ -140,9 +140,9 @@ class StreamsController extends Controller
         }
 
         // Process form data (in real implementation, update in database)
-        $name = $_POST['name'] ?? '';
-        $mount_point = $_POST['mount_point'] ?? '';
-        $bitrate = $_POST['bitrate'] ?? '128kbps';
+        $name = $this->request->post('name', '');
+        $mount_point = $this->request->post('mount_point', '');
+        $bitrate = $this->request->post('bitrate', '128kbps');
 
         // Redirect back with success message
         $_SESSION['success_message'] = 'Stream updated successfully!';
