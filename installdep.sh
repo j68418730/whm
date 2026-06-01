@@ -103,33 +103,7 @@ automake \
 autoconf \
 libtool
 
-# =====================================================
-# Fix igloo Requirement
-# =====================================================
 
-echo ""
-echo "[8/10] Installing libigloo..."
-
-cd /usr/local/src
-
-if [ ! -d igloo ]; then
-    git clone https://gitlab.xiph.org/xiph/igloo.git
-fi
-
-cd igloo
-
-autoreconf -fi
-./configure
-make
-make install
-
-ldconfig
-
-export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
-
-# Updated igloo + Icecast Build Section for install2.sh
-
-```bash
 # =====================================================
 # Fix igloo Requirement
 # =====================================================
