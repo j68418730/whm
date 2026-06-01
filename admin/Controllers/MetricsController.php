@@ -39,20 +39,19 @@ class MetricsController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get metrics stats (for demo, we'll use dummy data)
         $metricsStats = [
-            'disk_usage_total' => rand(50, 500), // GB
-            'disk_usage_used' => rand(20, 400), // GB
-            'bandwidth_monthly' => rand(1000, 10000), // GB
-            'bandwidth_used' => rand(500, 8000), // GB
-            'email_accounts' => rand(50, 500),
-            'email_storage_used' => rand(5, 100), // GB
-            'databases_count' => rand(10, 100),
-            'database_storage_used' => rand(2, 50), // GB
-            'visitors_today' => rand(100, 5000),
-            'visitors_monthly' => rand(3000, 150000),
-            'awstats_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
-            'webalizer_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
+            'disk_usage_total' => 0,
+            'disk_usage_used' => 0,
+            'bandwidth_monthly' => 0,
+            'bandwidth_used' => 0,
+            'email_accounts' => 0,
+            'email_storage_used' => 0,
+            'databases_count' => 0,
+            'database_storage_used' => 0,
+            'visitors_today' => 0,
+            'visitors_monthly' => 0,
+            'awstats_enabled' => 'disabled',
+            'webalizer_enabled' => 'disabled',
         ];
 
         // Get admin theme settings

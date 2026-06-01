@@ -39,11 +39,10 @@ class ResellerController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get reseller stats (for demo, we'll use dummy data)
         $resellerStats = [
-            'total_resellers' => rand(2, 20),
-            'active_resellers' => rand(1, 15),
-            'accounts_owned_by_resellers' => rand(10, 100),
+            'total_resellers' => 0,
+            'active_resellers' => 0,
+            'accounts_owned_by_resellers' => 0,
         ];
 
         // Get admin theme settings

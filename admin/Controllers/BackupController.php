@@ -39,13 +39,12 @@ class BackupController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get backup stats (for demo, we'll use dummy data)
         $backupStats = [
-            'total_backups' => rand(10, 100),
-            'successful_backups' => rand(8, 90),
-            'failed_backups' => rand(0, 10),
-            'last_backup' => rand(0, 24) . ' hours ago',
-            'backup_storage_used' => rand(5, 50), // GB
+            'total_backups' => 0,
+            'successful_backups' => 0,
+            'failed_backups' => 0,
+            'last_backup' => 'Never',
+            'backup_storage_used' => 0,
         ];
 
         // Get admin theme settings

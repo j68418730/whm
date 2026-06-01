@@ -227,47 +227,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Sample data - in real implementation, this would come from database -->
-                    <tr>
-                        <td>Main Radio</td>
-                        <td>/live</td>
-                        <td>128 kbps</td>
-                        <td><span class="status-badge status-active">Active</span></td>
-                        <td>42</td>
-                        <td>2026-05-01</td>
-                        <td>
-                            <a href="/admin/streams/edit/main-radio" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/streams/restart/main-radio" class="btn btn-sm btn-secondary">Restart</a>
-                            <a href="/admin/streams/suspend/main-radio" class="btn btn-sm btn-secondary">Suspend</a>
-                            <a href="/admin/streams/delete/main-radio" class="btn btn-sm btn-secondary">Delete</a>
-                            <a href="/admin/streams/clone/main-radio" class="btn btn-sm btn-secondary">Clone</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Radio 2</td>
-                        <td>/radio2</td>
-                        <td>96 kbps</td>
-                        <td><span class="status-badge status-suspended">Suspended</span></td>
-                        <td>0</td>
-                        <td>2026-05-10</td>
-                        <td>
-                            <a href="/admin/streams/edit/radio2" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/streams/unsuspend/radio2" class="btn btn-sm btn-secondary">Unsuspend</a>
-                            <a href="/admin/streams/delete/radio2" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Radio 3</td>
-                        <td>/radio3</td>
-                        <td>64 kbps</td>
-                        <td><span class="status-badge status-offline">Offline</span></td>
-                        <td>0</td>
-                        <td>2026-05-15</td>
-                        <td>
-                            <a href="/admin/streams/edit/radio3" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/streams/delete/radio3" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
+                    <tr><td colspan="7" style="text-align:center;padding:2rem;color:#999;">No streams configured yet.</td></tr>
                 </tbody>
             </table>
         </div>

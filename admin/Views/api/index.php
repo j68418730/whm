@@ -226,43 +226,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Sample data - in real implementation, this would come from database -->
-                    <tr>
-                        <td>WHM API</td>
-                        <td><span class="status-badge <?php echo $apiStats['whm_api_enabled'] === 'enabled' ? 'status-active' : 'status-disabled'; ?>">
-                            <?php echo ucfirst($apiStats['whm_api_enabled']); ?>
-                        </span></td>
-                        <td>Admin-level API for server management</td>
-                        <td>
-                            <a href="/admin/api/whm/settings" class="btn btn-sm btn-secondary">Configure</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>UAPI (User API)</td>
-                        <td><span class="status-badge <?php echo $apiStats['uapi_enabled'] === 'enabled' ? 'status-active' : 'status-disabled'; ?>">
-                            <?php echo ucfirst($apiStats['uapi_enabled']); ?>
-                        </span></td>
-                        <td>User-level API for account management</td>
-                        <td>
-                            <a href="/admin/api/uapi/settings" class="btn btn-sm btn-secondary">Configure</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Email API</td>
-                        <td><span class="status-badge status-active">Active</span></td>
-                        <td>Manage email accounts, forwarders, filters</td>
-                        <td>
-                            <a href="/admin/api/email" class="btn btn-sm btn-secondary">Manage</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Database API</td>
-                        <td><span class="status-badge status-active">Active</span></td>
-                        <td>Manage MySQL databases and users</td>
-                        <td>
-                            <a href="/admin/api/database" class="btn btn-sm btn-secondary">Manage</a>
-                        </td>
-                    </tr>
+                    <tr><td colspan="4" style="text-align:center;padding:2rem;color:#999;">No API tokens generated yet.</td></tr>
                 </tbody>
             </table>
         </div>

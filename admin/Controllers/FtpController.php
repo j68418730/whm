@@ -39,13 +39,12 @@ class FtpController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get FTP stats (for demo, we'll use dummy data)
         $ftpStats = [
             'ftp_server' => 'Pure-FTPd',
-            'total_ftp_accounts' => rand(30, 300),
-            'active_ftp_accounts' => rand(25, 250),
-            'anonymous_ftp' => rand(0, 1) ? 'enabled' : 'disabled',
-            'tls_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
+            'total_ftp_accounts' => 0,
+            'active_ftp_accounts' => 0,
+            'anonymous_ftp' => 'disabled',
+            'tls_enabled' => 'disabled',
             'passive_ports_min' => 30000,
             'passive_ports_max' => 50000,
         ];

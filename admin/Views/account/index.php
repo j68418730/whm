@@ -233,46 +233,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Sample data - in real implementation, this would come from database -->
-                    <tr>
-                        <td>user1</td>
-                        <td>example1.com</td>
-                        <td>Basic</td>
-                        <td><span class="status-badge status-active">Active</span></td>
-                        <td>2.5 GB / 10 GB</td>
-                        <td>50 GB / 500 GB</td>
-                        <td>
-                            <a href="/admin/account/modify/user1" class="btn btn-sm btn-secondary">Modify</a>
-                            <a href="/admin/account/suspend/user1" class="btn btn-sm btn-secondary">Suspend</a>
-                            <a href="/admin/account/terminate/user1" class="btn btn-sm btn-secondary">Terminate</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>user2</td>
-                        <td>example2.com</td>
-                        <td>Premium</td>
-                        <td><span class="status-badge status-suspended">Suspended</span></td>
-                        <td>5.2 GB / 20 GB</td>
-                        <td>120 GB / 1000 GB</td>
-                        <td>
-                            <a href="/admin/account/modify/user2" class="btn btn-sm btn-secondary">Modify</a>
-                            <a href="/admin/account/unsuspend/user2" class="btn btn-sm btn-secondary">Unsuspend</a>
-                            <a href="/admin/account/terminate/user2" class="btn btn-sm btn-secondary">Terminate</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>user3</td>
-                        <td>example3.com</td>
-                        <td>Enterprise</td>
-                        <td><span class="status-badge status-active">Active</span></td>
-                        <td>15.8 GB / 50 GB</td>
-                        <td>250 GB / 5000 GB</td>
-                        <td>
-                            <a href="/admin/account/modify/user3" class="btn btn-sm btn-secondary">Modify</a>
-                            <a href="/admin/account/suspend/user3" class="btn btn-sm btn-secondary">Suspend</a>
-                            <a href="/admin/account/terminate/user3" class="btn btn-sm btn-secondary">Terminate</a>
-                        </td>
-                    </tr>
+                    <tr><td colspan="7" style="text-align:center;padding:2rem;color:#999;">No accounts created yet.</td></tr>
                 </tbody>
             </table>
         </div>

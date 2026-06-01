@@ -226,40 +226,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Sample data - in real implementation, this would come from database -->
-                    <tr>
-                        <td>DJ SupaCool</td>
-                        <td>dj@example.com</td>
-                        <td><span class="status-badge status-active">Active</span></td>
-                        <td>3</td>
-                        <td>ICECAST</td>
-                        <td>
-                            <a href="/admin/djs/edit/1" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/djs/remove/1" class="btn btn-sm btn-secondary">Remove</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>DJ ChillWave</td>
-                        <td>chill@example.com</td>
-                        <td><span class="status-badge status-scheduled">Scheduled</span></td>
-                        <td>2</td>
-                        <td>LIQUIDSOAP</td>
-                        <td>
-                            <a href="/admin/djs/edit/2" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/djs/remove/2" class="btn btn-sm btn-secondary">Remove</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>DJ Retro</td>
-                        <td>retro@example.com</td>
-                        <td><span class="status-badge status-inactive">Inactive</span></td>
-                        <td>0</td>
-                        <td>N/A</td>
-                        <td>
-                            <a href="/admin/djs/edit/3" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/djs/remove/3" class="btn btn-sm btn-secondary">Remove</a>
-                        </td>
-                    </tr>
+                    <tr><td colspan="6" style="text-align:center;padding:2rem;color:#999;">No DJ accounts created yet.</td></tr>
                 </tbody>
             </table>
         </div>
