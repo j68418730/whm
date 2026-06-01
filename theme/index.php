@@ -269,6 +269,28 @@ nav a:hover{
     line-height:1.8;
 }
 
+.services{
+    padding:80px 0;
+}
+.services .section-title{
+    text-align:center;margin-bottom:50px;
+}
+.services .section-title h2{font-size:2.6rem;margin-bottom:10px;}
+.services .section-title p{color:#94a3b8;font-size:1.1rem;}
+.type-group{margin-bottom:50px;}
+.type-group h3{font-size:1.5rem;color:#0A84FF;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid rgba(0,191,255,.15);text-transform:capitalize;}
+.pkg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;}
+.pkg-card{background:rgba(8,16,28,.9);border:1px solid rgba(0,191,255,.12);border-radius:16px;padding:28px;transition:.35s;}
+.pkg-card:hover{transform:translateY(-4px);border-color:#0A84FF;box-shadow:0 0 30px rgba(0,191,255,.08);}
+.pkg-card h4{font-size:1.3rem;margin-bottom:6px;}
+.pkg-card .price{font-size:1.8rem;font-weight:800;color:#00BFFF;margin-bottom:12px;}
+.pkg-card .price small{font-size:.9rem;font-weight:400;color:#94a3b8;}
+.pkg-card p{color:#94a3b8;font-size:.9rem;line-height:1.7;margin-bottom:15px;}
+.pkg-card .features-list{list-style:none;padding:0;margin-bottom:18px;}
+.pkg-card .features-list li{color:#cbd5e1;font-size:.85rem;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.pkg-card .features-list li:last-child{border-bottom:none;}
+.pkg-card .btn{display:block;text-align:center;}
+
 .dashboard-preview{
     padding:50px 0 100px;
 }
@@ -414,6 +436,58 @@ nav a:hover{
     </div>
 
 </section>
+
+<?php if (!empty($packagesByType)): ?>
+<section class="services container">
+<div class="section-title">
+<h2>Our Plans &amp; Services</h2>
+<p>Choose the perfect plan for your needs. All plans include 24/7 support.</p>
+</div>
+<?php
+$typeLabels = [
+    'web_hosting' => 'Web Hosting',
+    'web_reseller' => 'Web Hosting Reseller',
+    'shoutcast' => 'SHOUTcast Streaming',
+    'shoutcast_reseller' => 'SHOUTcast Reseller',
+    'icecast' => 'Icecast Streaming',
+    'icecast_reseller' => 'Icecast Reseller',
+    'vps' => 'VPS Servers',
+    'dedicated' => 'Dedicated Servers',
+];
+$typeIcons = [
+    'web_hosting' => '🌐', 'web_reseller' => '🏢',
+    'shoutcast' => '📡', 'shoutcast_reseller' => '📡',
+    'icecast' => '🎵', 'icecast_reseller' => '🎵',
+    'vps' => '🖥', 'dedicated' => '🔧',
+];
+foreach ($packagesByType as $type => $pkgs):
+?>
+<div class="type-group">
+<h3><?php echo $typeIcons[$type] ?? '📦'; ?> <?php echo $typeLabels[$type] ?? $type; ?></h3>
+<div class="pkg-grid">
+<?php foreach ($pkgs as $pkg): ?>
+<div class="pkg-card">
+<h4><?php echo htmlspecialchars($pkg->name, ENT_QUOTES, 'UTF-8'); ?></h4>
+<div class="price">$<?php echo number_format($pkg->monthly_price, 2); ?><small>/mo</small></div>
+<p><?php echo htmlspecialchars($pkg->description ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
+<ul class="features-list">
+<?php if ($pkg->disk_space > 0): ?><li>📁 <?php echo $pkg->disk_space; ?> GB Disk Space</li><?php endif; ?>
+<?php if ($pkg->bandwidth > 0): ?><li>📶 <?php echo $pkg->bandwidth; ?> GB Bandwidth</li><?php endif; ?>
+<?php if ($pkg->listener_limit > 0): ?><li>🎧 <?php echo $pkg->listener_limit; ?> Listeners</li><?php endif; ?>
+<?php if ($pkg->bitrate > 0): ?><li>🎚 <?php echo $pkg->bitrate; ?> kbps Bitrate</li><?php endif; ?>
+<?php if ($pkg->storage_limit > 0): ?><li>💾 <?php echo $pkg->storage_limit; ?> GB Storage</li><?php endif; ?>
+<?php if ($pkg->dj_accounts > 0): ?><li>🎤 <?php echo $pkg->dj_accounts; ?> DJ Accounts</li><?php endif; ?>
+<?php if ($pkg->email_accounts > 0): ?><li>📧 <?php echo $pkg->email_accounts; ?> Email Accounts</li><?php endif; ?>
+<?php if ($pkg->databases > 0): ?><li>🗄 <?php echo $pkg->databases; ?> Databases</li><?php endif; ?>
+</ul>
+<a href="?login" class="btn primary">Get Started</a>
+</div>
+<?php endforeach; ?>
+</div>
+</div>
+<?php endforeach; ?>
+</section>
+<?php endif; ?>
 
 <section class="features container">
 
