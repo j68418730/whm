@@ -102,16 +102,7 @@ return [
     */
 
     'providers' => [
-
-        // Core Service Providers
-        // App\Providers\AppServiceProvider::class,
-        // App\Providers\AuthServiceProvider::class,
-        // App\Providers\EventServiceProvider::class,
-        // App\Providers\RouteServiceProvider::class,
-
-        // Radio Service Provider (integrated as core)
-        Providers\RadioServiceProvider::class,
-
+        // Legacy service providers can be listed here
     ],
 
     /*

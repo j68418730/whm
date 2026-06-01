@@ -35,7 +35,10 @@ class View
         $viewFile = $this->viewPath . $suffix . '.php';
 
         if (!is_file($viewFile)) {
-            $viewFile = preg_replace('#/(admin|user)/#', '/$1/Views/', $viewFile, 1);
+            // Only apply the legacy path rewrite if this isn't already a plugin path
+            if (!str_contains($viewFile, '/Views/')) {
+                $viewFile = preg_replace('#/(admin|user)/#', '/$1/Views/', $viewFile, 1);
+            }
         }
 
         if (!is_file($viewFile)) {
