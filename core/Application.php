@@ -1,8 +1,4 @@
 <?php
-/**
- * WHM Core Application Class
- * Hosting Panel Bootstrap - Radio Hosting Integrated
- */
 
 namespace Core;
 
@@ -13,6 +9,7 @@ class Application
     protected $services = [];
     protected $router;
     protected $basePath;
+    protected $pluginManager;
 
     public function __construct($basePath, $config)
     {
@@ -20,6 +17,7 @@ class Application
         $this->basePath = $basePath;
         $this->loadConfig($config);
         $this->registerCoreServices();
+        $this->registerPlugins();
         $this->boot();
     }
 
@@ -42,42 +40,44 @@ class Application
             $dbConfig = $dbConfig['connections']['mysql'];
         }
 
-        // Register core services
         $this->services['db'] = new \Core\Database($dbConfig);
         $this->services['request'] = new \Core\Request();
         $this->services['response'] = new \Core\Response();
         $this->services['session'] = new \Core\Session();
         $this->services['auth'] = new \Core\Auth($this->services['db'], $this->services['session']);
         $this->services['router'] = new \Core\Router($this->services['request'], $this->services['response']);
-        
-        // Register radio-specific services as core components
-        $this->services['radio.stream'] = new \Services\Stream\StreamManager(
-            $this->services['config'],
-            $this->services['db']
-        );
-        $this->services['radio.autodj'] = new \Services\AutoDJ\AutoDJManager(
-            $this->services['config'],
-            $this->services['db']
-        );
-        $this->services['radio.transcoding'] = new \Services\Transcoding\TranscodingManager(
-            $this->services['config']
-        );
+    }
+
+    protected function registerPlugins()
+    {
+        $this->pluginManager = new PluginManager($this);
+
+        $pluginConfig = $this->config['plugins'] ?? [];
+        $enabled = $pluginConfig['enabled'] ?? [];
+
+        // Load core routes first
+        $this->loadCoreRoutes();
+
+        // Then load enabled plugins
+        $this->pluginManager->loadFromConfig($enabled);
+    }
+
+    protected function loadCoreRoutes()
+    {
+        $router = $this->services['router'];
+        $routesFile = $this->basePath . '/routes/core.php';
+        if (is_file($routesFile)) {
+            require $routesFile;
+        }
     }
 
     protected function boot()
     {
-        // Load service providers
+        // Boot any legacy service providers
         foreach (($this->config['providers'] ?? []) as $provider) {
             $instance = new $provider($this);
             $instance->register();
             $instance->boot();
-        }
-        
-        // Boot radio service provider if enabled
-        if (($this->config['radio']['global_enabled'] ?? false) && !in_array(\Providers\RadioServiceProvider::class, $this->config['providers'] ?? [], true)) {
-            $radioProvider = new \Providers\RadioServiceProvider($this);
-            $radioProvider->register();
-            $radioProvider->boot();
         }
     }
 
@@ -86,9 +86,19 @@ class Application
         return $this->services[$key] ?? null;
     }
 
+    public function set($key, $service)
+    {
+        $this->services[$key] = $service;
+    }
+
     public function getBasePath()
     {
         return $this->basePath;
+    }
+
+    public function getPluginManager()
+    {
+        return $this->pluginManager;
     }
 
     public function run()

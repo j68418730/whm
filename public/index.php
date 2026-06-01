@@ -1,10 +1,5 @@
 <?php
-/**
- * Front Controller
- * Entry point for all requests
- */
 
-// Define constants
 define('BASE_PATH', realpath(__DIR__.'/../'));
 
 // Load .env file if it exists
@@ -20,7 +15,6 @@ if (is_file($envFile)) {
             [$key, $value] = explode('=', $line, 2);
             $key = trim($key);
             $value = trim($value);
-            // Remove surrounding quotes if present
             if ((str_starts_with($value, '"') && str_ends_with($value, '"')) ||
                 (str_starts_with($value, "'") && str_ends_with($value, "'"))) {
                 $value = substr($value, 1, -1);
@@ -52,19 +46,13 @@ require BASE_PATH . '/core/Controller.php';
 require BASE_PATH . '/core/View.php';
 require BASE_PATH . '/core/Session.php';
 require BASE_PATH . '/core/ServiceProvider.php';
-
-// Load service classes
-require BASE_PATH . '/services/stream/StreamManager.php';
-require BASE_PATH . '/services/autodj/AutoDJManager.php';
-require BASE_PATH . '/services/transcoding/TranscodingManager.php';
-
-// Load service providers
-require BASE_PATH . '/Providers/RadioServiceProvider.php';
+require BASE_PATH . '/core/Plugin.php';
+require BASE_PATH . '/core/PluginManager.php';
 
 // Load configuration
 $config = require BASE_PATH . '/config/app.php';
-$config['radio'] = require BASE_PATH . '/config/radio.php';
 $config['database'] = require BASE_PATH . '/config/database.php';
+$config['plugins'] = require BASE_PATH . '/config/plugins.php';
 
 // Create and run the application
 $app = new Core\Application(BASE_PATH, $config);
