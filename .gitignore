@@ -1,0 +1,6 @@
+# License private key - never commit!
+license_private.pem
+license_private.key
+
+# Each installation generates its own license
+license.key
