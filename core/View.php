@@ -1,8 +1,4 @@
 <?php
-/**
- * View Class
- * Loads and renders template files
- */
 
 namespace Core;
 
@@ -35,7 +31,6 @@ class View
         $viewFile = $this->viewPath . $suffix . '.php';
 
         if (!is_file($viewFile)) {
-            // Only apply the legacy path rewrite if this isn't already a plugin path
             if (!str_contains($viewFile, '/Views/')) {
                 $viewFile = preg_replace('#/(admin|user)/#i', '/$1/Views/', $viewFile, 1);
             }
@@ -45,17 +40,27 @@ class View
             return $this->renderFallback($viewFile);
         }
 
-        // Extract the data to local variables
         extract($this->data, EXTR_SKIP);
-
-        // Start output buffering
         ob_start();
-
-        // Include the view file
         require $viewFile;
-
-        // Get the contents of the buffer
         $content = ob_get_clean();
+
+        // Inject theme background + CSS into admin views that output full HTML
+        if (str_contains($content, '<body')) {
+            $bgInject = "\n".'<div class="bg-overlay"></div>'."\n".'<link rel="stylesheet" href="/theme/assets/css/style.css">'."\n".'<style>body{background:#000!important}.bg-overlay{position:fixed;inset:0;background:linear-gradient(rgba(2,8,23,.88),rgba(2,8,23,.96)),url(/theme/assets/img/background.png);background-size:cover;z-index:-2}</style>';
+            $content = str_replace('<head>', "<head>$bgInject", $content);
+        } else {
+            // Wrap in theme layout for content fragments (non-standalone views)
+            $layoutFile = BASE_PATH . '/theme/layout.php';
+            if (is_file($layoutFile)) {
+                $title = $this->data['title'] ?? 'Planet Hosts';
+                $loggedIn = $this->data['loggedIn'] ?? ($this->data['user'] ?? null ? true : false);
+                $user = $this->data['user'] ?? null;
+                ob_start();
+                require $layoutFile;
+                $content = ob_get_clean();
+            }
+        }
 
         return $content;
     }
@@ -65,39 +70,31 @@ class View
         $module = basename(dirname($viewFile));
         $title = ucwords(str_replace(['_', '-'], ' ', $module));
 
-        return '<!DOCTYPE html>
+        $html = '<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . ' - Spectre WHM</title>
-    <link rel="stylesheet" href="/css/admin.css">
+    <title>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . ' - Planet Hosts</title>
+    <link rel="stylesheet" href="/theme/assets/css/style.css">
+    <style>
+        body{font-family:Inter,sans-serif;background:#000;color:#fff;margin:0;padding:40px}
+        .bg-overlay{position:fixed;inset:0;background:linear-gradient(rgba(2,8,23,.88),rgba(2,8,23,.96)),url(/theme/assets/img/background.png);background-size:cover;z-index:-2}
+        .card{background:rgba(8,16,28,.9);border:1px solid rgba(0,191,255,.12);border-radius:16px;padding:40px;max-width:800px;margin:auto}
+        h1{color:#0A84FF;font-size:2rem}
+        p{color:#94a3b8;line-height:1.8}
+        a{color:#00BFFF}
+    </style>
 </head>
-<body class="whm-body">
-    <main class="whm-shell">
-        <aside class="whm-sidebar">
-            <div class="brand"><span class="brand-mark">S</span><div><strong>Spectre WHM</strong><small>Hosting + Radio</small></div></div>
-            <a href="/admin/dashboard">Dashboard</a>
-            <a href="/admin/account">Account Functions</a>
-            <a href="/admin/reseller">Reseller Center</a>
-            <a href="/admin/packages">Packages</a>
-            <a href="/admin/streams">Radio Streams</a>
-            <a href="/admin/radio_dashboard">Radio Dashboard</a>
-            <a href="/admin/server">Server Overview</a>
-        </aside>
-        <section class="whm-content">
-            <div class="module-header">
-                <span class="eyebrow">WHM Module</span>
-                <h1>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</h1>
-                <p>This module is wired into the panel navigation and ready for deeper controls.</p>
-            </div>
-            <div class="card-grid">
-                <article class="module-card"><h3>Status</h3><p>Route and controller are available.</p></article>
-                <article class="module-card"><h3>Next Build</h3><p>Add forms, tables, actions, and service integrations for this WHM area.</p></article>
-            </div>
-        </section>
-    </main>
+<body>
+<div class="bg-overlay"></div>
+<div class="card">
+    <h1>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</h1>
+    <p>This module is ready for content.</p>
+    <a href="/admin/dashboard">&larr; Back to Dashboard</a>
+</div>
 </body>
 </html>';
+        return $html;
     }
 }
