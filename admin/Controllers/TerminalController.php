@@ -39,12 +39,11 @@ class TerminalController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get terminal stats (for demo, we'll use dummy data)
         $terminalStats = [
-            'active_sessions' => rand(0, 10),
-            'total_ssh_keys' => rand(5, 50),
-            'browser_terminal_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
-            'ssh_access_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
+            'active_sessions' => 0,
+            'total_ssh_keys' => 0,
+            'browser_terminal_enabled' => 'disabled',
+            'ssh_access_enabled' => 'disabled',
         ];
 
         // Get admin theme settings

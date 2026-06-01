@@ -39,12 +39,11 @@ class AutodjController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get AutoDJ stats (for demo, we'll use dummy data)
         $autodjStats = [
-            'total_tracks' => rand(100, 1000),
-            'total_playlists' => rand(5, 50),
-            'scheduled_playlists' => rand(2, 20),
-            'storage_used' => rand(5, 50), // GB
+            'total_tracks' => 0,
+            'total_playlists' => 0,
+            'scheduled_playlists' => 0,
+            'storage_used' => 0,
         ];
 
         // Get admin theme settings

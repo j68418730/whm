@@ -39,13 +39,12 @@ class NetworkController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get network stats (for demo, we'll use dummy data)
         $networkStats = [
-            'total_ips' => rand(5, 50),
-            'assigned_ips' => rand(3, 40),
-            'hostname' => 'server' . rand(1, 999) . '.example.com',
+            'total_ips' => 0,
+            'assigned_ips' => 0,
+            'hostname' => 'server.example.com',
             'primary_interface' => 'eth0',
-            'ipv6_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
+            'ipv6_enabled' => 'disabled',
         ];
 
         // Get admin theme settings

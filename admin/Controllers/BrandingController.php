@@ -39,11 +39,10 @@ class BrandingController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get branding stats (for demo, we'll use dummy data)
         $brandingStats = [
-            'custom_logo' => rand(0, 1) ? 'set' : 'not set',
-            'custom_theme' => rand(0, 1) ? 'set' : 'not set',
-            'white_label_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
+            'custom_logo' => 'not set',
+            'custom_theme' => 'not set',
+            'white_label_enabled' => 'disabled',
             'company_name' => 'Your Company',
         ];
 

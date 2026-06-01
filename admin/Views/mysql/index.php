@@ -239,37 +239,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Sample data - in real implementation, this would come from database -->
-                    <tr>
-                        <td>account1_wp</td>
-                        <td>25 MB</td>
-                        <td>user1</td>
-                        <td>2026-05-15</td>
-                        <td>
-                            <a href="/admin/mysql/db/edit/account1_wp" class="btn btn-sm btn-secondary">Manage</a>
-                            <a href="/admin/mysql/db/delete/account1_wp" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>account2_store</td>
-                        <td>120 MB</td>
-                        <td>user2</td>
-                        <td>2026-05-20</td>
-                        <td>
-                            <a href="/admin/mysql/db/edit/account2_store" class="btn btn-sm btn-secondary">Manage</a>
-                            <a href="/admin/mysql/db/delete/account2_store" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>account3_blog</td>
-                        <td>45 MB</td>
-                        <td>user3</td>
-                        <td>2026-05-25</td>
-                        <td>
-                            <a href="/admin/mysql/db/edit/account3_blog" class="btn btn-sm btn-secondary">Manage</a>
-                            <a href="/admin/mysql/db/delete/account3_blog" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
+                    <tr><td colspan="5" style="text-align:center;padding:2rem;color:#999;">No databases created yet.</td></tr>
                 </tbody>
             </table>
         </div>

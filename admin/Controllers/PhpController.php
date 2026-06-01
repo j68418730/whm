@@ -39,13 +39,12 @@ class PhpController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get PHP stats (for demo, we'll use dummy data)
         $phpStats = [
             'available_versions' => ['5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1'],
             'default_version' => '7.4',
-            'php_fpm_pools' => rand(10, 50),
-            'total_ini_directives' => rand(200, 300),
-            'enabled_extensions' => rand(50, 100),
+            'php_fpm_pools' => 0,
+            'total_ini_directives' => 0,
+            'enabled_extensions' => 0,
         ];
 
         // Get admin theme settings

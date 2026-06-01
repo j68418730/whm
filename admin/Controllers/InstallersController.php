@@ -39,12 +39,11 @@ class InstallersController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get installers stats (for demo, we'll use dummy data)
         $installersStats = [
-            'total_apps' => rand(100, 400),
-            'installed_apps' => rand(10, 100),
-            'updates_available' => rand(0, 50),
-            'softaculous_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
+            'total_apps' => 0,
+            'installed_apps' => 0,
+            'updates_available' => 0,
+            'softaculous_enabled' => 'disabled',
         ];
 
         // Get admin theme settings

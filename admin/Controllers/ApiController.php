@@ -39,14 +39,13 @@ class ApiController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get API stats (for demo, we'll use dummy data)
         $apiStats = [
-            'total_api_tokens' => rand(5, 50),
-            'active_api_tokens' => rand(4, 45),
-            'api_requests_today' => rand(100, 1000),
-            'blocked_api_requests' => rand(0, 50),
-            'whm_api_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
-            'uapi_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
+            'total_api_tokens' => 0,
+            'active_api_tokens' => 0,
+            'api_requests_today' => 0,
+            'blocked_api_requests' => 0,
+            'whm_api_enabled' => 'disabled',
+            'uapi_enabled' => 'disabled',
         ];
 
         // Get admin theme settings

@@ -39,16 +39,15 @@ class UserFeaturesController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get user features stats (for demo, we'll use dummy data)
         $userFeaturesStats = [
-            'email_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
-            'ftp_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
-            'cron_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
-            'ssh_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
-            'ssl_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
-            'databases_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
-            'dns_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
-            'git_enabled' => rand(0, 1) ? 'enabled' : 'disabled',
+            'email_enabled' => 'disabled',
+            'ftp_enabled' => 'disabled',
+            'cron_enabled' => 'disabled',
+            'ssh_enabled' => 'disabled',
+            'ssl_enabled' => 'disabled',
+            'databases_enabled' => 'disabled',
+            'dns_enabled' => 'disabled',
+            'git_enabled' => 'disabled',
         ];
 
         // Get admin theme settings

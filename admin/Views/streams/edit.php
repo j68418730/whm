@@ -156,7 +156,7 @@
         <form action="/admin/streams/edit/<?php echo isset($streamId) ? htmlspecialchars($streamId) : ''; ?>" method="post">
             <div class="form-group">
                 <label for="name" class="required">Stream Name</label>
-                <input type="text" id="name" name="name" value="Main Radio" required>
+                <input type="text" id="name" name="name" placeholder="Enter stream name" required>
             </div>
 
             <div class="form-group">

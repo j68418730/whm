@@ -39,15 +39,12 @@ class DashboardController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        // Get radio hosting stats (for demo, we'll use dummy data)
         $stats = [
             'total_streams' => 0,
             'active_streams' => 0,
             'total_listeners' => 0,
             'bandwidth_used' => 0,
         ];
-
-        // In a real implementation, we would query the database for these stats
 
         // Get admin theme settings
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);

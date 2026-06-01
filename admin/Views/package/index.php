@@ -217,46 +217,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Sample data - in real implementation, this would come from database -->
-                    <tr>
-                        <td>Basic</td>
-                        <td>$5.99/mo</td>
-                        <td>10 GB</td>
-                        <td>100 GB</td>
-                        <td>1</td>
-                        <td>5</td>
-                        <td>1</td>
-                        <td>
-                            <a href="/admin/package/edit/basic" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/package/delete/basic" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Premium</td>
-                        <td>$12.99/mo</td>
-                        <td>20 GB</td>
-                        <td>500 GB</td>
-                        <td>5</td>
-                        <td>20</td>
-                        <td>5</td>
-                        <td>
-                            <a href="/admin/package/edit/premium" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/package/delete/premium" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Enterprise</td>
-                        <td>$24.99/mo</td>
-                        <td>50 GB</td>
-                        <td>Unlimited</td>
-                        <td>Unlimited</td>
-                        <td>Unlimited</td>
-                        <td>Unlimited</td>
-                        <td>
-                            <a href="/admin/package/edit/enterprise" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/package/delete/enterprise" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
+                    <tr><td colspan="6" style="text-align:center;padding:2rem;color:#999;">No packages defined yet.</td></tr>
                 </tbody>
             </table>
         </div>

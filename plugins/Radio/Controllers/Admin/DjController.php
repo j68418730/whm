@@ -25,9 +25,9 @@ class DjController extends Controller
         }
         $user = $this->auth->user();
         $djStats = [
-            'total_djs' => rand(5, 50),
-            'active_djs' => rand(3, 40),
-            'scheduled_djs' => rand(2, 20),
+            'total_djs' => 0,
+            'active_djs' => 0,
+            'scheduled_djs' => 0,
         ];
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         return $this->view('Plugins.Radio.Views.admin.djs.index', [

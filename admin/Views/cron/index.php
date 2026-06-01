@@ -228,40 +228,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Sample data - in real implementation, this would come from database -->
-                    <tr>
-                        <td>Backup Database</td>
-                        <td>0 2 * * * (Daily at 2 AM)</td>
-                        <td>/usr/bin/php /path/to/artisan backup:db</td>
-                        <td>2 hours ago</td>
-                        <td><span class="status-badge status-active">Active</span></td>
-                        <td>
-                            <a href="/admin/cron/edit/1" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/cron/delete/1" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Send Reports</td>
-                        <td>0 8 * * 1 (Weekly on Monday at 8 AM)</td>
-                        <td>/usr/bin/php /path/to/artisan reports:send</td>
-                        <td>Yesterday</td>
-                        <td><span class="status-badge status-active">Active</span></td>
-                        <td>
-                            <a href="/admin/cron/edit/2" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/cron/delete/2" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Clean Logs</td>
-                        <td>0 3 * * 0 (Weekly on Sunday at 3 AM)</td>
-                        <td>/usr/bin/php /path/to/artisan logs:clean</td>
-                        <td>3 days ago</td>
-                        <td><span class="status-badge status-failed">Failed</span></td>
-                        <td>
-                            <a href="/admin/cron/edit/3" class="btn btn-sm btn-secondary">Edit</a>
-                            <a href="/admin/cron/delete/3" class="btn btn-sm btn-secondary">Delete</a>
-                        </td>
-                    </tr>
+                    <tr><td colspan="5" style="text-align:center;padding:2rem;color:#999;">No cron jobs scheduled yet.</td></tr>
                 </tbody>
             </table>
         </div>
