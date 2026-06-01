@@ -7,3 +7,6 @@ license.key
 
 # Environment file with DB credentials
 .env
+
+# Runtime copy of theme in public directory
+public/theme
