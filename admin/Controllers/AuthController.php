@@ -26,11 +26,26 @@ class AuthController extends Controller
     }
 
     /**
+     * Show landing page (theme)
+     */
+    public function landing()
+    {
+        $themeFile = BASE_PATH . '/theme/index.html';
+        if (is_file($themeFile)) {
+            $content = file_get_contents($themeFile);
+            $this->response->setContent($content);
+            $this->response->send();
+            exit;
+        }
+        // Fallback to login if no theme
+        $this->login();
+    }
+
+    /**
      * Show login form
      */
     public function login()
     {
-        // If already logged in, redirect to dashboard
         if ($this->auth->check() && $this->auth->isAdmin()) {
             $this->response->redirect('/admin/dashboard');
             exit;
