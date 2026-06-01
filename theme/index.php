@@ -1,6 +1,56 @@
 <?php
 $showLogin = isset($_GET['login']);
 $loginError = isset($loginError) ? $loginError : null;
+$loggedIn = isset($loggedIn) ? $loggedIn : false;
+$user = isset($user) ? $user : null;
+if ($loggedIn && $user):
+?><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - Planet Hosts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#000;color:#fff}
+.dash{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.sidebar{background:#0b1728;border-right:1px solid rgba(0,212,255,.2);padding:20px}
+.sidebar h2{font-size:20px;margin-bottom:30px;color:#00d4ff}
+.sidebar a{display:block;color:#c9ddf3;text-decoration:none;padding:12px;border-radius:8px;margin-bottom:4px}
+.sidebar a:hover{background:rgba(0,212,255,.12);color:#fff}
+.main{padding:30px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:30px}
+.card{background:#0d1b2e;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:24px}
+.card h3{color:#00d4ff;font-size:14px;text-transform:uppercase;margin-bottom:8px}
+.card .value{font-size:32px;font-weight:700}
+.btn{padding:10px 20px;background:linear-gradient(135deg,#008cff,#3bb8ff);border:none;border-radius:8px;color:#fff;text-decoration:none;font-weight:600}
+</style>
+</head>
+<body>
+<div class="dash">
+<div class="sidebar">
+<h2>Planet Hosts</h2>
+<a href="#">Dashboard</a>
+<a href="#">Accounts</a>
+<a href="#">Streams</a>
+<a href="#">Servers</a>
+</div>
+<div class="main">
+<div class="topbar"><h1>Dashboard</h1><a href="/admin/logout" class="btn">Logout</a></div>
+<div class="stats">
+<div class="card"><h3>Accounts</h3><div class="value">0</div></div>
+<div class="card"><h3>Streams</h3><div class="value">0</div></div>
+<div class="card"><h3>Servers</h3><div class="value">0</div></div>
+<div class="card"><h3>Uptime</h3><div class="value">99.99%</div></div>
+</div>
+<p style="color:#94a3b8">Welcome, <?php echo htmlspecialchars($user->name ?? 'User', ENT_QUOTES, 'UTF-8'); ?></p>
+</div></div>
+</body></html>
+<?php
+exit;
+endif;
 ?><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,7 +60,7 @@ $loginError = isset($loginError) ? $loginError : null;
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
+<style>
 
 *{
     margin:0;
@@ -31,7 +81,7 @@ body{
     inset:0;
     background:
         linear-gradient(rgba(2,8,23,.88),rgba(2,8,23,.96)),
-        url('../img/background.png');
+        url('/theme/assets/img/background.png');
     background-size:cover;
     background-position:center;
     z-index:-2;
@@ -299,7 +349,7 @@ nav a:hover{
         font-size:3rem;
     }
 }
-
+</style>
 </head>
 <body>
 
@@ -321,7 +371,7 @@ nav a:hover{
             <a href="#">Servers</a>
             <a href="#">Domains</a>
             <a href="#">Billing</a>
-            <a href="#">Contact</a>
+            <a href="?login">Login</a>
         </nav>
     </div>
 </header>
@@ -360,7 +410,7 @@ nav a:hover{
     </div>
 
     <div class="hero-image">
-        <img src="assets/img/dashboard.png" alt="dashboard">
+        <img src="/theme/assets/img/dashboard.png" alt="dashboard">
     </div>
 
 </section>
@@ -395,13 +445,13 @@ nav a:hover{
 
 <section class="dashboard-preview container">
     <div class="panel">
-        <img src="assets/img/dashboard.png" alt="preview">
+        <img src="/theme/assets/img/dashboard.png" alt="preview">
     </div>
 </section>
 
 <footer class="footer">
     <div class="container">
-        <img src="assets/img/logo.png" alt="logo">
+        <img src="/theme/assets/img/logo.png" alt="logo">
 
         <h2>PLANET-<span>HOSTS</span></h2>
 
@@ -421,37 +471,30 @@ nav a:hover{
 </footer>
 
 <script src="/theme/assets/js/app.js"></script>
-
 <?php if ($showLogin): ?>
 <div id="loginModal" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);">
-    <div style="background:#0b1728;border:1px solid rgba(0,140,255,.2);border-radius:24px;padding:48px;width:400px;max-width:92vw;">
-        <div style="text-align:center;margin-bottom:32px;">
-            <h2 style="font-size:28px;font-weight:800;margin-bottom:8px;">Welcome Back</h2>
-            <p style="color:#94a3b8;">Sign in to your dashboard</p>
-        </div>
-        <?php if ($loginError): ?>
-            <div style="background:rgba(255,50,50,.12);border:1px solid rgba(255,50,50,.3);border-radius:12px;padding:12px 16px;margin-bottom:20px;color:#ff6b6b;font-size:14px;">
-                <?php echo htmlspecialchars($loginError, ENT_QUOTES, 'UTF-8'); ?>
-            </div>
-        <?php endif; ?>
-        <form method="POST" action="/admin/login/post">
-            <div style="margin-bottom:20px;">
-                <label style="display:block;margin-bottom:8px;font-weight:600;font-size:14px;color:#b0c4db;">Email</label>
-                <input type="email" name="email" value="admin@example.com" required style="width:100%;padding:14px 18px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:16px;outline:none;">
-            </div>
-            <div style="margin-bottom:28px;">
-                <label style="display:block;margin-bottom:8px;font-weight:600;font-size:14px;color:#b0c4db;">Password</label>
-                <input type="password" name="password" value="admin" required style="width:100%;padding:14px 18px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:16px;outline:none;">
-            </div>
-            <button type="submit" style="width:100%;padding:16px;border:none;border-radius:14px;background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 0 20px rgba(0,140,255,.35);">
-                Sign In
-            </button>
-        </form>
-        <div style="text-align:center;margin-top:20px;"><a href="/" style="color:#5e8eb0;text-decoration:none;font-size:14px;">Back</a></div>
-    </div>
+<div style="background:#0b1728;border:1px solid rgba(0,140,255,.2);border-radius:24px;padding:48px;width:400px;max-width:92vw;">
+<div style="text-align:center;margin-bottom:32px;">
+<h2 style="font-size:28px;font-weight:800;margin-bottom:8px;">Welcome Back</h2>
+<p style="color:#94a3b8;">Sign in to your dashboard</p>
 </div>
+<?php if ($loginError): ?>
+<div style="background:rgba(255,50,50,.12);border:1px solid rgba(255,50,50,.3);border-radius:12px;padding:12px 16px;margin-bottom:20px;color:#ff6b6b;font-size:14px;"><?php echo htmlspecialchars($loginError, ENT_QUOTES, 'UTF-8'); ?></div>
+<?php endif; ?>
+<form method="POST" action="/admin/login/post">
+<div style="margin-bottom:20px;">
+<label style="display:block;margin-bottom:8px;font-weight:600;font-size:14px;color:#b0c4db;">Email</label>
+<input type="email" name="email" value="admin@example.com" required style="width:100%;padding:14px 18px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:16px;outline:none;">
+</div>
+<div style="margin-bottom:28px;">
+<label style="display:block;margin-bottom:8px;font-weight:600;font-size:14px;color:#b0c4db;">Password</label>
+<input type="password" name="password" value="admin" required style="width:100%;padding:14px 18px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:16px;outline:none;">
+</div>
+<button type="submit" style="width:100%;padding:16px;border:none;border-radius:14px;background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 0 20px rgba(0,140,255,.35);">Sign In</button>
+</form>
+<div style="text-align:center;margin-top:20px;"><a href="/" style="color:#5e8eb0;text-decoration:none;font-size:14px;">Back to home</a></div>
+</div></div>
 <script>document.getElementById('loginModal')?.addEventListener('click',function(e){if(e.target===this)window.location.href='/';});</script>
 <?php endif; ?>
-
 </body>
 </html>
