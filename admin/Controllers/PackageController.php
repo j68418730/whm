@@ -43,10 +43,13 @@ class PackageController extends Controller
         }
 
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        $totalPackages = count($packages);
+        $activePackages = count(array_filter($packages, function($p) { return ($p->is_active ?? 0) == 1; }));
         return $this->view('admin.package.index', [
             'user' => $user,
             'grouped' => $grouped,
             'types' => $types,
+            'packagesStats' => ['total_packages' => $totalPackages, 'active_packages' => $activePackages],
             'theme_settings' => $theme_settings
         ]);
     }
