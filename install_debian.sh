@@ -33,7 +33,7 @@ apt install -y -qq apache2 mariadb-server php php-cli php-common php-curl \
   php-opcache php-redis php-sockets php-tokenizer php-xmlreader \
   php-xsl php-apcu php-imagick postfix vsftpd bind9 unzip wget curl git openssl
 
-systemctl enable --now apache2 mariadb
+systemctl enable --now apache2 mariadb postfix vsftpd named
 
 # 3. Icecast + Liquidsoap + Ezstream + FFmpeg
 echo "[3/8] Installing streaming stack..."

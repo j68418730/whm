@@ -1,8 +1,6 @@
 <?php
 $user = isset($user) ? $user : null;
 $title = isset($title) ? $title : 'Dashboard';
-$pluginManager = \Core\Application::getInstance()->getPluginManager();
-$addons = $pluginManager ? $pluginManager->loadedMetadata() : [];
 ?><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,6 +11,27 @@ $addons = $pluginManager ? $pluginManager->loadedMetadata() : [];
 <body>
 <div class="bg-overlay"></div>
 <div class="grid-overlay"></div>
+
+<header class="header">
+<div class="container nav">
+<div class="logo">
+<img src="/theme/assets/img/logo.png" alt="logo">
+<div>
+<h1>PLANET-<span>HOSTS</span></h1>
+<p>Hosting Panel</p>
+</div>
+</div>
+<nav>
+<a href="/">Home</a>
+<a href="/admin/dashboard">Dashboard</a>
+<a href="/admin/server">Server</a>
+<?php if ($user): ?>
+<a href="/admin/logout" style="color:#ff6b6b">Logout</a>
+<?php endif; ?>
+</nav>
+</div>
+</header>
+
 <div class="admin-shell">
 <div class="sidebar">
 <div class="logo-text">PLANET <span>HOSTS</span></div>
@@ -64,5 +83,19 @@ $addons = $pluginManager ? $pluginManager->loadedMetadata() : [];
 </div>
 </div>
 </div>
+
+<footer class="footer">
+<div class="container">
+<div class="footer-logo">PLANET-<span>HOSTS</span></div>
+<p>Building the future of hosting infrastructure.</p>
+<div class="footer-links">
+<a href="#">Terms</a>
+<a href="#">Privacy</a>
+<a href="#">Support</a>
+<a href="#">API</a>
+</div>
+<div class="copyright">&copy; 2026 Planet-Hosts. All rights reserved.</div>
+</div>
+</footer>
 </body>
 </html>
