@@ -1,59 +1,85 @@
 <?php
-/**
- * SSL/TLS Management Controller
- * Handles SSL certificate installation, CSR generation, private keys, certificate chains, AutoSSL
- */
 
 namespace Admin\Controllers;
 
 use Core\Controller;
-use Core\Auth;
-use Core\Request;
-use Core\Response;
-use Core\View;
 
 class SslController extends Controller
 {
     protected $auth;
     protected $request;
     protected $response;
+    protected $db;
 
     public function __construct()
     {
-        $this->auth = \Core\Application::getInstance()->get('auth');
-        $this->request = \Core\Application::getInstance()->get('request');
-        $this->response = \Core\Application::getInstance()->get('response');
+        $app = \Core\Application::getInstance();
+        $this->auth = $app->get('auth');
+        $this->request = $app->get('request');
+        $this->response = $app->get('response');
+        $this->db = $app->get('db');
     }
 
-    /**
-     * Show SSL/TLS management dashboard
-     */
     public function index()
     {
-        // Check if user is logged in and is admin
-        if (!$this->auth->check() || !$this->auth->isAdmin()) {
-            $this->response->redirect('/admin/login');
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        $certs = $this->db->table('ssl_certs')->get() ?: [];
+        $domainCount = count($certs);
+        $expiringSoon = 0;
+        $now = time();
+        foreach ($certs as $c) {
+            if ($c->expires_at && strtotime($c->expires_at) < $now + 86400 * 30) $expiringSoon++;
+        }
+        return $this->view('admin.ssl.index', [
+            'user' => $user, 'theme_settings' => $theme_settings, 'title' => 'SSL/TLS',
+            'certs' => $certs, 'domainCount' => $domainCount, 'expiringSoon' => $expiringSoon,
+        ]);
+    }
+
+    public function install()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $domain = $this->request->post('domain', '');
+        $cert = $this->request->post('certificate', '');
+        $key = $this->request->post('private_key', '');
+        if ($domain && $cert && $key) {
+            $this->db->table('ssl_certs')->insertGetId([
+                'domain' => $domain, 'certificate' => $cert,
+                'private_key' => $key, 'status' => 'active',
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+            $_SESSION['success_message'] = "SSL certificate installed for $domain";
+        }
+        $this->response->redirect('/admin/ssl');
+    }
+
+    public function autossl()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        if ($this->request->method() === 'POST') {
+            $email = $this->request->post('email', '');
+            $enabled = $this->request->post('enabled', '0');
+            if ($enabled === '1' && $email) {
+                shell_exec("certbot --apache --non-interactive --agree-tos --email " . escapeshellarg($email) . " 2>&1 &");
+                $_SESSION['success_message'] = 'AutoSSL enabled. Certificates will be provisioned in the background.';
+            }
+            $this->response->redirect('/admin/ssl/autossl');
             exit;
         }
-
-        // Get admin user info
-        $user = $this->auth->user();
-
-        $sslStats = [
-            'total_certificates' => 0,
-            'active_certificates' => 0,
-            'expiring_soon' => 0,
-            'autossl_enabled' => 'disabled',
-        ];
-
-        // Get admin theme settings
-        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-
-        // Render the SSL/TLS management view
-        return $this->view('admin.ssl.index', [
-            'user' => $user,
-            'sslStats' => $sslStats,
-            'theme_settings' => $theme_settings
+        return $this->view('admin.ssl.autossl', [
+            'user' => $user, 'theme_settings' => $theme_settings, 'title' => 'AutoSSL',
         ]);
+    }
+
+    public function autosslRun()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $output = shell_exec("certbot renew --apache --non-interactive 2>&1");
+        $_SESSION['success_message'] = $output ? 'AutoSSL run completed.' : 'certbot command failed.';
+        $this->response->redirect('/admin/ssl/autossl');
     }
 }
