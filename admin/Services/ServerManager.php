@@ -131,7 +131,7 @@ class ServerManager
             'Web Server' => ['apache2', 'httpd', 'nginx'],
             'Database' => ['mariadb', 'mysql'],
             'Mail' => ['postfix', 'exim', 'dovecot'],
-            'FTP' => ['pure-ftpd', 'vsftpd', 'proftpd'],
+            'FTP' => ['vsftpd', 'pure-ftpd', 'proftpd'],
             'DNS' => ['bind9', 'named', 'unbound'],
             'SSH' => ['ssh', 'sshd'],
             'Icecast' => ['icecast2', 'icecast'],
@@ -140,13 +140,13 @@ class ServerManager
         foreach ($candidates as $label => $names) {
             foreach ($names as $svc) {
                 $output = shell_exec("systemctl is-active {$svc} 2>/dev/null");
-                if ($output !== null) {
-                    $status[$label] = trim($output);
+                if ($output !== null && trim($output) === 'active') {
+                    $status[$label] = 'active';
                     break;
                 }
             }
             if (!isset($status[$label])) {
-                $status[$label] = 'not found';
+                $status[$label] = 'inactive';
             }
         }
         return $status;
