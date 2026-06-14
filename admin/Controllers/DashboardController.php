@@ -1,7 +1,7 @@
 <?php
 /**
  * Admin Dashboard Controller
- * Shows the admin dashboard with radio hosting overview
+ * Shows the WHM admin dashboard and enabled add-ons
  */
 
 namespace Admin\Controllers;
@@ -46,6 +46,9 @@ class DashboardController extends Controller
             'bandwidth_used' => 0,
         ];
 
+        $pluginManager = \Core\Application::getInstance()->getPluginManager();
+        $addons = $pluginManager ? $pluginManager->loadedMetadata() : [];
+
         // Get admin theme settings
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
 
@@ -53,6 +56,7 @@ class DashboardController extends Controller
         return $this->view('admin.dashboard.index', [
             'user' => $user,
             'stats' => $stats,
+            'addons' => $addons,
             'theme_settings' => $theme_settings
         ]);
     }
