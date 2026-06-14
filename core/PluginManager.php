@@ -54,6 +54,24 @@ class PluginManager
         return $this->plugins;
     }
 
+    public function metadata()
+    {
+        return array_map(function ($plugin) {
+            return $plugin->getMetadata();
+        }, $this->plugins);
+    }
+
+    public function loadedMetadata()
+    {
+        $loaded = [];
+        foreach ($this->loaded as $name) {
+            if (isset($this->plugins[$name])) {
+                $loaded[] = $this->plugins[$name]->getMetadata();
+            }
+        }
+        return $loaded;
+    }
+
     public function loadFromConfig(array $pluginClasses)
     {
         foreach ($pluginClasses as $class) {
