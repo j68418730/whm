@@ -198,5 +198,29 @@ $router->get('/admin/cron/delete/{id}', 'Admin\Controllers\CronController@index'
 $router->get('/admin/cron/run', 'Admin\Controllers\CronController@index');
 $router->get('/admin/cron/logs', 'Admin\Controllers\CronController@index');
 
+// -- Billing routes --
+$router->get('/admin/billing', 'Admin\Controllers\BillingController@index');
+$router->get('/admin/billing/products', 'Admin\Controllers\BillingController@products');
+$router->post('/admin/billing/products/store', 'Admin\Controllers\BillingController@productStore');
+$router->get('/admin/billing/products/delete/{id}', 'Admin\Controllers\BillingController@productDelete');
+$router->get('/admin/billing/orders', 'Admin\Controllers\BillingController@orders');
+$router->post('/admin/billing/orders/update/{id}', 'Admin\Controllers\BillingController@orderUpdate');
+$router->get('/admin/billing/services', 'Admin\Controllers\BillingController@services');
+$router->post('/admin/billing/services/update/{id}', 'Admin\Controllers\BillingController@serviceUpdate');
+$router->get('/admin/billing/invoices', 'Admin\Controllers\BillingController@invoices');
+$router->post('/admin/billing/invoices/create', 'Admin\Controllers\BillingController@invoiceCreate');
+$router->post('/admin/billing/invoices/status/{id}', 'Admin\Controllers\BillingController@invoiceUpdateStatus');
+$router->get('/admin/billing/payments', 'Admin\Controllers\BillingController@payments');
+$router->post('/admin/billing/payments/store', 'Admin\Controllers\BillingController@paymentStore');
+$router->get('/admin/billing/taxes', 'Admin\Controllers\BillingController@taxes');
+$router->post('/admin/billing/taxes/store', 'Admin\Controllers\BillingController@taxStore');
+$router->get('/admin/billing/taxes/delete/{id}', 'Admin\Controllers\BillingController@taxDelete');
+$router->get('/admin/billing/coupons', 'Admin\Controllers\BillingController@coupons');
+$router->post('/admin/billing/coupons/store', 'Admin\Controllers\BillingController@couponStore');
+$router->get('/admin/billing/coupons/delete/{id}', 'Admin\Controllers\BillingController@couponDelete');
+$router->get('/admin/billing/credits', 'Admin\Controllers\BillingController@credits');
+$router->post('/admin/billing/credits/store', 'Admin\Controllers\BillingController@creditStore');
+$router->get('/admin/billing/refunds', 'Admin\Controllers\BillingController@refunds');
+
 // -- Catch-all for unknown /admin/* routes (redirects to dashboard) --
 $router->get('/admin/{any}', 'Admin\Controllers\DashboardController@index');
