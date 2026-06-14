@@ -12,9 +12,6 @@ $moduleGroups = [
     'Packages & Billing' => [
         ['Package Manager', '/admin/packages'],['Upgrade / Downgrade Accounts', '/admin/packages'],['API Access', '/admin/api'],['Licensing', '/admin/licensing'],
     ],
-    'Radio Management' => [
-        ['Radio Dashboard', '/admin/radio_dashboard'],['Manage Streams', '/admin/streams'],['Create Stream', '/admin/streams/create'],['Radio Settings', '/admin/radiosettings'],
-    ],
     'Server Configuration' => [
         ['Server Overview', '/admin/server'],['Apache Configuration', '/admin/apache'],['PHP Management', '/admin/php'],['MySQL Databases', '/admin/mysql'],
     ],
@@ -29,17 +26,7 @@ $moduleGroups = [
 <div class="stats-grid">
 <div class="stat-card"><h3>Hosting Accounts</h3><div class="value">0</div><div class="label">Active accounts</div></div>
 <div class="stat-card"><h3>Resellers</h3><div class="value">0</div><div class="label">Delegated account owners</div></div>
-<div class="stat-card"><h3>Radio Streams</h3><div class="value"><?php echo (int)$stats['total_streams']; ?></div><div class="label"><?php echo (int)$stats['active_streams']; ?> currently active</div></div>
 <div class="stat-card"><h3>Listeners</h3><div class="value"><?php echo (int)$stats['total_listeners']; ?></div><div class="label">Bandwidth: <?php echo number_format($stats['bandwidth_used'] / (1024 * 1024), 2); ?> MB</div></div>
-</div>
-
-<div class="card" style="background:rgba(0,140,255,.05);border-color:rgba(0,140,255,.2);margin-bottom:24px">
-<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
-<div><span style="color:var(--accent);font-size:13px;text-transform:uppercase;letter-spacing:1px">Built-In Radio Hosting</span>
-<h2 style="font-size:20px;margin:4px 0 0">Icecast, AutoDJ, DJs, playlists &amp; transcoding</h2>
-<p style="color:var(--text-secondary);margin-top:4px">Radio is treated as a native hosting feature — provision stations alongside web hosting accounts.</p></div>
-<div style="display:flex;gap:10px"><a href="/admin/radio_dashboard" class="btn primary">Open Radio Dashboard</a><a href="/admin/radiosettings" class="btn secondary">Radio Settings</a></div>
-</div>
 </div>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">

@@ -83,7 +83,7 @@ class ServerManager
     public function getUptime()
     {
         if (is_file('/proc/uptime')) {
-            $seconds = (float)file_get_contents('/proc/uptime');
+            $seconds = (int)file_get_contents('/proc/uptime');
             $days = floor($seconds / 86400);
             $hours = floor(($seconds % 86400) / 3600);
             $mins = floor(($seconds % 3600) / 60);

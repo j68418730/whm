@@ -37,14 +37,6 @@ $addons = $pluginManager ? $pluginManager->loadedMetadata() : [];
 <a href="/admin/ssl">SSL/TLS</a>
 </div>
 <div class="nav-section">
-<div class="nav-label">Radio</div>
-<a href="/admin/streams">Streams</a>
-<a href="/admin/radio_dashboard">Radio Dashboard</a>
-<a href="/admin/radiosettings">Radio Settings</a>
-<a href="/admin/autodj">AutoDJ</a>
-<a href="/admin/djs">DJ Accounts</a>
-</div>
-<div class="nav-section">
 <div class="nav-label">System</div>
 <a href="/admin/backup">Backups</a>
 <a href="/admin/monitoring">Monitoring</a>

@@ -4,9 +4,11 @@
 <div class="card">
 <div style="display:grid;grid-template-columns:160px 1fr;gap:8px">
 <div style="color:var(--text-secondary);font-weight:600;font-size:14px">Username</div><div><?php echo htmlspecialchars($account->username, ENT_QUOTES, 'UTF-8'); ?></div>
+<div style="color:var(--text-secondary);font-weight:600;font-size:14px">Domain</div><div><?php echo htmlspecialchars($account->domain ?? '-', ENT_QUOTES, 'UTF-8'); ?></div>
 <div style="color:var(--text-secondary);font-weight:600;font-size:14px">Email</div><div><?php echo htmlspecialchars($account->email, ENT_QUOTES, 'UTF-8'); ?></div>
 <div style="color:var(--text-secondary);font-weight:600;font-size:14px">Name</div><div><?php echo htmlspecialchars(($account->first_name ?? '') . ' ' . ($account->last_name ?? ''), ENT_QUOTES, 'UTF-8'); ?></div>
 <div style="color:var(--text-secondary);font-weight:600;font-size:14px">Status</div><div><span class="status-badge status-<?php echo $account->status; ?>"><?php echo ucfirst($account->status); ?></span></div>
+<div style="color:var(--text-secondary);font-weight:600;font-size:14px">PHP Version</div><div><?php echo $account->php_version ?: 'Server default (' . PHP_VERSION . ')'; ?></div>
 <div style="color:var(--text-secondary);font-weight:600;font-size:14px">Package</div><div><?php echo $package ? htmlspecialchars($package->name, ENT_QUOTES, 'UTF-8') : 'None'; ?></div>
 <div style="color:var(--text-secondary);font-weight:600;font-size:14px">Home Directory</div><div><code>/home/<?php echo htmlspecialchars($account->username, ENT_QUOTES, 'UTF-8'); ?>/</code></div>
 <div style="color:var(--text-secondary);font-weight:600;font-size:14px">Created</div><div><?php echo $account->created_at ?? 'N/A'; ?></div>

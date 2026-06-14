@@ -196,6 +196,7 @@ CREATE TABLE IF NOT EXISTS hosting_packages (
     reseller_id INT NULL,
     name VARCHAR(100) NOT NULL,
     type VARCHAR(50) NOT NULL DEFAULT 'web_hosting',
+    php_version VARCHAR(10) DEFAULT '',
     description TEXT,
     monthly_price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     disk_space BIGINT NOT NULL DEFAULT 0,
@@ -227,8 +228,10 @@ CREATE TABLE IF NOT EXISTS hosting_users (
     reseller_id INT NOT NULL,
     package_id INT NULL,
     username VARCHAR(50) NOT NULL UNIQUE,
+    domain VARCHAR(255) DEFAULT '',
     password_hash VARCHAR(255) NOT NULL,
     email VARCHAR(100) NOT NULL,
+    php_version VARCHAR(10) DEFAULT '',
     first_name VARCHAR(50),
     last_name VARCHAR(50),
     phone VARCHAR(20),
@@ -306,3 +309,22 @@ CREATE TABLE IF NOT EXISTS invoices (
     INDEX idx_status (status),
     INDEX idx_date (date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- DNS Tables
+CREATE TABLE IF NOT EXISTS dns_zones (
+    id INT AUTO_INCREMENT PRIMARY KEY, domain VARCHAR(255) NOT NULL UNIQUE,
+    ns1 VARCHAR(255), ns2 VARCHAR(255), admin_email VARCHAR(255),
+    serial VARCHAR(20), refresh INT DEFAULT 3600, retry INT DEFAULT 1800,
+    expire INT DEFAULT 86400, ttl INT DEFAULT 300, is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS dns_records (
+    id INT AUTO_INCREMENT PRIMARY KEY, zone_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL, type VARCHAR(10) NOT NULL, value TEXT NOT NULL,
+    ttl INT DEFAULT 300, priority INT DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (zone_id) REFERENCES dns_zones(id) ON DELETE CASCADE,
+    INDEX idx_zone (zone_id), INDEX idx_type (type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS dns_nameservers (
+    id INT AUTO_INCREMENT PRIMARY KEY, nameserver VARCHAR(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

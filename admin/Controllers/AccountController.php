@@ -68,6 +68,7 @@ class AccountController extends Controller
             exit;
         }
         $username = $this->request->post('username', '');
+        $domain = $this->request->post('domain', '');
         $email = $this->request->post('email', '');
         $password = $this->request->post('password', '');
         $packageId = (int)$this->request->post('package_id', 0);
@@ -78,6 +79,11 @@ class AccountController extends Controller
             exit;
         }
 
+        // Auto-generate domain from username if not provided
+        if (!$domain) {
+            $domain = "{$username}.planet-hosts.com";
+        }
+
         $existing = $this->db->table('hosting_users')->where('username', $username)->first();
         if ($existing) {
             $_SESSION['error_message'] = 'Username already exists.';
@@ -85,12 +91,15 @@ class AccountController extends Controller
             exit;
         }
 
+        $phpVersion = $this->request->post('php_version', '');
         $userId = $this->db->table('hosting_users')->insertGetId([
             'reseller_id' => 1,
             'package_id' => $packageId ?: null,
             'username' => $username,
+            'domain' => $domain,
             'password_hash' => password_hash($password, PASSWORD_DEFAULT),
             'email' => $email,
+            'php_version' => $phpVersion,
             'first_name' => $this->request->post('first_name', ''),
             'last_name' => $this->request->post('last_name', ''),
             'status' => 'active',
@@ -102,15 +111,45 @@ class AccountController extends Controller
         if ($code === 0) {
             mkdir("{$homeDir}/public_html", 0755, true);
             mkdir("{$homeDir}/logs", 0755, true);
-            mkdir("{$homeDir}/radio", 0755, true);
+            mkdir("{$homeDir}/tmp", 0755, true);
             mkdir("{$homeDir}/.ssh", 0700, true);
-            file_put_contents("{$homeDir}/public_html/index.html", "<h1>Welcome to {$username}'s website</h1>");
+            file_put_contents("{$homeDir}/public_html/index.html", "<!DOCTYPE html><html><head><title>{$domain}</title></head><body><h1>Welcome to {$domain}</h1><p>Account: {$username}</p></body></html>");
             exec("chown -R {$username}:{$username} {$homeDir} 2>/dev/null");
         }
 
-        $_SESSION['success_message'] = "Account '{$username}' created successfully.";
+        // Create DNS zone for the domain
+        $ns1 = "ns1.planet-hosts.com";
+        $ns2 = "ns2.planet-hosts.com";
+        $dnsZoneId = $this->db->table('dns_zones')->insertGetId([
+            'domain' => $domain,
+            'ns1' => $ns1, 'ns2' => $ns2,
+            'admin_email' => "admin.{$domain}",
+            'serial' => date('Ymd') . '01',
+            'refresh' => 3600, 'retry' => 1800, 'expire' => 86400, 'ttl' => 300,
+        ]);
+        // Add default DNS records
+        $serverIp = $this->getServerIp();
+        $this->db->table('dns_records')->insertGetId(['zone_id' => $dnsZoneId, 'name' => '@', 'type' => 'A', 'value' => $serverIp, 'ttl' => 300]);
+        $this->db->table('dns_records')->insertGetId(['zone_id' => $dnsZoneId, 'name' => 'www', 'type' => 'CNAME', 'value' => $domain, 'ttl' => 300]);
+        $this->db->table('dns_records')->insertGetId(['zone_id' => $dnsZoneId, 'name' => 'mail', 'type' => 'A', 'value' => $serverIp, 'ttl' => 300]);
+        $this->db->table('dns_records')->insertGetId(['zone_id' => $dnsZoneId, 'name' => '@', 'type' => 'MX', 'value' => 'mail.' . $domain, 'priority' => 10, 'ttl' => 300]);
+        $this->db->table('dns_records')->insertGetId(['zone_id' => $dnsZoneId, 'name' => '@', 'type' => 'NS', 'value' => $ns1, 'ttl' => 300]);
+        $this->db->table('dns_records')->insertGetId(['zone_id' => $dnsZoneId, 'name' => '@', 'type' => 'NS', 'value' => $ns2, 'ttl' => 300]);
+
+        // Create Apache virtual host
+        $vhost = "<VirtualHost *:80>\n    ServerName {$domain}\n    ServerAlias www.{$domain}\n    DocumentRoot {$homeDir}/public_html\n    CustomLog {$homeDir}/logs/access.log combined\n    ErrorLog {$homeDir}/logs/error.log\n    <Directory {$homeDir}/public_html>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n</VirtualHost>";
+        @file_put_contents("/etc/httpd/conf.d/{$username}.conf", $vhost);
+        exec("systemctl reload httpd 2>/dev/null >/dev/null &");
+
+        $_SESSION['success_message'] = "Account '{$username}' created. Domain: {$domain}";
         $this->response->redirect('/admin/account');
         exit;
+    }
+
+    private function getServerIp()
+    {
+        $ip = trim(shell_exec("hostname -I 2>/dev/null | awk '{print \$1}'") ?: '');
+        return $ip ?: '127.0.0.1';
     }
 
     public function show($id)
