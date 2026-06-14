@@ -30,23 +30,17 @@ $router->get('/admin/streams/suspend', 'Plugins\Radio\Controllers\Admin\StreamsC
 $router->get('/admin/streams/unsuspend', 'Plugins\Radio\Controllers\Admin\StreamsController@index');
 $router->get('/admin/streams/clone', 'Plugins\Radio\Controllers\Admin\StreamsController@index');
 $router->get('/admin/autodj', 'Plugins\Radio\Controllers\Admin\AutodjController@index');
-$router->get('/admin/autodj/upload', 'Plugins\Radio\Controllers\Admin\AutodjController@index');
-$router->get('/admin/autodj/library', 'Plugins\Radio\Controllers\Admin\AutodjController@index');
-$router->get('/admin/autodj/playlists', 'Plugins\Radio\Controllers\Admin\AutodjController@index');
+$router->post('/admin/autodj/upload', 'Plugins\Radio\Controllers\Admin\AutodjController@upload');
+$router->get('/admin/autodj/library', 'Plugins\Radio\Controllers\Admin\AutodjController@library');
+$router->get('/admin/autodj/playlists', 'Plugins\Radio\Controllers\Admin\AutodjController@playlists');
 $router->get('/admin/autodj/schedules', 'Plugins\Radio\Controllers\Admin\AutodjController@index');
-$router->get('/admin/autodj/rules', 'Plugins\Radio\Controllers\Admin\AutodjController@index');
-$router->get('/admin/autodj/metadata', 'Plugins\Radio\Controllers\Admin\AutodjController@index');
-$router->get('/admin/autodj/edit-track/{id}', 'Plugins\Radio\Controllers\Admin\AutodjController@index');
-$router->get('/admin/autodj/delete-track/{id}', 'Plugins\Radio\Controllers\Admin\AutodjController@index');
+$router->get('/admin/autodj/delete-track/{id}', 'Plugins\Radio\Controllers\Admin\AutodjController@deleteTrack');
 $router->get('/admin/djs', 'Plugins\Radio\Controllers\Admin\DjController@index');
-$router->get('/admin/djs/create', 'Plugins\Radio\Controllers\Admin\DjController@index');
-$router->get('/admin/djs/list', 'Plugins\Radio\Controllers\Admin\DjController@index');
-$router->get('/admin/djs/edit', 'Plugins\Radio\Controllers\Admin\DjController@index');
-$router->get('/admin/djs/edit/{id}', 'Plugins\Radio\Controllers\Admin\DjController@index');
-$router->get('/admin/djs/remove', 'Plugins\Radio\Controllers\Admin\DjController@index');
-$router->get('/admin/djs/remove/{id}', 'Plugins\Radio\Controllers\Admin\DjController@index');
-$router->get('/admin/djs/schedule', 'Plugins\Radio\Controllers\Admin\DjController@index');
-$router->get('/admin/djs/encoder', 'Plugins\Radio\Controllers\Admin\DjController@index');
+$router->get('/admin/djs/create', 'Plugins\Radio\Controllers\Admin\DjController@create');
+$router->post('/admin/djs/store', 'Plugins\Radio\Controllers\Admin\DjController@store');
+$router->get('/admin/djs/edit/{id}', 'Plugins\Radio\Controllers\Admin\DjController@edit');
+$router->post('/admin/djs/update/{id}', 'Plugins\Radio\Controllers\Admin\DjController@update');
+$router->get('/admin/djs/remove/{id}', 'Plugins\Radio\Controllers\Admin\DjController@remove');
 $router->get('/admin/radio/analytics', 'Plugins\Radio\Controllers\Admin\RadioDashboardController@index');
 
 // User Radio Routes

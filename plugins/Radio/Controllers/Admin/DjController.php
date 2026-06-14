@@ -6,34 +6,82 @@ use Core\Controller;
 
 class DjController extends Controller
 {
-    protected $auth;
-    protected $request;
-    protected $response;
+    protected $auth, $request, $response, $db;
 
     public function __construct()
     {
-        $this->auth = \Core\Application::getInstance()->get('auth');
-        $this->request = \Core\Application::getInstance()->get('request');
-        $this->response = \Core\Application::getInstance()->get('response');
+        $app = \Core\Application::getInstance();
+        $this->auth = $app->get('auth');
+        $this->request = $app->get('request');
+        $this->response = $app->get('response');
+        $this->db = $app->get('db');
     }
 
     public function index()
     {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) {
-            $this->response->redirect('/admin/login');
-            exit;
-        }
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-        $djStats = [
-            'total_djs' => 0,
-            'active_djs' => 0,
-            'scheduled_djs' => 0,
-        ];
-        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        $djs = $this->db->table('radio_djs')->get() ?: [];
+        $streams = $this->db->table('radio_streams')->get() ?: [];
         return $this->view('Plugins.Radio.Views.admin.djs.index', [
-            'user' => $user,
-            'djStats' => $djStats,
-            'theme_settings' => $theme_settings
+            'user' => $user, 'djs' => $djs, 'streams' => $streams,
+            'djStats' => ['total_djs' => count($djs), 'active_djs' => count(array_filter($djs, fn($d) => $d->status === 'active'))],
+            'theme_settings' => json_decode($user->theme_settings ?? '{}', true), 'title' => 'DJ Accounts'
         ]);
+    }
+
+    public function create()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $streams = $this->db->table('radio_streams')->get() ?: [];
+        return $this->view('Plugins.Radio.Views.admin.djs.index', [
+            'user' => $user, 'streams' => $streams, 'showCreateForm' => true,
+            'theme_settings' => json_decode($user->theme_settings ?? '{}', true), 'title' => 'Create DJ'
+        ]);
+    }
+
+    public function store()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $username = $this->request->post('username', '');
+        $password = $this->request->post('password', bin2hex(random_bytes(6)));
+        $this->db->table('radio_djs')->insertGetId([
+            'stream_id' => (int)$this->request->post('stream_id', 0),
+            'username' => $username, 'password' => password_hash($password, PASSWORD_DEFAULT),
+            'name' => $this->request->post('name', $username), 'email' => $this->request->post('email', ''),
+        ]);
+        $_SESSION['success_message'] = "DJ $username created. Password: $password";
+        $this->response->redirect('/admin/djs');
+    }
+
+    public function edit($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $dj = $this->db->table('radio_djs')->where('id', $id)->first();
+        $streams = $this->db->table('radio_streams')->get() ?: [];
+        return $this->view('Plugins.Radio.Views.admin.djs.index', [
+            'user' => $user, 'dj' => $dj, 'streams' => $streams, 'editId' => $id,
+            'theme_settings' => json_decode($user->theme_settings ?? '{}', true), 'title' => 'Edit DJ'
+        ]);
+    }
+
+    public function update($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $data = ['name' => $this->request->post('name', ''), 'email' => $this->request->post('email', ''), 'status' => $this->request->post('status', 'active')];
+        $pw = $this->request->post('password', '');
+        if ($pw) $data['password'] = password_hash($pw, PASSWORD_DEFAULT);
+        $this->db->table('radio_djs')->where('id', $id)->update($data);
+        $_SESSION['success_message'] = 'DJ updated.';
+        $this->response->redirect('/admin/djs');
+    }
+
+    public function remove($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $this->db->table('radio_djs')->where('id', $id)->delete();
+        $this->response->redirect('/admin/djs');
     }
 }
