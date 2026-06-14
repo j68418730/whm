@@ -35,7 +35,7 @@ a:hover{color:#fff}
 .grid-overlay{position:fixed;inset:0;background-image:linear-gradient(rgba(0,140,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,140,255,.04) 1px,transparent 1px);background-size:80px 80px;z-index:-1;opacity:.35}
 
 /* Layouts */
-.admin-shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh;position:relative;z-index:1}
+.admin-shell{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 80px);position:relative;z-index:1}
 .main-content{min-height:60vh;padding:40px 0;position:relative;z-index:1}
 
 /* Header/Nav */
@@ -51,7 +51,7 @@ nav a{color:#fff;text-decoration:none;margin-left:24px;transition:.3s;font-weigh
 nav a:hover{color:var(--accent)}
 
 /* Sidebar */
-.sidebar{background:var(--bg-sidebar);border-right:1px solid var(--border-color);padding:24px 16px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sidebar{background:var(--bg-sidebar);border-right:1px solid var(--border-color);padding:24px 16px;position:sticky;top:0;min-height:calc(100vh - 80px);overflow-y:auto}
 .sidebar .logo-text{font-family:var(--font-logo);font-size:18px;color:var(--accent);margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.06)}
 .sidebar .logo-text span{color:#fff}
 .sidebar .nav-section{margin-bottom:20px}
