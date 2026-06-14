@@ -17,6 +17,43 @@ abstract class Plugin
 
     abstract public function getName();
 
+    public function getDescription()
+    {
+        return '';
+    }
+
+    public function getCategory()
+    {
+        return 'addon';
+    }
+
+    public function getAdminUrl()
+    {
+        return null;
+    }
+
+    public function getUserUrl()
+    {
+        return null;
+    }
+
+    public function getFeatures()
+    {
+        return [];
+    }
+
+    public function getMetadata()
+    {
+        return [
+            'name' => $this->getName(),
+            'description' => $this->getDescription(),
+            'category' => $this->getCategory(),
+            'admin_url' => $this->getAdminUrl(),
+            'user_url' => $this->getUserUrl(),
+            'features' => $this->getFeatures(),
+        ];
+    }
+
     public function register()
     {
     }
