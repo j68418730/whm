@@ -39,7 +39,7 @@ a:hover{color:#fff}
 .main-content{min-height:60vh;padding:40px 0;position:relative;z-index:1}
 
 /* Header/Nav */
-.header{position:sticky;top:0;z-index:100;padding:16px 0;backdrop-filter:blur(20px);background:rgba(0,0,0,.45);border-bottom:1px solid var(--border-color)}
+.header{position:sticky;top:0;z-index:100;padding:16px 0;background:linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.8)),url('/theme/assets/img/header.png');background-size:cover;background-position:center;border-bottom:1px solid var(--border-color)}
 .container{width:min(1400px,94%);margin:auto}
 .nav{display:flex;align-items:center;justify-content:space-between}
 .logo{display:flex;align-items:center;gap:14px}
