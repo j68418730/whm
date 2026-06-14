@@ -191,72 +191,51 @@
             <a href="/admin/dashboard" class="btn">Back to Admin Dashboard</a>
         </div>
 
-        <div class="stats-grid">
-            <!-- Server Status Widgets -->
-            <div class="stat-card">
-                <h3>🖥️ Server Status</h3>
-                <div class="value">Online</div>
-                <div class="label">Server is running normally</div>
-            </div>
-
-            <div class="stat-card">
-                <h3>⚡ CPU Load</h3>
-                <div class="value"><?php echo $serverStats['cpu_load']; ?>%</div>
-                <div class="label">Current CPU utilization</div>
-            </div>
-
-            <div class="stat-card">
-                <h3>💾 RAM Usage</h3>
-                <div class="value"><?php echo $serverStats['ram_usage']; ?>%</div>
-                <div class="label">Memory usage</div>
-            </div>
-
-            <div class="stat-card">
-                <h3>💾 Disk Usage</h3>
-                <div class="value"><?php echo $serverStats['disk_usage']; ?>%</div>
-                <div class="label">Storage utilization</div>
-            </div>
-
-            <div class="stat-card">
-                <h3>🌐 Network Usage</h3>
-                <div class="value"><?php echo $serverStats['network_usage']; ?> Mbps</div>
-                <div class="label">Current network throughput</div>
-            </div>
-
-            <div class="stat-card">
-                <h3>👥 Active Accounts</h3>
-                <div class="value"><?php echo $serverStats['active_accounts']; ?></div>
-                <div class="label">Currently active hosting accounts</div>
+        <!-- System Info -->
+        <div class="stat-card" style="grid-column:1/-1">
+            <h3>🖥 System Information</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:12px">
+                <div><strong>Hostname</strong><br><?php echo htmlspecialchars($serverStats['hostname'] ?? 'N/A'); ?></div>
+                <div><strong>OS</strong><br><?php echo htmlspecialchars($serverStats['os'] ?? 'N/A'); ?></div>
+                <div><strong>Kernel</strong><br><?php echo htmlspecialchars($serverStats['kernel'] ?? 'N/A'); ?></div>
+                <div><strong>CPU</strong><br><?php echo htmlspecialchars($serverStats['cpu_model'] ?? 'N/A'); ?></div>
+                <div><strong>Uptime</strong><br><?php echo $serverStats['uptime'] ?? 'N/A'; ?></div>
             </div>
         </div>
 
-        <div class="stats-grid">
-            <!-- Service Status -->
-            <div class="stat-card">
-                <h3>🔧 Service Status</h3>
-                <div class="service-status">
-                    <?php foreach ($serverStats['service_status'] as $service => $status): ?>
-                        <div class="service-item">
-                            <span><?php echo ucfirst($service); ?></span>
-                            <span class="status <?php echo $status === 'running' ? 'running' : 'stopped'; ?>">
-                                <?php echo ucfirst($status); ?>
-                            </span>
-                        </div>
-                    <?php endforeach; ?>
+        <div class="stat-card">
+            <h3>⚡ CPU Load</h3>
+            <div class="value"><?php echo $serverStats['cpu_load']; ?>%</div>
+            <div class="label">Load: <?php echo $serverStats['load_average']['1min'] ?? '?'; ?> / <?php echo $serverStats['load_average']['5min'] ?? '?'; ?> / <?php echo $serverStats['load_average']['15min'] ?? '?'; ?> (1/5/15min)</div>
+        </div>
+
+        <div class="stat-card">
+            <h3>💾 RAM Usage</h3>
+            <div class="value"><?php echo $serverStats['ram_usage']; ?>%</div>
+            <div class="label"><?php echo $serverStats['ram_total']; ?> GB total</div>
+        </div>
+
+        <div class="stat-card">
+            <h3>💿 Disk Usage</h3>
+            <div class="value"><?php echo $serverStats['disk_usage']; ?>%</div>
+            <div class="label"><?php echo $serverStats['disk_total']; ?> total</div>
+        </div>
+
+        <div class="stat-card">
+            <h3>👥 Active Accounts</h3>
+            <div class="value"><?php echo $serverStats['active_accounts']; ?></div>
+            <div class="label">Hosting accounts</div>
+        </div>
+
+        <div class="stat-card">
+            <h3>🔧 Services</h3>
+            <div style="margin-top:8px">
+            <?php foreach ($serverStats['service_status'] as $svc => $st): ?>
+                <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+                    <span style="font-size:13px"><?php echo htmlspecialchars(ucfirst($svc)); ?></span>
+                    <span style="font-size:12px;padding:2px 8px;border-radius:4px;<?php echo $st === 'active' ? 'background:#1a3a2a;color:#4ade80' : 'background:#3a1a1a;color:#f87171'; ?>"><?php echo $st; ?></span>
                 </div>
-            </div>
-
-            <!-- Alerts -->
-            <div class="stat-card">
-                <h3>🚨 Security Alerts</h3>
-                <div class="value"><?php echo $serverStats['security_alerts']; ?></div>
-                <div class="label">Potential security issues</div>
-            </div>
-
-            <div class="stat-card">
-                <h3>🔄 Update Alerts</h3>
-                <div class="value"><?php echo $serverStats['update_alerts']; ?></div>
-                <div class="label">Available system updates</div>
+            <?php endforeach; ?>
             </div>
         </div>
 

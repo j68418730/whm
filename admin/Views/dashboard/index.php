@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spectre WHM - Hosting & Radio Management</title>
+    <title>Spectre WHM - Root Hosting Management</title>
     <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body class="whm-body">
@@ -15,6 +15,7 @@ $stats = array_merge([
     'total_listeners' => 0,
     'bandwidth_used' => 0,
 ], $stats ?? []);
+$addons = $addons ?? [];
 
 $moduleGroups = [
     'Account Functions' => [
@@ -29,17 +30,11 @@ $moduleGroups = [
         ['Reseller Privileges', '/admin/reseller'],
         ['Branding', '/admin/branding'],
     ],
-    'Packages & Billing' => [
+    'Packages' => [
         ['Package Manager', '/admin/packages'],
         ['Upgrade / Downgrade Accounts', '/admin/packages'],
-        ['API Access', '/admin/api'],
+        ['Feature Manager', '/admin/userfeatures'],
         ['Licensing', '/admin/licensing'],
-    ],
-    'Radio Management' => [
-        ['Radio Dashboard', '/admin/radio_dashboard'],
-        ['Manage Streams', '/admin/streams'],
-        ['Create Stream', '/admin/streams/create'],
-        ['Radio Settings', '/admin/radiosettings'],
     ],
     'Server Configuration' => [
         ['Server Overview', '/admin/server'],
@@ -67,18 +62,21 @@ $moduleGroups = [
                 <span class="brand-mark">S</span>
                 <div>
                     <strong>Spectre WHM</strong>
-                    <small>Hosting + Radio</small>
+                    <small>Root Hosting Panel</small>
                 </div>
             </div>
             <a href="/admin/dashboard" class="active">Dashboard</a>
             <a href="/admin/account">Account Functions</a>
             <a href="/admin/reseller">Reseller Center</a>
             <a href="/admin/packages">Packages</a>
-            <a href="/admin/streams">Radio Streams</a>
-            <a href="/admin/radio_dashboard">Radio Dashboard</a>
             <a href="/admin/server">Server Overview</a>
             <a href="/admin/security">Security Center</a>
             <a href="/admin/backup">Backups</a>
+            <?php foreach ($addons as $addon): ?>
+                <?php if (!empty($addon['admin_url'])): ?>
+                    <a href="<?php echo htmlspecialchars($addon['admin_url'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($addon['name'], ENT_QUOTES, 'UTF-8'); ?> Add-on</a>
+                <?php endif; ?>
+            <?php endforeach; ?>
             <a href="/admin/logout">Logout</a>
         </aside>
 
@@ -87,11 +85,11 @@ $moduleGroups = [
                 <div>
                     <span class="eyebrow">Root Administrator</span>
                     <h1>WHM Control Center</h1>
-                    <p>Welcome, <?php echo $userName; ?>. Manage hosting accounts, resellers, packages, services, and radio streaming from one panel.</p>
+                    <p>Welcome, <?php echo $userName; ?>. Manage hosting accounts, resellers, packages, DNS, services, security, backups, and server operations from the core panel.</p>
                 </div>
                 <div class="quick-actions">
                     <a class="btn" href="/admin/account">Create Account</a>
-                    <a class="btn btn-secondary" href="/admin/streams/create">Create Radio Stream</a>
+                    <a class="btn btn-secondary" href="/admin/packages">Manage Packages</a>
                 </div>
             </div>
 
@@ -107,28 +105,55 @@ $moduleGroups = [
                     <p>Delegated account owners</p>
                 </div>
                 <div class="stat-card">
-                    <h3>Radio Streams</h3>
-                    <div class="value"><?php echo (int)$stats['total_streams']; ?></div>
-                    <p><?php echo (int)$stats['active_streams']; ?> currently active</p>
+                    <h3>Enabled Add-ons</h3>
+                    <div class="value"><?php echo count($addons); ?></div>
+                    <p>Streaming, billing, and future modules</p>
                 </div>
                 <div class="stat-card">
-                    <h3>Listeners</h3>
-                    <div class="value"><?php echo (int)$stats['total_listeners']; ?></div>
-                    <p><?php echo number_format($stats['bandwidth_used'] / (1024 * 1024), 2); ?> MB used</p>
+                    <h3>Server Services</h3>
+                    <div class="value">0</div>
+                    <p>Provisioning engine pending</p>
                 </div>
             </div>
 
-            <section class="radio-command">
+            <section class="radio-command addon-command">
                 <div>
-                    <span class="eyebrow">Built-In Radio Hosting</span>
-                    <h2>Icecast, AutoDJ, DJs, playlists, transcoding, and reseller limits</h2>
-                    <p>Radio is treated as a native hosting feature, so admins and resellers can provision stations alongside normal web hosting accounts.</p>
+                    <span class="eyebrow">Add-on Architecture</span>
+                    <h2>WHM stays the main panel. Streaming and billing load as add-ons.</h2>
+                    <p>Core hosting features live in the WHM side. Radio and billing can be enabled, disabled, sold, and developed independently.</p>
                 </div>
-                <div class="radio-actions">
-                    <a class="btn" href="/admin/radio_dashboard">Open Radio Dashboard</a>
-                    <a class="btn btn-secondary" href="/admin/radiosettings">Global Radio Settings</a>
-                </div>
+                <?php if (!empty($addons)): ?>
+                    <div class="radio-actions">
+                        <?php foreach ($addons as $index => $addon): ?>
+                            <?php if (!empty($addon['admin_url'])): ?>
+                                <a class="btn<?php echo $index === 0 ? '' : ' btn-secondary'; ?>" href="<?php echo htmlspecialchars($addon['admin_url'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($addon['name'], ENT_QUOTES, 'UTF-8'); ?></a>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             </section>
+
+            <?php if (!empty($addons)): ?>
+                <div class="module-grid addon-grid">
+                    <?php foreach ($addons as $addon): ?>
+                        <section class="module-card addon-card">
+                            <span class="eyebrow"><?php echo htmlspecialchars($addon['category'], ENT_QUOTES, 'UTF-8'); ?> add-on</span>
+                            <h2><?php echo htmlspecialchars($addon['name'], ENT_QUOTES, 'UTF-8'); ?></h2>
+                            <p><?php echo htmlspecialchars($addon['description'], ENT_QUOTES, 'UTF-8'); ?></p>
+                            <?php if (!empty($addon['features'])): ?>
+                                <div class="module-links feature-list">
+                                    <?php foreach ($addon['features'] as $feature): ?>
+                                        <span><?php echo htmlspecialchars($feature, ENT_QUOTES, 'UTF-8'); ?></span>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (!empty($addon['admin_url'])): ?>
+                                <a class="btn" href="<?php echo htmlspecialchars($addon['admin_url'], ENT_QUOTES, 'UTF-8'); ?>">Open Add-on</a>
+                            <?php endif; ?>
+                        </section>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
 
             <div class="module-grid">
                 <?php foreach ($moduleGroups as $group => $links): ?>
