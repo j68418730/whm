@@ -8,11 +8,12 @@
 <div class="stat-card"><h3>Terminated</h3><div class="value"><?php echo $accountsStats['terminated_accounts']; ?></div><div class="label">Terminated</div></div>
 </div>
 <table>
-<tr><th>Username</th><th>Email</th><th>Package</th><th>Status</th><th>Actions</th></tr>
+<tr><th>Username</th><th>Domain</th><th>Package</th><th>Status</th><th>Actions</th></tr>
 <?php if (!empty($accounts)): foreach ($accounts as $a): ?>
 <tr>
 <td><strong><?php echo htmlspecialchars($a->username, ENT_QUOTES, 'UTF-8'); ?></strong></td>
 <td><?php echo htmlspecialchars($a->email, ENT_QUOTES, 'UTF-8'); ?></td>
+<td><?php echo htmlspecialchars($a->domain ?? '-', ENT_QUOTES, 'UTF-8'); ?></td>
 <td><?php $pkg='N/A'; if(isset($packages)){foreach($packages as $p){if($p->id==$a->package_id)$pkg=$p->name;}} echo htmlspecialchars($pkg, ENT_QUOTES, 'UTF-8'); ?></td>
 <td><span class="status-badge status-<?php echo $a->status === 'active' ? 'active' : ($a->status === 'suspended' ? 'suspended' : 'terminated'); ?>"><?php echo ucfirst($a->status); ?></span></td>
 <td style="display:flex;gap:4px">
@@ -23,6 +24,6 @@
 </td>
 </tr>
 <?php endforeach; else: ?>
-<tr><td colspan="5" style="text-align:center;padding:2rem;color:#64748b">No accounts created yet.</td></tr>
+<tr><td colspan="6" style="text-align:center;padding:2rem;color:#64748b">No accounts created yet.</td></tr>
 <?php endif; ?>
 </table>

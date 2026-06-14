@@ -181,6 +181,32 @@ php-pdo \
 php-process \
 php-xml \
 php-zip \
+php-bcmath \
+php-bz2 \
+php-calendar \
+php-ctype \
+php-exif \
+php-fileinfo \
+php-ftp \
+php-gettext \
+php-imap \
+php-ldap \
+php-opcache \
+php-pear \
+php-redis \
+php-shmop \
+php-sockets \
+php-sodium \
+php-sysvmsg \
+php-sysvsem \
+php-sysvshm \
+php-tokenizer \
+php-wddx \
+php-xmlreader \
+php-xmlwriter \
+php-xsl \
+php-pecl-apcu \
+php-pecl-imagick \
 unzip
 
 systemctl enable --now httpd
