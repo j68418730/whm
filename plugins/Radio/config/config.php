@@ -13,12 +13,7 @@ return [
                 'source_password' => 'hackme',
                 'admin_password' => 'hackme',
             ],
-            'shoutcast' => [
-                'enabled' => true,
-                'binary_path' => '/usr/bin/sc_serv',
-                'config_path' => '/etc/shoutcast/sc_serv.conf',
-                'default_port' => 8000,
-            ],
+    ],
         ],
         'autodj' => [
             'enabled' => true,

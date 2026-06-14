@@ -3,14 +3,13 @@
 namespace Admin\Controllers;
 
 use Core\Controller;
-use Admin\Services\PhpManager;
 
 class PhpController extends Controller
 {
     protected $auth;
     protected $request;
     protected $response;
-    protected $manager;
+    protected $db;
 
     public function __construct()
     {
@@ -18,60 +17,31 @@ class PhpController extends Controller
         $this->auth = $app->get('auth');
         $this->request = $app->get('request');
         $this->response = $app->get('response');
-        $this->manager = new PhpManager();
+        $this->db = $app->get('db');
     }
 
     public function index()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-        $availVersions = $this->manager->getAvailableVersions();
-        $versionNames = array_map(function($v) { return $v['version']; }, $availVersions);
-        $phpStats = [
-            'available_versions' => $versionNames,
-            'default_version' => $this->manager->getDefaultVersion(),
-            'php_fpm_pools' => 0,
-            'total_ini_directives' => count(ini_get_all()),
-            'enabled_extensions' => count(get_loaded_extensions()),
-        ];
+        $loaded = get_loaded_extensions();
+        $allExts = ['bcmath','bz2','calendar','ctype','curl','date','dom','exif','fileinfo','filter','ftp','gd','gettext','gmp','hash','iconv','imagick','imap','intl','json','ldap','libxml','mbstring','mysqli','mysqlnd','opcache','openssl','pcntl','pcre','PDO','pdo_mysql','pdo_sqlite','pear','phar','posix','pspell','readline','redis','reflection','session','shmop','SimpleXML','soap','sockets','sodium','SPL','sqlite3','standard','sysvmsg','sysvsem','sysvshm','tokenizer','wddx','xml','xmlreader','xmlwriter','xsl','Zend OPcache','zip','zlib'];
+        $avail = array_diff($allExts, $loaded);
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         return $this->view('admin.php.index', [
-            'user' => $user,
-            'phpStats' => $phpStats,
-            'theme_settings' => $theme_settings
+            'user' => $user, 'loaded' => $loaded, 'available' => $avail,
+            'phpStats' => ['enabled_extensions' => count($loaded), 'available_versions' => explode('.', PHP_VERSION)],
+            'theme_settings' => $theme_settings, 'title' => 'PHP Manager'
         ]);
     }
 
-    public function extensions()
+    public function install($ext)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $user = $this->auth->user();
-        $exts = get_loaded_extensions();
-        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-        return $this->view('admin.php.extensions', [
-            'user' => $user,
-            'extensions' => $exts,
-            'theme_settings' => $theme_settings
-        ]);
-    }
-
-    public function config()
-    {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $user = $this->auth->user();
-        $iniValues = [
-            'upload_max_filesize' => ini_get('upload_max_filesize'),
-            'post_max_size' => ini_get('post_max_size'),
-            'memory_limit' => ini_get('memory_limit'),
-            'max_execution_time' => ini_get('max_execution_time'),
-            'max_input_vars' => ini_get('max_input_vars'),
-            'max_input_time' => ini_get('max_input_time'),
-        ];
-        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-        return $this->view('admin.php.config', [
-            'user' => $user,
-            'iniValues' => $iniValues,
-            'theme_settings' => $theme_settings
-        ]);
+        $ext = basename($ext);
+        $output = shell_exec("apt install -y php-{$ext} 2>&1") ?: shell_exec("pecl install {$ext} 2>&1");
+        $_SESSION['success_message'] = "Installing {$ext}... Output saved.";
+        $this->response->redirect('/admin/php');
+        exit;
     }
 }

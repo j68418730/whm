@@ -46,6 +46,19 @@ class View
         $content = ob_get_clean();
 
         $isAdmin = str_contains($viewFile, '/admin/') || str_contains($viewFile, '\admin\\');
+        $isUser = str_contains($viewFile, '/user/') || str_contains($viewFile, '\user\\');
+
+        if ($isUser && !$isAdmin) {
+            $layoutFile = BASE_PATH . '/theme/user_layout.php';
+            if (is_file($layoutFile)) {
+                $title = $this->data['title'] ?? 'Dashboard';
+                $user = $this->data['user'] ?? null;
+                $hosting = $this->data['hosting'] ?? null;
+                ob_start();
+                require $layoutFile;
+                return ob_get_clean();
+            }
+        }
 
         if ($isAdmin) {
             // Strip outer HTML from admin views and wrap in admin layout

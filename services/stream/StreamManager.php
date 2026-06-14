@@ -1,7 +1,7 @@
 <?php
 /**
  * Stream Manager Service
- * Manages radio streaming servers (Icecast/Shoutcast)
+ * Manages Icecast radio streaming servers
  * Integrated as core service in WHM
  */
 
@@ -165,8 +165,6 @@ class StreamManager
 
         if ($serverType === 'icecast') {
             $config = $this->generateIcecastConfig($port, $password);
-        } elseif ($serverType === 'shoutcast') {
-            $config = $this->generateShoutcastConfig($port, $password);
         } else {
             throw new \Exception("Unsupported server type: {$serverType}");
         }
@@ -231,20 +229,6 @@ class StreamManager
 XML;
     }
 
-    protected function generateShoutcastConfig($port, $password)
-    {
-        return <<<CONF
-maxuser=100
-password={$password}
-portbase={$port}
-logfile=logs/sc_serv.log
-realtime=1
-screenlog=1
-showlastsongs=1
-charset=utf-8
-CONF;
-    }
-
     /**
      * Start the server process
      */
@@ -254,8 +238,6 @@ CONF;
 
         if ($serverType === 'icecast') {
             $command = "{$binary} -c {$configPath}";
-        } elseif ($serverType === 'shoutcast') {
-            $command = "{$binary} {$configPath}";
         } else {
             throw new \Exception("Unsupported server type: {$serverType}");
         }

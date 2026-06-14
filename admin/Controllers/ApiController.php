@@ -1,61 +1,54 @@
 <?php
-/**
- * API System Controller
- * Handles WHM API, UAPI (user API), Email API, Database API, etc.
- */
 
 namespace Admin\Controllers;
 
 use Core\Controller;
-use Core\Auth;
-use Core\Request;
-use Core\Response;
-use Core\View;
 
 class ApiController extends Controller
 {
     protected $auth;
     protected $request;
     protected $response;
+    protected $db;
 
     public function __construct()
     {
-        $this->auth = \Core\Application::getInstance()->get('auth');
-        $this->request = \Core\Application::getInstance()->get('request');
-        $this->response = \Core\Application::getInstance()->get('response');
+        $app = \Core\Application::getInstance();
+        $this->auth = $app->get('auth');
+        $this->request = $app->get('request');
+        $this->response = $app->get('response');
+        $this->db = $app->get('db');
     }
 
-    /**
-     * Show API management dashboard
-     */
     public function index()
     {
-        // Check if user is logged in and is admin
-        if (!$this->auth->check() || !$this->auth->isAdmin()) {
-            $this->response->redirect('/admin/login');
-            exit;
-        }
-
-        // Get admin user info
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-
-        $apiStats = [
-            'total_api_tokens' => 0,
-            'active_api_tokens' => 0,
-            'api_requests_today' => 0,
-            'blocked_api_requests' => 0,
-            'whm_api_enabled' => 'disabled',
-            'uapi_enabled' => 'disabled',
-        ];
-
-        // Get admin theme settings
+        $keys = $this->db->table('api_keys')->get() ?: [];
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        return $this->view('admin.api.index', ['user' => $user, 'keys' => $keys, 'theme_settings' => $theme_settings, 'title' => 'API Keys']);
+    }
 
-        // Render the API management view
-        return $this->view('admin.api.index', [
-            'user' => $user,
-            'apiStats' => $apiStats,
-            'theme_settings' => $theme_settings
+    public function store()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $name = $this->request->post('name', 'API Key');
+        $raw = bin2hex(random_bytes(16));
+        $this->db->table('api_keys')->insertGetId([
+            'name' => $name, 'key_hash' => hash('sha256', $raw),
+            'permissions' => $this->request->post('permissions', 'read'),
         ]);
+        $_SESSION['success_message'] = "API Key created: {$raw} (save this, it won't be shown again)";
+        $this->response->redirect('/admin/api');
+        exit;
+    }
+
+    public function destroy($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $this->db->table('api_keys')->where('id', $id)->delete();
+        $_SESSION['success_message'] = 'API Key deleted.';
+        $this->response->redirect('/admin/api');
+        exit;
     }
 }

@@ -7,6 +7,16 @@ $title = isset($title) ? $title : 'Dashboard';
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?> - Planet Hosts</title>
 <link rel="stylesheet" href="/theme/assets/css/style.css">
+<style>
+.sidebar-toggle{position:fixed;top:70px;left:10px;z-index:999;background:linear-gradient(135deg,#008cff,#3bb8ff);border:none;color:#fff;width:40px;height:40px;border-radius:8px;cursor:pointer;font-size:20px;display:none;align-items:center;justify-content:center;box-shadow:0 0 15px rgba(0,140,255,.3)}
+.sidebar-toggle:hover{transform:scale(1.05)}
+@media(max-width:900px){
+.sidebar-toggle{display:flex}
+.admin-shell{grid-template-columns:1fr}
+.sidebar{position:fixed;left:0;top:80px;height:calc(100vh - 80px);z-index:998;transform:translateX(0);transition:transform .3s}
+.sidebar.closed{transform:translateX(-105%)}
+}
+</style>
 </head>
 <body>
 <div class="bg-overlay"></div>
@@ -25,13 +35,15 @@ $title = isset($title) ? $title : 'Dashboard';
 </div>
 </header>
 
+<button class="sidebar-toggle" id="sidebarToggle" onclick="document.getElementById('adminSidebar').classList.toggle('closed')">☰</button>
 <div class="admin-shell">
-<div class="sidebar">
+<div class="sidebar" id="adminSidebar">
 <div class="logo-text">PLANET <span>HOSTS</span></div>
 <div class="nav-section">
 <div class="nav-label">Main</div>
 <a href="/admin/dashboard">Dashboard</a>
 <a href="/admin/server">Server Overview</a>
+<a href="/admin/server/health">Server Health</a>
 </div>
 <div class="nav-section">
 <div class="nav-label">Accounts</div>
@@ -54,8 +66,13 @@ $title = isset($title) ? $title : 'Dashboard';
 <a href="/admin/monitoring">Monitoring</a>
 <a href="/admin/apache">Apache</a>
 <a href="/admin/php">PHP</a>
-<a href="/admin/security">Security</a>
+<a href="/admin/plugins">Plugins</a>
+<a href="/admin/security">Security Center</a>
+<a href="/admin/twofactor">Two-Factor Auth</a>
+<a href="/admin/roles">Super Admins & Roles</a>
+<a href="/admin/api">API Keys</a>
 <a href="/admin/cron">Cron</a>
+<a href="/admin/todo">ToDo List</a>
 </div>
 <div class="nav-section" style="margin-top:24px;border-top:1px solid rgba(255,255,255,.06);padding-top:16px">
 <a href="/admin/logout" style="color:#ff6b6b">Logout</a>

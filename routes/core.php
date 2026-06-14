@@ -26,6 +26,10 @@ $router->get('/admin/php', 'Admin\Controllers\PhpController@index');
 $router->get('/admin/php/extensions', 'Admin\Controllers\PhpController@extensions');
 $router->get('/admin/php/config', 'Admin\Controllers\PhpController@config');
 $router->get('/admin/mysql', 'Admin\Controllers\MysqlController@index');
+$router->get('/admin/mysql/restart', 'Admin\Controllers\MysqlController@restart');
+$router->get('/admin/apache/restart', 'Admin\Controllers\ApacheController@restart');
+$router->get('/admin/apache/stop', 'Admin\Controllers\ApacheController@stop');
+$router->get('/admin/apache/start', 'Admin\Controllers\ApacheController@start');
 $router->get('/admin/ftp', 'Admin\Controllers\FtpController@index');
 $router->get('/admin/ssl', 'Admin\Controllers\SslController@index');
 $router->get('/admin/security', 'Admin\Controllers\SecurityController@index');
@@ -34,26 +38,46 @@ $router->post('/admin/backup/create', 'Admin\Controllers\BackupController@create
 $router->get('/admin/backup/restore/{name}', 'Admin\Controllers\BackupController@restore');
 $router->get('/admin/backup/delete/{name}', 'Admin\Controllers\BackupController@delete');
 $router->get('/admin/serverconfig', 'Admin\Controllers\ServerConfigController@index');
+$router->get('/admin/tweak', 'Admin\Controllers\ServerConfigController@tweak');
+$router->post('/admin/tweak', 'Admin\Controllers\ServerConfigController@tweakSave');
 $router->get('/admin/network', 'Admin\Controllers\NetworkController@index');
+$router->post('/admin/network', 'Admin\Controllers\NetworkController@store');
 $router->get('/admin/monitoring', 'Admin\Controllers\MonitoringController@index');
+$router->get('/admin/php/install/{ext}', 'Admin\Controllers\PhpController@install');
+$router->get('/admin/plugins', 'Admin\Controllers\PluginsController@index');
+$router->get('/admin/plugins/toggle/{id}', 'Admin\Controllers\PluginsController@toggle');
+$router->post('/admin/cron', 'Admin\Controllers\CronController@store');
+$router->get('/admin/cron/delete/{id}', 'Admin\Controllers\CronController@destroy');
 $router->get('/admin/software', 'Admin\Controllers\SoftwareController@index');
 $router->get('/admin/api', 'Admin\Controllers\ApiController@index');
+$router->post('/admin/api', 'Admin\Controllers\ApiController@store');
+$router->get('/admin/api/delete/{id}', 'Admin\Controllers\ApiController@destroy');
+$router->get('/admin/roles', 'Admin\Controllers\RolesController@index');
+$router->post('/admin/roles/create', 'Admin\Controllers\RolesController@create');
+$router->post('/admin/roles/{userId}', 'Admin\Controllers\RolesController@setRole');
+$router->get('/admin/twofactor', 'Admin\Controllers\RolesController@twoFactor');
+$router->get('/admin/twofactor/enable', 'Admin\Controllers\RolesController@twoFactorEnable');
+$router->get('/admin/twofactor/disable', 'Admin\Controllers\RolesController@twoFactorDisable');
 $router->get('/admin/branding', 'Admin\Controllers\BrandingController@index');
 $router->get('/admin/clustering', 'Admin\Controllers\ClusteringController@index');
 $router->get('/admin/filesystem', 'Admin\Controllers\FilesystemController@index');
 $router->get('/admin/terminal', 'Admin\Controllers\TerminalController@index');
 $router->get('/admin/metrics', 'Admin\Controllers\MetricsController@index');
 $router->get('/admin/installers', 'Admin\Controllers\InstallersController@index');
+$router->get('/admin/marketplace', 'Admin\Controllers\MarketplaceController@index');
+$router->post('/admin/marketplace/install/{id}', 'Admin\Controllers\MarketplaceController@install');
 $router->get('/admin/userfeatures', 'Admin\Controllers\UserFeaturesController@index');
 $router->get('/admin/cron', 'Admin\Controllers\CronController@index');
 $router->get('/admin/git', 'Admin\Controllers\GitController@index');
 $router->get('/admin/container', 'Admin\Controllers\ContainerController@index');
 $router->get('/admin/licensing', 'Admin\Controllers\LicensingController@index');
 $router->get('/admin/server', 'Admin\Controllers\ServerOverviewController@index');
+$router->get('/admin/server/health', 'Admin\Controllers\ServerOverviewController@health');
 
 // -- Account sub-routes --
 $router->get('/admin/account/create', 'Admin\Controllers\AccountController@create');
 $router->get('/admin/account/list', 'Admin\Controllers\AccountController@index');
+$router->get('/admin/account/edit/{id}', 'Admin\Controllers\AccountController@edit');
 $router->get('/admin/account/modify', 'Admin\Controllers\AccountController@index');
 $router->get('/admin/account/modify/{id}', 'Admin\Controllers\AccountController@index');
 $router->get('/admin/account/suspend', 'Admin\Controllers\AccountController@index');
@@ -74,7 +98,6 @@ $router->get('/admin/account/terminate/{id}', 'Admin\Controllers\AccountControll
 $router->post('/admin/account/password/{id}', 'Admin\Controllers\AccountController@password');
 
 // -- Package sub-routes --
-$router->get('/admin/package/create', 'Admin\Controllers\PackageController@index');
 $router->get('/admin/package/create', 'Admin\Controllers\PackageController@create');
 $router->post('/admin/package/create', 'Admin\Controllers\PackageController@store');
 $router->get('/admin/package/edit/{id}', 'Admin\Controllers\PackageController@edit');
@@ -82,8 +105,16 @@ $router->post('/admin/package/edit/{id}', 'Admin\Controllers\PackageController@u
 $router->get('/admin/package/delete/{id}', 'Admin\Controllers\PackageController@destroy');
 $router->post('/admin/package/upgrade/{accountId}', 'Admin\Controllers\PackageController@upgrade');
 $router->post('/admin/package/assign-reseller/{packageId}', 'Admin\Controllers\PackageController@assignReseller');
+$router->get('/admin/packages/categories', 'Admin\Controllers\PackageController@categories');
+$router->post('/admin/packages/categories', 'Admin\Controllers\PackageController@storeCategory');
+$router->get('/admin/packages/categories/delete/{id}', 'Admin\Controllers\PackageController@deleteCategory');
 // JSON endpoint for landing page
+$router->get('/admin/todo', 'Admin\Controllers\TodoController@index');
+$router->post('/admin/todo', 'Admin\Controllers\TodoController@store');
+$router->post('/admin/todo/{id}', 'Admin\Controllers\TodoController@update');
+$router->get('/admin/todo/delete/{id}', 'Admin\Controllers\TodoController@destroy');
 $router->get('/api/packages', 'Admin\Controllers\PackageController@apiList');
+$router->get('/api/icon', 'Admin\Controllers\IconController@generate');
 
 // -- Reseller sub-routes --
 $router->get('/admin/reseller/create', 'Admin\Controllers\ResellerController@index');

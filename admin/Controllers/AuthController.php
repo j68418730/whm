@@ -41,7 +41,7 @@ class AuthController extends Controller
             $app = \Core\Application::getInstance();
             $db = $app->get('db');
             $allPackages = $db->table('hosting_packages')->where('is_active', 1)->get();
-            $types = ['web_hosting', 'web_reseller', 'shoutcast', 'shoutcast_reseller', 'icecast', 'icecast_reseller', 'vps', 'dedicated'];
+            $types = ['web_hosting', 'web_reseller', 'icecast', 'icecast_reseller', 'vps', 'dedicated'];
             $packagesByType = [];
             foreach ($types as $type) {
                 $items = array_filter($allPackages, function($p) use ($type) { return $p->type === $type; });

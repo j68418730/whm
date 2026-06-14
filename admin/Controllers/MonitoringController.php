@@ -1,70 +1,51 @@
 <?php
-/**
- * Monitoring System Controller
- * Handles service monitoring, CPU monitoring, RAM monitoring, disk monitoring, process manager, log viewer
- */
 
 namespace Admin\Controllers;
 
 use Core\Controller;
-use Core\Auth;
-use Core\Request;
-use Core\Response;
-use Core\View;
 
 class MonitoringController extends Controller
 {
     protected $auth;
-    protected $request;
     protected $response;
 
     public function __construct()
     {
-        $this->auth = \Core\Application::getInstance()->get('auth');
-        $this->request = \Core\Application::getInstance()->get('request');
-        $this->response = \Core\Application::getInstance()->get('response');
+        $app = \Core\Application::getInstance();
+        $this->auth = $app->get('auth');
+        $this->response = $app->get('response');
     }
 
-    /**
-     * Show monitoring dashboard
-     */
     public function index()
     {
-        // Check if user is logged in and is admin
-        if (!$this->auth->check() || !$this->auth->isAdmin()) {
-            $this->response->redirect('/admin/login');
-            exit;
-        }
-
-        // Get admin user info
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-
-        $monitoringStats = [
-            'cpu_load' => 0,
-            'ram_usage' => 0,
-            'disk_usage' => 0,
-            'running_processes' => 0,
-            'total_processes' => 0,
-            'uptime' => '0 days',
-            'load_average' => [
-                '1min' => 0,
-                '5min' => 0,
-                '15min' => 0,
-            ],
-            'services_monitored' => 0,
-            'services_ok' => 0,
-            'services_warning' => 0,
-            'services_critical' => 0,
+        $services = [
+            'Web Server' => ['apache2', 'httpd', 'nginx'],
+            'Database' => ['mariadb', 'mysql'],
+            'Mail' => ['postfix', 'exim'],
+            'FTP' => ['vsftpd', 'pure-ftpd', 'proftpd'],
+            'DNS' => ['bind9', 'named'],
+            'SSH' => ['ssh', 'sshd'],
+            'Icecast' => ['icecast2', 'icecast'],
+            'PHP-FPM' => ['php8.2-fpm', 'php-fpm'],
+            'Redis' => ['redis-server', 'redis'],
         ];
-
-        // Get admin theme settings
+        $status = [];
+        foreach ($services as $label => $names) {
+            foreach ($names as $svc) {
+                $s = trim(shell_exec("systemctl is-active {$svc} 2>/dev/null") ?: '');
+                if ($s === 'active' || $s === 'inactive' || $s === 'failed') {
+                    $status[$label] = $s;
+                    break;
+                }
+            }
+            if (!isset($status[$label])) $status[$label] = 'not found';
+        }
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-
-        // Render the monitoring view
         return $this->view('admin.monitoring.index', [
-            'user' => $user,
-            'monitoringStats' => $monitoringStats,
-            'theme_settings' => $theme_settings
+            'user' => $user, 'services' => $status,
+            'theme_settings' => $theme_settings, 'title' => 'Monitoring'
         ]);
     }
 }
