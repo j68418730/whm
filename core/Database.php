@@ -66,6 +66,8 @@ class Database
             protected $pdo;
             protected $table;
             protected $wheres = [];
+            protected $orderCol = null;
+            protected $orderDir = 'ASC';
 
             public function __construct($pdo, $table, $column, $operator, $value)
             {
@@ -111,6 +113,13 @@ class Database
                 return $stmt->fetch();
             }
 
+            public function orderBy($column, $direction = 'ASC')
+            {
+                $this->orderCol = $column;
+                $this->orderDir = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+                return $this;
+            }
+
             public function get()
             {
                 // Similar to first but without limit
@@ -125,6 +134,9 @@ class Database
                     }
                     $whereSql = implode(' AND ', $whereClauses);
                     $sql = "SELECT * FROM {$this->table} WHERE {$whereSql}";
+                }
+                if ($this->orderCol) {
+                    $sql .= " ORDER BY {$this->orderCol} {$this->orderDir}";
                 }
 
                 $stmt = $this->pdo->prepare($sql);
