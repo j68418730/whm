@@ -31,7 +31,7 @@ apt install -y -qq apache2 mariadb-server php php-cli php-common php-curl \
   php-gd php-intl php-mbstring php-mysql php-xml php-zip php-bcmath php-bz2 \
   php-ctype php-exif php-fileinfo php-ftp php-imap php-ldap \
   php-opcache php-redis php-sockets php-tokenizer php-xmlreader \
-  php-xsl php-apcu php-imagick unzip wget curl git openssl
+  php-xsl php-apcu php-imagick postfix vsftpd bind9 unzip wget curl git openssl
 
 systemctl enable --now apache2 mariadb
 
