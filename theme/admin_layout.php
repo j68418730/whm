@@ -13,14 +13,7 @@ $title = isset($title) ? $title : 'Dashboard';
 <div class="grid-overlay"></div>
 
 <header class="header">
-<div class="container nav">
-<div class="logo">
-<img src="/theme/assets/img/logo.png" alt="logo">
-<div>
-<h1>PLANET-<span>HOSTS</span></h1>
-<p>Hosting Panel</p>
-</div>
-</div>
+<div class="container nav" style="justify-content:center">
 <nav>
 <a href="/">Home</a>
 <a href="/admin/dashboard">Dashboard</a>
