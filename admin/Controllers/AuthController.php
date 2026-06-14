@@ -84,7 +84,7 @@ class AuthController extends Controller
     public function postLogin()
     {
         $credentials = [
-            'email' => $this->request->post('email'),
+            'username' => $this->request->post('username') ?: $this->request->post('email'),
             'password' => $this->request->post('password')
         ];
 

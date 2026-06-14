@@ -5,6 +5,7 @@
 -- Admins Table (for admin panel login with crypto password)
 CREATE TABLE IF NOT EXISTS admins (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) DEFAULT '',
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,

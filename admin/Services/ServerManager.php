@@ -126,15 +126,30 @@ class ServerManager
 
     public function getServiceStatus()
     {
-        $services = ['apache2', 'httpd', 'mariadb', 'mysql', 'exim', 'postfix', 'pure-ftpd', 'vsftpd', 'named', 'bind9', 'ssh', 'icecast'];
+        // Try each service name — first one found wins for each type
+        $candidates = [
+            'Web Server' => ['apache2', 'httpd', 'nginx'],
+            'Database' => ['mariadb', 'mysql'],
+            'Mail' => ['postfix', 'exim', 'dovecot'],
+            'FTP' => ['pure-ftpd', 'vsftpd', 'proftpd'],
+            'DNS' => ['bind9', 'named', 'unbound'],
+            'SSH' => ['ssh', 'sshd'],
+            'Icecast' => ['icecast2', 'icecast'],
+        ];
         $status = [];
-        foreach ($services as $svc) {
-            $output = shell_exec("systemctl is-active {$svc} 2>/dev/null");
-            if ($output !== null) {
-                $status[$svc] = trim($output);
+        foreach ($candidates as $label => $names) {
+            foreach ($names as $svc) {
+                $output = shell_exec("systemctl is-active {$svc} 2>/dev/null");
+                if ($output !== null) {
+                    $status[$label] = trim($output);
+                    break;
+                }
+            }
+            if (!isset($status[$label])) {
+                $status[$label] = 'not found';
             }
         }
-        return $status ?: ['httpd' => 'unknown', 'mariadb' => 'unknown'];
+        return $status;
     }
 
     public function getActiveAccounts()

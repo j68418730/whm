@@ -25,14 +25,14 @@ class Auth
      */
     public function attempt($credentials)
     {
-        // For demo, we check against a stored admin user in the database.
-        // In a real system, you would have a users table.
-        // Here we assume an 'admins' table with email and password_hash.
-        $email = $credentials['email'] ?? '';
+        $username = $credentials['username'] ?? $credentials['email'] ?? '';
         $password = $credentials['password'] ?? '';
 
-        // Fetch admin by email
-        $admin = $this->db->table('admins')->where('email', $email)->first();
+        // Try by username first, then by email
+        $admin = $this->db->table('admins')->where('username', $username)->first();
+        if (!$admin) {
+            $admin = $this->db->table('admins')->where('email', $username)->first();
+        }
 
         if ($admin && password_verify($password, $admin->password_hash)) {
             // Set user in session
