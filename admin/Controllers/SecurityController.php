@@ -1,62 +1,37 @@
 <?php
-/**
- * Security Center Controller
- * Handles password strength, 2FA, shell access, compiler access, cPHulk, firewall integration, ModSecurity
- */
 
 namespace Admin\Controllers;
 
 use Core\Controller;
-use Core\Auth;
-use Core\Request;
-use Core\Response;
-use Core\View;
 
 class SecurityController extends Controller
 {
     protected $auth;
     protected $request;
     protected $response;
+    protected $db;
 
     public function __construct()
     {
-        $this->auth = \Core\Application::getInstance()->get('auth');
-        $this->request = \Core\Application::getInstance()->get('request');
-        $this->response = \Core\Application::getInstance()->get('response');
+        $app = \Core\Application::getInstance();
+        $this->auth = $app->get('auth');
+        $this->request = $app->get('request');
+        $this->response = $app->get('response');
+        $this->db = $app->get('db');
     }
 
-    /**
-     * Show security center dashboard
-     */
     public function index()
     {
-        // Check if user is logged in and is admin
-        if (!$this->auth->check() || !$this->auth->isAdmin()) {
-            $this->response->redirect('/admin/login');
-            exit;
-        }
-
-        // Get admin user info
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-
-        $securityStats = [
-            'brute_force_attacks' => 0,
-            'malware_scans' => 0,
-            'firewall_blocks' => 0,
-            'modsecurity_hits' => 0,
-            'two_factor_enabled' => 'disabled',
-            'shell_access' => 'disabled',
-            'compiler_access' => 'disabled',
-        ];
-
-        // Get admin theme settings
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-
-        // Render the security center view
+        $blockCount = count($this->db->table('ip_blocks')->get() ?: []);
+        $sslCount = count($this->db->table('ssl_certs')->get() ?: []);
+        $secrets = $this->db->table('totp_secrets')->get() ?: [];
+        $twoFactorUsers = count($secrets);
         return $this->view('admin.security.index', [
-            'user' => $user,
-            'securityStats' => $securityStats,
-            'theme_settings' => $theme_settings
+            'user' => $user, 'theme_settings' => $theme_settings, 'title' => 'Security Center',
+            'blockCount' => $blockCount, 'sslCount' => $sslCount, 'twoFactorUsers' => $twoFactorUsers,
         ]);
     }
 }

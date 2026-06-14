@@ -1,16 +1,8 @@
 <?php
-/**
- * Terminal & Shell Access Controller
- * Handles browser terminal, SSH integration
- */
 
 namespace Admin\Controllers;
 
 use Core\Controller;
-use Core\Auth;
-use Core\Request;
-use Core\Response;
-use Core\View;
 
 class TerminalController extends Controller
 {
@@ -20,40 +12,30 @@ class TerminalController extends Controller
 
     public function __construct()
     {
-        $this->auth = \Core\Application::getInstance()->get('auth');
-        $this->request = \Core\Application::getInstance()->get('request');
-        $this->response = \Core\Application::getInstance()->get('response');
+        $app = \Core\Application::getInstance();
+        $this->auth = $app->get('auth');
+        $this->request = $app->get('request');
+        $this->response = $app->get('response');
     }
 
-    /**
-     * Show terminal & shell access dashboard
-     */
     public function index()
     {
-        // Check if user is logged in and is admin
-        if (!$this->auth->check() || !$this->auth->isAdmin()) {
-            $this->response->redirect('/admin/login');
-            exit;
-        }
-
-        // Get admin user info
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-
-        $terminalStats = [
-            'active_sessions' => 0,
-            'total_ssh_keys' => 0,
-            'browser_terminal_enabled' => 'disabled',
-            'ssh_access_enabled' => 'disabled',
-        ];
-
-        // Get admin theme settings
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-
-        // Render the terminal & shell access view
         return $this->view('admin.terminal.index', [
-            'user' => $user,
-            'terminalStats' => $terminalStats,
-            'theme_settings' => $theme_settings
+            'user' => $user, 'theme_settings' => $theme_settings, 'title' => 'Terminal'
         ]);
+    }
+
+    public function exec()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->json(['error' => 'Unauthorized']); exit; }
+        $cmd = $this->request->post('command', '');
+        if (empty($cmd)) { $this->response->json(['output' => '']); exit; }
+        $output = '';
+        $returnVar = 0;
+        exec(escapeshellcmd($cmd) . ' 2>&1', $output, $returnVar);
+        $this->response->json(['output' => implode("\n", $output), 'code' => $returnVar]);
     }
 }

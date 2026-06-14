@@ -101,6 +101,29 @@ class DomainsController extends Controller
     public function redirects()
     {
         $u = $this->requireUser();
-        return $this->view('user.redirects', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Redirects']);
+        $uid = $this->hostingUser->id ?? 0;
+        $redirects = $uid ? ($this->db->table('dns_records')->where('zone_id', $uid)->where('type', 'REDIRECT')->get() ?: []) : [];
+        return $this->view('user.redirects', ['user' => $u, 'hosting' => $this->hostingUser, 'redirects' => $redirects, 'title' => 'Redirects']);
+    }
+
+    public function addRedirect()
+    {
+        $u = $this->requireUser();
+        $uid = $this->hostingUser->id ?? 0;
+        $this->db->table('dns_records')->insertGetId([
+            'zone_id' => $uid, 'name' => $this->request->post('source', ''),
+            'type' => 'REDIRECT', 'value' => $this->request->post('destination', ''),
+            'priority' => $this->request->post('type', '301') === '301' ? 301 : 302,
+        ]);
+        $_SESSION['success'] = 'Redirect created.';
+        $this->response->redirect('/user/redirects');
+    }
+
+    public function deleteRedirect($id)
+    {
+        $u = $this->requireUser();
+        $this->db->table('dns_records')->where('id', $id)->delete();
+        $_SESSION['success'] = 'Redirect deleted.';
+        $this->response->redirect('/user/redirects');
     }
 }

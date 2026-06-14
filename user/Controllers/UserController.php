@@ -56,8 +56,9 @@ class UserController extends Controller
 
     public function services() { $u = $this->loadUser(); return $this->view('user.services', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'My Services']); }
     public function usage() { $u = $this->loadUser(); return $this->view('user.usage', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Resource Usage']); }
-    public function tickets() { $u = $this->loadUser(); return $this->view('user.tickets', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Support Tickets']); }
-    public function invoices() { $u = $this->loadUser(); return $this->view('user.invoices', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Invoices']); }
     public function profile() { $u = $this->loadUser(); return $this->view('user.profile', ['user' => $u, 'hosting' => $this->hostingUser, 'package' => $this->package, 'title' => 'Profile']); }
     public function security() { $u = $this->loadUser(); return $this->view('user.security', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Security']); }
+    public function support() { $u = $this->loadUser(); return $this->view('user.support', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Support']); }
+    public function stats() { $u = $this->loadUser(); return $this->view('user.stats', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Statistics']); }
+    public function tools() { $u = $this->loadUser(); return $this->view('user.tools', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Tools']); }
 }

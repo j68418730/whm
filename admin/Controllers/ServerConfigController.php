@@ -55,6 +55,24 @@ class ServerConfigController extends Controller
         exit;
     }
 
+    public function serviceStart($name)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        shell_exec("systemctl start " . escapeshellarg($name) . " 2>&1");
+        $this->response->redirect('/admin/serverconfig');
+    }
+    public function serviceStop($name)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        shell_exec("systemctl stop " . escapeshellarg($name) . " 2>&1");
+        $this->response->redirect('/admin/serverconfig');
+    }
+    public function serviceRestart($name)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        shell_exec("systemctl restart " . escapeshellarg($name) . " 2>&1");
+        $this->response->redirect('/admin/serverconfig');
+    }
     private function getTweakSettings()
     {
         return [
