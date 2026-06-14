@@ -187,7 +187,13 @@
             <h2>DNS Zone Management</h2>
             <p>Welcome, <?php echo htmlspecialchars($user->name); ?>! Manage DNS zones and records from here.</p>
             <a href="/admin/dashboard" class="btn btn-secondary">Back to Dashboard</a>
-            <a href="/admin/dns/create-zone" class="btn">Create DNS Zone</a>
+        </div>
+
+        <div style="background:rgba(8,16,28,.6);border:1px solid rgba(0,191,255,.1);border-radius:12px;padding:20px;margin-bottom:20px;display:flex;gap:12px;align-items:end;flex-wrap:wrap">
+            <form method="POST" action="/admin/dns/create-zone" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;width:100%">
+                <div><label style="display:block;color:#94a3b8;font-size:13px;margin-bottom:4px">Domain</label><input name="domain" required placeholder="example.com" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;min-width:250px;outline:none"></div>
+                <button type="submit" class="btn" style="padding:10px 24px;border:none;border-radius:8px;background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff;font-weight:600;cursor:pointer">Create Zone</button>
+            </form>
         </div>
 
         <div class="stats-grid">
@@ -223,7 +229,21 @@
                     </tr>
                 </thead>
                 <tbody>
+<?php if (!empty($zones)): foreach ($zones as $z): ?>
+                    <tr>
+                        <td><strong><?php echo htmlspecialchars($z->domain, ENT_QUOTES, 'UTF-8'); ?></strong></td>
+                        <td><?php echo $z->serial ?? '-'; ?></td>
+                        <td><?php echo htmlspecialchars($z->ns1 ?? '-', ENT_QUOTES, 'UTF-8'); ?></td>
+                        <td><?php echo htmlspecialchars($z->admin_email ?? '-', ENT_QUOTES, 'UTF-8'); ?></td>
+                        <td><span class="status-badge status-active">Active</span></td>
+                        <td>
+                            <a href="/admin/dns/edit/<?php echo $z->id; ?>" class="btn btn-sm btn-secondary">Edit</a>
+                            <a href="/admin/dns/delete/<?php echo $z->id; ?>" class="btn btn-sm btn-secondary" onclick="return confirm('Delete zone?')">Delete</a>
+                        </td>
+                    </tr>
+<?php endforeach; else: ?>
                     <tr><td colspan="6" style="text-align:center;padding:2rem;color:#999;">No DNS zones configured yet.</td></tr>
+<?php endif; ?>
                 </tbody>
             </table>
         </div>

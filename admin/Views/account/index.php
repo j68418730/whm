@@ -233,7 +233,30 @@
                     </tr>
                 </thead>
                 <tbody>
+<?php if (!empty($accounts)): foreach ($accounts as $a): ?>
+                    <tr>
+                        <td><strong><?php echo htmlspecialchars($a->username, ENT_QUOTES, 'UTF-8'); ?></strong></td>
+                        <td><?php echo htmlspecialchars($a->email, ENT_QUOTES, 'UTF-8'); ?></td>
+                        <td><?php
+                            $pkgName = 'N/A';
+                            if (isset($packages)) {
+                                foreach ($packages as $p) { if ($p->id == $a->package_id) $pkgName = $p->name; }
+                            }
+                            echo htmlspecialchars($pkgName, ENT_QUOTES, 'UTF-8');
+                        ?></td>
+                        <td><span class="status-badge status-<?php echo $a->status === 'active' ? 'active' : ($a->status === 'suspended' ? 'suspended' : 'offline'); ?>"><?php echo ucfirst($a->status); ?></span></td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td class="actions">
+                            <a href="/admin/account/show/<?php echo $a->id; ?>" class="btn btn-sm btn-secondary">View</a>
+                            <a href="/admin/account/suspend/<?php echo $a->id; ?>" class="btn btn-sm btn-secondary" onclick="return confirm('Suspend this account?')">Suspend</a>
+                            <a href="/admin/account/unsuspend/<?php echo $a->id; ?>" class="btn btn-sm btn-secondary">Unsuspend</a>
+                            <a href="/admin/account/terminate/<?php echo $a->id; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Terminate this account? This cannot be undone.')">Terminate</a>
+                        </td>
+                    </tr>
+<?php endforeach; else: ?>
                     <tr><td colspan="7" style="text-align:center;padding:2rem;color:#999;">No accounts created yet.</td></tr>
+<?php endif; ?>
                 </tbody>
             </table>
         </div>
