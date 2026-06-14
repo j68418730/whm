@@ -28,6 +28,9 @@ $router->get('/admin/ftp', 'Admin\Controllers\FtpController@index');
 $router->get('/admin/ssl', 'Admin\Controllers\SslController@index');
 $router->get('/admin/security', 'Admin\Controllers\SecurityController@index');
 $router->get('/admin/backup', 'Admin\Controllers\BackupController@index');
+$router->post('/admin/backup/create', 'Admin\Controllers\BackupController@create');
+$router->get('/admin/backup/restore/{name}', 'Admin\Controllers\BackupController@restore');
+$router->get('/admin/backup/delete/{name}', 'Admin\Controllers\BackupController@delete');
 $router->get('/admin/serverconfig', 'Admin\Controllers\ServerConfigController@index');
 $router->get('/admin/network', 'Admin\Controllers\NetworkController@index');
 $router->get('/admin/monitoring', 'Admin\Controllers\MonitoringController@index');
@@ -61,6 +64,12 @@ $router->get('/admin/account/password', 'Admin\Controllers\AccountController@ind
 $router->get('/admin/account/search', 'Admin\Controllers\AccountController@index');
 $router->get('/admin/account/filter', 'Admin\Controllers\AccountController@index');
 $router->get('/admin/account/sort', 'Admin\Controllers\AccountController@index');
+$router->post('/admin/account/store', 'Admin\Controllers\AccountController@store');
+$router->get('/admin/account/show/{id}', 'Admin\Controllers\AccountController@show');
+$router->get('/admin/account/suspend/{id}', 'Admin\Controllers\AccountController@suspend');
+$router->get('/admin/account/unsuspend/{id}', 'Admin\Controllers\AccountController@unsuspend');
+$router->get('/admin/account/terminate/{id}', 'Admin\Controllers\AccountController@terminate');
+$router->post('/admin/account/password/{id}', 'Admin\Controllers\AccountController@password');
 
 // -- Package sub-routes --
 $router->get('/admin/package/create', 'Admin\Controllers\PackageController@index');
@@ -69,6 +78,8 @@ $router->post('/admin/package/create', 'Admin\Controllers\PackageController@stor
 $router->get('/admin/package/edit/{id}', 'Admin\Controllers\PackageController@edit');
 $router->post('/admin/package/edit/{id}', 'Admin\Controllers\PackageController@update');
 $router->get('/admin/package/delete/{id}', 'Admin\Controllers\PackageController@destroy');
+$router->post('/admin/package/upgrade/{accountId}', 'Admin\Controllers\PackageController@upgrade');
+$router->post('/admin/package/assign-reseller/{packageId}', 'Admin\Controllers\PackageController@assignReseller');
 // JSON endpoint for landing page
 $router->get('/api/packages', 'Admin\Controllers\PackageController@apiList');
 
@@ -85,8 +96,13 @@ $router->get('/admin/dns/edit-record', 'Admin\Controllers\DnsController@index');
 $router->get('/admin/dns/delete-record', 'Admin\Controllers\DnsController@index');
 $router->get('/admin/dns/clustering', 'Admin\Controllers\DnsController@index');
 $router->get('/admin/dns/failover', 'Admin\Controllers\DnsController@index');
-$router->get('/admin/dns/edit/{zone}/{type}/{name}', 'Admin\Controllers\DnsController@index');
-$router->get('/admin/dns/delete/{zone}/{type}/{name}', 'Admin\Controllers\DnsController@index');
+$router->post('/admin/dns/create-zone', 'Admin\Controllers\DnsController@createZone');
+$router->get('/admin/dns/edit/{id}', 'Admin\Controllers\DnsController@editZone');
+$router->get('/admin/dns/delete/{id}', 'Admin\Controllers\DnsController@deleteZone');
+$router->post('/admin/dns/add-record/{zoneId}', 'Admin\Controllers\DnsController@addRecord');
+$router->get('/admin/dns/delete-record/{zoneId}/{recordId}', 'Admin\Controllers\DnsController@deleteRecord');
+$router->get('/admin/dns/nameservers', 'Admin\Controllers\DnsController@nameservers');
+$router->post('/admin/dns/nameservers', 'Admin\Controllers\DnsController@saveNameservers');
 
 // -- MySQL sub-routes --
 $router->get('/admin/mysql/phpmyadmin', 'Admin\Controllers\MysqlController@index');
