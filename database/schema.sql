@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS admins (
 CREATE TABLE IF NOT EXISTS radio_streams (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    server_type ENUM('icecast', 'shoutcast') NOT NULL DEFAULT 'icecast',
+    server_type ENUM('icecast') NOT NULL DEFAULT 'icecast',
     port INT NOT NULL,
     password VARCHAR(255) NOT NULL, -- hashed password
     config_path VARCHAR(255) NOT NULL,
@@ -147,7 +147,7 @@ CREATE TABLE IF NOT EXISTS radio_settings (
     reseller_id INT NULL, -- NULL for non-reseller settings
     global_enabled BOOLEAN DEFAULT FALSE,
     enabled BOOLEAN DEFAULT FALSE,
-    server_type ENUM('icecast', 'shoutcast') DEFAULT 'icecast',
+    server_type ENUM('icecast') DEFAULT 'icecast',
     listener_limit INT DEFAULT 100,
     bandwidth_limit BIGINT DEFAULT 1073741824000, -- 1TB in bytes
     storage_limit BIGINT DEFAULT 10737418240, -- 10GB in bytes
@@ -254,7 +254,7 @@ CREATE TABLE IF NOT EXISTS user_radio_settings (
     reseller_id INT NULL,
     global_enabled BOOLEAN DEFAULT FALSE,
     enabled BOOLEAN DEFAULT FALSE,
-    server_type ENUM('icecast', 'shoutcast') DEFAULT 'icecast',
+    server_type ENUM('icecast') DEFAULT 'icecast',
     listener_limit INT DEFAULT 100,
     bandwidth_limit BIGINT DEFAULT 1073741824000,
     storage_limit BIGINT DEFAULT 10737418240,

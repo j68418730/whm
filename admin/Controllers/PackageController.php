@@ -20,26 +20,27 @@ class PackageController extends Controller
         $this->db = $app->get('db');
     }
 
+    protected function getCategories()
+    {
+        return $this->db->table('package_categories')->get() ?: [];
+    }
+
     public function index()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
         $packages = $this->db->table('hosting_packages')->get();
-        $types = ['web_hosting', 'web_reseller', 'shoutcast', 'shoutcast_reseller', 'icecast', 'icecast_reseller', 'vps', 'dedicated'];
+        $categories = $this->getCategories();
         $grouped = [];
-        foreach ($types as $type) {
-            $grouped[$type] = array_filter($packages, function($p) use ($type) { return $p->type === $type; });
+        foreach ($categories as $cat) {
+            $grouped[$cat->name] = array_filter($packages, function($p) use ($cat) { return $p->type === $cat->name; });
         }
-        $resellers = $this->db->table('resellers')->get();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         $total = count($packages);
         $active = count(array_filter($packages, function($p) { return ($p->is_active ?? 0) == 1; }));
         return $this->view('admin.package.index', [
-            'user' => $user,
-            'grouped' => $grouped,
-            'types' => $types,
+            'user' => $user, 'grouped' => $grouped, 'categories' => $categories,
             'packagesStats' => ['total_packages' => $total, 'active_packages' => $active],
-            'resellers' => $resellers,
             'theme_settings' => $theme_settings
         ]);
     }
@@ -48,9 +49,9 @@ class PackageController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-        $types = ['web_hosting', 'web_reseller', 'shoutcast', 'shoutcast_reseller', 'icecast', 'icecast_reseller', 'vps', 'dedicated'];
+        $categories = $this->getCategories();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-        return $this->view('admin.package.create', ['user' => $user, 'types' => $types, 'theme_settings' => $theme_settings]);
+        return $this->view('admin.package.create', ['user' => $user, 'categories' => $categories, 'theme_settings' => $theme_settings]);
     }
 
     public function store()
@@ -59,7 +60,7 @@ class PackageController extends Controller
         $features = $this->request->post('features', []);
         $data = [
             'name' => $this->request->post('name', ''),
-            'type' => $this->request->post('type', 'web_hosting'),
+            'type' => $this->request->post('type', 'Web Hosting'),
             'description' => $this->request->post('description', ''),
             'features' => json_encode($features),
             'monthly_price' => (float)$this->request->post('monthly_price', 0),
@@ -85,9 +86,9 @@ class PackageController extends Controller
         $package = $this->db->table('hosting_packages')->where('id', $id)->first();
         if (!$package) { $this->response->redirect('/admin/packages'); exit; }
         if (is_string($package->features)) $package->features = json_decode($package->features, true) ?? [];
-        $types = ['web_hosting', 'web_reseller', 'shoutcast', 'shoutcast_reseller', 'icecast', 'icecast_reseller', 'vps', 'dedicated'];
+        $categories = $this->getCategories();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-        return $this->view('admin.package.edit', ['user' => $user, 'package' => $package, 'types' => $types, 'theme_settings' => $theme_settings]);
+        return $this->view('admin.package.edit', ['user' => $user, 'package' => $package, 'categories' => $categories, 'theme_settings' => $theme_settings]);
     }
 
     public function update($id)
@@ -96,7 +97,7 @@ class PackageController extends Controller
         $features = $this->request->post('features', []);
         $data = [
             'name' => $this->request->post('name', ''),
-            'type' => $this->request->post('type', 'web_hosting'),
+            'type' => $this->request->post('type', 'Web Hosting'),
             'description' => $this->request->post('description', ''),
             'features' => json_encode($features),
             'monthly_price' => (float)$this->request->post('monthly_price', 0),
@@ -124,38 +125,47 @@ class PackageController extends Controller
         exit;
     }
 
-    public function upgrade($accountId)
+    // --- Category management ---
+
+    public function categories()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $newPackageId = (int)$this->request->post('package_id', 0);
-        if ($newPackageId) {
-            $this->db->table('hosting_users')->where('id', $accountId)->update(['package_id' => $newPackageId]);
-            $_SESSION['success_message'] = 'Account upgraded to new package.';
-        }
-        $this->response->redirect('/admin/account');
+        $user = $this->auth->user();
+        $categories = $this->getCategories();
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        return $this->view('admin.package.categories', ['user' => $user, 'categories' => $categories, 'theme_settings' => $theme_settings]);
+    }
+
+    public function storeCategory()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $this->db->table('package_categories')->insertGetId([
+            'name' => $this->request->post('name', ''),
+            'icon' => $this->request->post('icon', '📦'),
+            'sort_order' => (int)$this->request->post('sort_order', 0),
+        ]);
+        $_SESSION['success_message'] = 'Category created.';
+        $this->response->redirect('/admin/packages/categories');
         exit;
     }
 
-    public function assignReseller($packageId)
+    public function deleteCategory($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $resellerId = (int)$this->request->post('reseller_id', 0);
-        if ($resellerId) {
-            $this->db->table('hosting_packages')->where('id', $packageId)->update(['reseller_id' => $resellerId]);
-            $_SESSION['success_message'] = 'Package assigned to reseller.';
-        }
-        $this->response->redirect('/admin/packages');
+        $this->db->table('package_categories')->where('id', $id)->delete();
+        $_SESSION['success_message'] = 'Category deleted.';
+        $this->response->redirect('/admin/packages/categories');
         exit;
     }
 
     public function apiList()
     {
         $packages = $this->db->table('hosting_packages')->where('is_active', 1)->get();
-        $types = ['web_hosting', 'web_reseller', 'shoutcast', 'shoutcast_reseller', 'icecast', 'icecast_reseller', 'vps', 'dedicated'];
+        $categories = $this->getCategories();
         $grouped = [];
-        foreach ($types as $type) {
-            $items = array_filter($packages, function($p) use ($type) { return $p->type === $type; });
-            if ($items) $grouped[$type] = array_values($items);
+        foreach ($categories as $cat) {
+            $items = array_filter($packages, function($p) use ($cat) { return $p->type === $cat->name; });
+            if ($items) $grouped[$cat->name] = array_values($items);
         }
         return json_encode($grouped);
     }

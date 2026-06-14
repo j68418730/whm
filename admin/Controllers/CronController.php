@@ -1,59 +1,56 @@
 <?php
-/**
- * Cron & Task Automation Controller
- * Handles scheduled tasks, automated scripts
- */
 
 namespace Admin\Controllers;
 
 use Core\Controller;
-use Core\Auth;
-use Core\Request;
-use Core\Response;
-use Core\View;
 
 class CronController extends Controller
 {
     protected $auth;
     protected $request;
     protected $response;
+    protected $db;
 
     public function __construct()
     {
-        $this->auth = \Core\Application::getInstance()->get('auth');
-        $this->request = \Core\Application::getInstance()->get('request');
-        $this->response = \Core\Application::getInstance()->get('response');
+        $app = \Core\Application::getInstance();
+        $this->auth = $app->get('auth');
+        $this->request = $app->get('request');
+        $this->response = $app->get('response');
+        $this->db = $app->get('db');
     }
 
-    /**
-     * Show cron & task automation dashboard
-     */
     public function index()
     {
-        // Check if user is logged in and is admin
-        if (!$this->auth->check() || !$this->auth->isAdmin()) {
-            $this->response->redirect('/admin/login');
-            exit;
-        }
-
-        // Get admin user info
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-
-        $cronStats = [
-            'total_cron_jobs' => 0,
-            'active_cron_jobs' => 0,
-            'failed_cron_jobs' => 0,
-            'last_run' => 'Never',
-        ];
-
-        // Get admin theme settings
+        $crons = $this->db->table('cron_jobs')->get() ?: [];
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-
-        // Render the cron & task automation view
         return $this->view('admin.cron.index', [
-            'user' => $user,
-            'cronStats' => $cronStats,
-            'theme_settings' => $theme_settings
+            'user' => $user, 'crons' => $crons,
+            'theme_settings' => $theme_settings, 'title' => 'Cron Manager'
         ]);
+    }
+
+    public function store()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $this->db->table('cron_jobs')->insertGetId([
+            'user_id' => 0, 'minute' => $this->request->post('minute', '*'),
+            'hour' => $this->request->post('hour', '*'), 'day' => $this->request->post('day', '*'),
+            'month' => $this->request->post('month', '*'), 'weekday' => $this->request->post('weekday', '*'),
+            'command' => $this->request->post('command', ''),
+        ]);
+        $_SESSION['success_message'] = 'Cron job created.';
+        $this->response->redirect('/admin/cron');
+        exit;
+    }
+
+    public function destroy($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $this->db->table('cron_jobs')->where('id', $id)->delete();
+        $this->response->redirect('/admin/cron');
+        exit;
     }
 }

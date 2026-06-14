@@ -1,6 +1,6 @@
 <?php
 $userName = htmlspecialchars($user->name ?? 'Administrator', ENT_QUOTES, 'UTF-8');
-$stats = array_merge(['total_streams' => 0, 'active_streams' => 0, 'total_listeners' => 0, 'bandwidth_used' => 0], $stats ?? []);
+$stats = array_merge(['total_accounts' => 0, 'active_accounts' => 0, 'total_packages' => 0, 'active_packages' => 0, 'total_resellers' => 0], $stats ?? []);
 $addons = $addons ?? [];
 $moduleGroups = [
     'Account Functions' => [
@@ -24,9 +24,10 @@ $moduleGroups = [
 ];
 ?>
 <div class="stats-grid">
-<div class="stat-card"><h3>Hosting Accounts</h3><div class="value">0</div><div class="label">Active accounts</div></div>
-<div class="stat-card"><h3>Resellers</h3><div class="value">0</div><div class="label">Delegated account owners</div></div>
-<div class="stat-card"><h3>Listeners</h3><div class="value"><?php echo (int)$stats['total_listeners']; ?></div><div class="label">Bandwidth: <?php echo number_format($stats['bandwidth_used'] / (1024 * 1024), 2); ?> MB</div></div>
+<div class="stat-card"><h3>Hosting Accounts</h3><div class="value"><?php echo $stats['total_accounts']; ?></div><div class="label"><?php echo $stats['active_accounts']; ?> active</div></div>
+<div class="stat-card"><h3>Packages</h3><div class="value"><?php echo $stats['total_packages']; ?></div><div class="label"><?php echo $stats['active_packages']; ?> active</div></div>
+<div class="stat-card"><h3>Resellers</h3><div class="value"><?php echo $stats['total_resellers']; ?></div><div class="label">Delegated account owners</div></div>
+<div class="stat-card"><h3>Panel Version</h3><div class="value" style="font-size:20px"><?php echo PHP_VERSION; ?></div><div class="label">PHP <?php echo PHP_SAPI; ?></div></div>
 </div>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">

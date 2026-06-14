@@ -1,24 +1,52 @@
 <?php
-/**
- * User Routes
- */
-
-use Core\Request;
-use Core\Response;
-
-// Ensure $router is available (set by caller or resolve from Application)
 if (!isset($router)) {
     $router = \Core\Application::getInstance()->get('router');
 }
 
-// User Radio Routes
-$router->get('/radio', 'User\Controllers\RadioController@index');
-$router->get('/radio/create', 'User\Controllers\RadioController@create');
-$router->post('/radio/store', 'User\Controllers\RadioController@store');
-$router->get('/radio/stream/{id}', 'User\Controllers\RadioController@show');
-$router->get('/radio/start/{id}', 'User\Controllers\RadioController@start');
-$router->get('/radio/stop/{id}', 'User\Controllers\RadioController@stop');
-$router->get('/radio/autodj/enable/{id}', 'User\Controllers\RadioController@enableAutodj');
-$router->get('/radio/autodj/disable/{id}', 'User\Controllers\RadioController@disableAutodj');
-$router->get('/radio/autodj/start/{id}', 'User\Controllers\RadioController@startAutodj');
-$router->get('/radio/autodj/stop/{id}', 'User\Controllers\RadioController@stopAutodj');
+$router->get('/user', 'User\Controllers\UserController@index');
+$router->get('/user/services', 'User\Controllers\UserController@services');
+$router->get('/user/usage', 'User\Controllers\UserController@usage');
+$router->get('/user/tickets', 'User\Controllers\UserController@tickets');
+$router->get('/user/invoices', 'User\Controllers\UserController@invoices');
+$router->get('/user/profile', 'User\Controllers\UserController@profile');
+$router->get('/user/security', 'User\Controllers\UserController@security');
+$router->get('/user/files', 'User\Controllers\FileManagerController@index');
+$router->post('/user/files/upload', 'User\Controllers\FileManagerController@upload');
+$router->get('/user/files/download', 'User\Controllers\FileManagerController@download');
+$router->get('/user/files/delete', 'User\Controllers\FileManagerController@delete');
+$router->post('/user/files/mkdir', 'User\Controllers\FileManagerController@mkdir');
+$router->post('/user/files/archive', 'User\Controllers\FileManagerController@archive');
+$router->get('/user/services/web', 'User\Controllers\UserController@services');
+$router->get('/user/services/radio', 'User\Controllers\UserController@services');
+$router->get('/user/services/vps', 'User\Controllers\UserController@services');
+$router->get('/user/services/domains', 'User\Controllers\UserController@services');
+$router->get('/user/domains', 'User\Controllers\DomainsController@index');
+$router->get('/user/domains/add', 'User\Controllers\DomainsController@add');
+$router->post('/user/domains/add', 'User\Controllers\DomainsController@add');
+$router->get('/user/domains/zone/{id}', 'User\Controllers\DomainsController@zone');
+$router->post('/user/domains/record/{zoneId}', 'User\Controllers\DomainsController@addRecord');
+$router->get('/user/domains/record/delete/{zoneId}/{recordId}', 'User\Controllers\DomainsController@deleteRecord');
+$router->get('/user/subdomains', 'User\Controllers\DomainsController@subdomains');
+$router->get('/user/redirects', 'User\Controllers\DomainsController@redirects');
+$router->get('/user/email', 'User\Controllers\EmailController@index');
+$router->post('/user/email/create', 'User\Controllers\EmailController@createAccount');
+$router->get('/user/email/delete/{id}', 'User\Controllers\EmailController@deleteAccount');
+$router->post('/user/email/forwarder', 'User\Controllers\EmailController@createForwarder');
+$router->get('/user/email/forwarder/delete/{id}', 'User\Controllers\EmailController@deleteForwarder');
+$router->post('/user/email/autoresponder', 'User\Controllers\EmailController@setAutoresponder');
+$router->get('/user/email/autoresponder/disable/{id}', 'User\Controllers\EmailController@disableAutoresponder');
+$router->post('/user/email/spam', 'User\Controllers\EmailController@setSpam');
+$router->get('/user/security', 'User\Controllers\SecurityController@index');
+$router->get('/user/ssl', 'User\Controllers\SecurityController@ssl');
+$router->post('/user/ssl/install', 'User\Controllers\SecurityController@sslInstall');
+$router->get('/user/ssl/delete/{id}', 'User\Controllers\SecurityController@sslDelete');
+$router->post('/user/ipblock', 'User\Controllers\SecurityController@blockIp');
+$router->get('/user/ipblock/delete/{id}', 'User\Controllers\SecurityController@unblockIp');
+$router->post('/user/password', 'User\Controllers\SecurityController@changePassword');
+$router->get('/user/2fa/enable', 'User\Controllers\SecurityController@twoFactorEnable');
+$router->get('/user/2fa/disable', 'User\Controllers\SecurityController@twoFactorDisable');
+$router->get('/user/databases', 'User\Controllers\DatabasesController@index');
+$router->post('/user/databases/create', 'User\Controllers\DatabasesController@createDb');
+$router->post('/user/databases/user', 'User\Controllers\DatabasesController@createUser');
+$router->get('/user/databases/delete/{name}', 'User\Controllers\DatabasesController@deleteDb');
+$router->get('/user/databases/phpmyadmin', 'User\Controllers\DatabasesController@phpMyAdmin');

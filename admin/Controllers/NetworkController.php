@@ -1,60 +1,65 @@
 <?php
-/**
- * Network Functions Controller
- * Handles IP management, hostname management, network configuration
- */
 
 namespace Admin\Controllers;
 
 use Core\Controller;
-use Core\Auth;
-use Core\Request;
-use Core\Response;
-use Core\View;
 
 class NetworkController extends Controller
 {
     protected $auth;
     protected $request;
     protected $response;
+    protected $db;
 
     public function __construct()
     {
-        $this->auth = \Core\Application::getInstance()->get('auth');
-        $this->request = \Core\Application::getInstance()->get('request');
-        $this->response = \Core\Application::getInstance()->get('response');
+        $app = \Core\Application::getInstance();
+        $this->auth = $app->get('auth');
+        $this->request = $app->get('request');
+        $this->response = $app->get('response');
+        $this->db = $app->get('db');
     }
 
-    /**
-     * Show network management dashboard
-     */
     public function index()
     {
-        // Check if user is logged in and is admin
-        if (!$this->auth->check() || !$this->auth->isAdmin()) {
-            $this->response->redirect('/admin/login');
-            exit;
-        }
-
-        // Get admin user info
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-
-        $networkStats = [
-            'total_ips' => 0,
-            'assigned_ips' => 0,
-            'hostname' => 'server.example.com',
-            'primary_interface' => 'eth0',
-            'ipv6_enabled' => 'disabled',
-        ];
-
-        // Get admin theme settings
+        $ips = $this->db->table('server_ips')->get() ?: [];
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-
-        // Render the network management view
         return $this->view('admin.network.index', [
-            'user' => $user,
-            'networkStats' => $networkStats,
-            'theme_settings' => $theme_settings
+            'user' => $user, 'ips' => $ips,
+            'theme_settings' => $theme_settings, 'title' => 'IP & Nameservers'
         ]);
+    }
+
+    public function store()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $this->db->table('server_ips')->insertGetId([
+            'ip_address' => $this->request->post('ip_address', ''),
+            'hostname' => $this->request->post('hostname', ''),
+            'ns1' => $this->request->post('ns1', ''),
+            'ns2' => $this->request->post('ns2', ''),
+            'ns3' => $this->request->post('ns3', ''),
+            'ns4' => $this->request->post('ns4', ''),
+        ]);
+        $_SESSION['success_message'] = 'IP and nameservers added.';
+        $this->response->redirect('/admin/network');
+        exit;
+    }
+
+    public function destroy($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $this->db->table('server_ips')->where('id', $id)->delete();
+        $_SESSION['success_message'] = 'IP deleted.';
+        $this->response->redirect('/admin/network');
+        exit;
+    }
+
+    public function getPrimary()
+    {
+        $ip = $this->db->table('server_ips')->where('is_active', 1)->first();
+        return $ip;
     }
 }
