@@ -568,7 +568,7 @@ function showTab(type) {
 <form method="POST" action="/admin/login/post">
 <div style="margin-bottom:20px;">
 <label style="display:block;margin-bottom:8px;font-weight:600;font-size:14px;color:#b0c4db;">Email</label>
-<input type="email" name="email" value="admin@example.com" required style="width:100%;padding:14px 18px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:16px;outline:none;">
+<input type="text" name="email" value="root" required style="width:100%;padding:14px 18px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:16px;outline:none;">
 </div>
 <div style="margin-bottom:28px;">
 <label style="display:block;margin-bottom:8px;font-weight:600;font-size:14px;color:#b0c4db;">Password</label>

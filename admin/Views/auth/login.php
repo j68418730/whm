@@ -84,8 +84,8 @@
         <?php endif; ?>
         <form method="POST" action="/admin/login/post">
             <div class="form-group">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" required>
+                <label for="email">Username or Email</label>
+                <input type="text" id="email" name="email" required placeholder="root@planet-hosts.com">
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
