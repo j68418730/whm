@@ -23,6 +23,8 @@ $router->get('/admin/dns', 'Admin\Controllers\DnsController@index');
 $router->get('/admin/email', 'Admin\Controllers\EmailController@index');
 $router->get('/admin/apache', 'Admin\Controllers\ApacheController@index');
 $router->get('/admin/php', 'Admin\Controllers\PhpController@index');
+$router->get('/admin/php/extensions', 'Admin\Controllers\PhpController@extensions');
+$router->get('/admin/php/config', 'Admin\Controllers\PhpController@config');
 $router->get('/admin/mysql', 'Admin\Controllers\MysqlController@index');
 $router->get('/admin/ftp', 'Admin\Controllers\FtpController@index');
 $router->get('/admin/ssl', 'Admin\Controllers\SslController@index');
@@ -50,7 +52,7 @@ $router->get('/admin/licensing', 'Admin\Controllers\LicensingController@index');
 $router->get('/admin/server', 'Admin\Controllers\ServerOverviewController@index');
 
 // -- Account sub-routes --
-$router->get('/admin/account/create', 'Admin\Controllers\AccountController@index');
+$router->get('/admin/account/create', 'Admin\Controllers\AccountController@create');
 $router->get('/admin/account/list', 'Admin\Controllers\AccountController@index');
 $router->get('/admin/account/modify', 'Admin\Controllers\AccountController@index');
 $router->get('/admin/account/modify/{id}', 'Admin\Controllers\AccountController@index');
