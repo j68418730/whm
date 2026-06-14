@@ -117,9 +117,11 @@ class AccountController extends Controller
             exec("chown -R {$username}:{$username} {$homeDir} 2>/dev/null");
         }
 
-        // Create DNS zone for the domain
-        $ns1 = "ns1.planet-hosts.com";
-        $ns2 = "ns2.planet-hosts.com";
+        // Create DNS zone for the domain with configured IP/nameservers
+        $primaryIp = $this->db->table('server_ips')->where('is_active', 1)->first();
+        $ns1 = $primaryIp->ns1 ?? 'ns1.planet-hosts.com';
+        $ns2 = $primaryIp->ns2 ?? 'ns2.planet-hosts.com';
+        $serverIp = $primaryIp->ip_address ?? ($this->request->server('SERVER_ADDR') ?? '127.0.0.1');
         $dnsZoneId = $this->db->table('dns_zones')->insertGetId([
             'domain' => $domain,
             'ns1' => $ns1, 'ns2' => $ns2,
@@ -194,6 +196,19 @@ class AccountController extends Controller
         $_SESSION['success_message'] = 'Account unsuspended.';
         $this->response->redirect('/admin/account');
         exit;
+    }
+
+    public function edit($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $account = $this->db->table('hosting_users')->where('id', $id)->first();
+        if (!$account) { $this->response->redirect('/admin/account'); exit; }
+        $user = $this->auth->user();
+        $packages = $this->db->table('hosting_packages')->where('is_active', 1)->get();
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        return $this->view('admin.account.edit', [
+            'user' => $user, 'account' => $account, 'packages' => $packages, 'theme_settings' => $theme_settings
+        ]);
     }
 
     public function terminate($id)

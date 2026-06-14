@@ -449,8 +449,7 @@ nav a:hover{
 $typeLabels = [
     'web_hosting' => '🌐 Web Hosting',
     'web_reseller' => '🏢 Web Hosting Reseller',
-    'shoutcast' => '📡 SHOUTcast Streaming',
-    'shoutcast_reseller' => '📡 SHOUTcast Reseller',
+
     'icecast' => '🎵 Icecast Streaming',
     'icecast_reseller' => '🎵 Icecast Reseller',
     'vps' => '🖥 VPS Servers',
