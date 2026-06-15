@@ -124,7 +124,8 @@ if (class_exists('\\Core\\License')) {
 <a href="/admin/cron" class="<?php echo str_contains($currentUrl,'/admin/cron')?'active':''; ?>">Cron</a>
 <a href="/admin/automation" class="<?php echo str_contains($currentUrl,'/admin/automation')?'active':''; ?>">Automation</a>
 <a href="/admin/settings" class="<?php echo str_contains($currentUrl,'/admin/settings')?'active':''; ?>">Settings</a>
-<a href="/admin/licensing" class="<?php echo str_contains($currentUrl,'/admin/licensing')?'active':''; ?>">Licensing</a>
+<a href="/admin/licensing" class="<?php echo str_contains($currentUrl,'/admin/licensing') && !str_contains($currentUrl,'/generate')?'active':''; ?>">Licensing</a>
+<a href="/admin/licensing/generate" class="<?php echo str_contains($currentUrl,'/admin/licensing/generate')?'active':''; ?>">Generate License</a>
 <a href="/admin/todo" class="<?php echo str_contains($currentUrl,'/admin/todo')?'active':''; ?>">ToDo List</a>
 </div>
 
