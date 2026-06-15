@@ -88,6 +88,7 @@ $title = isset($title) ? $title : 'Dashboard';
 <a href="/admin/api">API Keys</a>
 <a href="/admin/cron">Cron</a>
 <a href="/admin/todo">ToDo List</a>
+<a href="/admin/automation">Automation</a>
 </div>
 <div class="nav-section" style="margin-top:24px;border-top:1px solid rgba(255,255,255,.06);padding-top:16px">
 <a href="/admin/logout" style="color:#ff6b6b">Logout</a>

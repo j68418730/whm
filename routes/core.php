@@ -218,6 +218,11 @@ $router->post('/admin/support/announcements/store', 'Admin\Controllers\SupportCo
 $router->get('/admin/support/announcements/delete/{id}', 'Admin\Controllers\SupportController@announcementDelete');
 $router->get('/admin/support/status', 'Admin\Controllers\SupportController@serverStatus');
 
+// -- Automation routes --
+$router->get('/admin/automation', 'Admin\Controllers\AutomationController@index');
+$router->post('/admin/automation/save', 'Admin\Controllers\AutomationController@save');
+$router->get('/admin/automation/run', 'Admin\Controllers\AutomationController@run');
+
 // -- Billing routes --
 $router->get('/admin/billing', 'Admin\Controllers\BillingController@index');
 $router->get('/admin/billing/products', 'Admin\Controllers\BillingController@products');
