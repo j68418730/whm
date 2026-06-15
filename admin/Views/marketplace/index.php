@@ -10,7 +10,12 @@ $items = array_filter($grouped[$cat] ?? [], fn($a) => !empty($a)); if (empty($it
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
 <?php foreach ($items as $app): ?>
 <div style="background:rgba(255,255,255,.03);border:1px solid rgba(0,191,255,.1);border-radius:10px;padding:16px;text-align:center">
-<div style="font-size:32px;margin-bottom:6px"><?php echo htmlspecialchars($app->icon ?? '📦'); ?></div>
+<div style="margin-bottom:6px"><?php if ($app->icon_url): ?>
+<img src="<?php echo htmlspecialchars($app->icon_url); ?>" style="width:48px;height:48px;border-radius:8px" alt="<?php echo htmlspecialchars($app->name); ?>">
+<?php else: ?>
+<img src="/api/icon?text=<?php echo urlencode($app->name); ?>&size=48&bg=0A84FF" style="width:48px;height:48px;border-radius:8px" alt="<?php echo htmlspecialchars($app->name); ?>">
+<?php endif; ?></div>
+<div style="font-size:10px;color:var(--text-muted);margin-bottom:2px"><?php echo htmlspecialchars($app->category ?? ''); ?></div>
 <div style="font-weight:600;font-size:14px"><?php echo htmlspecialchars($app->name); ?></div>
 <div style="color:var(--text-muted);font-size:11px;margin:4px 0">v<?php echo htmlspecialchars($app->version ?? '1.0'); ?></div>
 <div style="color:var(--accent);font-size:16px;font-weight:700;margin-bottom:8px"><?php echo ($app->price ?? 0) > 0 ? '$' . number_format($app->price, 2) : 'Free'; ?></div>
