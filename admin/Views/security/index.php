@@ -1,21 +1,34 @@
-<div class="stats-grid" style="margin-bottom:20px">
+<div class="stats-grid" style="margin-bottom:24px">
 <div class="stat-card"><h3>SSL Certs</h3><div class="value"><?php echo $sslCount ?? 0; ?></div></div>
 <div class="stat-card"><h3>IP Blocks</h3><div class="value"><?php echo $blockCount ?? 0; ?></div></div>
 <div class="stat-card"><h3>2FA Users</h3><div class="value"><?php echo $twoFactorUsers ?? 0; ?></div></div>
 <div class="stat-card"><h3>Login Attempts</h3><div class="value"><?php echo $loginAttempts['total'] ?? 0; ?></div></div>
 </div>
 
-<div class="page-grid" style="margin-bottom:20px">
-<a href="/admin/ssl" class="action-card"><div class="icon">🔒</div><div class="name">SSL/TLS</div></a>
-<a href="/admin/ssl/autossl" class="action-card"><div class="icon">🔄</div><div class="name">AutoSSL</div></a>
-<a href="/admin/twofactor" class="action-card"><div class="icon">🔐</div><div class="name">Two-Factor Auth</div></a>
-<a href="/admin/ipblocker" class="action-card"><div class="icon">🌐</div><div class="name">IP Blocker</div></a>
-<a href="/admin/roles" class="action-card"><div class="icon">👥</div><div class="name">User Roles</div></a>
-<a href="/admin/settings/security" class="action-card"><div class="icon">⚙️</div><div class="name">Security Settings</div></a>
-<a href="/admin/network" class="action-card"><div class="icon">🖧</div><div class="name">IP & Nameservers</div></a>
+<div class="card" style="padding:0;overflow:hidden">
+<table style="margin:0">
+<tr><th style="padding:14px 20px;font-size:13px;background:rgba(0,191,255,.04);border-bottom:1px solid rgba(255,255,255,.06)" colspan="2">Security Tools</th></tr>
+<tr><td style="padding:0" colspan="2">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+<a href="/admin/ssl" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:var(--text-table);text-decoration:none;border-right:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04);transition:.15s">
+<span style="font-size:20px">🔒</span><div><strong style="color:#fff">SSL/TLS</strong><br><span style="font-size:12px;color:var(--text-secondary)">Manage certificates</span></div></a>
+<a href="/admin/ssl/autossl" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:var(--text-table);text-decoration:none;border-right:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04);transition:.15s">
+<span style="font-size:20px">🔄</span><div><strong style="color:#fff">AutoSSL</strong><br><span style="font-size:12px;color:var(--text-secondary)">Let's Encrypt setup</span></div></a>
+<a href="/admin/twofactor" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:var(--text-table);text-decoration:none;border-right:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04);transition:.15s">
+<span style="font-size:20px">🔐</span><div><strong style="color:#fff">Two-Factor Auth</strong><br><span style="font-size:12px;color:var(--text-secondary)">2FA configuration</span></div></a>
+<a href="/admin/ipblocker" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:var(--text-table);text-decoration:none;border-right:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04);transition:.15s">
+<span style="font-size:20px">🌐</span><div><strong style="color:#fff">IP Blocker</strong><br><span style="font-size:12px;color:var(--text-secondary)">Block/unblock IPs</span></div></a>
+<a href="/admin/roles" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:var(--text-table);text-decoration:none;border-right:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04);transition:.15s">
+<span style="font-size:20px">👥</span><div><strong style="color:#fff">User Roles</strong><br><span style="font-size:12px;color:var(--text-secondary)">Role & permission management</span></div></a>
+<a href="/admin/settings/security" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:var(--text-table);text-decoration:none;border-right:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04);transition:.15s">
+<span style="font-size:20px">⚙️</span><div><strong style="color:#fff">Security Settings</strong><br><span style="font-size:12px;color:var(--text-secondary)">Password policy, session config</span></div></a>
+<a href="/admin/network" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:var(--text-table);text-decoration:none;border-bottom:1px solid rgba(255,255,255,.04);transition:.15s">
+<span style="font-size:20px">🖧</span><div><strong style="color:#fff">IP & Nameservers</strong><br><span style="font-size:12px;color:var(--text-secondary)">Server IPs, nameserver config</span></div></a>
+</div>
+</td></tr></table>
 </div>
 
-<div class="card" style="margin-bottom:16px"><h3 style="color:var(--accent);margin-bottom:12px">Service Status</h3>
+<div class="card" style="margin-top:20px"><h3 style="color:var(--accent);margin-bottom:12px">Service Status</h3>
 <table><tr><th>Service</th><th>Status</th></tr>
 <tr><td>Firewall (firewalld)</td><td><span class="status-badge status-<?php echo $firewall === 'active' ? 'active' : 'terminated'; ?>"><?php echo $firewall; ?></span></td></tr>
 <tr><td>Fail2ban</td><td><span class="status-badge status-<?php echo $fail2ban === 'active' ? 'active' : 'terminated'; ?>"><?php echo $fail2ban; ?></span></td></tr>
@@ -25,7 +38,7 @@
 <tr><td>IP Blocker</td><td><span class="status-badge status-<?php echo $blockCount > 0 ? 'active' : 'terminated'; ?>"><?php echo $blockCount > 0 ? "$blockCount IPs blocked" : 'No blocks'; ?></span></td></tr>
 </table></div>
 
-<div class="card"><h3 style="color:var(--accent);margin-bottom:12px">Login Security</h3>
+<div class="card" style="margin-top:16px"><h3 style="color:var(--accent);margin-bottom:12px">Login Security</h3>
 <table><tr><th>Metric</th><th>Value</th></tr>
 <tr><td>Recent Login Attempts</td><td><?php echo $loginAttempts['total'] ?? 0; ?></td></tr>
 <tr><td>Unique IPs</td><td><?php echo $loginAttempts['unique_ips'] ?? 0; ?></td></tr>
