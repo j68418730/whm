@@ -1,3 +1,8 @@
+<style>
+select{background:rgba(8,16,28,.9);border:1px solid rgba(255,255,255,.12);color:#e0e0e0;padding:8px 12px;border-radius:6px;font-size:14px;width:100%;outline:none}
+select:focus{border-color:var(--accent)}
+select option{background:#0a0f1a;color:#e0e0e0}
+</style>
 <div class="page-grid" style="margin-bottom:20px">
 <a href="/admin/support/kb" class="action-card"><div class="icon">📚</div><div class="name">Knowledgebase</div></a>
 <a href="/admin/support/announcements" class="action-card"><div class="icon">📢</div><div class="name">Announcements</div></a>
@@ -24,7 +29,8 @@
 <button type="submit" class="btn primary">Create</button>
 </form></div>
 <table><tr><th>Title</th><th>Category</th><th>Views</th><th>Status</th><th></th></tr>
-<?php if (!empty($articles)): foreach ($articles as $a): ?><tr><td><?php echo htmlspecialchars($a->title); ?></td><td><?php echo htmlspecialchars($a->category_id ? ($this->db->table('kb_categories')->where('id', $a->category_id)->first()->name ?? '') : '-'); ?></td><td><?php echo $a->views; ?></td>
+<?php if (!empty($articles)): foreach ($articles as $a): $cn = $catNames[$a->category_id] ?? '-'; ?>
+<tr><td><?php echo htmlspecialchars($a->title); ?></td><td><?php echo htmlspecialchars($cn); ?></td><td><?php echo $a->views; ?></td>
 <td><span class="status-badge status-<?php echo $a->is_published ? 'active' : 'terminated'; ?>"><?php echo $a->is_published ? 'Published' : 'Draft'; ?></span></td>
 <td><a href="/admin/support/kb/article/delete/<?php echo $a->id; ?>" class="btn btn-sm danger" onclick="return confirm('Delete?')">Delete</a></td></tr>
 <?php endforeach; else: ?><tr><td colspan="5" style="text-align:center;padding:20px;color:#64748b">No articles yet.</td></tr>
