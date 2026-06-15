@@ -1,0 +1,18 @@
+/* Frost - Ice blue theme */
+:root {
+  --bg-primary: #0a1218;
+  --bg-card: rgba(8, 16, 22, .92);
+  --bg-sidebar: rgba(6, 14, 20, .95);
+  --accent: #06b6d4;
+  --accent-hover: #22d3ee;
+  --border-color: rgba(6, 182, 212, .15);
+  --text-primary: #d0e8f0;
+  --text-secondary: #80a0b0;
+  --text-muted: #406070;
+  --text-table: #b0d0e0;
+  --bg-overlay: linear-gradient(rgba(5, 12, 18, .92), rgba(5, 12, 18, .97));
+  --font-body: 'Inter', system-ui, sans-serif;
+  --header-bg: linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.8)),url('/theme/assets/img/header.png');
+  --footer-bg: rgba(6, 14, 20, .95);
+  --footer-logo: url('/theme/assets/img/logo.png');
+}

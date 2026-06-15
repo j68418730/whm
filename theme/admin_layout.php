@@ -8,6 +8,33 @@ $currentUrl = $_SERVER['REQUEST_URI'] ?? '';
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?> - Planet Hosts</title>
 <link rel="stylesheet" href="/theme/assets/css/style.css">
+<?php 
+$activeTheme = 'cosmic';
+$ts = [];
+try {
+    if (class_exists('\\Core\\Application')) {
+        $app = \Core\Application::getInstance();
+        $db = $app->get('db');
+        if ($db) {
+            $rows = $db->table('automation_settings')->get() ?: [];
+            foreach ($rows as $r) $ts[$r->setting_key] = $r->setting_value;
+            $activeTheme = $ts['theme'] ?? 'cosmic';
+        }
+    }
+} catch (\Exception $e) {}
+$themeFile = "/theme/themes/{$activeTheme}.css";
+$customCss = $ts['custom_css'] ?? '';
+$footerText = $ts['footer_text'] ?? 'Building the future of hosting infrastructure.';
+$footerLogo = $ts['footer_logo_url'] ?? '/theme/assets/img/logo.png';
+$primaryColor = $ts['primary_color'] ?? '';
+$bgColor = $ts['bg_color'] ?? '';
+$accentColor = $ts['accent_color'] ?? '';
+?>
+<link rel="stylesheet" href="<?php echo $themeFile; ?>">
+<?php if ($primaryColor || $bgColor || $accentColor): ?>
+<style>:root{<?php if ($primaryColor): ?>--accent:<?php echo $primaryColor; ?>;--accent-hover:<?php echo $primaryColor; ?>;<?php endif; ?><?php if ($bgColor): ?>--bg-primary:<?php echo $bgColor; ?>;<?php endif; ?><?php if ($accentColor): ?>--accent-hover:<?php echo $accentColor; ?>;<?php endif; ?>}</style>
+<?php endif; ?>
+<?php if ($customCss): ?><style><?php echo $customCss; ?></style><?php endif; ?>
 <style>
 .sidebar-toggle{position:fixed;top:10px;left:10px;z-index:999;background:linear-gradient(135deg,#008cff,#3bb8ff);border:none;color:#fff;width:40px;height:40px;border-radius:8px;cursor:pointer;font-size:20px;display:none;align-items:center;justify-content:center;box-shadow:0 0 15px rgba(0,140,255,.3)}
 .sidebar-toggle:hover{transform:scale(1.05)}
@@ -97,6 +124,7 @@ if (class_exists('\\Core\\License')) {
 <a href="/admin/plugins" class="<?php echo str_contains($currentUrl,'/admin/plugins')?'active':''; ?>">Plugins</a>
 <a href="/admin/cron" class="<?php echo str_contains($currentUrl,'/admin/cron')?'active':''; ?>">Cron</a>
 <a href="/admin/automation" class="<?php echo str_contains($currentUrl,'/admin/automation')?'active':''; ?>">Automation</a>
+<a href="/admin/theme" class="<?php echo str_contains($currentUrl,'/admin/theme')?'active':''; ?>">Theme</a>
 <a href="/admin/settings" class="<?php echo str_contains($currentUrl,'/admin/settings')?'active':''; ?>">Settings</a>
 <a href="/admin/licensing" class="<?php echo str_contains($currentUrl,'/admin/licensing') && !str_contains($currentUrl,'/generate')?'active':''; ?>">Licensing</a>
 <a href="/admin/licensing/generate" class="<?php echo str_contains($currentUrl,'/admin/licensing/generate')?'active':''; ?>">Generate License</a>
@@ -136,8 +164,8 @@ if (class_exists('\\Core\\License')) {
 
 <footer class="footer">
 <div class="container">
-<div class="footer-logo">PLANET-<span>HOSTS</span></div>
-<p>Building the future of hosting infrastructure.</p>
+<div class="footer-logo" style="background:url('<?php echo $footerLogo; ?>') center/contain no-repeat;width:48px;height:48px"></div>
+<p><?php echo htmlspecialchars($footerText); ?></p>
 <div class="footer-links">
 <a href="#">Terms</a><a href="#">Privacy</a><a href="#">Support</a><a href="#">API</a>
 </div>

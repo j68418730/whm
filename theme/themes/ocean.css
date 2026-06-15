@@ -1,0 +1,18 @@
+/* Ocean - Deep blue/aqua theme */
+:root {
+  --bg-primary: #080e14;
+  --bg-card: rgba(6, 12, 20, .92);
+  --bg-sidebar: rgba(4, 10, 18, .95);
+  --accent: #0ea5e9;
+  --accent-hover: #38bdf8;
+  --border-color: rgba(14, 165, 233, .15);
+  --text-primary: #c0dce8;
+  --text-secondary: #7098b0;
+  --text-muted: #386078;
+  --text-table: #a0c0d0;
+  --bg-overlay: linear-gradient(rgba(4, 8, 16, .92), rgba(4, 8, 16, .97));
+  --font-body: 'Inter', system-ui, sans-serif;
+  --header-bg: linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.8)),url('/theme/assets/img/header.png');
+  --footer-bg: rgba(4, 10, 18, .95);
+  --footer-logo: url('/theme/assets/img/logo.png');
+}

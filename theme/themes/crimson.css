@@ -1,0 +1,18 @@
+/* Crimson - Red/dark bold theme */
+:root {
+  --bg-primary: #140808;
+  --bg-card: rgba(18, 6, 6, .92);
+  --bg-sidebar: rgba(16, 4, 4, .95);
+  --accent: #ef4444;
+  --accent-hover: #f87171;
+  --border-color: rgba(239, 68, 68, .15);
+  --text-primary: #f0c8c8;
+  --text-secondary: #b08080;
+  --text-muted: #784040;
+  --text-table: #e0a8a8;
+  --bg-overlay: linear-gradient(rgba(16, 4, 4, .92), rgba(16, 4, 4, .97));
+  --font-body: 'Inter', system-ui, sans-serif;
+  --header-bg: linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.8)),url('/theme/assets/img/header.png');
+  --footer-bg: rgba(16, 4, 4, .95);
+  --footer-logo: url('/theme/assets/img/logo.png');
+}

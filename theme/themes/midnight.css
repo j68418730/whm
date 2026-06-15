@@ -1,0 +1,18 @@
+/* Midnight - Deep blue clean theme */
+:root {
+  --bg-primary: #0a0e1a;
+  --bg-card: rgba(8, 12, 24, .92);
+  --bg-sidebar: rgba(6, 10, 22, .95);
+  --accent: #2563eb;
+  --accent-hover: #3b82f6;
+  --border-color: rgba(37, 99, 235, .15);
+  --text-primary: #d0d8f0;
+  --text-secondary: #8090b0;
+  --text-muted: #405070;
+  --text-table: #b0b8d0;
+  --bg-overlay: linear-gradient(rgba(5, 8, 18, .92), rgba(5, 8, 18, .97));
+  --font-body: 'Inter', system-ui, sans-serif;
+  --header-bg: linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.8)),url('/theme/assets/img/header.png');
+  --footer-bg: rgba(6, 10, 22, .95);
+  --footer-logo: url('/theme/assets/img/logo.png');
+}
