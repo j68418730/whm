@@ -13,6 +13,10 @@ if ($loggedIn && $user):
 <title>Dashboard - Planet Hosts</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/theme/themes/<?php
+$at = 'planethosts';
+try { if (class_exists('\\Core\\Application')) { $a = \Core\Application::getInstance(); $d = $a->get('db'); if ($d) { $r = $d->table('automation_settings')->get() ?: []; $s = []; foreach ($r as $x) $s[$x->setting_key] = $x->setting_value; $at = $s['theme'] ?? 'planethosts'; } } } catch(\Exception $e) {}
+echo $at; ?>/style.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Inter',sans-serif;background:#000;color:#fff}
@@ -69,6 +73,10 @@ endif;
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/theme/themes/<?php
+$at2 = 'planethosts';
+try { if (class_exists('\\Core\\Application')) { $a2 = \Core\Application::getInstance(); $d2 = $a2->get('db'); if ($d2) { $r2 = $d2->table('automation_settings')->get() ?: []; $s2 = []; foreach ($r2 as $x) $s2[$x->setting_key] = $x->setting_value; $at2 = $s2['theme'] ?? 'planethosts'; } } } catch(\Exception $e) {}
+echo $at2; ?>/style.css">
 <style>
 
 *{
