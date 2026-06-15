@@ -1,0 +1,18 @@
+/* Cyber - Green neon cyberpunk theme */
+:root {
+  --bg-primary: #0a0f0a;
+  --bg-card: rgba(8, 16, 8, .92);
+  --bg-sidebar: rgba(6, 14, 6, .95);
+  --accent: #00ff88;
+  --accent-hover: #44ffaa;
+  --border-color: rgba(0, 255, 136, .15);
+  --text-primary: #ccffdd;
+  --text-secondary: #80bb90;
+  --text-muted: #447755;
+  --text-table: #aaddbb;
+  --bg-overlay: linear-gradient(rgba(5, 12, 5, .92), rgba(5, 12, 5, .97));
+  --font-body: 'JetBrains Mono', 'Inter', monospace;
+  --header-bg: linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.8)),url('/theme/assets/img/header.png');
+  --footer-bg: rgba(5, 12, 5, .95);
+  --footer-logo: url('/theme/assets/img/logo.png');
+}
