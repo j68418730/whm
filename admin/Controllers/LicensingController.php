@@ -37,6 +37,50 @@ class LicensingController extends Controller
         ]);
     }
 
+    public function generate()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        $generatedKey = '';
+        $privateKeyFile = BASE_PATH . '/config/license_private.pem';
+
+        if ($_POST && isset($_POST['licensee'])) {
+            $licensee = $this->request->post('licensee', 'Customer');
+            $licenseId = $this->request->post('license_id', 'LICS-' . date('Y') . '-' . str_pad(rand(1,9999),4,'0',STR_PAD_LEFT));
+            $expiry = $this->request->post('expiry', 'never');
+            $type = $this->request->post('type', 'full');
+            if (!in_array($type, ['hosting','icecast','full'])) $type = 'full';
+
+            if (is_file($privateKeyFile)) {
+                $payload = json_encode([
+                    'license_id' => $licenseId, 'licensee' => $licensee,
+                    'issued' => date('Y-m-d'), 'expiry' => $expiry,
+                    'product' => 'Planet-Hosts WHM Panel', 'version' => '1.0.0',
+                    'type' => $type,
+                ], JSON_PRETTY_PRINT);
+
+                $privKey = file_get_contents($privateKeyFile);
+                openssl_sign($payload, $signature, $privKey, OPENSSL_ALGO_SHA256);
+                $sigB64 = base64_encode($signature);
+                $generatedKey = "-----BEGIN PLANET HOSTS LICENSE-----\n";
+                $generatedKey .= chunk_split($sigB64, 64, "\n");
+                $generatedKey .= "-----BEGIN LICENSE DATA-----\n";
+                $generatedKey .= $payload . "\n";
+                $generatedKey .= "-----END LICENSE DATA-----\n";
+                $generatedKey .= "-----END PLANET HOSTS LICENSE-----\n";
+                $_SESSION['success_message'] = "License generated for {$licensee} ({$type})";
+            } else {
+                $_SESSION['success_message'] = 'Private key not found on this server.';
+            }
+        }
+
+        return $this->view('admin.licensing.generate', [
+            'user' => $user, 'title' => 'Generate License', 'theme_settings' => $theme_settings,
+            'generatedKey' => $generatedKey, 'hasPrivateKey' => is_file($privateKeyFile),
+        ]);
+    }
+
     public function upload()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
