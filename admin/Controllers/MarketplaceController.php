@@ -59,11 +59,17 @@ class MarketplaceController extends Controller
 
         if (!is_dir($publicHtml)) mkdir($publicHtml, 0755, true);
 
+        $domain = $account ? ($account->domain ?: $account->username . '.planet-hosts.com') : $username . '.local';
         $name = strtolower($app->name);
         $result = '';
-        if (strpos($name, 'wordpress') !== false) {
-            exec("cd {$publicHtml} && wp core download --allow-root 2>/dev/null", $out, $code);
-            $result = $code === 0 ? 'WordPress downloaded' : 'wp-cli not found, download manually';
+        // Check for installer script first
+        $installer = BASE_PATH . "/scripts/installers/{$name}.sh";
+        if (is_file($installer)) {
+            exec("bash {$installer} {$publicHtml} {$domain} 2>&1", $out, $code);
+            $result = $code === 0 ? "Installed via script" : "Script failed: " . implode("\n", $out);
+        } elseif (strpos($name, 'wordpress') !== false) {
+            exec("cd {$publicHtml} && wget -q https://wordpress.org/latest.zip -O wp.zip && unzip -q wp.zip && mv wordpress/* . && rm -rf wordpress wp.zip 2>/dev/null", $out, $code);
+            $result = $code === 0 ? 'WordPress downloaded' : 'Failed';
         } elseif (strpos($name, 'laravel') !== false) {
             exec("cd {$homeDir} && composer create-project laravel/laravel public_html --no-interaction 2>/dev/null", $out, $code);
             $result = $code === 0 ? 'Laravel installed' : 'Composer not found';
