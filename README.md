@@ -1,342 +1,377 @@
-# Planet Hosts
+# Planet Hosts Control Panel
 
-Next Generation Unified Hosting Ecosystem
+## Project Overview
 
----
+Planet Hosts is a modern hosting automation and server management platform designed to provide a complete alternative to traditional hosting control panels. The platform combines website hosting management, reseller management, billing automation, DNS management, email services, database administration, radio streaming management, and customer support into a single unified interface.
 
-## Overview
+The project is built with a modular architecture where every major feature operates as an independent module. This allows administrators to enable, disable, update, or extend functionality without affecting the core platform.
 
-Planet Hosts is a complete unified hosting platform designed to replace:
-
-* WHM
-* cPanel
-* SonicPanel
-* SHOUTcast Panels
-* Icecast Panels
-* Billing Systems
-* DNS Managers
-* Firewall Dashboards
-* Website Builders
-* Developer Hosting Panels
-
-with one modern enterprise platform.
-
-Planet Hosts combines hosting management, radio streaming, billing, AI website creation, DNS clustering, developer tools, firewall security, and cloud infrastructure into one ecosystem.
+The primary goal is to provide a lightweight, modern, API-driven hosting ecosystem that eliminates the need for multiple disconnected applications while maintaining a clean user experience for clients, resellers, and administrators.
 
 ---
 
-# Core Features
+## Supported Environment
 
-## Hosting Platform
+### Operating System
 
-* Shared Hosting
-* Reseller Hosting
-* VPS Hosting
-* Cloud Hosting
-* DNS Management
-* SSL Management
-* Email Hosting
-* Backup System
-* File Manager
-* Database Manager
+Currently tested and supported on:
 
----
+* Debian 12
+* Debian 11
 
-## Streaming Platform
+Future support planned for:
 
-* SHOUTcast Support
-* Icecast Support
-* AutoDJ
-* Playlist Manager
-* Live Broadcasting
-* Stream Analytics
-* Listener Statistics
-* DJ Account Management
+* Ubuntu Server
+* AlmaLinux
+* Rocky Linux
+
+The platform should be considered Debian-only until additional operating systems have been fully tested.
 
 ---
 
-## PlanetShield Firewall
+## Core Modules
 
-(Custom CSF Replacement)
+### Authentication
 
-### Security Features
+* User Registration
+* Login / Logout
+* Password Recovery
+* Two-Factor Authentication
+* Session Management
+* API Authentication
+* Role-Based Permissions
 
-* DDoS Protection
-* AI Threat Detection
-* Brute Force Protection
-* SSH Protection
-* Country Blocking
-* Rate Limiting
-* Bot Detection
-* Firewall Rules
-* Live Attack Monitoring
+### Client Area
 
-### Firewall Engine
+* Dashboard
+* Service Management
+* Resource Usage
+* Billing Overview
+* Support Tickets
+* Notifications
+* Account Settings
 
-* IPTables
-* NFTables
-* Application Firewall
-* API Firewall
-* Streaming Protection
+### Admin Area
 
----
-
-## AI Website Builder
-
-### AI Features
-
-* AI Website Generation
-* AI Content Generation
-* AI SEO Optimization
-* AI Image Generation
-* AI Landing Pages
-* AI Logo Generation
-
-### Website Builder
-
-* Drag & Drop Editor
-* Mobile Responsive
-* Live Preview
-* One Click Publishing
-* Auto SSL Setup
-* Auto DNS Setup
-
-### Included Templates
-
-1. Hosting Company
-2. Radio Station
-3. Podcast
-4. SaaS Business
-5. Gaming Community
-6. eCommerce Store
-7. Music Artist
-8. Corporate Business
-9. Portfolio
-10. Blog/News
-
----
-
-# System Modules
-
-## Root Admin Panel
-
-* Server Management
+* System Dashboard
 * User Management
-* Reseller Controls
-* Service Monitoring
-* Package Management
+* Reseller Management
+* Service Management
+* Monitoring
 * Security Controls
-* Theme Controls
+* Audit Logs
+* System Configuration
 
-## Reseller Panel
+### Reseller Area
 
-* White Label Hosting
+* Client Management
+* Package Management
 * Resource Allocation
 * Branding Controls
-* Client Management
+* Usage Statistics
+* Revenue Reporting
 
-## User Hosting Panel
+---
 
-* Domains
-* DNS
-* Databases
-* Files
-* Email
-* SSL
-* Applications
+## Hosting Management
 
-## Radio Streaming Panel
+### Website Hosting
 
-* SHOUTcast
-* Icecast
-* AutoDJ
-* Media Library
-* Listener Analytics
+* Create Hosting Accounts
+* Suspend Accounts
+* Unsuspend Accounts
+* Terminate Accounts
+* Change Account Passwords
+* Package Assignment
+* Resource Limits
 
-## Billing System
+### Domain Management
 
+* Domain Registration
+* Domain Transfers
+* Domain Renewals
+* DNS Management
+* Nameserver Management
+* DNSSEC Support
+
+### DNS Automation
+
+When a domain is added:
+
+* Create DNS Zone
+* Generate SOA Record
+* Generate NS Records
+* Generate A Records
+* Generate MX Records
+* Generate SPF Records
+* Generate DMARC Records
+* Generate DKIM Records
+* Reload DNS Services
+
+### Email Services
+
+* Email Accounts
+* Forwarders
+* Autoresponders
+* Spam Protection
+* DKIM
+* SPF
+* DMARC
+* Webmail Access
+
+### Database Management
+
+* MySQL
+* MariaDB
+* PostgreSQL
+* Database Users
+* Database Permissions
+* phpMyAdmin Integration
+
+### SSL Management
+
+* Let's Encrypt
+* AutoSSL
+* Manual Certificates
+* Certificate Renewal
+* SSL Monitoring
+
+---
+
+## File Management
+
+* File Manager
+* Upload Files
+* Download Files
+* Archive Extraction
+* Compression
+* Backups
+* Restore Operations
+
+---
+
+## Billing Platform
+
+### Billing Features
+
+* Products
+* Services
+* Orders
 * Invoices
-* Subscriptions
-* Coupons
+* Transactions
 * Taxes
-* Payment Gateways
+* Coupons
+* Credits
+
+### Automation
+
+* Service Provisioning
+* Automatic Suspension
+* Automatic Unsuspension
+* Automatic Termination
+* Renewal Processing
+* Invoice Generation
+
+---
 
 ## Support System
 
-* Tickets
-* Live Chat
-* Knowledge Base
-* Downloads
+* Ticket Management
+* Departments
+* Internal Notes
+* Attachments
+* Knowledgebase
+* Announcements
+* Server Status Page
 
 ---
 
-# Plugin Marketplace
+## Monitoring
 
-Planet Hosts supports a full plugin architecture.
+### Server Monitoring
 
-## Plugin Categories
+* CPU Usage
+* Memory Usage
+* Disk Usage
+* Network Usage
+* Service Status
+* Uptime Monitoring
 
-* Security Plugins
-* Billing Plugins
-* DNS Plugins
-* Streaming Plugins
-* Theme Plugins
-* Monitoring Plugins
-* Automation Plugins
+### Service Monitoring
 
----
-
-# Theme Engine
-
-## Theme Features
-
-* Dark Mode
-* Light Mode
-* Custom Themes
-* White Label Branding
-* Theme Marketplace
-* Custom CSS
-* Custom JS
+* Web Server Monitoring
+* Database Monitoring
+* Email Monitoring
+* DNS Monitoring
+* Streaming Monitoring
 
 ---
 
-# Developer Platform
+## Radio Streaming Platform
 
-## Supported Languages
+Planet Hosts includes a complete radio streaming management platform designed as an alternative to Centova Cast.
 
-* PHP
-* Python
-* Ruby on Rails
-* NodeJS
-* Go
-* Java
-* Rust
+### Supported Streaming Servers
 
-## Developer Features
+* Icecast 2
+* Icecast KH
+* SHOUTcast v1 Not Support Yet do to os
+* SHOUTcast v2 Not Support Yet do to os
 
-* Git Manager
-* SSH Access
-* Docker
-* Kubernetes
-* CI/CD Pipelines
-* Terminal Access
+### Station Management
 
----
+* Create Radio Station
+* Suspend Station
+* Unsuspend Station
+* Delete Station
+* Package Assignment
+* Resource Limits
 
-# Technology Stack
+### Streaming Controls
 
-## Frontend
+* Start Stream
+* Stop Stream
+* Restart Stream
+* Mount Point Management
+* Source Password Management
 
-* Bootstrap 5
-* HTML5
-* CSS3
-* JavaScript
-* jQuery
-* ApexCharts
-* Font Awesome
+### AutoDJ
 
-## Backend
+* Media Library
+* Playlist Management
+* Scheduled Playlists
+* Rotation Rules
+* Jingles
+* Scheduled Events
 
-* PHP 8.3
-* Laravel
-* MySQL 8
-* MariaDB
-* Redis
-* NodeJS
-* Python
-* Ruby on Rails
+### DJ Management
 
----
+* Create DJ Accounts
+* Edit DJ Accounts
+* Delete DJ Accounts
+* DJ Permissions
+* DJ Scheduling
 
-# Recommended Server
+### Listener Statistics
 
-## Minimum Requirements
+* Current Listeners
+* Peak Listeners
+* Listener History
+* Geographic Statistics
+* Device Statistics
+* Bandwidth Usage
 
-* AlmaLinux 9 / Ubuntu 24
-* 8GB RAM
-* 4 CPU Cores
-* NVMe SSD
-* SSL Enabled
-* Cloudflare Support
+### HTML5 Player System
 
----
+* Embedded Players
+* Floating Players
+* Popup Players
+* Mobile Players
+* Now Playing Widgets
+* Recently Played Widgets
+* Listener Counters
 
-# Project Structure
+### Streaming APIs
 
-planet-hosts/
+* Now Playing API
+* Listener Statistics API
+* Station Information API
+* Player API
 
-├── admin/
-├── reseller/
-├── user/
-├── radio/
-├── billing/
-├── support/
-├── firewall/
-├── ai-builder/
-├── plugins/
-├── themes/
-├── api/
-├── assets/
-├── templates/
-├── backend/
-├── database/
-├── uploads/
-├── install/
-├── cron/
-├── storage/
-└── .htaccess
+### Public Station Pages
+
+* Station Profile
+* Now Playing
+* Recently Played
+* Schedule
+* DJ Profiles
+* Social Links
+* Embedded Players
 
 ---
 
-# Branding Files
+## Plugin Architecture
 
-* logo.png
-* header.png
-* background.png
-* footer.png
+Every feature can be developed as a module.
 
----
+Example modules:
 
-# Design Style
+* Hosting
+* Domains
+* DNS
+* Email
+* Billing
+* Support
+* Monitoring
+* Radio
+* CMS
+* API
 
-* Dark futuristic UI
-* Neon blue highlights
-* Glassmorphism cards
-* WHM style sidebar
-* SaaS dashboard
-* Mobile responsive
-* Enterprise hosting aesthetic
+Each module contains:
 
----
-
-# Final Goal
-
-Create one complete modern hosting ecosystem that combines:
-
-* Hosting Control Panels
-* Streaming Control Panels
-* Billing Platforms
-* Website Builders
-* Firewall Systems
-* DNS Managers
-* Developer Platforms
-
-into one unified Planet Hosts platform.
+* Controllers
+* Views
+* Database Migrations
+* API Endpoints
+* Permissions
+* Assets
+* Widgets
 
 ---
 
-# License
+## API Platform
 
-Private Commercial Project
+### REST API
+
+* Authentication
+* Service Management
+* Billing Management
+* DNS Management
+* Radio Management
+* Monitoring
+
+### Webhooks
+
+* Account Created
+* Account Suspended
+* Invoice Paid
+* Domain Added
+* Station Created
+* Service Terminated
 
 ---
 
-# Status
+## Design System
 
-Under Active Development
+Theme:
+
+* Dark Mode First
+* Space Inspired Interface
+* Planet Hosts Branding
+* Glassmorphism Components
+* Neon Blue Accents
+* Responsive Layout
+
+Supported Devices:
+
+* Desktop
+* Tablet
+* Mobile
 
 ---
 
-# Created By
+## Project Goal
 
-Planet Hosts Development Team
+Planet Hosts aims to provide a complete hosting ecosystem that combines:
+
+* Website Hosting
+* DNS Management
+* Email Hosting
+* Database Management
+* Billing Automation
+* Customer Support
+* Monitoring
+* Radio Streaming
+* Reseller Services
+
+into a single platform while remaining lightweight, modular, and optimized for Debian-based servers.
