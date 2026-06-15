@@ -88,6 +88,8 @@ $router->get('/admin/git', 'Admin\Controllers\GitController@index');
 $router->get('/admin/container', 'Admin\Controllers\ContainerController@index');
 $router->get('/admin/licensing', 'Admin\Controllers\LicensingController@index');
 $router->post('/admin/licensing/upload', 'Admin\Controllers\LicensingController@upload');
+$router->get('/admin/licensing/generate', 'Admin\Controllers\LicensingController@generate');
+$router->post('/admin/licensing/generate', 'Admin\Controllers\LicensingController@generate');
 $router->get('/admin/server', 'Admin\Controllers\ServerOverviewController@index');
 $router->get('/admin/server/health', 'Admin\Controllers\ServerOverviewController@health');
 
