@@ -84,6 +84,7 @@ $router->get('/admin/cron', 'Admin\Controllers\CronController@index');
 $router->get('/admin/git', 'Admin\Controllers\GitController@index');
 $router->get('/admin/container', 'Admin\Controllers\ContainerController@index');
 $router->get('/admin/licensing', 'Admin\Controllers\LicensingController@index');
+$router->post('/admin/licensing/upload', 'Admin\Controllers\LicensingController@upload');
 $router->get('/admin/server', 'Admin\Controllers\ServerOverviewController@index');
 $router->get('/admin/server/health', 'Admin\Controllers\ServerOverviewController@health');
 
@@ -245,6 +246,12 @@ $router->post('/admin/settings/localization/save', 'Admin\Controllers\SettingsCo
 $router->get('/admin/automation', 'Admin\Controllers\AutomationController@index');
 $router->post('/admin/automation/save', 'Admin\Controllers\AutomationController@save');
 $router->get('/admin/automation/run', 'Admin\Controllers\AutomationController@run');
+
+// -- PayPal routes --
+$router->get('/admin/paypal/settings', 'Admin\Controllers\PaypalController@settings');
+$router->post('/admin/paypal/settings/save', 'Admin\Controllers\PaypalController@settingsSave');
+$router->get('/paypal/pay/{invoiceId}', 'Admin\Controllers\PaypalController@pay');
+$router->post('/paypal/ipn', 'Admin\Controllers\PaypalController@ipn');
 
 // -- Billing routes --
 $router->get('/admin/billing', 'Admin\Controllers\BillingController@index');
