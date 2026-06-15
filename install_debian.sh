@@ -1,6 +1,5 @@
 #!/bin/bash
-# Planet Hosts - Complete Debian Installer
-# Fully repeatable. Run on a fresh Debian 12 system.
+# Planet Hosts - Complete Debian 12 Installer
 set -e
 
 if [ "$EUID" -ne 0 ]; then echo "Run as root."; exit 1; fi
@@ -10,11 +9,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PANEL_DIR="/var/www/radiohosting"
 
 echo "=============================================="
-echo " Planet Hosts - Debian Installer"
+echo " Planet Hosts - Debian 12 Installer"
 echo " Server IP: $SERVER_IP"
 echo "=============================================="
 
-# Pre-seed Icecast passwords so it doesn't prompt
+# Pre-seed Icecast passwords
 echo "icecast2 icecast2/icecast2 boolean true" | debconf-set-selections
 echo "icecast2 icecast2/sourcepassword password $(hostname)" | debconf-set-selections
 echo "icecast2 icecast2/relaypassword password $(hostname)" | debconf-set-selections
@@ -25,28 +24,32 @@ export DEBIAN_FRONTEND=noninteractive
 echo "[1/8] Updating system..."
 apt update -qq && apt upgrade -y -qq
 
-# 2. Apache + PHP + MariaDB
-echo "[2/8] Installing Apache, PHP, MariaDB..."
-apt install -y -qq apache2 mariadb-server php php-cli php-common php-curl \
-  php-gd php-intl php-mbstring php-mysql php-xml php-zip php-bcmath php-bz2 \
-  php-ctype php-exif php-fileinfo php-ftp php-imap php-ldap \
-  php-opcache php-redis php-sockets php-tokenizer php-xmlreader \
-  php-xsl php-apcu php-imagick postfix vsftpd bind9 unzip wget curl git openssl
+# 2. Full LAMP + services
+echo "[2/8] Installing Apache, PHP, MariaDB, and services..."
+apt install -y -qq apache2 mariadb-server \
+  php php-cli php-common php-curl php-gd php-intl php-mbstring php-mysql \
+  php-xml php-zip php-bcmath php-bz2 php-ctype php-exif php-fileinfo \
+  php-ftp php-imap php-ldap php-opcache php-redis php-sockets php-tokenizer \
+  php-xmlreader php-xsl php-apcu php-imagick php-soap \
+  postfix dovecot-imapd dovecot-pop3d vsftpd bind9 \
+  unzip wget curl git openssl \
+  firewalld fail2ban
 
-systemctl enable --now apache2 mariadb postfix vsftpd named
+systemctl enable --now apache2 mariadb postfix dovecot vsftpd named
 
-# 3. Icecast + Liquidsoap + Ezstream + FFmpeg
+# 3. Streaming stack
 echo "[3/8] Installing streaming stack..."
 apt install -y -qq icecast2 liquidsoap ezstream-ffmpeg ffmpeg
 
-# 4. phpMyAdmin
-echo "[4/8] Installing phpMyAdmin..."
-apt install -y -qq phpmyadmin
+# 4. phpMyAdmin + ModSecurity
+echo "[4/8] Installing phpMyAdmin and ModSecurity..."
+apt install -y -qq phpmyadmin libapache2-mod-security2
 
 # 5. Panel files
 echo "[5/8] Installing panel files..."
 mkdir -p "$PANEL_DIR"
 cp -r "$SCRIPT_DIR"/. "$PANEL_DIR"/ 2>/dev/null || true
+rm -f "$PANEL_DIR/scripts/keygen.php" "$PANEL_DIR/config/license_private.pem" 2>/dev/null || true
 chown -R www-data:www-data "$PANEL_DIR"
 chmod -R 755 "$PANEL_DIR"
 
@@ -69,6 +72,7 @@ VHOST
 a2dissite 000-default 2>/dev/null || true
 a2ensite radiohosting
 a2enmod rewrite
+a2enconf phpmyadmin
 systemctl restart apache2
 
 # 7. Database
@@ -83,8 +87,14 @@ GRANT ALL PRIVILEGES ON radiohosting.* TO 'radiouser'@'localhost';
 FLUSH PRIVILEGES;
 MYSQL
 
-# Import schemas
-mysql -u root radiohosting < "$SCRIPT_DIR/database/schema.sql" 2>/dev/null || true
+# Import master schema (all tables)
+mysql -u root radiohosting < "$SCRIPT_DIR/database/install.sql" 2>/dev/null || \
+  mysql -u root radiohosting < "$SCRIPT_DIR/database/schema.sql" 2>/dev/null || true
+# Also import individual schemas in case install.sql is missing
+for f in billing support automation api tables; do
+  [ -f "$SCRIPT_DIR/database/${f}.sql" ] && mysql -u root radiohosting < "$SCRIPT_DIR/database/${f}.sql" 2>/dev/null || true
+done
+# Plugin schemas
 for s in "$SCRIPT_DIR"/plugins/*/database/schema.sql; do
   [ -f "$s" ] && mysql -u root radiohosting < "$s" 2>/dev/null || true
 done
@@ -99,12 +109,26 @@ DB_PASSWORD=$DB_PASS
 ENV
 chmod 600 "$PANEL_DIR/.env"
 
-# Add username column if missing
-mysql -u root radiohosting -e "ALTER TABLE admins ADD COLUMN username VARCHAR(50) DEFAULT '' AFTER id;" 2>/dev/null || true
+# phpMyAdmin auto-login as root
+php -r "
+\$c = file_get_contents('/etc/phpmyadmin/config.inc.php');
+\$search = \"\\\$cfg['Servers'][\\\$i]['auth_type'] = 'cookie';\";
+\$replace = \"\\\$cfg['Servers'][\\\$i]['auth_type'] = 'config';\n\\\$cfg['Servers'][\\\$i]['user'] = 'root';\n\\\$cfg['Servers'][\\\$i]['password'] = 'Skylinehosting171';\";
+\$c = str_replace(\$search, \$replace, \$c);
+file_put_contents('/etc/phpmyadmin/config.inc.php', \$c);
+echo 'phpMyAdmin config set.\n';
+"
 
-# Create install timestamp for trial
+# Fix MySQL root for TCP access
+mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'Skylinehosting171'; GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
+
+# Install timestamp for trial
 echo $(date +%s) > "$PANEL_DIR/.installed"
 chmod 644 "$PANEL_DIR/.installed"
+
+# Automation cron (runs every 5 minutes)
+echo "* * * * * php $PANEL_DIR/public/index.php /admin/automation/run >/dev/null 2>&1" > /etc/cron.d/planet-hosts-automation
+chmod 644 /etc/cron.d/planet-hosts-automation
 
 # 8. License activation
 echo "[8/8] License activation..."
@@ -122,12 +146,7 @@ else
     echo "   nd2no_19@hotmail.com"
     echo ""
     echo " Include your server IP ($SERVER_IP) in the email."
-    echo " Place the received license.key file in this"
-    echo " directory and re-run this installer, or"
-    echo " paste it below."
     echo "=============================================="
-    echo ""
-    echo "You can also continue without a license (unlicensed mode)."
     echo ""
     read -t 30 -p "Paste license key (or press Enter to skip): " LICENSE_CONTENT
     if [ -n "$LICENSE_CONTENT" ]; then
@@ -137,10 +156,9 @@ else
         echo "Skipping license activation."
     fi
 fi
-# Always install the public key for validation
 [ -f "$SCRIPT_DIR/config/license_public.pem" ] && cp "$SCRIPT_DIR/config/license_public.pem" "$PANEL_DIR/config/license_public.pem" 2>/dev/null || true
 
-# Set admin: username=root, password=ADMIN_PASS
+# Set admin user
 php -r "
 \$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','$DB_PASS');
 \$hash = password_hash('$ADMIN_PASS', PASSWORD_DEFAULT);
@@ -149,7 +167,8 @@ echo \"Admin set.\n\";
 "
 
 # Copy theme into public
-rm -rf "$PANEL_DIR/public/theme" 2>/dev/null; cp -r "$PANEL_DIR/theme" "$PANEL_DIR/public/theme" 2>/dev/null || true
+rm -rf "$PANEL_DIR/public/theme" 2>/dev/null
+cp -r "$PANEL_DIR/theme" "$PANEL_DIR/public/theme" 2>/dev/null || true
 
 echo ""
 echo "=============================================="
@@ -162,5 +181,6 @@ echo " Admin Login: root"
 echo " Admin Password: $ADMIN_PASS"
 echo " DB Password: $DB_PASS"
 echo ""
-echo " Streaming: Icecast2 Liquidsoap Ezstream FFmpeg"
+echo " Services: Apache, MariaDB, Postfix, Dovecot,"
+echo "           VSFTPD, Bind9, Icecast2, Firewalld, Fail2ban"
 echo ""
