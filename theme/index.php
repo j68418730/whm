@@ -540,6 +540,20 @@ function showTab(type) {
     </div>
 </section>
 
+<section style="padding:60px 20px;text-align:center;background:rgba(8,16,28,.5)">
+<div class="container">
+<h2 style="font-size:2rem;margin-bottom:20px;color:var(--accent,#008cff)">Support Center</h2>
+<p style="color:#94a3b8;margin-bottom:30px">Get help, browse articles, or check announcements.</p>
+<div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:center">
+<a href="/admin/support/tickets" style="display:flex;align-items:center;gap:12px;padding:18px 28px;background:rgba(0,140,255,.08);border:1px solid rgba(0,191,255,.15);border-radius:12px;text-decoration:none;color:#fff;transition:.2s;min-width:200px">
+<span style="font-size:28px">🎫</span><div><strong style="font-size:16px">Tickets</strong><br><span style="font-size:13px;color:#94a3b8">Customer support tickets</span></div></a>
+<a href="/admin/support/kb" style="display:flex;align-items:center;gap:12px;padding:18px 28px;background:rgba(0,140,255,.08);border:1px solid rgba(0,191,255,.15);border-radius:12px;text-decoration:none;color:#fff;transition:.2s;min-width:200px">
+<span style="font-size:28px">📚</span><div><strong style="font-size:16px">Knowledgebase</strong><br><span style="font-size:13px;color:#94a3b8">Articles and categories</span></div></a>
+<a href="/admin/support/announcements" style="display:flex;align-items:center;gap:12px;padding:18px 28px;background:rgba(0,140,255,.08);border:1px solid rgba(0,191,255,.15);border-radius:12px;text-decoration:none;color:#fff;transition:.2s;min-width:200px">
+<span style="font-size:28px">📢</span><div><strong style="font-size:16px">Announcements</strong><br><span style="font-size:13px;color:#94a3b8">System announcements</span></div></a>
+</div>
+</div>
+</section>
 <footer class="footer">
     <div class="container">
         <img src="/theme/assets/img/logo.png" alt="logo">
