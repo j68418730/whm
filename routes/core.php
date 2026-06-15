@@ -106,6 +106,7 @@ $router->post('/admin/licensing/generate', 'Admin\Controllers\LicensingControlle
 $router->get('/admin/firewall', 'Admin\Controllers\FirewallController@index');
 $router->get('/admin/firewall/service/{action}/{svc}', 'Admin\Controllers\FirewallController@service');
 $router->get('/admin/firewall/modsec/{action}', 'Admin\Controllers\FirewallController@modsec');
+$router->get('/admin/firewall/csf/{action}', 'Admin\Controllers\FirewallController@csf');
 $router->post('/admin/firewall/port/add', 'Admin\Controllers\FirewallController@portAdd');
 $router->get('/admin/firewall/port/remove/{port}', 'Admin\Controllers\FirewallController@portRemove');
 $router->get('/admin/firewall/port/remove/{port}/{proto}', 'Admin\Controllers\FirewallController@portRemove');
