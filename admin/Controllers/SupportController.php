@@ -27,6 +27,20 @@ class SupportController extends Controller
         return json_decode($this->auth->user()->theme_settings ?? '{}', true);
     }
 
+    // ── Support Center Hub ──
+    public function index()
+    {
+        $this->guard();
+        $user = $this->auth->user();
+        $ticketCount = count($this->db->table('tickets')->get() ?: []);
+        $openCount = count($this->db->table('tickets')->where('status', 'open')->get() ?: []);
+        $articleCount = count($this->db->table('kb_articles')->get() ?: []);
+        $announceCount = count($this->db->table('announcements')->where('is_active', 1)->get() ?: []);
+        return $this->view('admin.support.index', ['user' => $user, 'title' => 'Support Center',
+            'theme_settings' => $this->theme(), 'ticketCount' => $ticketCount, 'openCount' => $openCount,
+            'articleCount' => $articleCount, 'announceCount' => $announceCount]);
+    }
+
     // ── Tickets ──
     public function tickets()
     {

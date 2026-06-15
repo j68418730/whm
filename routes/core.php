@@ -227,7 +227,7 @@ $router->get('/admin/cron/run', 'Admin\Controllers\CronController@index');
 $router->get('/admin/cron/logs', 'Admin\Controllers\CronController@index');
 
 // -- Support routes --
-$router->get('/admin/support', 'Admin\Controllers\SupportController@tickets');
+$router->get('/admin/support', 'Admin\Controllers\SupportController@index');
 $router->get('/admin/support/tickets', 'Admin\Controllers\SupportController@tickets');
 $router->get('/admin/support/tickets/{id}', 'Admin\Controllers\SupportController@ticketView');
 $router->post('/admin/support/tickets/reply/{id}', 'Admin\Controllers\SupportController@ticketReply');
