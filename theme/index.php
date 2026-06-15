@@ -47,6 +47,14 @@ body{font-family:'Inter',sans-serif;background:#000;color:#fff}
 <div class="card"><h3>Uptime</h3><div class="value">99.99%</div></div>
 </div>
 <p style="color:#94a3b8">Welcome, <?php echo htmlspecialchars($user->name ?? 'User', ENT_QUOTES, 'UTF-8'); ?></p>
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:20px">
+<a href="/admin/support/tickets" style="display:flex;align-items:center;gap:10px;padding:14px 20px;background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.1);border-radius:10px;text-decoration:none;color:#fff;transition:.2s">
+<span style="font-size:24px">🎫</span><div><strong>Tickets</strong><br><span style="font-size:12px;color:#94a3b8">Customer support tickets</span></div></a>
+<a href="/admin/support/kb" style="display:flex;align-items:center;gap:10px;padding:14px 20px;background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.1);border-radius:10px;text-decoration:none;color:#fff;transition:.2s">
+<span style="font-size:24px">📚</span><div><strong>Knowledgebase</strong><br><span style="font-size:12px;color:#94a3b8">Articles and categories</span></div></a>
+<a href="/admin/support/announcements" style="display:flex;align-items:center;gap:10px;padding:14px 20px;background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.1);border-radius:10px;text-decoration:none;color:#fff;transition:.2s">
+<span style="font-size:24px">📢</span><div><strong>Announcements</strong><br><span style="font-size:12px;color:#94a3b8">System announcements</span></div></a>
+</div>
 </div></div>
 </body></html>
 <?php

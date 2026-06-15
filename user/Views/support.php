@@ -1,7 +1,9 @@
 <div class="card" style="margin-bottom:16px"><h3 style="color:var(--accent)">Support Center</h3>
-<p style="color:var(--text-secondary);margin-top:8px">Submit a ticket or browse the knowledge base.</p>
+<p style="color:var(--text-secondary);margin-top:8px">Submit a ticket, browse the knowledge base, or read announcements.</p>
 <div style="display:flex;gap:8px;margin-top:12px">
 <a class="btn primary" onclick="document.getElementById('ticketForm').classList.toggle('hidden')">Open Ticket</a>
+<a href="/admin/support/kb" class="btn secondary">📚 Knowledgebase</a>
+<a href="/admin/support/announcements" class="btn secondary">📢 Announcements</a>
 </div></div>
 <div id="ticketForm" class="card hidden" style="max-width:500px;margin-bottom:20px">
 <form method="POST" action="/user/tickets/create">

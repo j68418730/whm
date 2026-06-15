@@ -16,8 +16,6 @@
 <span style="font-size:20px">📚</span><div><strong style="color:#fff">Knowledgebase</strong><br><span style="font-size:12px;color:var(--text-secondary)">Articles and categories</span></div></a>
 <a href="/admin/support/announcements" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:var(--text-table);text-decoration:none;border-right:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04);transition:.15s">
 <span style="font-size:20px">📢</span><div><strong style="color:#fff">Announcements</strong><br><span style="font-size:12px;color:var(--text-secondary)">System announcements</span></div></a>
-<a href="/admin/support/status" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:var(--text-table);text-decoration:none;border-bottom:1px solid rgba(255,255,255,.04);transition:.15s">
-<span style="font-size:20px">🖥</span><div><strong style="color:#fff">Server Status</strong><br><span style="font-size:12px;color:var(--text-secondary)">Live service monitoring</span></div></a>
 </div>
 </td></tr></table>
 </div>
