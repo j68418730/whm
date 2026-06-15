@@ -1,6 +1,7 @@
 <?php if (isset($_SESSION['success_message'])): ?>
 <div class="alert alert-success"><?php echo htmlspecialchars($_SESSION['success_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['success_message']); ?></div>
 <?php endif; ?>
+<style>select option{background:#0a0f1a;color:#e0e0e0} select{color:#fff}</style>
 <div style="margin-bottom:16px"><a href="/admin/marketplace/pricing" class="btn secondary">💰 Set Prices</a></div>
 <?php foreach ($categories as $cat):
 $items = array_filter($grouped[$cat] ?? [], fn($a) => !empty($a)); if (empty($items)) continue; ?>
