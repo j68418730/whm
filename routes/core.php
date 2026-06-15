@@ -198,6 +198,22 @@ $router->get('/admin/cron/delete/{id}', 'Admin\Controllers\CronController@index'
 $router->get('/admin/cron/run', 'Admin\Controllers\CronController@index');
 $router->get('/admin/cron/logs', 'Admin\Controllers\CronController@index');
 
+// -- Support routes --
+$router->get('/admin/support', 'Admin\Controllers\SupportController@tickets');
+$router->get('/admin/support/tickets', 'Admin\Controllers\SupportController@tickets');
+$router->get('/admin/support/tickets/{id}', 'Admin\Controllers\SupportController@ticketView');
+$router->post('/admin/support/tickets/reply/{id}', 'Admin\Controllers\SupportController@ticketReply');
+$router->get('/admin/support/tickets/close/{id}', 'Admin\Controllers\SupportController@ticketClose');
+$router->get('/admin/support/kb', 'Admin\Controllers\SupportController@kb');
+$router->post('/admin/support/kb/category/store', 'Admin\Controllers\SupportController@kbCategoryStore');
+$router->get('/admin/support/kb/category/delete/{id}', 'Admin\Controllers\SupportController@kbCategoryDelete');
+$router->post('/admin/support/kb/article/store', 'Admin\Controllers\SupportController@kbArticleStore');
+$router->get('/admin/support/kb/article/delete/{id}', 'Admin\Controllers\SupportController@kbArticleDelete');
+$router->get('/admin/support/announcements', 'Admin\Controllers\SupportController@announcements');
+$router->post('/admin/support/announcements/store', 'Admin\Controllers\SupportController@announcementStore');
+$router->get('/admin/support/announcements/delete/{id}', 'Admin\Controllers\SupportController@announcementDelete');
+$router->get('/admin/support/status', 'Admin\Controllers\SupportController@serverStatus');
+
 // -- Billing routes --
 $router->get('/admin/billing', 'Admin\Controllers\BillingController@index');
 $router->get('/admin/billing/products', 'Admin\Controllers\BillingController@products');
