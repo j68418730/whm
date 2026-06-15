@@ -1,34 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ftp - Radio Hosting Panel</title>
-    <link rel="stylesheet" href="/css/admin.css">
-</head>
-<body class="whm-body">
-    <main class="whm-shell">
-        <aside class="whm-sidebar">
-            <div class="brand"><span class="brand-mark">S</span><div><strong>Spectre WHM</strong><small>Hosting + Radio</small></div></div>
-            <a href="/admin/dashboard">Dashboard</a>
-            <a href="/admin/account">Account Functions</a>
-            <a href="/admin/reseller">Reseller Center</a>
-            <a href="/admin/packages">Packages</a>
-            <a href="/admin/streams">Radio Streams</a>
-            <a href="/admin/radio_dashboard">Radio Dashboard</a>
-            <a href="/admin/server">Server Overview</a>
-        </aside>
-        <section class="whm-content">
-            <div class="module-header">
-                <span class="eyebrow">WHM Module</span>
-                <h1>Ftp</h1>
-                <p>Manage ftp configuration and settings from this panel.</p>
-            </div>
-            <div class="card-grid">
-                <article class="module-card"><h3>Overview</h3><p>This module provides full ftp management capabilities.</p></article>
-                <article class="module-card"><h3>Configuration</h3><p>Configure and customize ftp settings for your hosting environment.</p></article>
-            </div>
-        </section>
-    </main>
-</body>
-</html>
+<div class="stats-grid" style="margin-bottom:20px">
+<div class="stat-card"><h3>FTP Server</h3><div class="value" style="font-size:16px"><?php echo $ftpStats['ftp_server'] ?? 'VSFTPD'; ?></div></div>
+<div class="stat-card"><h3>Status</h3><div class="value" style="font-size:16px;color:<?php echo ($ftpStats['active'] ?? '') === 'active' ? '#4ade80' : '#f87171'; ?>"><?php echo $ftpStats['active'] ?? 'Unknown'; ?></div></div>
+</div>
+<div class="card"><h3 style="color:var(--accent);margin-bottom:12px">FTP Configuration</h3>
+<table><tr><th>Setting</th><th>Value</th></tr>
+<tr><td>Server</td><td>VSFTPD (vsftpd)</td></tr>
+<tr><td>Anonymous FTP</td><td><?php echo ($ftpStats['anonymous_enabled'] ?? false) ? 'Enabled' : 'Disabled'; ?></td></tr>
+<tr><td>Passive Ports</td><td><?php echo ($ftpStats['passive_min'] ?? 30000) . ' - ' . ($ftpStats['passive_max'] ?? 50000); ?></td></tr>
+<tr><td>Config File</td><td style="font-family:monospace;font-size:12px">/etc/vsftpd.conf</td></tr>
+<tr><td>Service Command</td><td style="font-family:monospace;font-size:12px">systemctl restart vsftpd</td></tr>
+</table>
+<div style="margin-top:12px">
+<a href="/admin/serverconfig" class="btn primary">Manage Services</a>
+<a href="/admin/ftp" class="btn secondary">Refresh</a>
+</div>
+</div>
