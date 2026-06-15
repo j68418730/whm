@@ -93,6 +93,13 @@ $router->get('/admin/licensing', 'Admin\Controllers\LicensingController@index');
 $router->post('/admin/licensing/upload', 'Admin\Controllers\LicensingController@upload');
 $router->get('/admin/licensing/generate', 'Admin\Controllers\LicensingController@generate');
 $router->post('/admin/licensing/generate', 'Admin\Controllers\LicensingController@generate');
+$router->get('/admin/firewall', 'Admin\Controllers\FirewallController@index');
+$router->get('/admin/firewall/service/{action}/{svc}', 'Admin\Controllers\FirewallController@service');
+$router->get('/admin/firewall/modsec/{action}', 'Admin\Controllers\FirewallController@modsec');
+$router->post('/admin/firewall/port/add', 'Admin\Controllers\FirewallController@portAdd');
+$router->get('/admin/firewall/port/remove/{port}', 'Admin\Controllers\FirewallController@portRemove');
+$router->get('/admin/firewall/port/remove/{port}/{proto}', 'Admin\Controllers\FirewallController@portRemove');
+$router->post('/admin/firewall/whitelist', 'Admin\Controllers\FirewallController@whitelist');
 $router->get('/admin/server', 'Admin\Controllers\ServerOverviewController@index');
 $router->get('/admin/server/health', 'Admin\Controllers\ServerOverviewController@health');
 
