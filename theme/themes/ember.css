@@ -1,0 +1,18 @@
+/* Ember - Warm orange/red theme */
+:root {
+  --bg-primary: #1a0f0a;
+  --bg-card: rgba(20, 12, 8, .92);
+  --bg-sidebar: rgba(18, 10, 6, .95);
+  --accent: #f97316;
+  --accent-hover: #fb923c;
+  --border-color: rgba(249, 115, 22, .15);
+  --text-primary: #f0ddd0;
+  --text-secondary: #b09070;
+  --text-muted: #705040;
+  --text-table: #e0c8b0;
+  --bg-overlay: linear-gradient(rgba(20, 10, 5, .92), rgba(20, 10, 5, .97));
+  --font-body: 'Inter', system-ui, sans-serif;
+  --header-bg: linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.8)),url('/theme/assets/img/header.png');
+  --footer-bg: rgba(18, 10, 6, .95);
+  --footer-logo: url('/theme/assets/img/logo.png');
+}

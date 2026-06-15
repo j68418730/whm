@@ -16,6 +16,7 @@ $router->get('/admin/logout', 'Admin\Controllers\AuthController@logout');
 $router->get('/admin/dashboard', 'Admin\Controllers\DashboardController@index');
 $router->get('/admin/theme', 'Admin\Controllers\ThemeController@index');
 $router->post('/admin/theme/update', 'Admin\Controllers\ThemeController@update');
+$router->post('/admin/theme', 'Admin\Controllers\ThemeController@update');
 $router->get('/admin/account', 'Admin\Controllers\AccountController@index');
 $router->get('/admin/packages', 'Admin\Controllers\PackageController@index');
 $router->get('/admin/reseller', 'Admin\Controllers\ResellerController@index');
