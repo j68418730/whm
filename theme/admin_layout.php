@@ -61,6 +61,13 @@ $title = isset($title) ? $title : 'Dashboard';
 <a href="/admin/ssl">SSL/TLS</a>
 </div>
 <div class="nav-section">
+<div class="nav-label">Support</div>
+<a href="/admin/support">Tickets</a>
+<a href="/admin/support/kb">Knowledgebase</a>
+<a href="/admin/support/announcements">Announcements</a>
+<a href="/admin/support/status">Server Status</a>
+</div>
+<div class="nav-section">
 <div class="nav-label">Billing</div>
 <a href="/admin/billing">Billing Dashboard</a>
 <a href="/admin/billing/products">Products</a>
