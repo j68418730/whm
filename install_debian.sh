@@ -169,6 +169,8 @@ echo \"Admin set.\n\";
 # Copy theme into public
 rm -rf "$PANEL_DIR/public/theme" 2>/dev/null
 cp -r "$PANEL_DIR/theme" "$PANEL_DIR/public/theme" 2>/dev/null || true
+# Copy themes into public/theme/themes
+cp -r "$PANEL_DIR/theme/themes" "$PANEL_DIR/public/theme/themes" 2>/dev/null || true
 
 echo ""
 echo "=============================================="
