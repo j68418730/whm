@@ -9,6 +9,7 @@ class License
     protected $data = null;
     protected $valid = false;
     protected $basePath;
+    protected $verifyUrl = 'https://45.61.59.55/license-verify.php';
 
     public function __construct($basePath)
     {
@@ -22,40 +23,110 @@ class License
         if (!is_file($this->licenseFile)) {
             return $this->trialResult();
         }
-        if (!is_file($this->publicKeyFile)) {
-            return $this->trialResult();
-        }
 
         $content = file_get_contents($this->licenseFile);
+
+        // 1. Try online verification first
+        $online = $this->verifyOnline($content);
+        if ($online !== null) {
+            return $online;
+        }
+
+        // 2. Fallback to local RSA verification
+        $local = $this->verifyLocal($content);
+        if ($local !== null) {
+            return $local;
+        }
+
+        // 3. Try trial
+        return $this->trialResult('License validation failed');
+    }
+
+    protected function verifyOnline($content)
+    {
+        $payload = json_encode(['license' => $content, 'server_ip' => $_SERVER['SERVER_ADDR'] ?? '']);
+
+        $ch = curl_init($this->verifyUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_SSL_VERIFYPEER => false,
+        ]);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200 || !$response) {
+            return null; // Fallback
+        }
+
+        $data = json_decode($response, true);
+        if (!$data || !isset($data['valid'])) {
+            return null;
+        }
+
+        if ($data['valid']) {
+            $this->valid = true;
+            $this->data = $data;
+            return [
+                'valid' => true,
+                'data' => $data,
+                'type' => $data['type'] ?? 'full',
+                'trial' => false,
+                'source' => 'online',
+            ];
+        }
+
+        // Server says invalid - respect that
+        return [
+            'valid' => false,
+            'error' => $data['error'] ?? 'License rejected by server',
+            'trial' => false,
+            'type' => $data['type'] ?? 'full',
+            'source' => 'online',
+        ];
+    }
+
+    protected function verifyLocal($content)
+    {
+        if (!is_file($this->publicKeyFile)) {
+            return null;
+        }
+
         if (!preg_match('/^-----BEGIN PLANET HOSTS LICENSE-----+\s*(.+?)\s*-----BEGIN LICENSE DATA-----+\s*(.+?)\s*-----END LICENSE DATA-----+\s*-----END PLANET HOSTS LICENSE-----+\s*$/s', $content, $matches)) {
-            return $this->trialResult();
+            return null;
         }
 
         $signatureB64 = trim($matches[1]);
         $payload = trim($matches[2]);
         $signature = base64_decode($signatureB64, true);
-        if ($signature === false) return $this->trialResult('Invalid signature encoding');
+        if ($signature === false) return null;
 
         $publicKey = file_get_contents($this->publicKeyFile);
         $pubKeyId = openssl_get_publickey($publicKey);
-        if ($pubKeyId === false) return $this->trialResult('Invalid public key');
+        if ($pubKeyId === false) return null;
 
         $result = openssl_verify($payload, $signature, $pubKeyId, OPENSSL_ALGO_SHA256);
-        if ($result !== 1) return $this->trialResult('License signature invalid');
+        if ($result !== 1) return null;
 
-        $this->data = json_decode($payload, true);
-        if (!$this->data) return $this->trialResult('Invalid license data');
+        $data = json_decode($payload, true);
+        if (!$data) return null;
 
         $this->valid = true;
+        $this->data = $data;
 
-        if (isset($this->data['expiry']) && $this->data['expiry'] !== 'never') {
-            if (strtotime($this->data['expiry']) < time()) {
+        if (isset($data['expiry']) && $data['expiry'] !== 'never') {
+            if (strtotime($data['expiry']) < time()) {
                 $this->valid = false;
-                return ['valid' => false, 'error' => 'License expired on ' . $this->data['expiry'], 'type' => $this->data['type'] ?? 'full', 'trial' => false];
+                return ['valid' => false, 'error' => 'License expired on ' . $data['expiry'], 'type' => $data['type'] ?? 'full', 'trial' => false, 'source' => 'local'];
             }
         }
 
-        return ['valid' => true, 'data' => $this->data, 'type' => $this->data['type'] ?? 'full', 'trial' => false];
+        return ['valid' => true, 'data' => $data, 'type' => $data['type'] ?? 'full', 'trial' => false, 'source' => 'local'];
     }
 
     protected function trialResult($error = null)
@@ -73,7 +144,8 @@ class License
             'trial_days_left' => $daysLeft,
             'trial_days_used' => $daysElapsed,
             'trial_max' => $trialDays,
-            'type' => 'full', // trial gets full access
+            'type' => 'full',
+            'source' => 'trial',
         ];
     }
 
@@ -84,7 +156,7 @@ class License
             $ts = (int)trim(file_get_contents($file));
             if ($ts > 0) return $ts;
         }
-        return time(); // If no install date, assume just installed
+        return time();
     }
 
     public function hasFeature($feature)
