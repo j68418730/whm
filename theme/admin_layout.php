@@ -9,7 +9,7 @@ $currentUrl = $_SERVER['REQUEST_URI'] ?? '';
 <title><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?> - Planet Hosts</title>
 <link rel="stylesheet" href="/theme/assets/css/style.css">
 <?php 
-$activeTheme = 'cosmic';
+$activeTheme = 'planethosts';
 $ts = [];
 try {
     if (class_exists('\\Core\\Application')) {
@@ -17,11 +17,11 @@ try {
         $db = $app->get('db');
         if ($db) {
             $rows = $db->table('automation_settings')->get() ?: [];
-            foreach ($rows as $r) $ts[$r->setting_key] = $r->setting_value;
+            if (is_array($rows)) { foreach ($rows as $r) $ts[$r->setting_key] = $r->setting_value; }
             $activeTheme = $ts['theme'] ?? 'cosmic';
         }
     }
-} catch (\Exception $e) {}
+} catch (\Exception $e) { error_log("Theme load error: " . $e->getMessage()); }
 $themeFile = "/theme/themes/{$activeTheme}/style.css";
 $customCss = $ts['custom_css'] ?? '';
 $footerText = $ts['footer_text'] ?? 'Building the future of hosting infrastructure.';

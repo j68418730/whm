@@ -1,18 +1,4 @@
-/* Cyber - Green neon cyberpunk theme */
-:root {
-  --bg-primary: #0a0f0a;
-  --bg-card: rgba(8, 16, 8, .92);
-  --bg-sidebar: rgba(6, 14, 6, .95);
-  --accent: #00ff88;
-  --accent-hover: #44ffaa;
-  --border-color: rgba(0, 255, 136, .15);
-  --text-primary: #ccffdd;
-  --text-secondary: #80bb90;
-  --text-muted: #447755;
-  --text-table: #aaddbb;
-  --bg-overlay: linear-gradient(rgba(5, 12, 5, .92), rgba(5, 12, 5, .97));
-  --font-body: 'JetBrains Mono', 'Inter', monospace;
-  --header-bg: linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.8)),url('/theme/assets/img/header.png');
-  --footer-bg: rgba(5, 12, 5, .95);
-  --footer-logo: url('/theme/assets/img/logo.png');
-}
+:root{--bg-primary:#0a0f0a!important;--bg-card:rgba(10,15,10,.95)!important;--bg-sidebar:rgba(10,15,10,.97)!important;--accent:#00ff88!important;--accent-hover:#44ffaa!important;--border-color:rgba(10,15,10,.15)!important;--text-primary:#ccffdd!important;--text-secondary:#80bb90!important}
+body,.sidebar{background:#0a0f0a!important}.card,.stat-card{background:rgba(10,15,10,.95)!important;border-color:rgba(10,15,10,.15)!important}
+a,.accent,.nav-label{color:#00ff88!important}.btn.primary{background:linear-gradient(135deg,#00ff88,#44ffaa)!important}
+h1,h2,h3,h4,.stat-card .value{color:#ccffdd!important}p,.text-secondary,.stat-card h3,.topbar h1{color:#80bb90!important}
