@@ -85,7 +85,9 @@ class SupportController extends Controller
         $user = $this->auth->user();
         $articles = $this->db->table('kb_articles')->get() ?: [];
         $cats = $this->db->table('kb_categories')->get() ?: [];
-        return $this->view('admin.support.kb', ['user' => $user, 'title' => 'Knowledgebase', 'theme_settings' => $this->theme(), 'articles' => $articles, 'cats' => $cats]);
+        $catNames = [];
+        foreach ($cats as $c) $catNames[$c->id] = $c->name;
+        return $this->view('admin.support.kb', ['user' => $user, 'title' => 'Knowledgebase', 'theme_settings' => $this->theme(), 'articles' => $articles, 'cats' => $cats, 'catNames' => $catNames]);
     }
 
     public function kbCategoryStore()
