@@ -10,6 +10,7 @@
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px" id="themeGrid">
 <?php
 $colors = [
+  'planethosts'=>['bg'=>'#000000','ac'=>'#0A84FF','txt'=>'#ffffff','name'=>'Planet Hosts'],
   'cosmic'=>['bg'=>'#0a0a1a','ac'=>'#008cff','txt'=>'#e0e0ff','name'=>'Cosmic'],
   'nebula'=>['bg'=>'#0d0a1a','ac'=>'#8b5cf6','txt'=>'#e8e0f0','name'=>'Nebula'],
   'cyber'=>['bg'=>'#0a0f0a','ac'=>'#00ff88','txt'=>'#ccffdd','name'=>'Cyber'],

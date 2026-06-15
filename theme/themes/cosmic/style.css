@@ -1,18 +1,4 @@
-/* Cosmic - Dark space theme with neon blue */
-:root {
-  --bg-primary: #0a0a1a;
-  --bg-card: rgba(10, 10, 30, .92);
-  --bg-sidebar: rgba(8, 8, 24, .95);
-  --accent: #008cff;
-  --accent-hover: #3bb8ff;
-  --border-color: rgba(0, 140, 255, .15);
-  --text-primary: #e0e0ff;
-  --text-secondary: #8888aa;
-  --text-muted: #55557a;
-  --text-table: #c0c0e0;
-  --bg-overlay: linear-gradient(rgba(5, 5, 20, .92), rgba(5, 5, 20, .97));
-  --font-body: 'Inter', system-ui, sans-serif;
-  --header-bg: linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.8)),url('/theme/assets/img/header.png');
-  --footer-bg: rgba(5, 5, 20, .95);
-  --footer-logo: url('/theme/assets/img/logo.png');
-}
+:root{--bg-primary:#0a0a1a!important;--bg-card:rgba(10,10,26,.95)!important;--bg-sidebar:rgba(10,10,26,.97)!important;--accent:#008cff!important;--accent-hover:#3bb8ff!important;--border-color:rgba(10,10,26,.15)!important;--text-primary:#e0e0ff!important;--text-secondary:#8888aa!important}
+body,.sidebar{background:#0a0a1a!important}.card,.stat-card{background:rgba(10,10,26,.95)!important;border-color:rgba(10,10,26,.15)!important}
+a,.accent,.nav-label{color:#008cff!important}.btn.primary{background:linear-gradient(135deg,#008cff,#3bb8ff)!important}
+h1,h2,h3,h4,.stat-card .value{color:#e0e0ff!important}p,.text-secondary,.stat-card h3,.topbar h1{color:#8888aa!important}

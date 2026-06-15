@@ -21,7 +21,7 @@ class ThemeController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-        $themes = ['cosmic','nebula','cyber','ember','frost','midnight','oxide','sunset','ocean','crimson'];
+        $themes = ['planethosts','cosmic','nebula','cyber','ember','frost','midnight','oxide','sunset','ocean','crimson'];
         $settings = [];
         $rows = $this->db->table('automation_settings')->get() ?: [];
         foreach ($rows as $r) $settings[$r->setting_key] = $r->setting_value;

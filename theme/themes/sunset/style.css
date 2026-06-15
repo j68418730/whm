@@ -1,18 +1,4 @@
-/* Sunset - Warm gradient theme */
-:root {
-  --bg-primary: #1a0e0a;
-  --bg-card: rgba(22, 12, 8, .92);
-  --bg-sidebar: rgba(20, 10, 6, .95);
-  --accent: #f59e0b;
-  --accent-hover: #fbbf24;
-  --border-color: rgba(245, 158, 11, .15);
-  --text-primary: #f0e0c0;
-  --text-secondary: #b09870;
-  --text-muted: #786040;
-  --text-table: #e0c8a0;
-  --bg-overlay: linear-gradient(rgba(20, 10, 5, .92), rgba(20, 10, 5, .97));
-  --font-body: 'Inter', system-ui, sans-serif;
-  --header-bg: linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.8)),url('/theme/assets/img/header.png');
-  --footer-bg: rgba(20, 10, 6, .95);
-  --footer-logo: url('/theme/assets/img/logo.png');
-}
+:root{--bg-primary:#1a0e0a!important;--bg-card:rgba(26,14,10,.95)!important;--bg-sidebar:rgba(26,14,10,.97)!important;--accent:#f59e0b!important;--accent-hover:#fbbf24!important;--border-color:rgba(26,14,10,.15)!important;--text-primary:#f0e0c0!important;--text-secondary:#b09870!important}
+body,.sidebar{background:#1a0e0a!important}.card,.stat-card{background:rgba(26,14,10,.95)!important;border-color:rgba(26,14,10,.15)!important}
+a,.accent,.nav-label{color:#f59e0b!important}.btn.primary{background:linear-gradient(135deg,#f59e0b,#fbbf24)!important}
+h1,h2,h3,h4,.stat-card .value{color:#f0e0c0!important}p,.text-secondary,.stat-card h3,.topbar h1{color:#b09870!important}

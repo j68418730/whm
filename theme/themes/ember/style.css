@@ -1,18 +1,4 @@
-/* Ember - Warm orange/red theme */
-:root {
-  --bg-primary: #1a0f0a;
-  --bg-card: rgba(20, 12, 8, .92);
-  --bg-sidebar: rgba(18, 10, 6, .95);
-  --accent: #f97316;
-  --accent-hover: #fb923c;
-  --border-color: rgba(249, 115, 22, .15);
-  --text-primary: #f0ddd0;
-  --text-secondary: #b09070;
-  --text-muted: #705040;
-  --text-table: #e0c8b0;
-  --bg-overlay: linear-gradient(rgba(20, 10, 5, .92), rgba(20, 10, 5, .97));
-  --font-body: 'Inter', system-ui, sans-serif;
-  --header-bg: linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.8)),url('/theme/assets/img/header.png');
-  --footer-bg: rgba(18, 10, 6, .95);
-  --footer-logo: url('/theme/assets/img/logo.png');
-}
+:root{--bg-primary:#1a0f0a!important;--bg-card:rgba(26,15,10,.95)!important;--bg-sidebar:rgba(26,15,10,.97)!important;--accent:#f97316!important;--accent-hover:#fb923c!important;--border-color:rgba(26,15,10,.15)!important;--text-primary:#f0ddd0!important;--text-secondary:#b09070!important}
+body,.sidebar{background:#1a0f0a!important}.card,.stat-card{background:rgba(26,15,10,.95)!important;border-color:rgba(26,15,10,.15)!important}
+a,.accent,.nav-label{color:#f97316!important}.btn.primary{background:linear-gradient(135deg,#f97316,#fb923c)!important}
+h1,h2,h3,h4,.stat-card .value{color:#f0ddd0!important}p,.text-secondary,.stat-card h3,.topbar h1{color:#b09070!important}

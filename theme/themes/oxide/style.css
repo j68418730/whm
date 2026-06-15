@@ -1,18 +1,4 @@
-/* Oxide - Teal/green modern theme */
-:root {
-  --bg-primary: #081010;
-  --bg-card: rgba(6, 14, 14, .92);
-  --bg-sidebar: rgba(4, 12, 12, .95);
-  --accent: #14b8a6;
-  --accent-hover: #2dd4bf;
-  --border-color: rgba(20, 184, 166, .15);
-  --text-primary: #cce8e0;
-  --text-secondary: #80a898;
-  --text-muted: #406860;
-  --text-table: #aad0c8;
-  --bg-overlay: linear-gradient(rgba(4, 10, 10, .92), rgba(4, 10, 10, .97));
-  --font-body: 'Inter', system-ui, sans-serif;
-  --header-bg: linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.8)),url('/theme/assets/img/header.png');
-  --footer-bg: rgba(4, 12, 12, .95);
-  --footer-logo: url('/theme/assets/img/logo.png');
-}
+:root{--bg-primary:#081010!important;--bg-card:rgba(8,16,16,.95)!important;--bg-sidebar:rgba(8,16,16,.97)!important;--accent:#14b8a6!important;--accent-hover:#2dd4bf!important;--border-color:rgba(8,16,16,.15)!important;--text-primary:#cce8e0!important;--text-secondary:#80a898!important}
+body,.sidebar{background:#081010!important}.card,.stat-card{background:rgba(8,16,16,.95)!important;border-color:rgba(8,16,16,.15)!important}
+a,.accent,.nav-label{color:#14b8a6!important}.btn.primary{background:linear-gradient(135deg,#14b8a6,#2dd4bf)!important}
+h1,h2,h3,h4,.stat-card .value{color:#cce8e0!important}p,.text-secondary,.stat-card h3,.topbar h1{color:#80a898!important}
