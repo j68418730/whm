@@ -8,10 +8,8 @@
 </div>
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
 <a href="/admin/mysql/restart" class="btn secondary">🔄 Restart MariaDB</a>
-<a href="/phpmyadmin" target="_blank" class="btn secondary">⚡ phpMyAdmin</a>
-<a href="/pma_signon.php" target="_blank" class="btn primary">🔑 Auto-Login phpMyAdmin</a>
+<a href="/pma_signon.php" target="_blank" class="btn primary">🔑 phpMyAdmin Auto-Login</a>
 </div>
 <div class="card"><h3 style="color:var(--accent)">Database Access</h3>
-<p style="color:var(--text-secondary);margin-top:8px">Each hosting account has its own database credentials. Users can access phpMyAdmin to manage their databases. The system creates a database and user for each account automatically.</p>
-<a href="/phpmyadmin" target="_blank" class="btn primary">Open phpMyAdmin</a>
+<p style="color:var(--text-secondary);margin-top:8px">Each hosting account has its own database credentials. Click phpMyAdmin above to manage databases directly with root access.</p>
 </div>
