@@ -1,6 +1,7 @@
 <?php
 $user = isset($user) ? $user : null;
 $title = isset($title) ? $title : 'Dashboard';
+$currentUrl = $_SERVER['REQUEST_URI'] ?? '';
 ?><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,6 +17,15 @@ $title = isset($title) ? $title : 'Dashboard';
 .sidebar{position:fixed;left:0;top:80px;height:calc(100vh - 80px);z-index:998;transform:translateX(0);transition:transform .3s}
 .sidebar.closed{transform:translateX(-105%)}
 }
+.nav-label{cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px}
+.nav-label::before{content:'▾';font-size:10px;transition:transform .2s}
+.nav-label.collapsed::before{content:'▸'}
+.nav-section.collapsed .nav-label::before{content:'▸'}
+.nav-section.collapsed .nav-label + a,.nav-section.collapsed a{display:none}
+.nav-section.collapsed .nav-label{display:flex}
+.nav-section a.active{background:rgba(0,191,255,.15);color:#00bfff;border-left:3px solid #008cff}
+.nav-section a{padding-left:14px}
+.nav-section a.active{padding-left:11px}
 </style>
 </head>
 <body>
@@ -36,94 +46,103 @@ $title = isset($title) ? $title : 'Dashboard';
 </header>
 
 <?php
-// License check for banner
-$licenseCheck = null;
-$licenseStatus = null;
-$licenseDaysLeft = 0;
+$licenseStatus = null; $licenseDaysLeft = 0;
 if (class_exists('\\Core\\License')) {
     $lic = new \Core\License(BASE_PATH);
-    $licenseCheck = $lic->verify();
-    $licenseStatus = $licenseCheck['valid'] ? 'valid' : ($licenseCheck['trial'] && ($licenseCheck['trial_days_left'] ?? 0) > 0 ? 'trial' : 'locked');
-    $licenseDaysLeft = $licenseCheck['trial_days_left'] ?? 0;
+    $lc = $lic->verify();
+    $licenseStatus = $lc['valid'] ? 'valid' : (($lc['trial']??false) && ($lc['trial_days_left']??0)>0 ? 'trial' : 'locked');
+    $licenseDaysLeft = $lc['trial_days_left'] ?? 0;
 }
 ?>
 <?php if ($licenseStatus === 'trial'): ?>
 <div style="background:linear-gradient(90deg,#facc15,#f59e0b);color:#000;text-align:center;padding:8px 16px;font-size:13px;font-weight:600;position:sticky;top:0;z-index:9999">
-⚠ TRIAL MODE — <?php echo $licenseDaysLeft; ?> day<?php echo $licenseDaysLeft > 1 ? 's' : ''; ?> remaining. 
-<a href="/admin/licensing" style="color:#000;text-decoration:underline;font-weight:700">Activate License</a>
+⚠ TRIAL MODE — <?php echo $licenseDaysLeft; ?> day<?php echo $licenseDaysLeft > 1 ? 's' : ''; ?> remaining. <a href="/admin/licensing" style="color:#000;text-decoration:underline;font-weight:700">Activate License</a>
 </div>
 <?php elseif ($licenseStatus === 'locked'): ?>
 <div style="background:linear-gradient(90deg,#ef4444,#dc2626);color:#fff;text-align:center;padding:8px 16px;font-size:13px;font-weight:600;position:sticky;top:0;z-index:9999">
-✗ LICENSE REQUIRED — Some features are locked. 
-<a href="/admin/licensing" style="color:#fff;text-decoration:underline;font-weight:700">Enter License Key</a>
+✗ LICENSE REQUIRED — <a href="/admin/licensing" style="color:#fff;text-decoration:underline;font-weight:700">Enter License Key</a>
 </div>
 <?php endif; ?>
 <button class="sidebar-toggle" id="sidebarToggle" onclick="document.getElementById('adminSidebar').classList.toggle('closed')">☰</button>
 <div class="admin-shell">
 <div class="sidebar" id="adminSidebar">
 <div class="logo-text">PLANET <span>HOSTS</span></div>
-<div class="nav-section">
+
+<div class="nav-section" data-section="main">
 <div class="nav-label">Main</div>
-<a href="/admin/dashboard">Dashboard</a>
-<a href="/admin/server">Server Overview</a>
-<a href="/admin/server/health">Server Health</a>
+<a href="/admin/dashboard" class="<?php echo str_contains($currentUrl,'/admin/dashboard')?'active':''; ?>">Dashboard</a>
+<a href="/admin/server" class="<?php echo str_contains($currentUrl,'/admin/server')?'active':''; ?>">Server Overview</a>
+<a href="/admin/server/health" class="<?php echo str_contains($currentUrl,'/admin/server/health')?'active':''; ?>">Server Health</a>
 </div>
-<div class="nav-section">
+
+<div class="nav-section" data-section="accounts">
 <div class="nav-label">Accounts</div>
-<a href="/admin/account">Account Functions</a>
-<a href="/admin/packages">Packages</a>
-<a href="/admin/reseller">Resellers</a>
-<a href="/admin/userfeatures">Feature Manager</a>
+<a href="/admin/account" class="<?php echo str_contains($currentUrl,'/admin/account')?'active':''; ?>">Account Functions</a>
+<a href="/admin/packages" class="<?php echo str_contains($currentUrl,'/admin/packages')?'active':''; ?>">Packages</a>
+<a href="/admin/reseller" class="<?php echo str_contains($currentUrl,'/admin/reseller')?'active':''; ?>">Resellers</a>
+<a href="/admin/userfeatures" class="<?php echo str_contains($currentUrl,'/admin/userfeatures')?'active':''; ?>">Feature Manager</a>
 </div>
-<div class="nav-section">
+
+<div class="nav-section" data-section="services">
 <div class="nav-label">Services</div>
-<a href="/admin/dns">DNS Zones</a>
-<a href="/admin/email">Email</a>
-<a href="/admin/mysql">Databases</a>
-<a href="/admin/ftp">FTP</a>
-<a href="/admin/ssl">SSL/TLS</a>
+<a href="/admin/dns" class="<?php echo str_contains($currentUrl,'/admin/dns')?'active':''; ?>">DNS Zones</a>
+<a href="/admin/email" class="<?php echo str_contains($currentUrl,'/admin/email')?'active':''; ?>">Email</a>
+<a href="/admin/mysql" class="<?php echo str_contains($currentUrl,'/admin/mysql')?'active':''; ?>">Databases</a>
+<a href="/admin/ftp" class="<?php echo str_contains($currentUrl,'/admin/ftp')?'active':''; ?>">FTP</a>
 </div>
-<div class="nav-section">
+
+<div class="nav-section" data-section="security">
+<div class="nav-label">Security</div>
+<a href="/admin/ssl" class="<?php echo str_contains($currentUrl,'/admin/ssl')?'active':''; ?>">SSL/TLS</a>
+<a href="/admin/twofactor" class="<?php echo str_contains($currentUrl,'/admin/twofactor')?'active':''; ?>">Two-Factor Auth</a>
+<a href="/admin/security" class="<?php echo str_contains($currentUrl,'/admin/security')?'active':''; ?>">Security Center</a>
+</div>
+
+<div class="nav-section" data-section="support">
 <div class="nav-label">Support</div>
-<a href="/admin/support">Tickets</a>
-<a href="/admin/support/kb">Knowledgebase</a>
-<a href="/admin/support/announcements">Announcements</a>
-<a href="/admin/support/status">Server Status</a>
+<a href="/admin/support" class="<?php echo str_contains($currentUrl,'/admin/support/tickets')?'active':''; ?>">Tickets</a>
+<a href="/admin/support/kb" class="<?php echo str_contains($currentUrl,'/admin/support/kb')?'active':''; ?>">Knowledgebase</a>
+<a href="/admin/support/announcements" class="<?php echo str_contains($currentUrl,'/admin/support/announcements')?'active':''; ?>">Announcements</a>
+<a href="/admin/support/status" class="<?php echo str_contains($currentUrl,'/admin/support/status')?'active':''; ?>">Server Status</a>
 </div>
-<div class="nav-section">
+
+<div class="nav-section" data-section="billing">
 <div class="nav-label">Billing</div>
-<a href="/admin/billing">Billing Dashboard</a>
-<a href="/admin/billing/products">Products</a>
-<a href="/admin/billing/orders">Orders</a>
-<a href="/admin/billing/services">Services</a>
-<a href="/admin/billing/invoices">Invoices</a>
+<a href="/admin/billing" class="<?php echo str_contains($currentUrl,'/admin/billing') && !str_contains($currentUrl,'/admin/billing/')?'active':''; ?>">Billing Dashboard</a>
+<a href="/admin/billing/products" class="<?php echo str_contains($currentUrl,'/admin/billing/products')?'active':''; ?>">Products</a>
+<a href="/admin/billing/orders" class="<?php echo str_contains($currentUrl,'/admin/billing/orders')?'active':''; ?>">Orders</a>
+<a href="/admin/billing/services" class="<?php echo str_contains($currentUrl,'/admin/billing/services')?'active':''; ?>">Services</a>
+<a href="/admin/billing/invoices" class="<?php echo str_contains($currentUrl,'/admin/billing/invoices')?'active':''; ?>">Invoices</a>
 </div>
-<div class="nav-section">
+
+<div class="nav-section" data-section="system">
 <div class="nav-label">System</div>
-<a href="/admin/backup">Backups</a>
-<a href="/admin/monitoring">Monitoring</a>
-<a href="/admin/apache">Apache</a>
-<a href="/admin/php">PHP</a>
-<a href="/admin/plugins">Plugins</a>
-<a href="/admin/security">Security Center</a>
-<a href="/admin/twofactor">Two-Factor Auth</a>
-<a href="/admin/roles">Super Admins & Roles</a>
-<a href="/admin/api">API Keys</a>
-<a href="/admin/api/permissions">API Permissions</a>
-<a href="/admin/api/webhooks">API Webhooks</a>
-<a href="/admin/api/docs">API Docs</a>
-<a href="/admin/api/rate-limits">Rate Limits</a>
-<a href="/admin/cron">Cron</a>
-<a href="/admin/settings">Settings</a>
-<a href="/admin/licensing">Licensing</a>
-<a href="/admin/paypal/settings">PayPal</a>
-<a href="/admin/todo">ToDo List</a>
-<a href="/admin/automation">Automation</a>
+<a href="/admin/backup" class="<?php echo str_contains($currentUrl,'/admin/backup')?'active':''; ?>">Backups</a>
+<a href="/admin/apache" class="<?php echo str_contains($currentUrl,'/admin/apache')?'active':''; ?>">Apache</a>
+<a href="/admin/php" class="<?php echo str_contains($currentUrl,'/admin/php')?'active':''; ?>">PHP Manager</a>
+<a href="/admin/plugins" class="<?php echo str_contains($currentUrl,'/admin/plugins')?'active':''; ?>">Plugins</a>
+<a href="/admin/cron" class="<?php echo str_contains($currentUrl,'/admin/cron')?'active':''; ?>">Cron</a>
+<a href="/admin/automation" class="<?php echo str_contains($currentUrl,'/admin/automation')?'active':''; ?>">Automation</a>
+<a href="/admin/settings" class="<?php echo str_contains($currentUrl,'/admin/settings')?'active':''; ?>">Settings</a>
+<a href="/admin/licensing" class="<?php echo str_contains($currentUrl,'/admin/licensing')?'active':''; ?>">Licensing</a>
+<a href="/admin/todo" class="<?php echo str_contains($currentUrl,'/admin/todo')?'active':''; ?>">ToDo List</a>
 </div>
-<div class="nav-section" style="margin-top:24px;border-top:1px solid rgba(255,255,255,.06);padding-top:16px">
+
+<div class="nav-section" data-section="api">
+<div class="nav-label">API</div>
+<a href="/admin/api" class="<?php echo str_contains($currentUrl,'/admin/api') && !str_contains($currentUrl,'/admin/api/')?'active':''; ?>">API Keys</a>
+<a href="/admin/api/permissions" class="<?php echo str_contains($currentUrl,'/admin/api/permissions')?'active':''; ?>">Permissions</a>
+<a href="/admin/api/webhooks" class="<?php echo str_contains($currentUrl,'/admin/api/webhooks')?'active':''; ?>">Webhooks</a>
+<a href="/admin/api/docs" class="<?php echo str_contains($currentUrl,'/admin/api/docs')?'active':''; ?>">API Docs</a>
+<a href="/admin/api/rate-limits" class="<?php echo str_contains($currentUrl,'/admin/api/rate-limits')?'active':''; ?>">Rate Limits</a>
+<a href="/admin/paypal/settings" class="<?php echo str_contains($currentUrl,'/admin/paypal')?'active':''; ?>">PayPal</a>
+</div>
+
+<div class="nav-section" data-section="logout" style="margin-top:24px;border-top:1px solid rgba(255,255,255,.06);padding-top:16px">
 <a href="/admin/logout" style="color:#ff6b6b">Logout</a>
 </div>
 </div>
+
 <div class="main">
 <div class="topbar">
 <h1><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></h1>
@@ -145,13 +164,39 @@ if (class_exists('\\Core\\License')) {
 <div class="footer-logo">PLANET-<span>HOSTS</span></div>
 <p>Building the future of hosting infrastructure.</p>
 <div class="footer-links">
-<a href="#">Terms</a>
-<a href="#">Privacy</a>
-<a href="#">Support</a>
-<a href="#">API</a>
+<a href="#">Terms</a><a href="#">Privacy</a><a href="#">Support</a><a href="#">API</a>
 </div>
 <div class="copyright">&copy; 2026 Planet-Hosts. All rights reserved.</div>
 </div>
 </footer>
+
+<script>
+// Toggleable nav sections
+document.querySelectorAll('.nav-label').forEach(function(label) {
+    label.addEventListener('click', function() {
+        var section = this.closest('.nav-section');
+        if (section) section.classList.toggle('collapsed');
+    });
+});
+
+// Active menu tracking - highlight current page
+(function() {
+    var current = '<?php echo addslashes($currentUrl); ?>';
+    document.querySelectorAll('.sidebar a').forEach(function(a) {
+        var href = a.getAttribute('href');
+        if (href && current.indexOf(href) === 0) {
+            a.classList.add('active');
+        }
+    });
+})();
+
+// Collapse sections with no active items, expand sections with active items
+document.querySelectorAll('.nav-section').forEach(function(section) {
+    var hasActive = section.querySelector('a.active');
+    if (!hasActive) {
+        section.classList.add('collapsed');
+    }
+});
+</script>
 </body>
 </html>

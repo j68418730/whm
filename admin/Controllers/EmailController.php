@@ -1,59 +1,34 @@
 <?php
-/**
- * Email Administration Controller
- * Handles email server management, mail queue, spam filtering, etc.
- */
 
 namespace Admin\Controllers;
 
 use Core\Controller;
-use Core\Auth;
-use Core\Request;
-use Core\Response;
-use Core\View;
 
 class EmailController extends Controller
 {
-    protected $auth;
-    protected $request;
-    protected $response;
+    protected $auth, $request, $response, $db;
 
     public function __construct()
     {
-        $this->auth = \Core\Application::getInstance()->get('auth');
-        $this->request = \Core\Application::getInstance()->get('request');
-        $this->response = \Core\Application::getInstance()->get('response');
+        $app = \Core\Application::getInstance();
+        $this->auth = $app->get('auth');
+        $this->request = $app->get('request');
+        $this->response = $app->get('response');
+        $this->db = $app->get('db');
     }
 
-    /**
-     * Show email administration dashboard
-     */
     public function index()
     {
-        // Check if user is logged in and is admin
-        if (!$this->auth->check() || !$this->auth->isAdmin()) {
-            $this->response->redirect('/admin/login');
-            exit;
-        }
-
-        // Get admin user info
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-
-        $emailStats = [
-            'total_email_accounts' => 0,
-            'active_email_accounts' => 0,
-            'mail_queue_size' => 0,
-            'spam_blocked_today' => 0,
-        ];
-
-        // Get admin theme settings
-        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-
-        // Render the email administration view
+        $accounts = $this->db->table('mail_accounts')->get() ?: [];
+        $queueSize = trim(shell_exec('mailq 2>/dev/null | tail -1 | awk "{print \$5}"') ?: '0');
+        $postfix = trim(shell_exec('systemctl is-active postfix 2>/dev/null') ?: 'unknown');
+        $dovecot = trim(shell_exec('systemctl is-active dovecot 2>/dev/null') ?: 'unknown');
         return $this->view('admin.email.index', [
-            'user' => $user,
-            'emailStats' => $emailStats,
-            'theme_settings' => $theme_settings
+            'user' => $user, 'title' => 'Email', 'accounts' => $accounts,
+            'emailStats' => ['total_accounts' => count($accounts), 'queue_size' => $queueSize, 'postfix' => $postfix, 'dovecot' => $dovecot],
+            'theme_settings' => json_decode($user->theme_settings ?? '{}', true),
         ]);
     }
 }
