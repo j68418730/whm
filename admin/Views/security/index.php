@@ -22,8 +22,10 @@
 <span style="font-size:20px">👥</span><div><strong style="color:#fff">User Roles</strong><br><span style="font-size:12px;color:var(--text-secondary)">Role & permission management</span></div></a>
 <a href="/admin/settings/security" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:var(--text-table);text-decoration:none;border-right:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04);transition:.15s">
 <span style="font-size:20px">⚙️</span><div><strong style="color:#fff">Security Settings</strong><br><span style="font-size:12px;color:var(--text-secondary)">Password policy, session config</span></div></a>
-<a href="/admin/network" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:var(--text-table);text-decoration:none;border-bottom:1px solid rgba(255,255,255,.04);transition:.15s">
+<a href="/admin/network" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:var(--text-table);text-decoration:none;border-right:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04);transition:.15s">
 <span style="font-size:20px">🖧</span><div><strong style="color:#fff">IP & Nameservers</strong><br><span style="font-size:12px;color:var(--text-secondary)">Server IPs, nameserver config</span></div></a>
+<a href="/admin/firewall" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:var(--text-table);text-decoration:none;border-bottom:1px solid rgba(255,255,255,.04);transition:.15s">
+<span style="font-size:20px">🛡️</span><div><strong style="color:#fff">Firewall Manager</strong><br><span style="font-size:12px;color:var(--text-secondary)">Ports, IP whitelist, fail2ban, modsecurity</span></div></a>
 </div>
 </td></tr></table>
 </div>
