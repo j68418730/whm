@@ -75,6 +75,16 @@ class AuthController extends Controller
             exit;
         }
 
+        // Render login view directly WITHOUT admin layout wrapping
+        $viewFile = BASE_PATH . '/admin/Views/auth/login.php';
+        if (is_file($viewFile)) {
+            ob_start();
+            require $viewFile;
+            $content = ob_get_clean();
+            $this->response->setContent($content);
+            $this->response->send();
+            exit;
+        }
         return $this->view('admin.auth.login');
     }
 
