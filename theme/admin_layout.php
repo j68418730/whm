@@ -22,7 +22,7 @@ try {
         }
     }
 } catch (\Exception $e) {}
-$themeFile = "/theme/themes/{$activeTheme}.css";
+$themeFile = "/theme/themes/{$activeTheme}/style.css";
 $customCss = $ts['custom_css'] ?? '';
 $footerText = $ts['footer_text'] ?? 'Building the future of hosting infrastructure.';
 $footerLogo = $ts['footer_logo_url'] ?? '/theme/assets/img/logo.png';
