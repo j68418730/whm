@@ -91,6 +91,7 @@ $title = isset($title) ? $title : 'Dashboard';
 <a href="/admin/api/docs">API Docs</a>
 <a href="/admin/api/rate-limits">Rate Limits</a>
 <a href="/admin/cron">Cron</a>
+<a href="/admin/settings">Settings</a>
 <a href="/admin/todo">ToDo List</a>
 <a href="/admin/automation">Automation</a>
 </div>
