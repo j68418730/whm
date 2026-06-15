@@ -9,7 +9,7 @@
 <a href="/admin/ssl" class="action-card"><div class="icon">🔒</div><div class="name">SSL/TLS</div></a>
 <a href="/admin/ssl/autossl" class="action-card"><div class="icon">🔄</div><div class="name">AutoSSL</div></a>
 <a href="/admin/twofactor" class="action-card"><div class="icon">🔐</div><div class="name">Two-Factor Auth</div></a>
-<a href="/admin/network" class="action-card"><div class="icon">🌐</div><div class="name">IP Blocker</div></a>
+<a href="/admin/ipblocker" class="action-card"><div class="icon">🌐</div><div class="name">IP Blocker</div></a>
 <a href="/admin/roles" class="action-card"><div class="icon">👥</div><div class="name">User Roles</div></a>
 <a href="/admin/settings/security" class="action-card"><div class="icon">⚙️</div><div class="name">Security Settings</div></a>
 </div>
