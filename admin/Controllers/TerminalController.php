@@ -30,12 +30,14 @@ class TerminalController extends Controller
 
     public function exec()
     {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->json(['error' => 'Unauthorized']); exit; }
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->json(['error' => 'Unauthorized']); $this->response->send(); exit; }
         $cmd = $this->request->post('command', '');
-        if (empty($cmd)) { $this->response->json(['output' => '']); exit; }
+        if (empty($cmd)) { $this->response->json(['output' => '']); $this->response->send(); exit; }
         $output = '';
         $returnVar = 0;
         exec(escapeshellcmd($cmd) . ' 2>&1', $output, $returnVar);
         $this->response->json(['output' => implode("\n", $output), 'code' => $returnVar]);
+        $this->response->send();
+        exit;
     }
 }
