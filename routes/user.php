@@ -72,3 +72,10 @@ $router->get('/user/apps/python/start/{id}', 'User\Controllers\AppsController@py
 $router->get('/user/apps/python/stop/{id}', 'User\Controllers\AppsController@pythonStop');
 $router->get('/user/apps/python/delete/{id}', 'User\Controllers\AppsController@pythonDelete');
 $router->get('/admin/ssl/autossl-run', 'Admin\Controllers\SslController@autosslRun');
+// Reseller portal routes
+$router->get('/reseller', 'User\Controllers\ResellerPortalController@dashboard');
+$router->get('/reseller/clients', 'User\Controllers\ResellerPortalController@clients');
+$router->get('/reseller/packages', 'User\Controllers\ResellerPortalController@packages');
+$router->get('/reseller/branding', 'User\Controllers\ResellerPortalController@branding');
+$router->get('/reseller/billing', 'User\Controllers\ResellerPortalController@billing');
+$router->get('/reseller/support', 'User\Controllers\ResellerPortalController@support');
