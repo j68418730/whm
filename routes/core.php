@@ -226,6 +226,21 @@ $router->post('/admin/support/announcements/store', 'Admin\Controllers\SupportCo
 $router->get('/admin/support/announcements/delete/{id}', 'Admin\Controllers\SupportController@announcementDelete');
 $router->get('/admin/support/status', 'Admin\Controllers\SupportController@serverStatus');
 
+// -- Settings routes --
+$router->get('/admin/settings', 'Admin\Controllers\SettingsController@index');
+$router->get('/admin/settings/general', 'Admin\Controllers\SettingsController@general');
+$router->post('/admin/settings/general/save', 'Admin\Controllers\SettingsController@generalSave');
+$router->get('/admin/settings/company', 'Admin\Controllers\SettingsController@company');
+$router->post('/admin/settings/company/save', 'Admin\Controllers\SettingsController@companySave');
+$router->get('/admin/settings/smtp', 'Admin\Controllers\SettingsController@smtp');
+$router->post('/admin/settings/smtp/save', 'Admin\Controllers\SettingsController@smtpSave');
+$router->get('/admin/settings/security', 'Admin\Controllers\SettingsController@security');
+$router->post('/admin/settings/security/save', 'Admin\Controllers\SettingsController@securitySave');
+$router->get('/admin/settings/api', 'Admin\Controllers\SettingsController@api');
+$router->post('/admin/settings/api/save', 'Admin\Controllers\SettingsController@apiSave');
+$router->get('/admin/settings/localization', 'Admin\Controllers\SettingsController@localization');
+$router->post('/admin/settings/localization/save', 'Admin\Controllers\SettingsController@localizationSave');
+
 // -- Automation routes --
 $router->get('/admin/automation', 'Admin\Controllers\AutomationController@index');
 $router->post('/admin/automation/save', 'Admin\Controllers\AutomationController@save');
