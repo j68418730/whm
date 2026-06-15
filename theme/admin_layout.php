@@ -17,15 +17,7 @@ $currentUrl = $_SERVER['REQUEST_URI'] ?? '';
 .sidebar{position:fixed;left:0;top:80px;height:calc(100vh - 80px);z-index:998;transform:translateX(0);transition:transform .3s}
 .sidebar.closed{transform:translateX(-105%)}
 }
-.nav-label{cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px}
-.nav-label::before{content:'▾';font-size:10px;transition:transform .2s}
-.nav-label.collapsed::before{content:'▸'}
-.nav-section.collapsed .nav-label::before{content:'▸'}
-.nav-section.collapsed .nav-label + a,.nav-section.collapsed a{display:none}
-.nav-section.collapsed .nav-label{display:flex}
 .nav-section a.active{background:rgba(0,191,255,.15);color:#00bfff;border-left:3px solid #008cff}
-.nav-section a{padding-left:14px}
-.nav-section a.active{padding-left:11px}
 </style>
 </head>
 <body>
@@ -172,14 +164,6 @@ if (class_exists('\\Core\\License')) {
 </footer>
 
 <script>
-// Toggleable nav sections
-document.querySelectorAll('.nav-label').forEach(function(label) {
-    label.addEventListener('click', function() {
-        var section = this.closest('.nav-section');
-        if (section) section.classList.toggle('collapsed');
-    });
-});
-
 // Active menu tracking - highlight current page
 (function() {
     var current = '<?php echo addslashes($currentUrl); ?>';
@@ -190,14 +174,6 @@ document.querySelectorAll('.nav-label').forEach(function(label) {
         }
     });
 })();
-
-// Collapse sections with no active items, expand sections with active items
-document.querySelectorAll('.nav-section').forEach(function(section) {
-    var hasActive = section.querySelector('a.active');
-    if (!hasActive) {
-        section.classList.add('collapsed');
-    }
-});
 </script>
 </body>
 </html>
