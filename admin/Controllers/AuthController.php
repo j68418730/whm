@@ -99,6 +99,16 @@ class AuthController extends Controller
         ];
 
         if ($this->auth->attempt($credentials)) {
+            if ($this->request->post('remember')) {
+                // Set remember me cookie (30 days)
+                $token = bin2hex(random_bytes(32));
+                $userId = $this->auth->user()->id;
+                $this->db->table('admins')->where('id', $userId)->update(['remember_token' => $token]);
+                setcookie('remember_token', $token, time() + 86400 * 30, '/', '', false, true);
+                // Also extend session lifetime
+                ini_set('session.gc_maxlifetime', 86400 * 30);
+                setcookie(session_name(), session_id(), time() + 86400 * 30, '/');
+            }
             $this->response->redirect('/admin/dashboard');
             exit;
         } else {
