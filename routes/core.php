@@ -130,7 +130,11 @@ $router->get('/api/packages', 'Admin\Controllers\PackageController@apiList');
 $router->get('/api/icon', 'Admin\Controllers\IconController@generate');
 
 // -- Reseller sub-routes --
-$router->get('/admin/reseller/create', 'Admin\Controllers\ResellerController@index');
+$router->get('/admin/reseller/create', 'Admin\Controllers\ResellerController@create');
+$router->post('/admin/reseller/store', 'Admin\Controllers\ResellerController@store');
+$router->get('/admin/reseller/{id}', 'Admin\Controllers\ResellerController@show');
+$router->get('/admin/reseller/edit/{id}', 'Admin\Controllers\ResellerController@edit');
+$router->post('/admin/reseller/update/{id}', 'Admin\Controllers\ResellerController@update');
 
 // -- DNS sub-routes --
 $router->get('/admin/dns/create-zone', 'Admin\Controllers\DnsController@index');
