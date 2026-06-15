@@ -1,63 +1,33 @@
 <?php
-/**
- * User Feature Management Controller
- * Handles enabling/disabling features for user accounts: Email, FTP, Cron, SSH, SSL, Databases, DNS, Git
- */
 
 namespace Admin\Controllers;
 
 use Core\Controller;
-use Core\Auth;
-use Core\Request;
-use Core\Response;
-use Core\View;
 
 class UserFeaturesController extends Controller
 {
-    protected $auth;
-    protected $request;
-    protected $response;
+    protected $auth, $request, $response, $db;
 
     public function __construct()
     {
-        $this->auth = \Core\Application::getInstance()->get('auth');
-        $this->request = \Core\Application::getInstance()->get('request');
-        $this->response = \Core\Application::getInstance()->get('response');
+        $app = \Core\Application::getInstance();
+        $this->auth = $app->get('auth');
+        $this->request = $app->get('request');
+        $this->response = $app->get('response');
+        $this->db = $app->get('db');
     }
 
-    /**
-     * Show user feature management dashboard
-     */
     public function index()
     {
-        // Check if user is logged in and is admin
-        if (!$this->auth->check() || !$this->auth->isAdmin()) {
-            $this->response->redirect('/admin/login');
-            exit;
-        }
-
-        // Get admin user info
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-
-        $userFeaturesStats = [
-            'email_enabled' => 'disabled',
-            'ftp_enabled' => 'disabled',
-            'cron_enabled' => 'disabled',
-            'ssh_enabled' => 'disabled',
-            'ssl_enabled' => 'disabled',
-            'databases_enabled' => 'disabled',
-            'dns_enabled' => 'disabled',
-            'git_enabled' => 'disabled',
-        ];
-
-        // Get admin theme settings
-        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-
-        // Render the user feature management view
+        $packages = $this->db->table('hosting_packages')->get() ?: [];
+        $features = ['email','ftp','cron','ssh','ssl','databases','dns','git'];
+        $featureLabels = ['email'=>'Email Accounts','ftp'=>'FTP Accounts','cron'=>'Cron Jobs','ssh'=>'SSH Access','ssl'=>'SSL/TLS','databases'=>'Databases','dns'=>'DNS Management','git'=>'Git Deployment'];
         return $this->view('admin.userfeatures.index', [
-            'user' => $user,
-            'userFeaturesStats' => $userFeaturesStats,
-            'theme_settings' => $theme_settings
+            'user' => $user, 'title' => 'Feature Manager', 'packages' => $packages,
+            'features' => $features, 'featureLabels' => $featureLabels,
+            'theme_settings' => json_decode($user->theme_settings ?? '{}', true),
         ]);
     }
 }

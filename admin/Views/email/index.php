@@ -1,34 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email - Radio Hosting Panel</title>
-    <link rel="stylesheet" href="/css/admin.css">
-</head>
-<body class="whm-body">
-    <main class="whm-shell">
-        <aside class="whm-sidebar">
-            <div class="brand"><span class="brand-mark">S</span><div><strong>Spectre WHM</strong><small>Hosting + Radio</small></div></div>
-            <a href="/admin/dashboard">Dashboard</a>
-            <a href="/admin/account">Account Functions</a>
-            <a href="/admin/reseller">Reseller Center</a>
-            <a href="/admin/packages">Packages</a>
-            <a href="/admin/streams">Radio Streams</a>
-            <a href="/admin/radio_dashboard">Radio Dashboard</a>
-            <a href="/admin/server">Server Overview</a>
-        </aside>
-        <section class="whm-content">
-            <div class="module-header">
-                <span class="eyebrow">WHM Module</span>
-                <h1>Email</h1>
-                <p>Manage email configuration and settings from this panel.</p>
-            </div>
-            <div class="card-grid">
-                <article class="module-card"><h3>Overview</h3><p>This module provides full email management capabilities.</p></article>
-                <article class="module-card"><h3>Configuration</h3><p>Configure and customize email settings for your hosting environment.</p></article>
-            </div>
-        </section>
-    </main>
-</body>
-</html>
+<div class="stats-grid" style="margin-bottom:20px">
+<div class="stat-card"><h3>Mail Accounts</h3><div class="value"><?php echo $emailStats['total_accounts']; ?></div></div>
+<div class="stat-card"><h3>Queue Size</h3><div class="value" style="font-size:20px"><?php echo $emailStats['queue_size']; ?></div></div>
+<div class="stat-card"><h3>Postfix</h3><div class="value" style="font-size:16px;color:<?php echo $emailStats['postfix'] === 'active' ? '#4ade80' : '#f87171'; ?>"><?php echo $emailStats['postfix']; ?></div></div>
+<div class="stat-card"><h3>Dovecot</h3><div class="value" style="font-size:16px;color:<?php echo $emailStats['dovecot'] === 'active' ? '#4ade80' : '#f87171'; ?>"><?php echo $emailStats['dovecot']; ?></div></div>
+</div>
+<div class="page-grid" style="margin-bottom:20px">
+<a href="/admin/email" class="action-card"><div class="icon">📧</div><div class="name">Email Accounts</div></a>
+<a href="/admin/email" class="action-card"><div class="icon">📨</div><div class="name">Mail Queue</div></a>
+<a href="/admin/email" class="action-card"><div class="icon">🛡️</div><div class="name">Spam Filters</div></a>
+</div>
+<div class="card"><h3 style="color:var(--accent);margin-bottom:12px">Email Accounts</h3>
+<table><tr><th>Email</th><th>Domain</th><th>Status</th></tr>
+<?php if (!empty($accounts)): foreach ($accounts as $a): ?>
+<tr><td><?php echo htmlspecialchars($a->email ?? $a->username . '@' . $a->domain); ?></td>
+<td><?php echo htmlspecialchars($a->domain ?? '-'); ?></td>
+<td><span class="status-badge status-<?php echo ($a->is_active ?? 1) ? 'active' : 'terminated'; ?>"><?php echo ($a->is_active ?? 1) ? 'Active' : 'Inactive'; ?></span></td></tr>
+<?php endforeach; else: ?><tr><td colspan="3" style="text-align:center;padding:20px;color:#64748b">No mail accounts.</td></tr>
+<?php endif; ?></table></div>

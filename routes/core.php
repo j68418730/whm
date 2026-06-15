@@ -46,6 +46,9 @@ $router->get('/admin/monitoring', 'Admin\Controllers\MonitoringController@index'
 $router->get('/admin/php/install/{ext}', 'Admin\Controllers\PhpController@install');
 $router->get('/admin/plugins', 'Admin\Controllers\PluginsController@index');
 $router->get('/admin/plugins/toggle/{id}', 'Admin\Controllers\PluginsController@toggle');
+$router->post('/admin/plugins/upload', 'Admin\Controllers\PluginsController@upload');
+$router->post('/admin/plugins/install', 'Admin\Controllers\PluginsController@install');
+$router->get('/admin/plugins/uninstall/{id}', 'Admin\Controllers\PluginsController@uninstall');
 $router->post('/admin/cron', 'Admin\Controllers\CronController@store');
 $router->get('/admin/cron/delete/{id}', 'Admin\Controllers\CronController@destroy');
 $router->get('/admin/software', 'Admin\Controllers\SoftwareController@index');
