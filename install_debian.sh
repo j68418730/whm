@@ -102,11 +102,38 @@ chmod 600 "$PANEL_DIR/.env"
 # Add username column if missing
 mysql -u root radiohosting -e "ALTER TABLE admins ADD COLUMN username VARCHAR(50) DEFAULT '' AFTER id;" 2>/dev/null || true
 
-# 8. License + admin user
-echo "[8/8] Generating license..."
-sed -i 's/\r$//' "$SCRIPT_DIR/keygen.sh" 2>/dev/null || true
-cd "$SCRIPT_DIR" && bash keygen.sh --auto 2>/dev/null
-[ -f "$SCRIPT_DIR/license.key" ] && cp "$SCRIPT_DIR/license.key" "$PANEL_DIR/license.key" 2>/dev/null || true
+# 8. License activation
+echo "[8/8] License activation..."
+if [ -f "$SCRIPT_DIR/license.key" ]; then
+    cp "$SCRIPT_DIR/license.key" "$PANEL_DIR/license.key"
+    echo "License key found and installed."
+else
+    echo ""
+    echo "=============================================="
+    echo " LICENSE REQUIRED"
+    echo "=============================================="
+    echo " This panel requires a license key to operate."
+    echo " To obtain a license key, email:"
+    echo ""
+    echo "   nd2no_19@hotmail.com"
+    echo ""
+    echo " Include your server IP ($SERVER_IP) in the email."
+    echo " Place the received license.key file in this"
+    echo " directory and re-run this installer, or"
+    echo " paste it below."
+    echo "=============================================="
+    echo ""
+    echo "You can also continue without a license (unlicensed mode)."
+    echo ""
+    read -t 30 -p "Paste license key (or press Enter to skip): " LICENSE_CONTENT
+    if [ -n "$LICENSE_CONTENT" ]; then
+        echo "$LICENSE_CONTENT" > "$PANEL_DIR/license.key"
+        echo "License key saved."
+    else
+        echo "Skipping license activation."
+    fi
+fi
+# Always install the public key for validation
 [ -f "$SCRIPT_DIR/config/license_public.pem" ] && cp "$SCRIPT_DIR/config/license_public.pem" "$PANEL_DIR/config/license_public.pem" 2>/dev/null || true
 
 # Set admin: username=root, password=ADMIN_PASS
