@@ -81,6 +81,7 @@ if (class_exists('\\Core\\License')) {
 <a href="/admin/email" class="<?php echo str_contains($currentUrl,'/admin/email')?'active':''; ?>">Email</a>
 <a href="/admin/mysql" class="<?php echo str_contains($currentUrl,'/admin/mysql')?'active':''; ?>">Databases</a>
 <a href="/admin/ftp" class="<?php echo str_contains($currentUrl,'/admin/ftp')?'active':''; ?>">FTP</a>
+<a href="/admin/network" class="<?php echo str_contains($currentUrl,'/admin/network')?'active':''; ?>">IP & Nameservers</a>
 </div>
 
 <div class="nav-section" data-section="security">
