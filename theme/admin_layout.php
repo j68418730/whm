@@ -9,12 +9,12 @@ $currentUrl = $_SERVER['REQUEST_URI'] ?? '';
 <title><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?> - Planet Hosts</title>
 <link rel="stylesheet" href="/theme/assets/css/style.css">
 <style>
-.sidebar-toggle{position:fixed;top:70px;left:10px;z-index:999;background:linear-gradient(135deg,#008cff,#3bb8ff);border:none;color:#fff;width:40px;height:40px;border-radius:8px;cursor:pointer;font-size:20px;display:none;align-items:center;justify-content:center;box-shadow:0 0 15px rgba(0,140,255,.3)}
+.sidebar-toggle{position:fixed;top:10px;left:10px;z-index:999;background:linear-gradient(135deg,#008cff,#3bb8ff);border:none;color:#fff;width:40px;height:40px;border-radius:8px;cursor:pointer;font-size:20px;display:none;align-items:center;justify-content:center;box-shadow:0 0 15px rgba(0,140,255,.3)}
 .sidebar-toggle:hover{transform:scale(1.05)}
 @media(max-width:900px){
 .sidebar-toggle{display:flex}
 .admin-shell{grid-template-columns:1fr}
-.sidebar{position:fixed;left:0;top:80px;height:calc(100vh - 80px);z-index:998;transform:translateX(0);transition:transform .3s}
+.sidebar{position:fixed;left:0;top:0;height:100vh;z-index:998;transform:translateX(0);transition:transform .3s}
 .sidebar.closed{transform:translateX(-105%)}
 }
 .nav-section a.active{background:rgba(0,191,255,.15);color:#00bfff;border-left:3px solid #008cff}
@@ -23,19 +23,6 @@ $currentUrl = $_SERVER['REQUEST_URI'] ?? '';
 <body>
 <div class="bg-overlay"></div>
 <div class="grid-overlay"></div>
-
-<header class="header">
-<div class="container nav" style="justify-content:center">
-<nav>
-<a href="/">Home</a>
-<a href="/admin/dashboard">Dashboard</a>
-<a href="/admin/server">Server</a>
-<?php if ($user): ?>
-<a href="/admin/logout" style="color:#ff6b6b">Logout</a>
-<?php endif; ?>
-</nav>
-</div>
-</header>
 
 <?php
 $licenseStatus = null; $licenseDaysLeft = 0;
