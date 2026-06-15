@@ -29,3 +29,29 @@ if (!function_exists('now')) {
         return date('Y-m-d H:i:s');
     }
 }
+
+if (!function_exists('license_check')) {
+    function license_check($feature = null)
+    {
+        static $license = null;
+        if ($license === null) {
+            $license = new \Core\License(BASE_PATH);
+        }
+        if ($feature === null) {
+            return $license->verify();
+        }
+        return $license->hasFeature($feature);
+    }
+}
+
+if (!function_exists('server_hw_id')) {
+    function server_hw_id()
+    {
+        $parts = [];
+        $parts[] = @file_get_contents('/etc/machine-id') ?: '';
+        $parts[] = trim(shell_exec('hostname 2>/dev/null') ?: '');
+        $parts[] = trim(shell_exec("cat /sys/class/net/$(ip route show default | awk '{print $5}' 2>/dev/null)/address 2>/dev/null") ?: '');
+        $parts[] = $_SERVER['SERVER_ADDR'] ?? '127.0.0.1';
+        return sha1(implode('|', array_filter($parts)));
+    }
+}

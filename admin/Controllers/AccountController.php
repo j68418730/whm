@@ -26,6 +26,7 @@ class AccountController extends Controller
             $this->response->redirect('/admin/login');
             exit;
         }
+        license_check('accounts');
         $user = $this->auth->user();
         $accounts = $this->db->table('hosting_users')->get();
         $packages = $this->db->table('hosting_packages')->get();

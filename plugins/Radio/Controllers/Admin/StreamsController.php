@@ -20,6 +20,7 @@ class StreamsController extends Controller
     public function index()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        license_check('radio');
         $user = $this->auth->user();
         $streams = $this->db->table('radio_streams')->get() ?: [];
         $total = count($streams);
