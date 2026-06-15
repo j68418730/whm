@@ -1,34 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Branding - Radio Hosting Panel</title>
-    <link rel="stylesheet" href="/css/admin.css">
-</head>
-<body class="whm-body">
-    <main class="whm-shell">
-        <aside class="whm-sidebar">
-            <div class="brand"><span class="brand-mark">S</span><div><strong>Spectre WHM</strong><small>Hosting + Radio</small></div></div>
-            <a href="/admin/dashboard">Dashboard</a>
-            <a href="/admin/account">Account Functions</a>
-            <a href="/admin/reseller">Reseller Center</a>
-            <a href="/admin/packages">Packages</a>
-            <a href="/admin/streams">Radio Streams</a>
-            <a href="/admin/radio_dashboard">Radio Dashboard</a>
-            <a href="/admin/server">Server Overview</a>
-        </aside>
-        <section class="whm-content">
-            <div class="module-header">
-                <span class="eyebrow">WHM Module</span>
-                <h1>Branding</h1>
-                <p>Manage branding configuration and settings from this panel.</p>
-            </div>
-            <div class="card-grid">
-                <article class="module-card"><h3>Overview</h3><p>This module provides full branding management capabilities.</p></article>
-                <article class="module-card"><h3>Configuration</h3><p>Configure and customize branding settings for your hosting environment.</p></article>
-            </div>
-        </section>
-    </main>
-</body>
-</html>
+<?php if (isset($_SESSION['success_message'])): ?>
+<div class="alert alert-success"><?php echo htmlspecialchars($_SESSION['success_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['success_message']); ?></div>
+<?php endif; ?>
+<div class="card" style="max-width:500px">
+<form method="POST" action="/admin/branding/save">
+<h3 style="color:var(--accent);margin-bottom:12px">Branding Settings</h3>
+<div class="form-group"><label>Company Name</label><input name="company_name" value="<?php echo htmlspecialchars($company_name); ?>"></div>
+<div class="form-group"><label>Company Email</label><input name="company_email" type="email" value="<?php echo htmlspecialchars($company_email); ?>"></div>
+<div class="form-group"><label>Website</label><input name="company_website" value="<?php echo htmlspecialchars($company_website); ?>"></div>
+<p style="color:var(--text-secondary);font-size:13px;margin-top:12px">Branding settings are used across the panel for company info display.</p>
+<button type="submit" class="btn primary" style="margin-top:12px">Save Branding</button>
+</form></div>

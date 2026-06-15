@@ -1,34 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Git - Radio Hosting Panel</title>
-    <link rel="stylesheet" href="/css/admin.css">
-</head>
-<body class="whm-body">
-    <main class="whm-shell">
-        <aside class="whm-sidebar">
-            <div class="brand"><span class="brand-mark">S</span><div><strong>Spectre WHM</strong><small>Hosting + Radio</small></div></div>
-            <a href="/admin/dashboard">Dashboard</a>
-            <a href="/admin/account">Account Functions</a>
-            <a href="/admin/reseller">Reseller Center</a>
-            <a href="/admin/packages">Packages</a>
-            <a href="/admin/streams">Radio Streams</a>
-            <a href="/admin/radio_dashboard">Radio Dashboard</a>
-            <a href="/admin/server">Server Overview</a>
-        </aside>
-        <section class="whm-content">
-            <div class="module-header">
-                <span class="eyebrow">WHM Module</span>
-                <h1>Git</h1>
-                <p>Manage git configuration and settings from this panel.</p>
-            </div>
-            <div class="card-grid">
-                <article class="module-card"><h3>Overview</h3><p>This module provides full git management capabilities.</p></article>
-                <article class="module-card"><h3>Configuration</h3><p>Configure and customize git settings for your hosting environment.</p></article>
-            </div>
-        </section>
-    </main>
-</body>
-</html>
+<div class="card" style="max-width:600px">
+<h3 style="color:var(--accent);margin-bottom:12px">Git Deployment</h3>
+<p style="color:var(--text-secondary);margin-bottom:8px">Git version: <strong><?php echo htmlspecialchars($gitVer); ?></strong></p>
+<p style="color:var(--text-secondary);font-size:13px;line-height:1.6">Git is available on this server for deployment workflows. Use the terminal to manage repositories, or set up automated deployments from your development workflow.</p>
+<div style="margin-top:16px">
+<a href="/admin/terminal" class="btn primary">Open Terminal</a>
+<a href="/admin/settings" class="btn secondary">Settings</a>
+</div>
+</div>
