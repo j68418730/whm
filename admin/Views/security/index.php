@@ -12,6 +12,7 @@
 <a href="/admin/ipblocker" class="action-card"><div class="icon">🌐</div><div class="name">IP Blocker</div></a>
 <a href="/admin/roles" class="action-card"><div class="icon">👥</div><div class="name">User Roles</div></a>
 <a href="/admin/settings/security" class="action-card"><div class="icon">⚙️</div><div class="name">Security Settings</div></a>
+<a href="/admin/network" class="action-card"><div class="icon">🖧</div><div class="name">IP & Nameservers</div></a>
 </div>
 
 <div class="card" style="margin-bottom:16px"><h3 style="color:var(--accent);margin-bottom:12px">Service Status</h3>

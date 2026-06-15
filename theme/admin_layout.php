@@ -81,18 +81,11 @@ if (class_exists('\\Core\\License')) {
 <a href="/admin/email" class="<?php echo str_contains($currentUrl,'/admin/email')?'active':''; ?>">Email</a>
 <a href="/admin/mysql" class="<?php echo str_contains($currentUrl,'/admin/mysql')?'active':''; ?>">Databases</a>
 <a href="/admin/ftp" class="<?php echo str_contains($currentUrl,'/admin/ftp')?'active':''; ?>">FTP</a>
-<a href="/admin/network" class="<?php echo str_contains($currentUrl,'/admin/network')?'active':''; ?>">IP & Nameservers</a>
 </div>
 
 <div class="nav-section" data-section="security">
 <div class="nav-label">Security</div>
 <a href="/admin/security" class="<?php echo str_contains($currentUrl,'/admin/security')?'active':''; ?>">Security Center</a>
-<a href="/admin/ssl" class="<?php echo str_contains($currentUrl,'/admin/ssl') && !str_contains($currentUrl,'/autossl')?'active':''; ?>">SSL/TLS</a>
-<a href="/admin/ssl/autossl" class="<?php echo str_contains($currentUrl,'/admin/ssl/autossl')?'active':''; ?>">AutoSSL</a>
-<a href="/admin/twofactor" class="<?php echo str_contains($currentUrl,'/admin/twofactor')?'active':''; ?>">Two-Factor Auth</a>
-<a href="/admin/ipblocker" class="<?php echo str_contains($currentUrl,'/admin/ipblocker')?'active':''; ?>">IP Blocker</a>
-<a href="/admin/settings/security" class="<?php echo str_contains($currentUrl,'/admin/settings/security')?'active':''; ?>">Security Settings</a>
-<a href="/admin/roles" class="<?php echo str_contains($currentUrl,'/admin/roles')?'active':''; ?>">User Roles</a>
 </div>
 
 <div class="nav-section" data-section="support">
