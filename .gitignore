@@ -10,3 +10,7 @@ license.key
 
 # Runtime copy of theme in public directory
 public/theme
+
+# Keygen script - developer only, never shipped
+keygen.php
+scripts/keys

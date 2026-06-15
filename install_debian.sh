@@ -102,6 +102,10 @@ chmod 600 "$PANEL_DIR/.env"
 # Add username column if missing
 mysql -u root radiohosting -e "ALTER TABLE admins ADD COLUMN username VARCHAR(50) DEFAULT '' AFTER id;" 2>/dev/null || true
 
+# Create install timestamp for trial
+echo $(date +%s) > "$PANEL_DIR/.installed"
+chmod 644 "$PANEL_DIR/.installed"
+
 # 8. License activation
 echo "[8/8] License activation..."
 if [ -f "$SCRIPT_DIR/license.key" ]; then

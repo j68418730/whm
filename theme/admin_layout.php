@@ -35,6 +35,29 @@ $title = isset($title) ? $title : 'Dashboard';
 </div>
 </header>
 
+<?php
+// License check for banner
+$licenseCheck = null;
+$licenseStatus = null;
+$licenseDaysLeft = 0;
+if (class_exists('\\Core\\License')) {
+    $lic = new \Core\License(BASE_PATH);
+    $licenseCheck = $lic->verify();
+    $licenseStatus = $licenseCheck['valid'] ? 'valid' : ($licenseCheck['trial'] && ($licenseCheck['trial_days_left'] ?? 0) > 0 ? 'trial' : 'locked');
+    $licenseDaysLeft = $licenseCheck['trial_days_left'] ?? 0;
+}
+?>
+<?php if ($licenseStatus === 'trial'): ?>
+<div style="background:linear-gradient(90deg,#facc15,#f59e0b);color:#000;text-align:center;padding:8px 16px;font-size:13px;font-weight:600;position:sticky;top:0;z-index:9999">
+⚠ TRIAL MODE — <?php echo $licenseDaysLeft; ?> day<?php echo $licenseDaysLeft > 1 ? 's' : ''; ?> remaining. 
+<a href="/admin/licensing" style="color:#000;text-decoration:underline;font-weight:700">Activate License</a>
+</div>
+<?php elseif ($licenseStatus === 'locked'): ?>
+<div style="background:linear-gradient(90deg,#ef4444,#dc2626);color:#fff;text-align:center;padding:8px 16px;font-size:13px;font-weight:600;position:sticky;top:0;z-index:9999">
+✗ LICENSE REQUIRED — Some features are locked. 
+<a href="/admin/licensing" style="color:#fff;text-decoration:underline;font-weight:700">Enter License Key</a>
+</div>
+<?php endif; ?>
 <button class="sidebar-toggle" id="sidebarToggle" onclick="document.getElementById('adminSidebar').classList.toggle('closed')">☰</button>
 <div class="admin-shell">
 <div class="sidebar" id="adminSidebar">
