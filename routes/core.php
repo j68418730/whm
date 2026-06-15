@@ -180,6 +180,14 @@ $router->get('/admin/api/radio', 'Admin\Controllers\ApiController@index');
 $router->get('/admin/api/autodj', 'Admin\Controllers\ApiController@index');
 $router->get('/admin/api/whm/settings', 'Admin\Controllers\ApiController@index');
 $router->get('/admin/api/uapi/settings', 'Admin\Controllers\ApiController@index');
+// API extended routes
+$router->get('/admin/api/permissions', 'Admin\Controllers\ApiController@permissions');
+$router->post('/admin/api/permissions/update/{id}', 'Admin\Controllers\ApiController@permissionsUpdate');
+$router->get('/admin/api/webhooks', 'Admin\Controllers\ApiController@webhooks');
+$router->post('/admin/api/webhooks/store', 'Admin\Controllers\ApiController@webhookStore');
+$router->get('/admin/api/webhooks/delete/{id}', 'Admin\Controllers\ApiController@webhookDelete');
+$router->get('/admin/api/docs', 'Admin\Controllers\ApiController@docs');
+$router->get('/admin/api/rate-limits', 'Admin\Controllers\ApiController@rateLimits');
 
 // -- User Features sub-routes --
 $router->get('/admin/userfeatures/toggle/{feature}', 'Admin\Controllers\UserFeaturesController@index');
