@@ -11,7 +11,7 @@
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
 <a href="/user/databases/create" onclick="document.getElementById('newDbForm').style.display='block';return false" class="btn primary">+ New Database</a>
 <a href="/user/databases/user" onclick="document.getElementById('newUserForm').style.display='block';return false" class="btn secondary">+ New User</a>
-<a href="/user/databases/phpmyadmin" class="btn secondary">⚡ phpMyAdmin</a>
+<a href="/pma_signon.php" target="_blank" class="btn primary">🔑 Auto-Login phpMyAdmin</a>
 </div>
 
 <div id="newDbForm" style="display:none" class="card" style="margin-bottom:16px;max-width:400px">
