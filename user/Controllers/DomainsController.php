@@ -6,11 +6,7 @@ use Core\Controller;
 
 class DomainsController extends Controller
 {
-    protected $auth;
-    protected $request;
-    protected $response;
-    protected $db;
-    protected $hostingUser;
+    protected $auth, $request, $response, $db, $dns, $hostingUser;
 
     public function __construct()
     {
@@ -19,6 +15,7 @@ class DomainsController extends Controller
         $this->request = $app->get('request');
         $this->response = $app->get('response');
         $this->db = $app->get('db');
+        $this->dns = new \Admin\Services\DnsManager();
     }
 
     protected function requireUser()
@@ -43,18 +40,8 @@ class DomainsController extends Controller
             $domain = $this->request->post('domain', '');
             $serverIp = $_SERVER['SERVER_ADDR'] ?? '45.61.59.55';
             if ($domain && $this->hostingUser) {
-                $this->db->table('dns_zones')->insertGetId([
-                    'domain' => $domain, 'ns1' => 'ns1.planet-hosts.com', 'ns2' => 'ns2.planet-hosts.com',
-                    'admin_email' => 'admin@' . $domain, 'serial' => date('Ymd') . '01', 'ttl' => 300,
-                ]);
-                $zone = $this->db->table('dns_zones')->where('domain', $domain)->first();
-                if ($zone) {
-                    $this->db->table('dns_records')->insertGetId(['zone_id' => $zone->id, 'name' => '@', 'type' => 'A', 'value' => $serverIp, 'ttl' => 300]);
-                    $this->db->table('dns_records')->insertGetId(['zone_id' => $zone->id, 'name' => 'www', 'type' => 'CNAME', 'value' => $domain, 'ttl' => 300]);
-                    $this->db->table('dns_records')->insertGetId(['zone_id' => $zone->id, 'name' => '@', 'type' => 'NS', 'value' => 'ns1.planet-hosts.com', 'ttl' => 300]);
-                    $this->db->table('dns_records')->insertGetId(['zone_id' => $zone->id, 'name' => '@', 'type' => 'NS', 'value' => 'ns2.planet-hosts.com', 'ttl' => 300]);
-                }
-                $_SESSION['success'] = "Domain {$domain} added.";
+                $zoneId = $this->dns->provisionDomain($domain, $serverIp);
+                $_SESSION['success'] = "Domain {$domain} added with full DNS provisioning (SOA, NS, A, MX, SPF, DKIM, DMARC).";
             }
             $this->response->redirect('/user/domains');
             exit;
@@ -66,30 +53,26 @@ class DomainsController extends Controller
     {
         $u = $this->requireUser();
         $zone = $this->db->table('dns_zones')->where('id', $id)->first();
-        $records = $zone ? ($this->db->table('dns_records')->where('zone_id', $id)->get() ?: []) : [];
+        $records = $zone ? $this->dns->getRecords($id) : [];
         return $this->view('user.zone', ['user' => $u, 'hosting' => $this->hostingUser, 'zone' => $zone, 'records' => $records, 'title' => 'DNS Zone']);
     }
 
     public function addRecord($zoneId)
     {
         $u = $this->requireUser();
-        $this->db->table('dns_records')->insertGetId([
-            'zone_id' => $zoneId, 'name' => $this->request->post('name', '@'),
-            'type' => $this->request->post('type', 'A'), 'value' => $this->request->post('value', ''),
-            'ttl' => (int)$this->request->post('ttl', 300), 'priority' => $this->request->post('priority') ? (int)$this->request->post('priority') : null,
-        ]);
+        $this->dns->addRecord($zoneId, $this->request->post('name', '@'), $this->request->post('type', 'A'),
+            $this->request->post('value', ''), (int)$this->request->post('ttl', 300),
+            $this->request->post('priority') ? (int)$this->request->post('priority') : null);
         $_SESSION['success'] = 'Record added.';
         $this->response->redirect('/user/domains/zone/' . $zoneId);
-        exit;
     }
 
     public function deleteRecord($zoneId, $recordId)
     {
         $u = $this->requireUser();
-        $this->db->table('dns_records')->where('id', $recordId)->delete();
+        $this->dns->deleteRecord($recordId);
         $_SESSION['success'] = 'Record deleted.';
         $this->response->redirect('/user/domains/zone/' . $zoneId);
-        exit;
     }
 
     public function subdomains()
