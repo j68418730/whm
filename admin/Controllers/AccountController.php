@@ -118,26 +118,10 @@ class AccountController extends Controller
             exec("chown -R {$username}:{$username} {$homeDir} 2>/dev/null");
         }
 
-        // Create DNS zone for the domain with configured IP/nameservers
-        $primaryIp = $this->db->table('server_ips')->where('is_active', 1)->first();
-        $ns1 = $primaryIp->ns1 ?? 'ns1.planet-hosts.com';
-        $ns2 = $primaryIp->ns2 ?? 'ns2.planet-hosts.com';
-        $serverIp = $primaryIp->ip_address ?? ($this->request->server('SERVER_ADDR') ?? '127.0.0.1');
-        $dnsZoneId = $this->db->table('dns_zones')->insertGetId([
-            'domain' => $domain,
-            'ns1' => $ns1, 'ns2' => $ns2,
-            'admin_email' => "admin.{$domain}",
-            'serial' => date('Ymd') . '01',
-            'refresh' => 3600, 'retry' => 1800, 'expire' => 86400, 'ttl' => 300,
-        ]);
-        // Add default DNS records
+        // Full DNS provisioning (SOA, NS, A, MX, SPF, DKIM, DMARC)
+        $dns = new \Admin\Services\DnsManager();
         $serverIp = $this->getServerIp();
-        $this->db->table('dns_records')->insertGetId(['zone_id' => $dnsZoneId, 'name' => '@', 'type' => 'A', 'value' => $serverIp, 'ttl' => 300]);
-        $this->db->table('dns_records')->insertGetId(['zone_id' => $dnsZoneId, 'name' => 'www', 'type' => 'CNAME', 'value' => $domain, 'ttl' => 300]);
-        $this->db->table('dns_records')->insertGetId(['zone_id' => $dnsZoneId, 'name' => 'mail', 'type' => 'A', 'value' => $serverIp, 'ttl' => 300]);
-        $this->db->table('dns_records')->insertGetId(['zone_id' => $dnsZoneId, 'name' => '@', 'type' => 'MX', 'value' => 'mail.' . $domain, 'priority' => 10, 'ttl' => 300]);
-        $this->db->table('dns_records')->insertGetId(['zone_id' => $dnsZoneId, 'name' => '@', 'type' => 'NS', 'value' => $ns1, 'ttl' => 300]);
-        $this->db->table('dns_records')->insertGetId(['zone_id' => $dnsZoneId, 'name' => '@', 'type' => 'NS', 'value' => $ns2, 'ttl' => 300]);
+        $dns->provisionDomain($domain, $serverIp, "admin@{$domain}");
 
         // Create Apache virtual host
         $vhost = "<VirtualHost *:80>\n    ServerName {$domain}\n    ServerAlias www.{$domain}\n    DocumentRoot {$homeDir}/public_html\n    CustomLog {$homeDir}/logs/access.log combined\n    ErrorLog {$homeDir}/logs/error.log\n    <Directory {$homeDir}/public_html>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n</VirtualHost>";
