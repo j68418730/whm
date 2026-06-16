@@ -104,7 +104,8 @@ if (class_exists('\\Core\\License')) {
 
 <div class="nav-section" data-section="support">
 <div class="nav-label">Support</div>
-<a href="/admin/support" class="<?php echo str_contains($currentUrl,'/admin/support') && !str_contains($currentUrl,'/admin/support/tickets') && !str_contains($currentUrl,'/admin/support/kb') && !str_contains($currentUrl,'/admin/support/announcements') && !str_contains($currentUrl,'/admin/support/status')?'active':''; ?>">Support Center</a>
+<a href="/admin/support" class="<?php echo str_contains($currentUrl,'/admin/support') && !str_contains($currentUrl,'/admin/support/tickets') && !str_contains($currentUrl,'/admin/support/kb') && !str_contains($currentUrl,'/admin/support/announcements') && !str_contains($currentUrl,'/admin/support/status') && !str_contains($currentUrl,'/admin/livechat')?'active':''; ?>">Support Center</a>
+<a href="/admin/livechat" class="<?php echo str_contains($currentUrl,'/admin/livechat')?'active':''; ?>">Live Chat</a>
 </div>
 
 <div class="nav-section" data-section="billing">
