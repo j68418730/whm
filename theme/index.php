@@ -427,8 +427,9 @@ nav a:hover{
         </p>
 
         <div class="hero-buttons">
-            <a href="?login" class="btn primary">Get Started</a>
-            <a href="?login" class="btn secondary">Admin Login</a>
+            <a href="http://45.61.59.55:2082/" class="btn primary">User Portal</a>
+            <a href="http://45.61.59.55:2087/" class="btn secondary">Admin Login</a>
+            <a href="http://45.61.59.55:2086/" class="btn secondary">Reseller Center</a>
         </div>
 
         <div class="stats">
@@ -497,7 +498,7 @@ $firstTab = true;
 <?php if ($pkg->email_accounts > 0): ?><li>📧 <?php echo $pkg->email_accounts; ?> Email Accounts</li><?php endif; ?>
 <?php if ($pkg->databases > 0): ?><li>🗄 <?php echo $pkg->databases; ?> Databases</li><?php endif; ?>
 </ul>
-<a href="?login" class="btn primary">Get Started</a>
+<a href="http://45.61.59.55:2082/" class="btn primary">Get Started - User Portal</a>
 </div>
 <?php endforeach; ?>
 </div>
