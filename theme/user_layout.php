@@ -4,6 +4,11 @@ $title = isset($title) ? $title : 'User Panel';
 $hostingUser = isset($hosting) ? $hosting : null;
 $username = $hostingUser->username ?? ($userData->name ?? 'User');
 $userEmail = $hostingUser->email ?? ($userData->email ?? '');
+$serverHost = $_SERVER['HTTP_HOST'] ?? 'planet-hosts.com';
+$serverIp = $_SERVER['SERVER_ADDR'] ?? '45.61.59.55';
+$mainDomain = 'planet-hosts.com';
+$userPort = '2082';
+$webmailPort = '2096';
 ?><!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -44,7 +49,7 @@ $userEmail = $hostingUser->email ?? ($userData->email ?? '');
 <div class="nav-group"><div class="label">Home</div><a href="/user">Dashboard</a></div>
 <div class="nav-group"><div class="label">Services</div><a href="/user/services">My Services</a><a href="/user/services/web">Web Hosting</a><a href="/user/services/radio">Radio Hosting</a><a href="/user/services/vps">VPS</a><a href="/user/services/domains">Domains</a></div>
 <div class="nav-group"><div class="label">Domains</div><a href="/user/domains">Domain List</a><a href="/user/domains/add">Add Domain</a><a href="/user/subdomains">Subdomains</a><a href="/user/redirects">Redirects</a></div>
-<div class="nav-group"><div class="label">Email</div><a href="/user/email">Email Accounts</a><a href="<?php echo 'http://' . ($hostingUser->domain ?? 'planet-hosts.com') . '/webmail'; ?>" target="_blank">Webmail</a></div>
+<div class="nav-group"><div class="label">Email</div><a href="/user/email">Email Accounts</a><a href="http://<?php echo $serverHost; ?>:<?php echo $webmailPort; ?>/" target="_blank">Webmail</a></div>
 <div class="nav-group"><div class="label">Management</div><a href="/user/files">File Manager</a><a href="/user/databases">Databases</a><a href="/user/apps/node">Node.js Apps</a><a href="/user/apps/python">Python Apps</a><a href="/user/usage">Resource Usage</a></div>
 <div class="nav-group"><div class="label">Support</div><a href="/user/tickets">Support Tickets</a><a href="/user/invoices">Invoices</a></div>
 <div class="nav-group"><div class="label">Account</div><a href="/user/profile">Profile</a><a href="/user/security">Security</a></div>
