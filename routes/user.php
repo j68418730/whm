@@ -72,6 +72,11 @@ $router->get('/user/apps/python/start/{id}', 'User\Controllers\AppsController@py
 $router->get('/user/apps/python/stop/{id}', 'User\Controllers\AppsController@pythonStop');
 $router->get('/user/apps/python/delete/{id}', 'User\Controllers\AppsController@pythonDelete');
 $router->get('/admin/ssl/autossl-run', 'Admin\Controllers\SslController@autosslRun');
+// Chat routes
+$router->post('/chat/start', 'User\Controllers\ChatController@start');
+$router->get('/chat/poll/{sessionId}', 'User\Controllers\ChatController@poll');
+$router->post('/chat/send', 'User\Controllers\ChatController@send');
+$router->post('/chat/upload/{sessionId}', 'User\Controllers\ChatController@upload');
 // Reseller portal routes
 $router->get('/reseller', 'User\Controllers\ResellerPortalController@dashboard');
 $router->get('/reseller/clients', 'User\Controllers\ResellerPortalController@clients');

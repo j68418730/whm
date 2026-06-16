@@ -584,6 +584,87 @@ function showTab(type) {
     </div>
 </footer>
 
+<!-- Live Chat Widget -->
+<div id="chatWidget" style="position:fixed;bottom:20px;right:20px;z-index:9999">
+<div id="chatBtn" onclick="toggleChat()" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#008cff,#3bb8ff);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(0,140,255,.4);font-size:24px;transition:.2s">💬</div>
+<div id="chatBox" style="display:none;position:fixed;bottom:86px;right:20px;width:360px;height:480px;background:rgba(8,16,28,.98);border:1px solid rgba(0,191,255,.15);border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.5);flex-direction:column">
+<div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center">
+<span style="font-weight:700;color:#fff">Live Chat</span>
+<span onclick="toggleChat()" style="cursor:pointer;color:var(--text-muted)">✕</span>
+</div>
+<div id="chatStart" style="padding:24px;text-align:center;flex:1;display:flex;flex-direction:column;justify-content:center">
+<p style="color:var(--text-secondary);margin-bottom:16px">Need help? Start a chat with us.</p>
+<input id="chatName" placeholder="Your name" style="width:100%;padding:10px;margin-bottom:8px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;outline:none">
+<input id="chatEmail" placeholder="Your email (optional)" style="width:100%;padding:10px;margin-bottom:12px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;outline:none">
+<button onclick="startChat()" class="btn primary" style="width:100%">Start Chat</button>
+</div>
+<div id="chatMsgs" style="display:none;flex:1;overflow-y:auto;padding:16px"></div>
+<div id="chatInputArea" style="display:none;padding:12px 16px;border-top:1px solid rgba(255,255,255,.06)">
+<div style="display:flex;gap:8px">
+<input id="chatMsgInput" placeholder="Type a message..." style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;outline:none">
+<button onclick="sendChatMsg()" style="padding:10px 16px;border-radius:8px;background:var(--accent);color:#fff;border:none;cursor:pointer">Send</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+var chatSessionId = 0;
+var chatLastId = 0;
+function toggleChat() {
+    var box = document.getElementById('chatBox');
+    box.style.display = box.style.display === 'flex' ? 'none' : 'flex';
+}
+function startChat() {
+    var name = document.getElementById('chatName').value.trim() || 'Visitor';
+    var email = document.getElementById('chatEmail').value.trim();
+    var x = new XMLHttpRequest();
+    x.open('POST', '/chat/start', true);
+    x.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+    x.onload = function() {
+        var r = JSON.parse(x.responseText);
+        chatSessionId = r.id;
+        document.getElementById('chatStart').style.display = 'none';
+        document.getElementById('chatMsgs').style.display = 'block';
+        document.getElementById('chatInputArea').style.display = 'block';
+        setInterval(pollChat, 3000);
+    };
+    x.send('name=' + encodeURIComponent(name) + '&email=' + encodeURIComponent(email));
+}
+function pollChat() {
+    if (!chatSessionId) return;
+    var x = new XMLHttpRequest();
+    x.open('GET', '/chat/poll/' + chatSessionId + '?since=' + chatLastId, true);
+    x.onload = function() {
+        try {
+            var r = JSON.parse(x.responseText);
+            if (r.messages) {
+                r.messages.forEach(function(m) {
+                    if (m.id > chatLastId) chatLastId = m.id;
+                    var out = document.getElementById('chatMsgs');
+                    out.innerHTML += '<div style="margin-bottom:10px;text-align:' + (m.sender_type==='visitor'?'right':'left') + '"><div style="display:inline-block;padding:8px 14px;border-radius:12px;font-size:14px;background:' + (m.sender_type==='visitor'?'rgba(0,140,255,.15)':'rgba(255,255,255,.06)') + ';color:#e0e0e0">' + m.message.replace(/</g,'&lt;') + '</div><div style="font-size:11px;color:var(--text-muted);margin-top:4px">' + m.sender_name + '</div></div>';
+                    out.scrollTop = out.scrollHeight;
+                });
+            }
+        } catch(e) {}
+    };
+    x.send();
+}
+function sendChatMsg() {
+    var input = document.getElementById('chatMsgInput');
+    var msg = input.value.trim();
+    if (!msg || !chatSessionId) return;
+    var x = new XMLHttpRequest();
+    x.open('POST', '/chat/send', true);
+    x.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+    x.onload = function() { input.value = ''; pollChat(); };
+    x.send('session_id=' + chatSessionId + '&message=' + encodeURIComponent(msg) + '&name=' + encodeURIComponent(document.getElementById('chatName').value.trim() || 'Visitor'));
+}
+// Visitor tracking
+var tx = new XMLHttpRequest();
+tx.open('POST', '/admin/livechat/track', true);
+tx.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+tx.send('page=' + encodeURIComponent(window.location.pathname));
+</script>
 <script src="/theme/assets/js/app.js"></script>
 <?php if ($showLogin): ?>
 <div id="loginModal" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);">
