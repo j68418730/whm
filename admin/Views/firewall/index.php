@@ -56,22 +56,6 @@
 <?php endif; ?>
 </div>
 
-<!-- CSF Controls -->
-<div class="card">
-<h3 style="color:var(--accent);margin-bottom:12px">CSF (ConfigServer Firewall)</h3>
-<?php if (!$csfInstalled): ?>
-<p style="color:var(--text-secondary);margin-bottom:8px">CSF is not installed. A powerful iptables-based firewall with DDoS protection.</p>
-<a href="/admin/firewall/csf/install" class="btn primary">Install CSF</a>
-<?php else: ?>
-<div style="display:flex;flex-wrap:wrap;gap:6px">
-<a href="/admin/firewall/csf/start" class="btn btn-sm <?php echo $csfEnabled==='enabled'?'secondary':'primary'; ?>">Enable</a>
-<a href="/admin/firewall/csf/stop" class="btn btn-sm danger">Disable</a>
-<a href="/admin/firewall/csf/restart" class="btn btn-sm secondary">Restart</a>
-</div>
-<p style="color:var(--text-secondary);font-size:12px;margin-top:8px">Status: <strong><?php echo $csfEnabled; ?></strong></p>
-<?php endif; ?>
-</div>
-
 <!-- Quick Port Open -->
 <div class="card">
 <h3 style="color:var(--accent);margin-bottom:12px">Open a Port</h3>

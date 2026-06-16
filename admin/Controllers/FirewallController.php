@@ -29,8 +29,8 @@ class FirewallController extends Controller
         $f2bInstalled = is_file('/etc/fail2ban') || is_file('/usr/lib/systemd/system/fail2ban.service');
         $modsec = is_file('/etc/apache2/mods-enabled/security2.load') ? 'enabled' : 'disabled';
         $modsecInstalled = is_file('/etc/apache2/mods-available/security2.load');
-        $csfInstalled = is_file('/etc/csf/csf.conf');
-        $csfEnabled = $csfInstalled ? trim(shell_exec('csf -l 2>/dev/null | head -1') ?: 'disabled') : 'not installed';
+        $csfInstalled = false;
+        $csfEnabled = 'not available';
 
         $openPorts = [];
         if ($fw === 'active') {
@@ -51,7 +51,6 @@ class FirewallController extends Controller
             'modsec' => $modsec, 'modsecInstalled' => $modsecInstalled,
             'openPorts' => $openPorts, 'openServices' => $openServices,
             'blocks' => $blocks,
-            'csfInstalled' => $csfInstalled, 'csfEnabled' => $csfEnabled,
             'theme_settings' => json_decode($user->theme_settings ?? '{}', true),
         ]);
     }
