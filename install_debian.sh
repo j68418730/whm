@@ -41,9 +41,61 @@ systemctl enable --now apache2 mariadb postfix dovecot vsftpd named
 echo "[3/8] Installing streaming stack..."
 apt install -y -qq icecast2 liquidsoap ezstream-ffmpeg ffmpeg
 
-# 4. phpMyAdmin + ModSecurity
-echo "[4/8] Installing phpMyAdmin and ModSecurity..."
-apt install -y -qq phpmyadmin libapache2-mod-security2
+# 4. phpMyAdmin + ModSecurity + RoundCube
+echo "[4/8] Installing phpMyAdmin, ModSecurity, RoundCube..."
+apt install -y -qq phpmyadmin libapache2-mod-security2 roundcube roundcube-mysql roundcube-plugins
+# Enable RoundCube Apache config
+ln -sf /etc/roundcube/apache.conf /etc/apache2/conf-available/roundcube.conf 2>/dev/null || true
+a2enconf roundcube 2>/dev/null || true
+
+# Create panel ports vhost config
+cat > /etc/apache2/sites-available/panel-ports.conf <<'VHOSTS'
+<VirtualHost *:2082>
+    DocumentRoot $PANEL_DIR/public
+    ServerName $SERVER_IP
+    <Directory $PANEL_DIR/public>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    RewriteEngine On
+    RewriteRule ^/$ /portal_user.php [L]
+</VirtualHost>
+<VirtualHost *:2086>
+    DocumentRoot $PANEL_DIR/public
+    ServerName $SERVER_IP
+    <Directory $PANEL_DIR/public>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    RewriteEngine On
+    RewriteRule ^/$ /portal_reseller.php [L]
+</VirtualHost>
+<VirtualHost *:2087>
+    DocumentRoot $PANEL_DIR/public
+    ServerName $SERVER_IP
+    <Directory $PANEL_DIR/public>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    RewriteEngine On
+    RewriteRule ^/$ /admin/login [L,R=302]
+</VirtualHost>
+<VirtualHost *:2096>
+    DocumentRoot $PANEL_DIR/public
+    ServerName $SERVER_IP
+    <Directory $PANEL_DIR/public>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    RewriteEngine On
+    RewriteRule ^/$ /portal_webmail.php [L]
+</VirtualHost>
+VHOSTS
+a2ensite panel-ports 2>/dev/null || true
 
 # 5. Panel files
 echo "[5/8] Installing panel files..."
@@ -73,6 +125,9 @@ a2dissite 000-default 2>/dev/null || true
 a2ensite radiohosting
 a2enmod rewrite
 a2enconf phpmyadmin
+for port in 2082 2086 2087 2096; do
+  grep -q "Listen $port" /etc/apache2/ports.conf || echo "Listen $port" >> /etc/apache2/ports.conf
+done
 systemctl restart apache2
 
 # 7. Database
