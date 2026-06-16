@@ -40,6 +40,11 @@ class UserController extends Controller
         $diskTotal = $this->package->disk_space ?? 10;
         $diskUsed = 0;
         $diskPct = 0;
+        $pkgType = $this->package->type ?? 'web_hosting';
+        $isRadio = str_contains($pkgType, 'icecast') || str_contains($pkgType, 'shoutcast');
+        $emailAccounts = $this->hostingUser ? ($this->db->table('mail_accounts')->where('domain', $this->hostingUser->domain ?? '')->get() ?: []) : [];
+        $emailCount = count($emailAccounts);
+        $emailAllowed = ($this->package->email_accounts ?? 0) > 0;
         if ($this->hostingUser) {
             $dir = '/home/' . $this->hostingUser->username;
             if (is_dir($dir)) $diskUsed = round(exec("du -sk {$dir} 2>/dev/null | awk '{print \$1}'") / 1024 / 1024, 2);
@@ -50,6 +55,7 @@ class UserController extends Controller
         return $this->view('user.dashboard', [
             'user' => $u, 'hosting' => $this->hostingUser, 'package' => $this->package,
             'streams' => $streams, 'diskUsed' => $diskUsed, 'diskTotal' => $diskTotal, 'diskPct' => $diskPct,
+            'emailCount' => $emailCount, 'emailAllowed' => $emailAllowed, 'isRadio' => $isRadio,
             'notifications' => $notifications, 'title' => 'Dashboard'
         ]);
     }

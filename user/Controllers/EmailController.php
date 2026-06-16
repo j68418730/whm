@@ -43,7 +43,7 @@ class EmailController extends Controller
             'domain' => $this->domain,
             'accounts' => $accounts, 'forwarders' => $forwarders,
             'autoresponders' => $autoresponders, 'spam' => $spam,
-            'webmailUrl' => 'http://' . $this->domain . '/webmail',
+            'webmailUrl' => 'http://45.61.59.55:2096/',
             'title' => 'Email'
         ]);
     }
