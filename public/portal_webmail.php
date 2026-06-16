@@ -28,10 +28,9 @@ p{color:#64748b;font-size:13px;margin:0 0 20px}
 <div class="logo"><img src="/theme/assets/img/logo.png" alt=""><h1>PLANET-<span>HOSTS</span></h1></div>
 <p>Access your email from anywhere. Choose a webmail client below or configure your desktop/mobile email app.</p>
 <div class="apps">
-<a href="http://45.61.59.55/roundcube" class="app"><div class="icon">📧</div><div class="name">RoundCube</div></a>
-<a href="http://45.61.59.55/squirrelmail" class="app"><div class="icon">🐿️</div><div class="name">SquirrelMail</div></a>
-<a href="http://45.61.59.55/snappymail" class="app"><div class="icon">⚡</div><div class="name">SnappyMail</div></a>
+<a href="/roundcube/" class="app"><div class="icon">📧</div><div class="name">RoundCube Webmail</div></a>
 </div>
+<p style="color:#64748b;font-size:12px;margin-top:12px">RoundCube is installed and ready. Log in with your full email address and email password.</p>
 <div class="links">
 <strong style="color:#94a3b8">IMAP Settings:</strong><br>
 Server: mail.yourdomain.com &middot; Port: 143 (TLS) or 993 (SSL)<br>
