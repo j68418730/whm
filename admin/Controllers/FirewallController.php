@@ -65,8 +65,10 @@ class FirewallController extends Controller
             $userIp = $_SERVER['REMOTE_ADDR'] ?? '';
             if ($svc === 'firewalld') {
                 shell_exec('apt install -y firewalld 2>&1');
+                // Unmask and start (Debian masks firewalld by default)
+                shell_exec('systemctl unmask firewalld 2>/dev/null && systemctl enable firewalld 2>/dev/null && systemctl start firewalld 2>/dev/null');
+                sleep(2);
                 // Auto-open essential ports
-                shell_exec('sleep 2 && systemctl start firewalld 2>/dev/null');
                 $ports = '22/tcp 80/tcp 443/tcp 25/tcp 53/tcp 53/udp 110/tcp 143/tcp 993/tcp 995/tcp 587/tcp 465/tcp 3306/tcp 6379/tcp 8000/tcp 8443/tcp 8080/tcp 3000/tcp';
                 foreach (explode(' ', $ports) as $p) {
                     shell_exec("firewall-cmd --permanent --add-port={$p} 2>/dev/null");
@@ -79,6 +81,7 @@ class FirewallController extends Controller
                 shell_exec('firewall-cmd --reload 2>/dev/null');
             } elseif ($svc === 'fail2ban') {
                 shell_exec('apt install -y fail2ban 2>&1');
+                shell_exec('touch /var/log/auth.log && chmod 644 /var/log/auth.log 2>/dev/null');
                 shell_exec('systemctl start fail2ban 2>/dev/null');
             }
             $_SESSION['success_message'] = "$svc installed with essential ports open and your IP whitelisted.";

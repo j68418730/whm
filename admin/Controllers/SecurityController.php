@@ -28,11 +28,15 @@ class SecurityController extends Controller
         $firewall = trim(shell_exec('systemctl is-active firewalld 2>/dev/null') ?: 'inactive');
         $fail2ban = trim(shell_exec('systemctl is-active fail2ban 2>/dev/null') ?: 'inactive');
         $modsec = is_file('/etc/apache2/mods-enabled/security2.load') ? 'enabled' : 'disabled';
+        $fwInstalled = is_file('/usr/lib/systemd/system/firewalld.service') || is_file('/usr/sbin/firewalld');
+        $f2bInstalled = is_file('/etc/fail2ban') || is_file('/usr/lib/systemd/system/fail2ban.service');
+        $modsecInstalled = is_file('/etc/apache2/mods-available/security2.load');
         $loginAttempts = $this->getLoginAttempts();
         return $this->view('admin.security.index', [
             'user' => $user, 'title' => 'Security Center', 'blockCount' => $blockCount,
             'sslCount' => $sslCount, 'twoFactorUsers' => $twoFactorUsers,
             'firewall' => $firewall, 'fail2ban' => $fail2ban, 'modsec' => $modsec,
+            'fwInstalled' => $fwInstalled, 'f2bInstalled' => $f2bInstalled, 'modsecInstalled' => $modsecInstalled,
             'loginAttempts' => $loginAttempts,
             'theme_settings' => json_decode($user->theme_settings ?? '{}', true),
         ]);
