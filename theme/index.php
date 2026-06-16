@@ -607,9 +607,33 @@ function showTab(type) {
 </div>
 </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
 <script>
 var chatSessionId = 0;
 var chatLastId = 0;
+var chatConnection = null;
+var useSignalR = false;
+
+// Try SignalR first, fall back to polling
+function initSignalR() {
+    try {
+        chatConnection = new signalR.HubConnectionBuilder()
+            .withUrl('http://localhost:5000/hub/chat')
+            .withAutomaticReconnect()
+            .build();
+        chatConnection.on('NewMessage', function(msg) {
+            if (msg.sessionId === chatSessionId) {
+                var out = document.getElementById('chatMsgs');
+                out.innerHTML += '<div style="margin-bottom:10px;text-align:' + (msg.senderType==='visitor'?'right':'left') + '"><div style="display:inline-block;padding:8px 14px;border-radius:12px;font-size:14px;background:' + (msg.senderType==='visitor'?'rgba(0,140,255,.15)':'rgba(255,255,255,.06)') + ';color:#e0e0e0">' + (msg.message||'').replace(/</g,'&lt;') + '</div><div style="font-size:11px;color:var(--text-muted);margin-top:4px">' + msg.senderName + '</div></div>';
+                out.scrollTop = out.scrollHeight;
+            }
+        });
+        chatConnection.on('TypingIndicator', function(name, isTyping) { });
+        chatConnection.start().then(function() { useSignalR = true; }).catch(function() { useSignalR = false; });
+    } catch(e) { useSignalR = false; }
+}
+initSignalR();
+
 function toggleChat() {
     var box = document.getElementById('chatBox');
     box.style.display = box.style.display === 'flex' ? 'none' : 'flex';
@@ -626,12 +650,16 @@ function startChat() {
         document.getElementById('chatStart').style.display = 'none';
         document.getElementById('chatMsgs').style.display = 'block';
         document.getElementById('chatInputArea').style.display = 'block';
-        setInterval(pollChat, 3000);
+        // Join SignalR group if connected
+        if (useSignalR && chatConnection && chatConnection.state === 'Connected') {
+            chatConnection.invoke('JoinChat', chatSessionId).catch(function(){});
+        }
+        setInterval(pollChat, 5000);
     };
     x.send('name=' + encodeURIComponent(name) + '&email=' + encodeURIComponent(email));
 }
 function pollChat() {
-    if (!chatSessionId) return;
+    if (!chatSessionId || useSignalR) return;
     var x = new XMLHttpRequest();
     x.open('GET', '/chat/poll/' + chatSessionId + '?since=' + chatLastId, true);
     x.onload = function() {
@@ -653,11 +681,16 @@ function sendChatMsg() {
     var input = document.getElementById('chatMsgInput');
     var msg = input.value.trim();
     if (!msg || !chatSessionId) return;
-    var x = new XMLHttpRequest();
-    x.open('POST', '/chat/send', true);
-    x.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
-    x.onload = function() { input.value = ''; pollChat(); };
-    x.send('session_id=' + chatSessionId + '&message=' + encodeURIComponent(msg) + '&name=' + encodeURIComponent(document.getElementById('chatName').value.trim() || 'Visitor'));
+    if (useSignalR && chatConnection && chatConnection.state === 'Connected') {
+        chatConnection.invoke('SendMessage', chatSessionId, msg, document.getElementById('chatName').value.trim() || 'Visitor', 'visitor').catch(function(){});
+        input.value = '';
+    } else {
+        var x = new XMLHttpRequest();
+        x.open('POST', '/chat/send', true);
+        x.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+        x.onload = function() { input.value = ''; pollChat(); };
+        x.send('session_id=' + chatSessionId + '&message=' + encodeURIComponent(msg) + '&name=' + encodeURIComponent(document.getElementById('chatName').value.trim() || 'Visitor'));
+    }
 }
 // Visitor tracking
 var tx = new XMLHttpRequest();
