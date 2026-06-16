@@ -47,6 +47,9 @@ $router->post('/admin/backup/create', 'Admin\Controllers\BackupController@create
 $router->get('/admin/backup/restore/{name}', 'Admin\Controllers\BackupController@restore');
 $router->get('/admin/backup/delete/{name}', 'Admin\Controllers\BackupController@delete');
 $router->get('/admin/serverconfig', 'Admin\Controllers\ServerConfigController@index');
+$router->post('/admin/serverconfig/hostname', 'Admin\Controllers\ServerConfigController@updateHostname');
+$router->post('/admin/serverconfig/rootpass', 'Admin\Controllers\ServerConfigController@updateRootPass');
+$router->post('/admin/serverconfig/ports', 'Admin\Controllers\ServerConfigController@setupPorts');
 $router->get('/admin/tweak', 'Admin\Controllers\ServerConfigController@tweak');
 $router->post('/admin/tweak', 'Admin\Controllers\ServerConfigController@tweakSave');
 $router->get('/admin/network', 'Admin\Controllers\NetworkController@index');

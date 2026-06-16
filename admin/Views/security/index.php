@@ -31,13 +31,16 @@
 </div>
 
 <div class="card" style="margin-top:20px"><h3 style="color:var(--accent);margin-bottom:12px">Service Status</h3>
-<table><tr><th>Service</th><th>Status</th></tr>
-<tr><td>Firewall (firewalld)</td><td><span class="status-badge status-<?php echo $firewall === 'active' ? 'active' : 'terminated'; ?>"><?php echo $firewall; ?></span></td></tr>
-<tr><td>Fail2ban</td><td><span class="status-badge status-<?php echo $fail2ban === 'active' ? 'active' : 'terminated'; ?>"><?php echo $fail2ban; ?></span></td></tr>
-<tr><td>ModSecurity</td><td><span class="status-badge status-<?php echo $modsec === 'enabled' ? 'active' : 'terminated'; ?>"><?php echo $modsec; ?></span></td></tr>
-<tr><td>SSL Certificates</td><td><span class="status-badge status-<?php echo $sslCount > 0 ? 'active' : 'terminated'; ?>"><?php echo $sslCount > 0 ? "$sslCount installed" : 'None'; ?></span></td></tr>
-<tr><td>Two-Factor Auth</td><td><span class="status-badge status-<?php echo $twoFactorUsers > 0 ? 'active' : 'terminated'; ?>"><?php echo $twoFactorUsers > 0 ? "$twoFactorUsers users" : 'Disabled'; ?></span></td></tr>
-<tr><td>IP Blocker</td><td><span class="status-badge status-<?php echo $blockCount > 0 ? 'active' : 'terminated'; ?>"><?php echo $blockCount > 0 ? "$blockCount IPs blocked" : 'No blocks'; ?></span></td></tr>
+<table><tr><th>Service</th><th>Status</th><th></th></tr>
+<tr><td>Firewall (firewalld)</td><td><span class="status-badge status-<?php echo $firewall === 'active' ? 'active' : 'terminated'; ?>"><?php echo $firewall; ?></span></td>
+<td><?php if ($firewall !== 'active'): ?><a href="/admin/firewall" class="btn btn-sm primary">Install/Manage</a><?php endif; ?></td></tr>
+<tr><td>Fail2ban</td><td><span class="status-badge status-<?php echo $fail2ban === 'active' ? 'active' : 'terminated'; ?>"><?php echo $fail2ban; ?></span></td>
+<td><?php if ($fail2ban !== 'active'): ?><a href="/admin/firewall" class="btn btn-sm primary">Install/Manage</a><?php endif; ?></td></tr>
+<tr><td>ModSecurity</td><td><span class="status-badge status-<?php echo $modsec === 'enabled' ? 'active' : 'terminated'; ?>"><?php echo $modsec; ?></span></td>
+<td><?php if ($modsec !== 'enabled'): ?><a href="/admin/firewall" class="btn btn-sm primary">Install/Manage</a><?php endif; ?></td></tr>
+<tr><td>SSL Certificates</td><td><span class="status-badge status-<?php echo $sslCount > 0 ? 'active' : 'terminated'; ?>"><?php echo $sslCount > 0 ? "$sslCount installed" : 'None'; ?></span></td><td><a href="/admin/ssl" class="btn btn-sm secondary">Manage</a></td></tr>
+<tr><td>Two-Factor Auth</td><td><span class="status-badge status-<?php echo $twoFactorUsers > 0 ? 'active' : 'terminated'; ?>"><?php echo $twoFactorUsers > 0 ? "$twoFactorUsers users" : 'Disabled'; ?></span></td><td><a href="/admin/twofactor" class="btn btn-sm secondary">Manage</a></td></tr>
+<tr><td>IP Blocker</td><td><span class="status-badge status-<?php echo $blockCount > 0 ? 'active' : 'terminated'; ?>"><?php echo $blockCount > 0 ? "$blockCount IPs blocked" : 'No blocks'; ?></span></td><td><a href="/admin/ipblocker" class="btn btn-sm secondary">Manage</a></td></tr>
 </table></div>
 
 <div class="card" style="margin-top:16px"><h3 style="color:var(--accent);margin-bottom:12px">Login Security</h3>
