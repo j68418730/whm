@@ -6,6 +6,7 @@ use Core\Controller;
 
 class PaypalController extends Controller
 {
+    protected function skipCsrf() { return true; }
     protected $auth, $request, $response, $db;
 
     public function __construct()
@@ -117,15 +118,38 @@ class PaypalController extends Controller
         curl_close($ch);
         
         if ($response === 'VERIFIED' && ($data['payment_status'] ?? '') === 'Completed') {
-            $invoiceId = (int)($data['item_number'] ?? 0);
+            $itemNumber = $data['item_number'] ?? '';
             $txnId = $data['txn_id'] ?? '';
             $amount = (float)($data['mc_gross'] ?? 0);
             $payerEmail = $data['payer_email'] ?? '';
             
-            if ($invoiceId) {
-                $existing = $this->db->table('billing_payments')
-                    ->where('transaction_id', $txnId)->first();
-                if (!$existing) {
+            $existing = $this->db->table('billing_payments')
+                ->where('transaction_id', $txnId)->first();
+            if ($existing) { http_response_code(200); echo 'OK'; exit; }
+            
+            // Handle order payments (from cart)
+            if (strpos($itemNumber, 'order_') === 0) {
+                $orderId = (int)substr($itemNumber, 6);
+                $order = $this->db->table('billing_orders')->where('id', $orderId)->first();
+                if ($order) {
+                    $this->db->table('billing_payments')->insertGetId([
+                        'user_id' => $order->user_id, 'amount' => $amount,
+                        'method' => 'paypal', 'status' => 'completed',
+                        'transaction_id' => $txnId, 'notes' => "PayPal IPN Order #{$orderId}: {$payerEmail}",
+                    ]);
+                    $this->db->table('billing_orders')->where('id', $orderId)->update(['status' => 'paid']);
+                    
+                    // Auto-provision: create account for the first item in the order
+                    $items = json_decode($order->items, true);
+                    if (!empty($items)) {
+                        require_once BASE_PATH . '/services/AutoProvision.php';
+                        autoProvision($order->user_id, $items[0]['id']);
+                    }
+                }
+            } else {
+                // Handle invoice payments (existing)
+                $invoiceId = (int)$itemNumber;
+                if ($invoiceId) {
                     $invoice = $this->db->table('invoices')->where('id', $invoiceId)->first();
                     if ($invoice) {
                         $this->db->table('billing_payments')->insertGetId([

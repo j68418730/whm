@@ -55,14 +55,24 @@ class ServerConfigController extends Controller
         $type = $this->request->post('type', 'mysql');
         if ($newPass) {
             if ($type === 'mysql' || $type === 'both') {
-                shell_exec("mysql -e \"ALTER USER 'root'@'localhost' IDENTIFIED BY '{$newPass}'; FLUSH PRIVILEGES;\" 2>&1");
+                try {
+                    $pdo = new \PDO('mysql:host=localhost;charset=utf8mb4', 'root', '');
+                    $pdo->exec("ALTER USER 'root'@'localhost' IDENTIFIED BY " . $pdo->quote($newPass));
+                    $pdo->exec("FLUSH PRIVILEGES");
+                } catch (\Exception $e) {
+                    try {
+                        $pdo2 = new \PDO('mysql:host=localhost;charset=utf8mb4', 'root', 'rootpassword');
+                        $pdo2->exec("ALTER USER 'root'@'localhost' IDENTIFIED BY " . $pdo2->quote($newPass));
+                        $pdo2->exec("FLUSH PRIVILEGES");
+                    } catch (\Exception $e2) {}
+                }
                 // Update .env
                 $env = file_get_contents(BASE_PATH . '/.env');
                 $env = preg_replace('/DB_PASSWORD=.*/', "DB_PASSWORD={$newPass}", $env);
                 file_put_contents(BASE_PATH . '/.env', $env);
             }
             if ($type === 'system' || $type === 'both') {
-                shell_exec("echo 'root:{$newPass}' | chpasswd 2>&1");
+                exec('echo root:' . escapeshellarg($newPass) . ' | chpasswd 2>&1');
             }
             $_SESSION['success_message'] = "Password updated for {$type}.";
         }
@@ -79,20 +89,29 @@ class ServerConfigController extends Controller
         $userPort = $this->request->post('user_port', '2082');
         $webmailPort = $this->request->post('webmail_port', '2096');
 
+        // Validate ports
+        $ports = [$adminPort, $resellerPort, $userPort, $webmailPort];
+        foreach ($ports as $i => $p) {
+            if (!is_numeric($p) || $p < 1 || $p > 65535) {
+                $_SESSION['error_message'] = "Invalid port: {$p}";
+                $this->response->redirect('/admin/serverconfig'); exit;
+            }
+            $ports[$i] = (int)$p;
+        }
+
         // Add Listen directives
         $conf = "/etc/apache2/ports.conf";
-        foreach ([$adminPort, $resellerPort, $userPort, $webmailPort] as $p) {
-            $check = shell_exec("grep -c 'Listen {$p}' {$conf} 2>/dev/null") ?: 0;
+        foreach ($ports as $p) {
+            $check = @shell_exec("grep -c 'Listen {$p}' " . escapeshellarg($conf) . " 2>/dev/null") ?: 0;
             if (trim($check) == '0') {
                 file_put_contents($conf, "\nListen {$p}\n", FILE_APPEND);
             }
         }
 
         // Open ports in firewalld
-        shell_exec("firewall-cmd --permanent --add-port={$adminPort}/tcp 2>/dev/null");
-        shell_exec("firewall-cmd --permanent --add-port={$resellerPort}/tcp 2>/dev/null");
-        shell_exec("firewall-cmd --permanent --add-port={$userPort}/tcp 2>/dev/null");
-        shell_exec("firewall-cmd --permanent --add-port={$webmailPort}/tcp 2>/dev/null");
+        foreach ($ports as $p) {
+            shell_exec("firewall-cmd --permanent --add-port={$p}/tcp 2>/dev/null");
+        }
         shell_exec("firewall-cmd --reload 2>/dev/null");
 
         // Create vhosts

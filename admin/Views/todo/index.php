@@ -78,7 +78,10 @@ if (empty($catTodos)) continue;
 <div style="display:flex;align-items:center;cursor:pointer;margin-bottom:<?php echo empty($catTodos) ? '0' : '8px'; ?>;user-select:none" onclick="toggleCat(this)" data-cat="<?php echo $cat; ?>">
 <span class="toggle-icon">▼</span>
 <h4 style="color:var(--accent);font-size:15px;margin:0;flex:1"><?php echo htmlspecialchars($cat); ?></h4>
-<span style="font-size:12px;color:var(--text-muted)"><?php echo count($activeTodos); ?> active / <?php echo count($doneTodos); ?> done</span>
+<span style="font-size:12px;color:var(--text-muted);margin-right:8px"><?php echo count($doneTodos); ?>/<?php echo count($catTodos); ?> done</span>
+<?php if (count($activeTodos) === 0 && count($doneTodos) > 0): ?>
+<a href="/admin/todo/delete-category/<?php echo urlencode($cat); ?>" class="btn btn-sm" style="background:rgba(255,50,50,.1);color:#f87171;padding:2px 10px;font-size:11px;text-decoration:none;border-radius:4px" onclick="return confirm('Delete completed \'<?php echo htmlspecialchars($cat); ?>\' group?')">🗑 Delete All Done</a>
+<?php endif; ?>
 </div>
 <div id="cat-<?php echo $cat; ?>" class="toggle-body">
 <?php foreach ($catTodos as $t): ?>
@@ -94,9 +97,9 @@ if (empty($catTodos)) continue;
 <span class="pct" style="font-size:12px;color:var(--text-muted);min-width:35px"><?php echo (int)$t->progress; ?>%</span>
 </div>
 </div>
-<div style="display:flex;gap:4px">
+<div style="display:flex;gap:4px;flex-shrink:0">
 <input type="number" value="<?php echo (int)$t->progress; ?>" min="0" max="100" style="width:50px;padding:4px 6px;border-radius:4px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;outline:none;font-size:12px" onchange="updateProgress(<?php echo $t->id; ?>, this)">
-<a href="/admin/todo/delete/<?php echo $t->id; ?>" class="btn btn-sm" style="background:rgba(255,50,50,.15);color:#ff6b6b;padding:4px 8px;font-size:11px;border:none" onclick="return confirm('Delete?')">✕</a>
+<a href="/admin/todo/delete/<?php echo $t->id; ?>" class="btn btn-sm" style="background:rgba(255,50,50,.15);color:#ff6b6b;padding:4px 8px;font-size:13px;border:none;font-weight:700;line-height:1" onclick="return confirm('Delete?')" title="Delete task">✕</a>
 </div>
 </div>
 </div>

@@ -45,6 +45,7 @@ h2{text-align:center;margin:0 0 4px;color:#fff;font-size:22px}
 <div class="alert alert-danger"><?php echo htmlspecialchars($_SESSION['login_error']); unset($_SESSION['login_error']); ?></div>
 <?php endif; ?>
 <form method="POST" action="/admin/login/post">
+<input type="hidden" name="_csrf_token" value="<?php echo isset($_SESSION) && isset($_SESSION['_csrf_token']) ? htmlspecialchars($_SESSION['_csrf_token']) : bin2hex(random_bytes(32)); ?>">
 <div class="form-group"><label for="email">Username or Email</label><input type="text" id="email" name="email" required placeholder="root@planet-hosts.com"></div>
 <div class="form-group"><label for="password">Password</label><input type="password" id="password" name="password" required></div>
 <div class="form-group"><div class="remember-wrap"><input type="checkbox" id="remember" name="remember" value="1"><label for="remember">Remember me</label></div></div>
