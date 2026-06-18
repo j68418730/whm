@@ -223,4 +223,67 @@ class AccountController extends Controller
         $this->response->redirect('/admin/account');
         exit;
     }
+
+    // SSH Access
+    public function sshAccess($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $account = $this->db->table('hosting_users')->where('id', $id)->first();
+        if (!$account) { $this->response->redirect('/admin/account'); exit; }
+        $access = $this->request->post('ssh_access', 'jailed');
+        $this->db->table('hosting_users')->where('id', $id)->update(['ssh_access' => $access]);
+        \Core\SshJail::applySshAccess($account->username, $access);
+        $_SESSION['success_message'] = "SSH access set to '{$access}' for {$account->username}.";
+        $this->response->redirect('/admin/account/show/' . $id);
+        exit;
+    }
+
+    public function sshKeyGenerate($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $account = $this->db->table('hosting_users')->where('id', $id)->first();
+        if (!$account) { $this->response->redirect('/admin/account'); exit; }
+        $key = \Core\SshJail::generateKeyPair($account->username);
+        if ($key) {
+            $this->db->table('hosting_users')->where('id', $id)->update(['ssh_public_key' => $key]);
+            $_SESSION['success_message'] = 'SSH key pair generated.';
+        } else {
+            $_SESSION['error_message'] = 'Failed to generate SSH key.';
+        }
+        $this->response->redirect('/admin/account/show/' . $id);
+        exit;
+    }
+
+    public function sshKeyDelete($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $account = $this->db->table('hosting_users')->where('id', $id)->first();
+        if (!$account) { $this->response->redirect('/admin/account'); exit; }
+        \Core\SshJail::deleteSshKey($account->username);
+        $this->db->table('hosting_users')->where('id', $id)->update(['ssh_public_key' => null]);
+        $_SESSION['success_message'] = 'SSH key deleted.';
+        $this->response->redirect('/admin/account/show/' . $id);
+        exit;
+    }
+
+    public function loginAs($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $account = $this->db->table('hosting_users')->where('id', $id)->first();
+        if (!$account) { $this->response->redirect('/admin/account'); exit; }
+        // Log in as this user by setting session directly
+        $_SESSION['sudo_login'] = true;
+        $_SESSION['sudo_admin_id'] = $this->auth->user()->id;
+        $user = (object)[
+            'id' => $account->id,
+            'email' => $account->email,
+            'name' => $account->first_name ?: $account->username,
+            'is_admin' => false,
+        ];
+        $session = \Core\Application::getInstance()->get('session');
+        $session->put('user', $user);
+        $session->put('is_admin', false);
+        $this->response->redirect('/user');
+        exit;
+    }
 }

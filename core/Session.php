@@ -8,6 +8,19 @@ namespace Core;
 
 class Session
 {
+    public function generateCsrfToken()
+    {
+        if (empty($_SESSION['_csrf_token'])) {
+            $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
+        }
+        return $_SESSION['_csrf_token'];
+    }
+
+    public function validateCsrfToken($token)
+    {
+        if (empty($_SESSION['_csrf_token']) || empty($token)) return false;
+        return hash_equals($_SESSION['_csrf_token'], $token);
+    }
     public function __construct()
     {
         if (session_status() === PHP_SESSION_NONE && !headers_sent()) {

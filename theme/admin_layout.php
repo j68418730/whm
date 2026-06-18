@@ -93,6 +93,7 @@ if (class_exists('\\Core\\License')) {
 <div class="nav-label">Services</div>
 <a href="/admin/dns" class="<?php echo str_contains($currentUrl,'/admin/dns')?'active':''; ?>">DNS Zones</a>
 <a href="/admin/email" class="<?php echo str_contains($currentUrl,'/admin/email')?'active':''; ?>">Email</a>
+<a href="http://45.61.59.55:2096/" target="_blank" style="font-size:12px;padding-left:20px;color:#fb923c" class="<?php echo 0?'active':''; ?>">📧 Webmail (2096)</a>
 <a href="/admin/mysql" class="<?php echo str_contains($currentUrl,'/admin/mysql')?'active':''; ?>">Databases</a>
 <a href="/admin/ftp" class="<?php echo str_contains($currentUrl,'/admin/ftp')?'active':''; ?>">FTP</a>
 </div>
@@ -104,8 +105,10 @@ if (class_exists('\\Core\\License')) {
 
 <div class="nav-section" data-section="support">
 <div class="nav-label">Support</div>
-<a href="/admin/support" class="<?php echo str_contains($currentUrl,'/admin/support') && !str_contains($currentUrl,'/admin/support/tickets') && !str_contains($currentUrl,'/admin/support/kb') && !str_contains($currentUrl,'/admin/support/announcements') && !str_contains($currentUrl,'/admin/support/status') && !str_contains($currentUrl,'/admin/livechat')?'active':''; ?>">Support Center</a>
+<a href="/admin/support" class="<?php echo str_contains($currentUrl,'/admin/support') && !str_contains($currentUrl,'/admin/support/tickets') && !str_contains($currentUrl,'/admin/support/kb') && !str_contains($currentUrl,'/admin/support/announcements') && !str_contains($currentUrl,'/admin/support/status') && !str_contains($currentUrl,'/admin/livechat') && !str_contains($currentUrl,'/admin/reviews')?'active':''; ?>">Support Center</a>
 <a href="/admin/livechat" class="<?php echo str_contains($currentUrl,'/admin/livechat')?'active':''; ?>">Live Chat</a>
+<a href="/admin/reviews" class="<?php echo str_contains($currentUrl,'/admin/reviews')?'active':''; ?>" style="font-size:12px;padding-left:20px;color:#facc15">📝 Reviews</a>
+<a href="/voice/admin.php" target="_blank" style="color:#a78bfa;font-size:13px">📞 Voice Test</a>
 </div>
 
 <div class="nav-section" data-section="billing">
@@ -175,17 +178,140 @@ if (class_exists('\\Core\\License')) {
 </div>
 </footer>
 
+<!-- Live Visitor Panel - appears on all admin pages -->
+<style>
+.visitor-panel{position:fixed;top:0;right:0;z-index:9999;width:280px;height:100vh;background:rgba(8,16,28,.98);border-left:1px solid rgba(0,191,255,.12);transform:translateX(100%);transition:transform .3s;overflow-y:auto;box-shadow:-5px 0 30px rgba(0,0,0,.5)}
+.visitor-panel.open{transform:translateX(0)}
+.visitor-panel .head{padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center}
+.visitor-panel .head h3{margin:0;font-size:15px;color:#fff}
+.visitor-panel .head span{cursor:pointer;color:#64748b;font-size:18px}
+.visitor-item{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:.15s}
+.visitor-item:hover{background:rgba(0,191,255,.04)}
+.visitor-item .vtop{display:flex;align-items:center;gap:10px}
+.visitor-item .vdot{width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0}
+.visitor-item .vname{font-weight:600;font-size:13px;color:#fff}
+.visitor-item .vpage{font-size:11px;color:#64748b;margin:2px 0;padding-left:18px}
+.visitor-item .vinfo{font-size:10px;color:#475569;padding-left:18px;display:flex;gap:8px}
+.visitor-item .vactions{margin-top:6px;padding-left:18px;display:flex;gap:6px}
+.visitor-item .vactions a{padding:3px 10px;border-radius:4px;font-size:10px;text-decoration:none;font-weight:600}
+.visitor-toggle{position:fixed;top:10px;right:16px;z-index:9998;background:rgba(0,140,255,.15);border:1px solid rgba(0,140,255,.2);border-radius:20px;padding:4px 14px;font-size:11px;color:#008cff;cursor:pointer;display:none}
+.visitor-toggle:hover{background:rgba(0,140,255,.25)}
+</style>
+<div class="visitor-toggle" id="visitorToggle" onclick="toggleVisitorPanel()">👤 <span id="vCount">0</span></div>
+<div class="visitor-panel" id="visitorPanel">
+<div class="head"><h3>👤 Live Visitors</h3><span onclick="toggleVisitorPanel()">✕</span></div>
+<div id="visitorList"></div>
+</div>
 <script>
-// Active menu tracking - highlight current page
-(function() {
-    var current = '<?php echo addslashes($currentUrl); ?>';
-    document.querySelectorAll('.sidebar a').forEach(function(a) {
-        var href = a.getAttribute('href');
-        if (href && current.indexOf(href) === 0) {
-            a.classList.add('active');
+var csrfToken = <?php echo json_encode($_SESSION['_csrf_token'] ?? ''); ?>;
+// Auto-add CSRF token to all forms
+document.addEventListener('DOMContentLoaded', function() {
+    if (!csrfToken) return;
+    document.querySelectorAll('form[method="POST"]').forEach(function(f) {
+        if (!f.querySelector('input[name="_csrf_token"]')) {
+            var inp = document.createElement('input');
+            inp.type = 'hidden'; inp.name = '_csrf_token'; inp.value = csrfToken;
+            f.appendChild(inp);
         }
     });
-})();
+});
+var knownVisitors = {};
+var visitorToggle = document.getElementById('visitorToggle');
+var visitorList = document.getElementById('visitorList');
+var vCount = document.getElementById('vCount');
+
+function toggleVisitorPanel() {
+    document.getElementById('visitorPanel').classList.toggle('open');
+}
+
+function pollVisitors() {
+    var x = new XMLHttpRequest();
+    x.open('GET', '/admin/livechat/visitors/online', true);
+    x.onload = function() {
+        try {
+            var visitors = JSON.parse(x.responseText);
+            if (visitors && visitors.length > 0) {
+                visitorToggle.style.display = 'inline-block';
+                vCount.textContent = visitors.length;
+                // Check for NEW visitors (by session_id, not id)
+                visitors.forEach(function(v) {
+                    var key = v.session_id || v.id;
+                    if (!knownVisitors[key]) {
+                        knownVisitors[key] = true;
+                        showVisitorToast(v);
+                    }
+                });
+                // Render visitor list (deduplicate by session_id)
+                var seen = {};
+                var html = '';
+                visitors.forEach(function(v) {
+                    var key = v.session_id || v.id;
+                    if (seen[key]) return;
+                    seen[key] = true;
+                    var name = v.name || 'Anonymous';
+                    var page = v.current_page || 'Homepage';
+                    var browser = v.browser || '';
+                    var os = v.os || '';
+                    var ip = v.ip_address || '';
+                    var tz = v.timezone || '';
+                    var time = v.time_on_site || 0;
+                    var timeStr = time > 60 ? Math.floor(time/60) + 'm' : time + 's';
+                    html += '<div class="visitor-item" onclick="openVisitorChat(\'' + key + '\')">' +
+                        '<div class="vtop"><div class="vdot"></div><div class="vname">' + escapeHtml(name) + '</div></div>' +
+                        '<div class="vpage">📍 ' + escapeHtml(page) + '</div>' +
+                        '<div class="vinfo">🖥 ' + escapeHtml(browser) + ' · ' + escapeHtml(os) + ' · ' + timeStr + '</div>' +
+                        '<div class="vinfo">🌐 ' + escapeHtml(ip) + ' · ' + escapeHtml(tz) + '</div>' +
+                        '<div class="vactions">' +
+                        '<a href="/admin/livechat" style="background:rgba(74,222,128,.15);color:#4ade80">💬 Chat</a>' +
+                        '<a href="/remote_support.php" style="background:rgba(0,140,255,.15);color:#008cff">🖥 Remote</a>' +
+                        '</div></div>';
+                });
+                visitorList.innerHTML = html;
+            } else {
+                visitorToggle.style.display = 'none';
+                visitorList.innerHTML = '<div style="text-align:center;padding:40px;color:#64748b;font-size:13px">No visitors online</div>';
+            }
+        } catch(e) {}
+    };
+    x.send();
+}
+
+function showVisitorToast(v) {
+    var name = v.name || 'Anonymous';
+    var page = v.current_page || 'Unknown';
+    var ip = v.ip_address || '';
+    var browser = v.browser || '';
+    var os = v.os || '';
+    var tz = v.timezone || '';
+    var toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:99999;background:rgba(8,16,28,.98);border:1px solid rgba(0,191,255,.15);border-radius:14px;padding:18px 22px;max-width:400px;box-shadow:0 10px 50px rgba(0,0,0,.6);animation:slideUp .3s ease';
+    toast.innerHTML = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><img src="/theme/assets/img/avatars/vistor.png" style="width:38px;height:38px;border-radius:50%"><div><strong style="font-size:15px;color:#fff">' + escapeHtml(name) + '</strong><br><span style="font-size:12px;color:#64748b"><strong style="color:#4ade80">●</strong> Visitor on site</span></div></div>' +
+        '<div style="font-size:12px;color:#64748b;margin-bottom:6px">📍 ' + escapeHtml(page) + '</div>' +
+        '<div style="font-size:11px;color:#475569;margin-bottom:8px;display:flex;gap:12px;flex-wrap:wrap">' +
+        '<span>🖥 ' + escapeHtml(browser) + ' · ' + escapeHtml(os) + '</span>' +
+        '<span>🌐 ' + escapeHtml(ip) + '</span>' +
+        '<span>🕐 ' + escapeHtml(tz) + '</span></div>' +
+        '<div style="display:flex;gap:8px">' +
+        '<a href="/admin/livechat" style="padding:6px 14px;border-radius:6px;font-size:12px;background:rgba(74,222,128,.15);color:#4ade80;text-decoration:none;font-weight:600">💬 Message</a>' +
+        '<a href="#" onclick="this.parentElement.parentElement.remove()" style="padding:6px 14px;border-radius:6px;font-size:12px;background:rgba(100,116,139,.15);color:#64748b;text-decoration:none">Dismiss</a>' +
+        '</div>';
+    document.body.appendChild(toast);
+    setTimeout(function() { if (toast.parentNode) toast.remove(); }, 12000);
+}
+
+function openVisitorChat(sessionId) {
+    window.open('/admin/livechat', '_blank');
+}
+
+function openVisitorChat(sessionId) {
+    window.open('/admin/livechat?action=panel&tab=chats&view=new&visitor=' + encodeURIComponent(sessionId), '_blank');
+}
+
+function escapeHtml(t) { return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+setInterval(pollVisitors, 5000);
+setTimeout(pollVisitors, 500);
 </script>
+</body>
 </body>
 </html>

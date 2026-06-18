@@ -9,6 +9,30 @@ $serverIp = $_SERVER['SERVER_ADDR'] ?? '45.61.59.55';
 $mainDomain = 'planet-hosts.com';
 $userPort = '2082';
 $webmailPort = '2096';
+
+// Detect package type
+$packageType = '';
+$hasChatbox = false;
+$chatboxTenantId = 0;
+if ($hostingUser && isset($hostingUser->id)) {
+    try {
+        $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+        if ($hostingUser->package_id) {
+            $pkgStmt = $pdo->prepare("SELECT type FROM hosting_packages WHERE id = ?");
+            $pkgStmt->execute([$hostingUser->package_id]);
+            $packageType = $pkgStmt->fetchColumn() ?: '';
+        }
+        $chatStmt = $pdo->prepare("SELECT id FROM chatbox_tenants WHERE hosting_user_id = ?");
+        $chatStmt->execute([$hostingUser->id]);
+        $chatboxTenantId = (int)$chatStmt->fetchColumn();
+        $hasChatbox = $chatboxTenantId > 0;
+    } catch (Exception $e) {}
+}
+
+$hasRadio = stripos($packageType, 'icecast') !== false;
+$hasVps = stripos($packageType, 'vps') !== false;
+$hasWeb = stripos($packageType, 'web') !== false;
+$isReseller = stripos($packageType, 'reseller') !== false;
 ?><!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -47,10 +71,19 @@ $webmailPort = '2096';
 <div class="user-sidebar">
 <div class="user-info"><div class="avatar"><?php echo strtoupper(substr($username, 0, 1)); ?></div><div><div class="name"><?php echo htmlspecialchars($username); ?></div><div class="email"><?php echo htmlspecialchars($userEmail ?: $username); ?></div></div></div>
 <div class="nav-group"><div class="label">Home</div><a href="/user">Dashboard</a></div>
-<div class="nav-group"><div class="label">Services</div><a href="/user/services">My Services</a><a href="/user/services/web">Web Hosting</a><a href="/user/services/radio">Radio Hosting</a><a href="/user/services/vps">VPS</a><a href="/user/services/domains">Domains</a></div>
+<div class="nav-group"><div class="label">Services</div><a href="/user/services">My Services</a>
+<?php if ($hasWeb): ?><a href="/user/services/web">Web Hosting</a><?php endif; ?>
+<?php if ($hasRadio): ?><a href="/user/services/radio">Radio Hosting</a><?php endif; ?>
+<?php if ($hasVps): ?><a href="/user/services/vps">VPS</a><?php endif; ?>
+<a href="/user/services/domains">Domains</a></div>
+<?php if ($hasChatbox): ?>
+<div class="nav-group"><div class="label">Chat</div><a href="/chatbox/admin.php">💬 Chat Room</a></div>
+<?php endif; ?>
 <div class="nav-group"><div class="label">Domains</div><a href="/user/domains">Domain List</a><a href="/user/domains/add">Add Domain</a><a href="/user/subdomains">Subdomains</a><a href="/user/redirects">Redirects</a></div>
 <div class="nav-group"><div class="label">Email</div><a href="/user/email">Email Accounts</a><a href="http://<?php echo $serverHost; ?>:<?php echo $webmailPort; ?>/" target="_blank">Webmail</a></div>
-<div class="nav-group"><div class="label">Management</div><a href="/user/files">File Manager</a><a href="/user/databases">Databases</a><a href="/user/apps/node">Node.js Apps</a><a href="/user/apps/python">Python Apps</a><a href="/user/usage">Resource Usage</a></div>
+<div class="nav-group"><div class="label">Management</div><a href="/user/files">File Manager</a><a href="/user/databases">Databases</a><a href="/user/apps/node">Node.js Apps</a><a href="/user/apps/python">Python Apps</a><a href="/user/usage">Resource Usage</a>
+<?php if ($hasRadio): ?><a href="/dj_panel.php" target="_blank">🎤 DJ Panel</a><?php endif; ?>
+</div>
 <div class="nav-group"><div class="label">Support</div><a href="/user/tickets">Support Tickets</a><a href="/user/invoices">Invoices</a></div>
 <div class="nav-group"><div class="label">Account</div><a href="/user/profile">Profile</a><a href="/user/security">Security</a></div>
 <div class="nav-group" style="margin-top:8px"><a href="/user/logout" style="color:#ff6b6b">Logout</a></div>

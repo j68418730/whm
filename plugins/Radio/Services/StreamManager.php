@@ -133,8 +133,17 @@ class StreamManager
         return $configFile;
     }
 
-    protected function generateIcecastConfig($port, $password)
+    protected function generateIcecastConfig($port, $password, $sslCert = null, $sslKey = null)
     {
+        $sslBlock = '';
+        if ($sslCert && $sslKey && file_exists($sslCert) && file_exists($sslKey)) {
+            $sslBlock = <<<SSL
+    <listen-socket>
+        <port>{$port}</port>
+        <ssl>1</ssl>
+    </listen-socket>
+SSL;
+        }
         return <<<XML
 <icecast>
     <limits>
@@ -157,6 +166,7 @@ class StreamManager
     <listen-socket>
         <port>{$port}</port>
     </listen-socket>
+{$sslBlock}
     <fileserve>1</fileserve>
     <paths>
         <basedir>/usr/share/icecast2</basedir>
@@ -164,6 +174,8 @@ class StreamManager
         <webroot>/usr/share/icecast2/web</webroot>
         <adminroot>/usr/share/icecast2/admin</adminroot>
         <alias source="/" dest="/status.xsl"/>
+        <ssl-certificate>{$sslCert}</ssl-certificate>
+        <ssl-private-key>{$sslKey}</ssl-private-key>
     </paths>
     <logging>
         <accesslog>access.log</accesslog>
@@ -190,14 +202,32 @@ XML;
         } else {
             throw new \Exception("Unsupported server type: {$serverType}");
         }
+        $pidFile = dirname($configPath) . '/icecast.pid';
+        $this->killByPidFile($pidFile);
         $safeCommand = implode(' ', array_map('escapeshellarg', explode(' ', $command)));
-        exec("nohup {$safeCommand} > /dev/null 2>&1 &");
+        exec("nohup {$safeCommand} &> /dev/null & echo \$! > {$pidFile}");
+        usleep(500000);
         return $command;
     }
 
     protected function stopServerProcess($serverType, $configPath)
     {
-        exec("pkill -f " . escapeshellarg($configPath));
+        $pidFile = dirname($configPath) . '/icecast.pid';
+        $this->killByPidFile($pidFile);
+        exec("pkill -f " . escapeshellarg($configPath) . " 2>/dev/null");
+    }
+
+    protected function killByPidFile($pidFile)
+    {
+        if (file_exists($pidFile)) {
+            $pid = (int)trim(file_get_contents($pidFile));
+            if ($pid > 0) {
+                exec("kill {$pid} 2>/dev/null");
+                usleep(200000);
+                exec("kill -9 {$pid} 2>/dev/null");
+            }
+            @unlink($pidFile);
+        }
     }
 
     protected function generatePassword($length = 16)

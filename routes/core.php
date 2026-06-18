@@ -14,6 +14,7 @@ $router->get('/admin/login', 'Admin\Controllers\AuthController@login');
 $router->post('/admin/login/post', 'Admin\Controllers\AuthController@postLogin');
 $router->get('/admin/logout', 'Admin\Controllers\AuthController@logout');
 $router->get('/admin/dashboard', 'Admin\Controllers\DashboardController@index');
+$router->get('/admin/dashboard/health', 'Admin\Controllers\DashboardController@health');
 $router->get('/admin/theme', 'Admin\Controllers\ThemeController@index');
 $router->post('/admin/theme/update', 'Admin\Controllers\ThemeController@update');
 $router->post('/admin/theme', 'Admin\Controllers\ThemeController@update');
@@ -106,16 +107,20 @@ $router->get('/admin/licensing', 'Admin\Controllers\LicensingController@index');
 $router->post('/admin/licensing/upload', 'Admin\Controllers\LicensingController@upload');
 $router->get('/admin/licensing/generate', 'Admin\Controllers\LicensingController@generate');
 $router->post('/admin/licensing/generate', 'Admin\Controllers\LicensingController@generate');
+$router->get('/livechat', 'Admin\Controllers\LiveChatController@portal');
+$router->post('/livechat', 'Admin\Controllers\LiveChatController@portal');
 $router->get('/admin/livechat', 'Admin\Controllers\LiveChatController@index');
 $router->get('/admin/livechat/messages/{sessionId}', 'Admin\Controllers\LiveChatController@messages');
 $router->post('/admin/livechat/send', 'Admin\Controllers\LiveChatController@send');
 $router->post('/admin/livechat/transfer/{id}', 'Admin\Controllers\LiveChatController@transfer');
 $router->get('/admin/livechat/close/{id}', 'Admin\Controllers\LiveChatController@close');
+$router->get('/admin/livechat/delete/{id}', 'Admin\Controllers\LiveChatController@delete');
 $router->post('/admin/livechat/canned/store', 'Admin\Controllers\LiveChatController@cannedStore');
 $router->get('/admin/livechat/canned/delete/{id}', 'Admin\Controllers\LiveChatController@cannedDelete');
 $router->post('/admin/livechat/group/store', 'Admin\Controllers\LiveChatController@groupStore');
 $router->get('/admin/livechat/group/delete/{id}', 'Admin\Controllers\LiveChatController@groupDelete');
 $router->post('/admin/livechat/track', 'Admin\Controllers\LiveChatController@track');
+$router->get('/admin/livechat/visitors/online', 'Admin\Controllers\LiveChatController@visitorsOnline');
 $router->get('/admin/firewall', 'Admin\Controllers\FirewallController@index');
 $router->get('/admin/firewall/service/{action}/{svc}', 'Admin\Controllers\FirewallController@service');
 $router->get('/admin/firewall/modsec/{action}', 'Admin\Controllers\FirewallController@modsec');
@@ -149,6 +154,9 @@ $router->get('/admin/account/suspend/{id}', 'Admin\Controllers\AccountController
 $router->get('/admin/account/unsuspend/{id}', 'Admin\Controllers\AccountController@unsuspend');
 $router->get('/admin/account/terminate/{id}', 'Admin\Controllers\AccountController@terminate');
 $router->post('/admin/account/password/{id}', 'Admin\Controllers\AccountController@password');
+$router->post('/admin/account/ssh/access/{id}', 'Admin\Controllers\AccountController@sshAccess');
+$router->post('/admin/account/ssh/key-generate/{id}', 'Admin\Controllers\AccountController@sshKeyGenerate');
+$router->post('/admin/account/ssh/key-delete/{id}', 'Admin\Controllers\AccountController@sshKeyDelete');
 
 // -- Package sub-routes --
 $router->get('/admin/package/create', 'Admin\Controllers\PackageController@create');
@@ -166,8 +174,15 @@ $router->get('/admin/todo', 'Admin\Controllers\TodoController@index');
 $router->post('/admin/todo', 'Admin\Controllers\TodoController@store');
 $router->post('/admin/todo/{id}', 'Admin\Controllers\TodoController@update');
 $router->get('/admin/todo/delete/{id}', 'Admin\Controllers\TodoController@destroy');
+$router->get('/admin/todo/delete-category/{category}', 'Admin\Controllers\TodoController@destroyCategory');
 $router->get('/api/packages', 'Admin\Controllers\PackageController@apiList');
 $router->get('/api/icon', 'Admin\Controllers\IconController@generate');
+// Reviews
+$router->get('/admin/reviews', 'Admin\Controllers\ReviewsController@index');
+$router->get('/admin/reviews/approve/{id}', 'Admin\Controllers\ReviewsController@approve');
+$router->get('/admin/reviews/delete/{id}', 'Admin\Controllers\ReviewsController@delete');
+// Login as user
+$router->get('/admin/account/login-as/{id}', 'Admin\Controllers\AccountController@loginAs');
 
 // -- Reseller sub-routes --
 $router->get('/admin/reseller/create', 'Admin\Controllers\ResellerController@create');

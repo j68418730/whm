@@ -73,6 +73,9 @@ class PackageController extends Controller
             'dj_accounts' => (int)$this->request->post('dj_accounts', 0),
             'sort_order' => (int)$this->request->post('sort_order', 0),
             'is_active' => 1,
+            'live_chat_enabled' => $this->request->post('live_chat_enabled') ? 1 : 0,
+            'chatroom_enabled' => $this->request->post('chatroom_enabled') ? 1 : 0,
+            'chatroom_voice_enabled' => $this->request->post('chatroom_voice_enabled') ? 1 : 0,
         ];
         $this->db->table('hosting_packages')->insertGetId($data);
         $_SESSION['success_message'] = 'Package created.';
@@ -110,6 +113,9 @@ class PackageController extends Controller
             'dj_accounts' => (int)$this->request->post('dj_accounts', 0),
             'sort_order' => (int)$this->request->post('sort_order', 0),
             'is_active' => $this->request->post('is_active') === 'on' ? 1 : 0,
+            'live_chat_enabled' => $this->request->post('live_chat_enabled') ? 1 : 0,
+            'chatroom_enabled' => $this->request->post('chatroom_enabled') ? 1 : 0,
+            'chatroom_voice_enabled' => $this->request->post('chatroom_voice_enabled') ? 1 : 0,
         ];
         $this->db->table('hosting_packages')->where('id', $id)->update($data);
         $_SESSION['success_message'] = 'Package updated.';

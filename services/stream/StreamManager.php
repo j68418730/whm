@@ -242,23 +242,52 @@ XML;
             throw new \Exception("Unsupported server type: {$serverType}");
         }
 
-        // Execute the command in the background
-        // In a real system, we would use a process manager like Supervisor
+        // Generate PID file path (same directory as config)
+        $pidFile = dirname($configPath) . '/icecast.pid';
+
+        // Kill existing process if PID file exists
+        $this->killByPidFile($pidFile);
+
+        // Start with PID file
         $safeCommand = implode(' ', array_map('escapeshellarg', explode(' ', $command)));
-        exec("nohup {$safeCommand} > /dev/null 2>&1 &");
+        exec("nohup {$safeCommand} &> /dev/null & echo \$! > {$pidFile}");
+
+        // Wait briefly and verify process started
+        usleep(500000); // 0.5s
+        $pid = $this->readPidFile($pidFile);
+        if ($pid && !file_exists("/proc/{$pid}")) {
+            @unlink($pidFile);
+        }
 
         return $command;
     }
 
-    /**
-     * Stop the server process
-     */
     protected function stopServerProcess($serverType, $configPath)
     {
-        // In a real system, we would track the process ID and kill it
-        // For now, we'll just note that the stream is stopped
-        // A more robust implementation would use PID files or a process manager
-        exec("pkill -f " . escapeshellarg($configPath));
+        $pidFile = dirname($configPath) . '/icecast.pid';
+        $this->killByPidFile($pidFile);
+        // Fallback: kill by config path
+        exec("pkill -f " . escapeshellarg($configPath) . " 2>/dev/null");
+    }
+
+    protected function killByPidFile($pidFile)
+    {
+        $pid = $this->readPidFile($pidFile);
+        if ($pid) {
+            exec("kill {$pid} 2>/dev/null");
+            usleep(200000);
+            exec("kill -9 {$pid} 2>/dev/null");
+            @unlink($pidFile);
+        }
+    }
+
+    protected function readPidFile($pidFile)
+    {
+        if (file_exists($pidFile)) {
+            $pid = (int)trim(file_get_contents($pidFile));
+            if ($pid > 0) return $pid;
+        }
+        return null;
     }
 
     /**

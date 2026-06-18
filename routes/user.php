@@ -61,6 +61,7 @@ $router->post('/user/tickets/reply/{id}', 'User\Controllers\TicketsController@re
 $router->get('/user/tickets/close/{id}', 'User\Controllers\TicketsController@close');
 $router->get('/user/stats', 'User\Controllers\UserController@stats');
 $router->get('/user/tools', 'User\Controllers\UserController@tools');
+$router->get('/user/logout', 'User\Controllers\UserController@logout');
 $router->get('/user/apps/node', 'User\Controllers\AppsController@node');
 $router->post('/user/apps/node/create', 'User\Controllers\AppsController@nodeCreate');
 $router->get('/user/apps/node/start/{id}', 'User\Controllers\AppsController@nodeStart');

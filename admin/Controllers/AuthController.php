@@ -14,6 +14,7 @@ use Core\View;
 
 class AuthController extends Controller
 {
+    protected function skipCsrf() { return true; }
     protected $auth;
     protected $request;
     protected $response;
@@ -93,26 +94,54 @@ class AuthController extends Controller
      */
     public function postLogin()
     {
+        // Rate limiting: max 5 attempts per IP per 15 minutes
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $rateKey = 'login_attempts_' . md5($ip);
+        $attempts = (int)($_SESSION[$rateKey] ?? 0);
+        $attemptTime = $_SESSION[$rateKey . '_time'] ?? 0;
+        if ($attempts >= 5 && time() - $attemptTime < 900) {
+            $_SESSION['login_error'] = 'Too many login attempts. Try again in ' . ceil((900 - (time() - $attemptTime)) / 60) . ' minutes.';
+            $this->response->redirect('/admin/login');
+            exit;
+        }
+
         $credentials = [
             'username' => $this->request->post('username') ?: $this->request->post('email'),
             'password' => $this->request->post('password')
         ];
 
         if ($this->auth->attempt($credentials)) {
+            // Reset rate limit on success
+            unset($_SESSION[$rateKey], $_SESSION[$rateKey . '_time']);
+
+            // Regenerate session ID to prevent fixation
+            session_regenerate_id(true);
+
+            // Set secure session cookie params
+            $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+            setcookie(session_name(), session_id(), [
+                'expires' => 0,
+                'path' => '/',
+                'domain' => '',
+                'secure' => $https,
+                'httponly' => true,
+                'samesite' => 'Strict',
+            ]);
+
             if ($this->request->post('remember')) {
-                // Set remember me cookie (30 days)
                 $token = bin2hex(random_bytes(32));
                 $userId = $this->auth->user()->id;
                 $this->db->table('admins')->where('id', $userId)->update(['remember_token' => $token]);
-                setcookie('remember_token', $token, time() + 86400 * 30, '/', '', false, true);
-                // Also extend session lifetime
-                ini_set('session.gc_maxlifetime', 86400 * 30);
-                setcookie(session_name(), session_id(), time() + 86400 * 30, '/');
+                setcookie('remember_token', $token, time() + 86400 * 30, '/', '', $https, true);
+                setcookie(session_name(), session_id(), time() + 86400 * 30, '/', '', $https, true);
             }
+            $_SESSION['login_success'] = 'Welcome back, ' . htmlspecialchars($this->auth->user()->name ?? 'Admin');
             $this->response->redirect('/admin/dashboard');
             exit;
         } else {
-            // Redirect back with error
+            // Increment rate limit
+            $_SESSION[$rateKey] = $attempts + 1;
+            $_SESSION[$rateKey . '_time'] = time();
             $_SESSION['login_error'] = 'Invalid email or password';
             $this->response->redirect('/admin/login');
             exit;

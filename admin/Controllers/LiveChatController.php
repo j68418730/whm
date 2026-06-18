@@ -37,8 +37,17 @@ class LiveChatController extends Controller
 
     public function messages($sessionId)
     {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->json(['error'=>'Unauthorized']); exit; }
-        $msgs = $this->db->table('chat_messages')->where('session_id', $sessionId)->get() ?: [];
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->json(['error'=>'Unauthorized']); $this->response->send(); exit; }
+        $since = (int)$this->request->get('since', 0);
+        $all = $this->db->table('chat_messages')->where('session_id', $sessionId)->get() ?: [];
+        // Deduplicate by id and only return new ones
+        $seen = [];
+        $msgs = [];
+        foreach ($all as $m) {
+            if (isset($seen[$m->id])) continue;
+            $seen[$m->id] = true;
+            if ($m->id > $since) $msgs[] = $m;
+        }
         $this->response->json($msgs);
         $this->response->send();
         exit;
@@ -46,18 +55,21 @@ class LiveChatController extends Controller
 
     public function send()
     {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->json(['error'=>'Unauthorized']); $this->response->send(); exit; }
         $sessionId = (int)$this->request->post('session_id', 0);
         $msg = $this->request->post('message', '');
+        $id = 0;
         if ($sessionId && $msg) {
-            $this->db->table('chat_messages')->insertGetId([
+            $id = $this->db->table('chat_messages')->insertGetId([
                 'session_id' => $sessionId, 'sender_type' => 'operator',
                 'sender_name' => $this->auth->user()->name ?? 'Staff',
-                'message' => $msg,
+                'message' => $msg, 'created_at' => date('Y-m-d H:i:s'),
             ]);
             $this->db->table('chat_sessions')->where('id', $sessionId)->update(['status' => 'active']);
         }
-        $this->response->redirect('/admin/livechat');
+        $this->response->json(['ok'=>true, 'id'=>$id]);
+        $this->response->send();
+        exit;
     }
 
     public function transfer($id)
@@ -108,6 +120,17 @@ class LiveChatController extends Controller
         $this->response->redirect('/admin/livechat');
     }
 
+    public function delete($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $this->db->table('chat_messages')->where('session_id', $id)->delete();
+        $this->db->table('chat_attachments')->where('session_id', $id)->delete();
+        $this->db->table('chat_ratings')->where('session_id', $id)->delete();
+        $this->db->table('chat_sessions')->where('id', $id)->delete();
+        $_SESSION['success_message'] = "Chat #{$id} deleted.";
+        $this->response->redirect('/admin/livechat');
+    }
+
     public function groupDelete($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
@@ -116,22 +139,63 @@ class LiveChatController extends Controller
     }
 
     // Visitor tracking AJAX
+    public function visitorsOnline()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->json([]); $this->response->send(); exit; }
+        $cutoff = date('Y-m-d H:i:s', time() - 120);
+        $visitors = $this->db->table('chat_visitors')->where('last_seen', '>', $cutoff)->get() ?: [];
+        // Deduplicate by session_id, keep the most recent entry
+        $deduped = [];
+        $seen = [];
+        foreach ($visitors as $v) {
+            if (!isset($seen[$v->session_id])) {
+                $seen[$v->session_id] = true;
+                $deduped[] = $v;
+            }
+        }
+        $this->response->json($deduped);
+        $this->response->send();
+        exit;
+    }
+
     public function track()
     {
         $sessId = $_COOKIE['PHPSESSID'] ?? session_id();
         $page = $_POST['page'] ?? '';
+        $tz = $_POST['tz'] ?? '';
+        $res = $_POST['res'] ?? '';
+        $lang = $_POST['lang'] ?? '';
+        $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        // Detect browser & OS from UA
+        $browser = 'Unknown';
+        if (strpos($ua, 'Edg') !== false) $browser='Edge';
+        elseif (strpos($ua, 'Chrome') !== false) $browser='Chrome';
+        elseif (strpos($ua, 'Firefox') !== false) $browser='Firefox';
+        elseif (strpos($ua, 'Safari') !== false) $browser='Safari';
+        $os = 'Unknown';
+        if (strpos($ua, 'Windows') !== false) $os='Windows';
+        elseif (strpos($ua, 'Mac') !== false) $os='MacOS';
+        elseif (strpos($ua, 'Linux') !== false) $os='Linux';
+        elseif (strpos($ua, 'Android') !== false) $os='Android';
+        elseif (strpos($ua, 'iPhone') !== false || strpos($ua, 'iPad') !== false) $os='iOS';
+
         $existing = $this->db->table('chat_visitors')->where('session_id', $sessId)->first();
         if ($existing) {
             $history = $existing->page_history ? json_decode($existing->page_history, true) : [];
             $history[] = ['page' => $page, 'time' => date('Y-m-d H:i:s')];
             $history = array_slice($history, -20);
             $this->db->table('chat_visitors')->where('id', $existing->id)->update([
-                'current_page' => $page, 'page_history' => json_encode($history), 'time_on_site' => time() - strtotime($existing->first_seen),
+                'current_page' => $page, 'page_history' => json_encode($history),
+                'time_on_site' => time() - strtotime($existing->first_seen),
+                'browser' => $browser, 'os' => $os, 'last_seen' => date('Y-m-d H:i:s'),
             ]);
         } else {
             $this->db->table('chat_visitors')->insertGetId([
                 'session_id' => $sessId, 'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
-                'current_page' => $page, 'page_history' => json_encode([['page' => $page, 'time' => date('Y-m-d H:i:s')]]),
+                'current_page' => $page, 'timezone' => $tz, 'language' => $lang,
+                'browser' => $browser, 'os' => $os,
+                'page_history' => json_encode([['page' => $page, 'time' => date('Y-m-d H:i:s')]]),
+                'last_seen' => date('Y-m-d H:i:s'), 'first_seen' => date('Y-m-d H:i:s'),
             ]);
         }
         echo 'ok';

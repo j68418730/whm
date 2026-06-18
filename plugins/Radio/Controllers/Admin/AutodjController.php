@@ -57,9 +57,29 @@ class AutodjController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         if ($_FILES && isset($_FILES['track'])) {
+            $allowed = ['mp3','aac','ogg','flac','opus','wav','m4a','wma'];
+            $ext = strtolower(pathinfo($_FILES['track']['name'], PATHINFO_EXTENSION));
+            if (!in_array($ext, $allowed)) {
+                $_SESSION['error_message'] = 'Invalid file type. Allowed: ' . implode(', ', $allowed);
+                $this->response->redirect('/admin/autodj'); exit;
+            }
+            $maxSize = 500 * 1024 * 1024; // 500MB
+            if ($_FILES['track']['size'] > $maxSize) {
+                $_SESSION['error_message'] = 'File too large. Max 500MB.';
+                $this->response->redirect('/admin/autodj'); exit;
+            }
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime = finfo_file($finfo, $_FILES['track']['tmp_name']);
+            finfo_close($finfo);
+            $allowedMime = ['audio/mpeg','audio/aac','audio/ogg','audio/flac','audio/opus','audio/wav','audio/x-m4a','audio/x-ms-wma'];
+            if (!in_array($mime, $allowedMime)) {
+                $_SESSION['error_message'] = 'Invalid file content.';
+                $this->response->redirect('/admin/autodj'); exit;
+            }
             $targetDir = '/var/www/radiohosting/storage/radio/autodj/music/';
             @mkdir($targetDir, 0755, true);
-            $path = $targetDir . basename($_FILES['track']['name']);
+            $safeName = bin2hex(random_bytes(16)) . '.' . $ext;
+            $path = $targetDir . $safeName;
             move_uploaded_file($_FILES['track']['tmp_name'], $path);
             $this->db->table('radio_playlist_items')->insertGetId([
                 'playlist_id' => (int)$this->request->post('playlist_id', 0),

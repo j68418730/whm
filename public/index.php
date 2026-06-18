@@ -59,6 +59,7 @@ require BASE_PATH . '/core/ServiceProvider.php';
 require BASE_PATH . '/core/Plugin.php';
 require BASE_PATH . '/core/PluginManager.php';
 require BASE_PATH . '/core/License.php';
+require BASE_PATH . '/core/SshJail.php';
 
 // Load configuration
 $config = require BASE_PATH . '/config/app.php';

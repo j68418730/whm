@@ -25,8 +25,8 @@ echo "[1/8] Updating system..."
 apt update -qq && apt upgrade -y -qq
 
 # 2. Full LAMP + services
-echo "[2/8] Installing Apache, PHP, MariaDB, and services..."
-apt install -y -qq apache2 mariadb-server \
+echo "[2/8] Installing Apache, PHP, MariaDB, services, and jailkit..."
+apt install -y -qq apache2 mariadb-server jailkit quota quotatool \
   php php-cli php-common php-curl php-gd php-intl php-mbstring php-mysql \
   php-xml php-zip php-bcmath php-bz2 php-ctype php-exif php-fileinfo \
   php-ftp php-imap php-ldap php-opcache php-redis php-sockets php-tokenizer \
@@ -128,6 +128,14 @@ a2enconf phpmyadmin
 for port in 2082 2086 2087 2096; do
   grep -q "Listen $port" /etc/apache2/ports.conf || echo "Listen $port" >> /etc/apache2/ports.conf
 done
+# Open .NET Support Server ports
+firewall-cmd --permanent --add-port={5000/tcp,5001/tcp} 2>/dev/null || true
+# Open Icecast streaming ports
+firewall-cmd --permanent --add-port=6000-10000/tcp 2>/dev/null || true
+# Also open with iptables in case firewalld is masked
+iptables -I INPUT -p tcp --dport 5000 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 5001 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 6000:10000 -j ACCEPT 2>/dev/null || true
 systemctl restart apache2
 
 # 7. Database
@@ -221,11 +229,44 @@ php -r "
 echo \"Admin set.\n\";
 "
 
+# 9. .NET 8 Support Server
+echo "[9/9] Installing .NET 8 Support Server..."
+wget -q https://dot.net/v1/dotnet-install.sh -O /tmp/dotnet-install.sh
+bash /tmp/dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet --runtime aspnetcore >/dev/null 2>&1
+ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet 2>/dev/null || true
+mkdir -p /opt/PlanetHosts.Support.Server
+cp -r "$SCRIPT_DIR/SupportServer/." /opt/PlanetHosts.Support.Server/ 2>/dev/null || true
+cat > /etc/systemd/system/planet-support.service << 'SERVICEEOF'
+[Unit]
+Description=PlanetHosts Support Server (.NET 8)
+After=network.target mariadb.service
+
+[Service]
+WorkingDirectory=/opt/PlanetHosts.Support.Server
+ExecStart=/usr/bin/dotnet /opt/PlanetHosts.Support.Server/PlanetHosts.Support.Server.dll
+Restart=always
+RestartSec=10
+KillSignal=SIGINT
+SyslogIdentifier=planet-support
+User=root
+Environment=ASPNETCORE_URLS=http://0.0.0.0:5000
+Environment=ASPNETCORE_ENVIRONMENT=Production
+
+[Install]
+WantedBy=multi-user.target
+SERVICEEOF
+systemctl daemon-reload 2>/dev/null
+systemctl enable planet-support 2>/dev/null
+systemctl start planet-support 2>/dev/null || true
+echo "[9/9] .NET Support Server installed on port 5000"
+
 # Copy theme into public
 rm -rf "$PANEL_DIR/public/theme" 2>/dev/null
 cp -r "$PANEL_DIR/theme" "$PANEL_DIR/public/theme" 2>/dev/null || true
 # Copy themes into public/theme/themes
 cp -r "$PANEL_DIR/theme/themes" "$PANEL_DIR/public/theme/themes" 2>/dev/null || true
+# Copy livechat banners
+cp -r "$PANEL_DIR/theme/assets/img/livechat" "$PANEL_DIR/public/theme/assets/img/livechat" 2>/dev/null || true
 
 echo ""
 echo "=============================================="
@@ -233,6 +274,7 @@ echo " Installation Complete"
 echo "=============================================="
 echo " Panel: http://$SERVER_IP/"
 echo " phpMyAdmin: http://$SERVER_IP/phpmyadmin"
+echo " Voice Test: http://$SERVER_IP/voice/admin.php"
 echo ""
 echo " Admin Login: root"
 echo " Admin Password: $ADMIN_PASS"
@@ -240,4 +282,5 @@ echo " DB Password: $DB_PASS"
 echo ""
 echo " Services: Apache, MariaDB, Postfix, Dovecot,"
 echo "           VSFTPD, Bind9, Icecast2, Firewalld, Fail2ban"
+echo "           .NET 8 Support Server (port 5000)"
 echo ""
