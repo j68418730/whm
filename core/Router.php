@@ -72,6 +72,11 @@ class Router
         // Create controller instance
         $controller = new $controllerClass();
 
+        // Run init (CSRF validation happens here)
+        if (method_exists($controller, '__init')) {
+            $controller->__init();
+        }
+
         // Check if the method exists
         if (!method_exists($controller, $method)) {
             throw new \Exception("Method not found in controller: {$method}");

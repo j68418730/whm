@@ -65,4 +65,13 @@ class TodoController extends Controller
         $this->response->redirect('/admin/todo');
         exit;
     }
+
+    public function destroyCategory($category)
+    {
+        $cat = urldecode($category);
+        $count = $this->db->table('todos')->where('category', $cat)->delete();
+        $_SESSION['success_message'] = "Deleted {$count} tasks in '{$cat}'.";
+        $this->response->redirect('/admin/todo');
+        exit;
+    }
 }

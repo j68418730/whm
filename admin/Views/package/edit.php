@@ -11,7 +11,7 @@ body{font-family:Inter,sans-serif;background:#000;color:#fff;margin:0;padding:40
 h1{color:#0A84FF;margin-bottom:24px}
 .form-group{margin-bottom:16px}
 label{display:block;margin-bottom:6px;color:#94a3b8;font-weight:600;font-size:14px}
-input,select,textarea{width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:14px;outline:none;box-sizing:border-box}
+input,select,textarea{width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.4);color:#e0e0e0;font-size:14px;outline:none;box-sizing:border-box}
 textarea{resize:vertical;min-height:60px}
 input:focus,select:focus,textarea:focus{border-color:#0A84FF}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -33,7 +33,7 @@ input:focus,select:focus,textarea:focus{border-color:#0A84FF}
 <form method="POST" action="/admin/package/edit/<?php echo $package->id; ?>">
 <div class="row">
 <div class="form-group"><label>Name</label><input name="name" value="<?php echo htmlspecialchars($package->name ?? '', ENT_QUOTES, 'UTF-8'); ?>" required></div>
-<div class="form-group"><label>Type</label><select name="type"><?php foreach ($types as $t): ?><option value="<?php echo $t; ?>" <?php echo ($package->type ?? '') === $t ? 'selected' : ''; ?>><?php echo $t; ?></option><?php endforeach; ?></select></div>
+<div class="form-group"><label>Type</label><select name="type"><?php foreach ($categories as $cat): ?><option value="<?php echo htmlspecialchars($cat->name, ENT_QUOTES, 'UTF-8'); ?>" <?php echo ($package->type ?? '') === $cat->name ? 'selected' : ''; ?>><?php echo htmlspecialchars($cat->icon . ' ' . $cat->name, ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
 </div>
 <div class="form-group"><label>Description</label><textarea name="description"><?php echo htmlspecialchars($package->description ?? '', ENT_QUOTES, 'UTF-8'); ?></textarea></div>
 <div class="row">
@@ -53,6 +53,9 @@ input:focus,select:focus,textarea:focus{border-color:#0A84FF}
 <div class="form-group"><label>DJ Accounts</label><input name="dj_accounts" type="number" value="<?php echo $package->dj_accounts ?? 0; ?>"></div>
 </div>
 <div class="form-group"><label><input type="checkbox" name="is_active" <?php echo ($package->is_active ?? 1) ? 'checked' : ''; ?>> Active</label></div>
+<div class="form-group"><label><input type="checkbox" name="live_chat_enabled" value="1" <?php echo ($package->live_chat_enabled ?? 0) ? 'checked' : ''; ?>> Live Chat Support</label></div>
+<div class="form-group"><label><input type="checkbox" name="chatroom_enabled" value="1" <?php echo ($package->chatroom_enabled ?? 0) ? 'checked' : ''; ?>> Chat Room</label></div>
+<div class="form-group"><label><input type="checkbox" name="chatroom_voice_enabled" value="1" <?php echo ($package->chatroom_voice_enabled ?? 0) ? 'checked' : ''; ?>> Chat Room with Voice</label></div>
 
 <h2 style="color:#0A84FF;font-size:18px;margin:24px 0 16px">Feature List</h2>
 <div id="featuresContainer">
@@ -62,7 +65,16 @@ input:focus,select:focus,textarea:focus{border-color:#0A84FF}
 <?php endforeach; ?>
 <div class="feature-item"><input name="features[]" placeholder="e.g. 10 GB Storage"><button type="button" onclick="this.parentElement.remove()">✕</button></div>
 </div>
-<div class="add-feature" onclick="var c=document.getElementById('featuresContainer');var d=document.createElement('div');d.className='feature-item';d.innerHTML='<input name=features[] placeholder=\"e.g. 10 GB Storage\"><button type=button onclick=this.parentElement.remove()>✕</button>';c.appendChild(d)">+ Add Feature</div>
+<div class="add-feature" onclick="addFeature()">+ Add Feature</div>
+<script>
+function addFeature() {
+    var c = document.getElementById('featuresContainer');
+    var d = document.createElement('div');
+    d.className = 'feature-item';
+    d.innerHTML = '<input name="features[]" placeholder="e.g. 10 GB Storage"><button type="button" onclick="this.parentElement.remove()">✕</button>';
+    c.appendChild(d);
+}
+</script>
 
 <div style="margin-top:28px;display:flex;gap:12px">
 <button type="submit" class="btn primary">Update Package</button>
