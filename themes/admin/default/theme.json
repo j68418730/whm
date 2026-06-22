@@ -1,0 +1,32 @@
+{
+    "name": "PlanetHosts Default",
+    "version": "2.0",
+    "author": "Planet-Hosts",
+    "description": "Default Planet-Hosts admin theme. Dark sidebar, dark content area, blue accents.",
+    "type": "admin",
+    "parent": "",
+    "layouts": ["1-col", "2-col", "3-col"],
+    "widget_zones": ["header", "top", "left", "center", "right", "footer"],
+    "colors": {
+        "primary": "#008cff",
+        "secondary": "#3bb8ff",
+        "bg": "#02050e",
+        "sidebar_bg": "#0b1728",
+        "card_bg": "rgba(8,16,28,.6)",
+        "text": "#e0e0e0",
+        "text_muted": "#64748b",
+        "border": "rgba(0,191,255,.1)",
+        "success": "#4ade80",
+        "warning": "#facc15",
+        "danger": "#f87171"
+    },
+    "fonts": {
+        "body": "'Inter', sans-serif",
+        "heading": "'Inter', sans-serif",
+        "mono": "'JetBrains Mono', monospace"
+    },
+    "assets": {
+        "css": ["assets/css/theme.css"],
+        "js": ["assets/js/theme.js"]
+    }
+}

@@ -1,11 +1,26 @@
 <?php
 session_start();
-$action = $_GET['action'] ?? 'login';
+$action = $_GET['action'] ?? 'dashboard';
 $error = '';
 $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
 
-// Admin login
-if ($action === 'login' && $_POST) {
+// Check panel auth first (super admin bypass)
+$bypassTenantId = 0;
+if (isset($_SESSION['user']) && !empty($_SESSION['user']->id)) {
+    $panelUser = $_SESSION['user'];
+    if (!empty($panelUser->is_admin)) {
+        // Admin can access any tenant - check query param
+        $bypassTenantId = (int)($_GET['tenant_id'] ?? 0);
+    } else {
+        // Regular user - find their tenant
+        $q = $pdo->prepare("SELECT id FROM chatbox_tenants WHERE hosting_user_id = ?");
+        $q->execute([$panelUser->id]);
+        $bypassTenantId = (int)$q->fetchColumn();
+    }
+}
+
+// Admin login (separate chatbox auth)
+if ($action === 'login' && $_POST && !$bypassTenantId) {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     $stmt = $pdo->prepare("SELECT u.*, t.id as tenant_id FROM chatbox_users u JOIN chatbox_tenants t ON u.tenant_id = t.id WHERE u.username = ? AND u.role IN ('owner','admin')");
@@ -19,7 +34,12 @@ if ($action === 'login' && $_POST) {
     $error = 'Invalid credentials';
 }
 
-if (!isset($_SESSION['chatbox_admin'])) {
+// Use bypass tenant
+if ($bypassTenantId) {
+    $_SESSION['chatbox_admin'] = ['id' => 0, 'tenant_id' => $bypassTenantId, 'username' => 'Admin', 'role' => 'owner'];
+}
+
+if (!isset($_SESSION['chatbox_admin']) && !$bypassTenantId) {
     ?>
     <!DOCTYPE html><html><head><title>Chat Admin Login</title>
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -137,6 +157,41 @@ iframe{width:100%;height:400px;border:1px solid rgba(255,255,255,.1);border-radi
 <div class="embed-box">&lt;iframe src="http://45.61.59.55/chatbox/embed.php?tenant_id=<?php echo $tenantId; ?>" width="360" height="500"&gt;&lt;/iframe&gt;</div>
 <button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('&lt;iframe src=&quot;http://45.61.59.55/chatbox/embed.php?tenant_id=<?php echo $tenantId; ?>&quot; width=&quot;360&quot; height=&quot;500&quot;&gt;&lt;/iframe&gt;')">📋 Copy Iframe</button>
 </div>
+
+<div class="card">
+<h2>🔒 Guest Password Protection</h2>
+<form method="POST" action="/chatbox/api.php?action=guest_protect" style="display:flex;gap:8px;flex-wrap:wrap">
+<input type="hidden" name="action" value="guest_protect">
+<label style="display:flex;align-items:center;gap:4px"><input type="checkbox" name="enable" value="1" <?php echo !empty($tenant->guest_password_enabled) ? 'checked' : ''; ?>> Require password for guests</label>
+<input name="password" placeholder="Guest password" style="flex:1;min-width:120px">
+<button class="btn btn-sm btn-primary" onclick="var f=this.form;fetch(f.action,{method:'POST',body:new FormData(f)}).then(r=>r.json()).then(d=>alert(d.success?'Saved':'Error'))">Save</button>
+</form>
+</div>
+
+<div class="card" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+<div><h2>📊 Chat Statistics</h2>
+<div id="chatStats" style="font-size:13px;color:#94a3b8"><p>Loading...</p></div></div>
+<div><h2>📋 Moderation Log</h2>
+<div id="modLog" style="font-size:12px;max-height:200px;overflow-y:auto;color:#94a3b8"><p>Loading...</p></div></div>
+</div>
+<script>
+fetch('/chatbox/api.php?action=stats', {credentials:'include'}).then(r=>r.json()).then(function(d){
+    if(d.total_messages !== undefined) {
+        document.getElementById('chatStats').innerHTML =
+            '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">' +
+            '<div style="background:rgba(0,0,0,.3);padding:8px;border-radius:6px;text-align:center"><div style="font-size:22px;font-weight:700;color:#38bdf8">' + d.total_messages + '</div><div style="font-size:10px;color:#64748b">Messages</div></div>' +
+            '<div style="background:rgba(0,0,0,.3);padding:8px;border-radius:6px;text-align:center"><div style="font-size:22px;font-weight:700;color:#4ade80">' + d.total_users + '</div><div style="font-size:10px;color:#64748b">Users</div></div>' +
+            '<div style="background:rgba(0,0,0,.3);padding:8px;border-radius:6px;text-align:center"><div style="font-size:22px;font-weight:700;color:#facc15">' + d.online_now + '</div><div style="font-size:10px;color:#64748b">Online</div></div></div>';
+    }
+});
+fetch('/chatbox/api.php?action=mod_log', {credentials:'include'}).then(r=>r.json()).then(function(d){
+    if(d && d.length) {
+        document.getElementById('modLog').innerHTML = '<table style="width:100%;font-size:11px">' + d.map(function(m){
+            return '<tr><td>' + m.action + '</td><td>' + (m.target_username||'') + '</td><td style="color:#64748b">' + m.created_at + '</td></tr>';
+        }).join('') + '</table>';
+    } else { document.getElementById('modLog').innerHTML = '<p>No moderation actions</p>'; }
+});
+</script>
 
 <div class="card">
 <h2>🚪 Rooms</h2>

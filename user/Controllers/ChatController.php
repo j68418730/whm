@@ -31,6 +31,18 @@ class ChatController extends Controller
             'session_id' => $sessionId, 'sender_type' => 'system',
             'message' => "{$name} has started a chat.",
         ]);
+        // Notify all admins about new chat
+        $now = date('Y-m-d H:i:s');
+        $admins = $this->db->table('admins')->get() ?: [];
+        foreach ($admins as $admin) {
+            $this->db->table('notifications')->insertGetId([
+                'user_id' => $admin->id,
+                'type' => 'chat',
+                'title' => 'Support Request: ' . $name,
+                'message' => 'New Visitor ' . $name . ' (' . ($email ?: 'no email') . ') has requested support.',
+                'created_at' => $now,
+            ]);
+        }
         $this->response->json(['id' => $sessionId]);
         $this->response->send();
         exit;

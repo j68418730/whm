@@ -1,0 +1,1 @@
+{"name":"Billing","version":"1.0","author":"Planet-Hosts","description":"Billing plugin for invoice generation and client billing.","routes":"routes.php","controllers":"Controllers","views":"Views","services":"","entry":"BillingPlugin.php"}

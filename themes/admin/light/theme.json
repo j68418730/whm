@@ -1,0 +1,9 @@
+{
+    "name": "Planet Light",
+    "version": "2.0", "author": "Planet-Hosts",
+    "description": "Light theme with white backgrounds and dark text.",
+    "type": "admin",
+    "colors": { "primary": "#0066cc", "bg": "#f5f7fa", "sidebar_bg": "#ffffff", "card_bg": "#ffffff", "text": "#1a1a2e", "text_muted": "#64748b", "border": "#e2e8f0", "success": "#22c55e", "warning": "#eab308", "danger": "#ef4444" },
+    "fonts": { "body": "'Inter', sans-serif", "heading": "'Inter', sans-serif" },
+    "assets": { "css": [], "js": [] }
+}

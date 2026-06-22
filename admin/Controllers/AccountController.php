@@ -157,11 +157,33 @@ class AccountController extends Controller
             if ($p->id == $account->package_id) $package = $p;
         }
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        // Usage stats
+        $homeDir = '/home/' . $account->username;
+        $diskUsage = '-';
+        $bandwidthUsage = '-';
+        $backupFiles = [];
+        if (is_dir($homeDir)) {
+            $diskOut = @shell_exec("du -sk " . escapeshellarg($homeDir) . " 2>/dev/null");
+            $diskUsage = $diskOut ? round((int)trim(explode("\t", $diskOut)[0]) / 1024, 2) . ' MB' : '-';
+            $backupFiles = glob("{$homeDir}/backup_*.tar.gz") ?: [];
+            $backupFiles = array_merge($backupFiles, glob("{$homeDir}/backup_*.zip") ?: []);
+            rsort($backupFiles);
+        }
+        try {
+            $history = $this->db->table('activity_log')->where('target_id', (int)$id)->orderBy('created_at', 'DESC')->limit(10)->get() ?: [];
+        } catch (\Exception $e) { $history = []; }
+        $resellers = $this->db->table('resellers')->get() ?: [];
         return $this->view('admin.account.show', [
             'user' => $user,
             'account' => $account,
             'package' => $package,
-            'theme_settings' => $theme_settings
+            'theme_settings' => $theme_settings,
+            'disk_usage' => $diskUsage,
+            'bandwidth_usage' => $bandwidthUsage,
+            'backup_files' => $backupFiles,
+            'history' => $history,
+            'resellers' => $resellers,
+            'packages' => $packages,
         ]);
     }
 
@@ -266,14 +288,52 @@ class AccountController extends Controller
         exit;
     }
 
+    public function changeOwner($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $account = $this->db->table('hosting_users')->where('id', $id)->first();
+        if (!$account) { $this->response->redirect('/admin/account'); exit; }
+        $resellerId = (int)$this->request->post('reseller_id', 0);
+        $ownerEmail = trim($this->request->post('owner_email', ''));
+        if ($resellerId) {
+            $this->db->table('hosting_users')->where('id', $id)->update(['reseller_id' => $resellerId]);
+        }
+        if ($ownerEmail) {
+            $newOwner = $this->db->table('hosting_users')->where('email', $ownerEmail)->first();
+            if ($newOwner) {
+                $this->db->table('hosting_users')->where('id', $id)->update(['owner_id' => $newOwner->id, 'reseller_id' => 0]);
+            }
+        }
+        $_SESSION['success_message'] = 'Ownership changed.';
+        $this->response->redirect('/admin/account/show/' . $id);
+        exit;
+    }
+
+    public function exitSudo()
+    {
+        if (!isset($_SESSION['sudo_login']) || !isset($_SESSION['sudo_admin_user'])) {
+            $this->response->redirect('/admin/login');
+            exit;
+        }
+        // Restore admin session
+        $_SESSION['user'] = $_SESSION['sudo_admin_user'];
+        $_SESSION['is_admin'] = true;
+        unset($_SESSION['sudo_login']);
+        unset($_SESSION['sudo_admin_id']);
+        unset($_SESSION['sudo_admin_user']);
+        $this->response->redirect('/admin/dashboard');
+        exit;
+    }
+
     public function loginAs($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $account = $this->db->table('hosting_users')->where('id', $id)->first();
         if (!$account) { $this->response->redirect('/admin/account'); exit; }
-        // Log in as this user by setting session directly
+        // Sudo: keep admin session, switch user context
         $_SESSION['sudo_login'] = true;
         $_SESSION['sudo_admin_id'] = $this->auth->user()->id;
+        $_SESSION['sudo_admin_user'] = $this->auth->user();
         $user = (object)[
             'id' => $account->id,
             'email' => $account->email,

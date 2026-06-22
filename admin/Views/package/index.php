@@ -8,43 +8,56 @@
 <div class="stat-card"><h3>Active</h3><div class="value"><?php echo $packagesStats['active_packages']; ?></div><div class="label">Currently available</div></div>
 </div>
 
+<style>
+.pkg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px}
+.pkg-card{background:rgba(8,16,28,.6);border:1px solid rgba(0,191,255,.08);border-radius:10px;padding:16px;transition:.3s}
+.pkg-card:hover{border-color:rgba(0,191,255,.2);transform:translateY(-2px)}
+.pkg-card .p-name{font-size:15px;font-weight:700;margin-bottom:4px}
+.pkg-card .p-type{font-size:11px;color:#64748b;margin-bottom:6px}
+.pkg-card .p-price{font-size:20px;font-weight:800;color:#4ade80;margin-bottom:8px}
+.pkg-card .p-price small{font-size:11px;color:#64748b;font-weight:400}
+.pkg-card .p-features{font-size:11px;color:#94a3b8;margin-bottom:10px;line-height:1.6}
+.pkg-card .p-status{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600}
+.pkg-card .p-actions{display:flex;gap:6px;margin-top:10px}
+.pkg-card .p-actions a{padding:4px 12px;border-radius:5px;font-size:11px;text-decoration:none;font-weight:600}
+</style>
+
 <?php
 $typeLabels = [
     'web_hosting' => 'Web Hosting', 'web_reseller' => 'Web Hosting Reseller',
-    'shoutcast' => 'SHOUTcast', 'shoutcast_reseller' => 'SHOUTcast Reseller',
-    'icecast' => 'Icecast', 'icecast_reseller' => 'Icecast Reseller',
+    'icecast' => 'Icecast Streaming', 'icecast_reseller' => 'Icecast Reseller',
     'vps' => 'VPS', 'dedicated' => 'Dedicated',
+    'game_server' => 'Game Server',
 ];
 foreach ($grouped as $type => $pkgs):
 if (empty($pkgs)) continue;
-?>
-<div class="card" style="padding:16px 24px;margin-bottom:16px">
-<h3 style="color:var(--accent);font-size:16px;margin-bottom:12px"><?php
 $catIcon = '';
 foreach ($categories as $c) { if ($c->name === $type) { $catIcon = $c->icon ?? ''; break; } }
-if ($catIcon && (str_starts_with($catIcon, '/') || str_starts_with($catIcon, 'http'))) {
-    echo '<img src="' . htmlspecialchars($catIcon, ENT_QUOTES, 'UTF-8') . '" style="width:24px;height:24px;vertical-align:middle;margin-right:6px;border-radius:4px">';
-} elseif ($catIcon) {
-    echo htmlspecialchars($catIcon, ENT_QUOTES, 'UTF-8') . ' ';
-}
-echo htmlspecialchars($type, ENT_QUOTES, 'UTF-8');
-?></h3>
-<table>
-<tr><th>Name</th><th>Price</th><th>Disk</th><th>Bandwidth</th><th>Status</th><th>Actions</th></tr>
+?>
+<div class="card" style="padding:16px 20px;margin-bottom:16px">
+<h3 style="color:var(--accent);font-size:15px;margin-bottom:4px"><?php echo $catIcon ? htmlspecialchars($catIcon) . ' ' : ''; ?><?php echo htmlspecialchars($typeLabels[$type] ?? $type); ?></h3>
+<div class="pkg-grid">
 <?php foreach ($pkgs as $p): ?>
-<tr>
-<td><strong><?php echo htmlspecialchars($p->name, ENT_QUOTES, 'UTF-8'); ?></strong></td>
-<td>$<?php echo number_format($p->monthly_price, 2); ?>/mo</td>
-<td><?php echo $p->disk_space ? $p->disk_space . ' GB' : '-'; ?></td>
-<td><?php echo $p->bandwidth ? $p->bandwidth . ' GB' : '-'; ?></td>
-<td><span class="status-badge status-<?php echo ($p->is_active ?? 1) ? 'active' : 'suspended'; ?>"><?php echo ($p->is_active ?? 1) ? 'Active' : 'Inactive'; ?></span></td>
-<td style="display:flex;gap:4px">
-<a href="/admin/package/edit/<?php echo $p->id; ?>" class="btn btn-sm secondary">Edit</a>
-<a href="/admin/package/delete/<?php echo $p->id; ?>" class="btn btn-sm" style="background:rgba(255,50,50,.15);color:#ff6b6b;border:1px solid rgba(255,50,50,.2)" onclick="return confirm('Delete this package?')">Delete</a>
-</td>
-</tr>
+<div class="pkg-card">
+<div class="p-name"><?php echo htmlspecialchars($p->name); ?></div>
+<div class="p-type"><?php echo htmlspecialchars($p->description ? substr($p->description, 0, 60) : ''); ?></div>
+<div class="p-price">$<?php echo number_format($p->monthly_price, 2); ?><small>/mo</small></div>
+<div class="p-features">
+<?php if ($p->disk_space): ?>📁 <?php echo $p->disk_space; ?> GB Disk<br><?php endif; ?>
+<?php if ($p->bandwidth): ?>📶 <?php echo $p->bandwidth; ?> GB BW<br><?php endif; ?>
+<?php if ($p->listener_limit): ?>🎧 <?php echo $p->listener_limit; ?> Listeners<br><?php endif; ?>
+<?php if ($p->dj_accounts): ?>🎤 <?php echo $p->dj_accounts; ?> DJs<br><?php endif; ?>
+<?php if ($p->chatroom_enabled): ?>💬 Chat Room<br><?php endif; ?>
+<?php if ($p->chatroom_voice_enabled): ?>🎤 Chat Voice<br><?php endif; ?>
+</div>
+<div><span class="p-status" style="background:<?php echo ($p->is_active ?? 1) ? 'rgba(74,222,128,.12);color:#4ade80' : 'rgba(248,113,113,.12);color:#f87171'; ?>"><?php echo ($p->is_active ?? 1) ? 'Active' : 'Inactive'; ?></span></div>
+<div class="p-actions">
+<a href="/admin/package/edit/<?php echo $p->id; ?>" style="background:rgba(0,140,255,.1);color:#38bdf8">Edit</a>
+<a href="/admin/package/delete/<?php echo $p->id; ?>" style="background:rgba(248,113,113,.12);color:#f87171" onclick="return confirm('Delete?')">Delete</a>
+</div>
+</div>
 <?php endforeach; ?>
-</table>
+</div>
 </div>
 <?php endforeach; if (empty(array_filter($grouped))): ?>
 <div class="card"><p style="text-align:center;color:#64748b;padding:20px">No packages defined yet. <a href="/admin/package/create">Create your first package</a></p></div>

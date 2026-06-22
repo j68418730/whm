@@ -1,3 +1,4 @@
+<?php $currentTab = 'security'; require __DIR__ . '/_tabs.php'; ?>
 <div class="card" style="max-width:500px">
 <form method="POST" action="/admin/settings/security/save">
 <h3 style="color:var(--accent);margin-bottom:12px">Security Settings</h3>
@@ -10,3 +11,4 @@
 <button type="submit" class="btn primary">Save</button>
 <a href="/admin/settings" class="btn secondary">Back</a>
 </form></div>
+

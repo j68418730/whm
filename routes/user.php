@@ -51,6 +51,10 @@ $router->post('/user/databases/user', 'User\Controllers\DatabasesController@crea
 $router->get('/user/databases/delete/{name}', 'User\Controllers\DatabasesController@deleteDb');
 $router->get('/user/databases/phpmyadmin', 'User\Controllers\DatabasesController@phpMyAdmin');
 $router->get('/user/billing', 'User\Controllers\BillingController@index');
+$router->get('/user/billing/payment-methods', 'User\Controllers\BillingController@paymentMethods');
+$router->post('/user/billing/payment-methods/add', 'User\Controllers\BillingController@addMethod');
+$router->get('/user/billing/payment-methods/delete/{id}', 'User\Controllers\BillingController@deleteMethod');
+$router->get('/user/billing/payment-methods/default/{id}', 'User\Controllers\BillingController@defaultMethod');
 $router->get('/user/invoices', 'User\Controllers\BillingController@invoices');
 $router->get('/user/billing/pay/{id}', 'User\Controllers\BillingController@pay');
 $router->get('/user/support', 'User\Controllers\UserController@support');
@@ -59,7 +63,15 @@ $router->post('/user/tickets/create', 'User\Controllers\TicketsController@create
 $router->get('/user/tickets/{id}', 'User\Controllers\TicketsController@show');
 $router->post('/user/tickets/reply/{id}', 'User\Controllers\TicketsController@reply');
 $router->get('/user/tickets/close/{id}', 'User\Controllers\TicketsController@close');
+$router->get('/user/chat', 'User\Controllers\UserController@chat');
+$router->post('/user/chat', 'User\Controllers\UserController@chat');
 $router->get('/user/stats', 'User\Controllers\UserController@stats');
+$router->get('/user/admins', 'User\Controllers\UserController@admins');
+$router->post('/user/admins', 'User\Controllers\UserController@admins');
+$router->get('/user/dj-manager', 'User\Controllers\UserController@djManager');
+$router->post('/user/dj-manager', 'User\Controllers\UserController@djManager');
+$router->get('/user/php-switcher', 'User\Controllers\UserController@phpSwitcher');
+$router->post('/user/php-switcher', 'User\Controllers\UserController@phpSwitcher');
 $router->get('/user/tools', 'User\Controllers\UserController@tools');
 $router->get('/user/logout', 'User\Controllers\UserController@logout');
 $router->get('/user/apps/node', 'User\Controllers\AppsController@node');

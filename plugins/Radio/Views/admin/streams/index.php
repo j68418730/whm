@@ -1,254 +1,62 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Streams - Radio Hosting Panel</title>
-    <link rel="stylesheet" href="/css/admin.css">
-    <style>
-        <?php 
-        // Set CSS variables from theme settings
-        $bgColor = !empty($theme_settings['background']['color']) ? $theme_settings['background']['color'] : '#ffffff';
-        $headerColor = !empty($theme_settings['header']['color']) ? $theme_settings['header']['color'] : '#000000';
-        $footerColor = !empty($theme_settings['footer']['color']) ? $theme_settings['footer']['color'] : '#000000';
-        $primaryColor = !empty($theme_settings['colors']['primary']) ? $theme_settings['colors']['primary'] : '#007bff';
-        $secondaryColor = !empty($theme_settings['colors']['secondary']) ? $theme_settings['colors']['secondary'] : '#6c757d';
-        $headerHeight = !empty($theme_settings['header']['height']) ? $theme_settings['header']['height'] : '60px';
-        $footerHeight = !empty($theme_settings['footer']['height']) ? $theme_settings['footer']['height'] : '40px';
-        ?>
-        :root {
-            --primary-color: <?php echo $primaryColor; ?>;
-            --secondary-color: <?php echo $secondaryColor; ?>;
-            --background-color: <?php echo $bgColor; ?>;
-            --header-color: <?php echo $headerColor; ?>;
-            --footer-color: <?php echo $footerColor; ?>;
-            --header-height: <?php echo $headerHeight; ?>;
-            --footer-height: <?php echo $footerHeight; ?>;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            background-color: var(--background-color);
-            color: #333;
-        }
-        header {
-            background-color: var(--header-color);
-            color: white;
-            height: var(--header-height);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .container {
-            padding: 2rem;
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .stat-card {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .stat-card h3 {
-            margin: 0 0 0.5rem 0;
-            color: var(--primary-color);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .stat-card .value {
-            font-size: 1.8rem;
-            font-weight: bold;
-            margin: 0.5rem 0;
-        }
-        .stat-card .label {
-            font-size: 0.9rem;
-            color: #666;
-        }
-        .actions {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-        .btn {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            background: var(--primary-color);
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            margin-top: 1rem;
-            margin-right: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-        .btn:hover {
-            background: #0056b3;
-        }
-        .btn-secondary {
-            background: var(--secondary-color);
-        }
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-        .nav {
-            background: white;
-            padding: 1rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-        }
-        .nav h2 {
-            margin-top: 0;
-        }
-        .nav ul {
-            list-style: none;
-            padding: 0;
-            display: flex;
-            gap: 2rem;
-            flex-wrap: wrap;
-        }
-        .nav ul li a {
-            text-decoration: none;
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-        .nav ul li a:hover {
-            text-decoration: underline;
-        }
-        footer {
-            background-color: var(--footer-color);
-            color: white;
-            height: var(--footer-height);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-top: 2rem;
-        }
-        .welcome-message {
-            text-align: center;
-            padding: 2rem;
-        }
-        .table-responsive {
-            overflow-x: auto;
-            margin-bottom: 2rem;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        th, td {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            background-color: var(--primary-color);
-            color: white;
-            font-weight: bold;
-        }
-        tr:hover {
-            background-color: #f5f5f5;
-        }
-        .status-badge {
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        .status-active {
-            background: #d4edda;
-            color: #155724;
-        }
-        .status-suspended {
-            background: #fff3cd;
-            color: #856404;
-        }
-        .status-offline {
-            background: #f8d7da;
-            color: #721c24;
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>Radio Hosting Panel - Manage Streams</h1>
-    </header>
+<?php
+// Group streams by user
+$grouped = [];
+foreach ($streams as $s) {
+    $uname = $s->user_name ?? 'N/A';
+    if (!isset($grouped[$uname])) $grouped[$uname] = [];
+    $grouped[$uname][] = $s;
+}
+ksort($grouped);
+?>
+<div class="card" style="margin-bottom:16px">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><h3 style="margin:0">Stream Management</h3><p style="color:var(--text_muted);font-size:12px;margin:2px 0 0">All radio streams grouped by client</p></div>
+<a href="/admin/streams/create" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Create Stream</a>
+</div>
+</div>
 
-    <div class="container">
-        <div class="welcome-message">
-            <h2>Stream Management</h2>
-            <p>Welcome, <?php echo htmlspecialchars($user->name); ?>! Create, manage, and monitor your radio streams from here.</p>
-            <a href="/admin/dashboard" class="btn btn-secondary">Back to Dashboard</a>
-            <a href="/admin/streams/create" class="btn">Create New Stream</a>
-        </div>
+<div class="stats-grid" style="margin-bottom:16px">
+<div class="stat-card"><h3>Total</h3><div class="value"><?php echo $streamsStats['total_streams'] ?? 0; ?></div></div>
+<div class="stat-card"><h3>Active</h3><div class="value" style="color:#4ade80"><?php echo $streamsStats['active_streams'] ?? 0; ?></div></div>
+<div class="stat-card"><h3>Clients</h3><div class="value"><?php echo count($grouped); ?></div></div>
+</div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3>📊 Total Streams</h3>
-                <div class="value"><?php echo $streamsStats['total_streams']; ?></div>
-                <div class="label">Total streams configured</div>
-            </div>
-
-            <div class="stat-card">
-                <h3>🟢 Active Streams</h3>
-                <div class="value"><?php echo $streamsStats['active_streams']; ?></div>
-                <div class="label">Currently active streams</div>
-            </div>
-
-            <div class="stat-card">
-                <h3>⏸️ Suspended Streams</h3>
-                <div class="value"><?php echo $streamsStats['suspended_streams']; ?></div>
-                <div class="label">Temporarily suspended streams</div>
-            </div>
-        </div>
-
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Stream Name</th>
-                        <th>Mount Point</th>
-                        <th>Bitrate</th>
-                        <th>Status</th>
-                        <th>Current Listeners</th>
-                        <th>Created</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td colspan="7" style="text-align:center;padding:2rem;color:#999;">No streams configured yet.</td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <nav class="nav">
-            <h2>Stream Management Functions</h2>
-            <ul>
-                <li><a href="/admin/streams/create">Create Stream</a></li>
-                <li><a href="/admin/streams/list">List Streams</a></li>
-                <li><a href="/admin/streams/edit">Edit Stream</a></li>
-                <li><a href="/admin/streams/delete">Delete Stream</a></li>
-                <li><a href="/admin/streams/restart">Restart Stream</a></li>
-                <li><a href="/admin/streams/suspend">Suspend Stream</a></li>
-                <li><a href="/admin/streams/unsuspend">Unsuspend Stream</a></li>
-                <li><a href="/admin/streams/clone">Clone Stream</a></li>
-            </ul>
-        </nav>
-    </div>
-
-    <footer>
-        <p>&copy; <?php echo date('Y'); ?> Radio Hosting Panel. All rights reserved.</p>
-    </footer>
-</body>
-</html>
+<?php if (!empty($streams)): foreach ($grouped as $client => $clientStreams): ?>
+<div class="card" style="margin-bottom:14px;padding:14px 18px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+<h4 style="margin:0;font-size:14px"><i class="bi bi-person-circle" style="color:var(--primary)"></i> <?php echo htmlspecialchars($client); ?> <span class="badge bg-secondary" style="font-size:10px"><?php echo count($clientStreams); ?> stream(s)</span></h4>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
+<?php foreach ($clientStreams as $s): ?>
+<div style="background:rgba(0,0,0,.2);border:1px solid var(--border,rgba(0,191,255,.06));border-radius:10px;padding:12px">
+<div style="display:flex;justify-content:space-between;align-items:start">
+<div><strong style="font-size:13px"><?php echo htmlspecialchars($s->server_name ?? 'Stream #'.$s->id); ?></strong></div>
+<span class="badge bg-<?php echo $s->status === 'running' ? 'success' : ($s->status === 'error' ? 'danger' : 'secondary'); ?>"><?php echo $s->status ?? 'stopped'; ?></span>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:8px 0;font-size:12px">
+<div><span style="color:var(--text_muted)">Port:</span> <?php echo $s->port; ?></div>
+<div><span style="color:var(--text_muted)">Mount:</span> <?php echo htmlspecialchars($s->mount_point ?? '/live'); ?></div>
+<div><span style="color:var(--text_muted)">Listeners:</span> <?php echo (int)($s->listener_count ?? 0); ?></div>
+<div><span style="color:var(--text_muted)">Bitrate:</span> <?php echo (int)($s->bitrate ?? 128); ?>kbps</div>
+</div>
+<div style="display:flex;gap:4px;flex-wrap:wrap">
+<a href="/admin/streams/edit/<?php echo $s->id; ?>" class="btn btn-sm btn-secondary" style="padding:3px 8px;font-size:10px"><i class="bi bi-pencil"></i></a>
+<?php if ($s->status === 'running'): ?>
+<a href="/admin/streams/suspend/<?php echo $s->id; ?>" class="btn btn-sm" style="padding:3px 8px;font-size:10px;background:rgba(250,204,21,.1);color:#facc15;border:1px solid rgba(250,204,21,.2)"><i class="bi bi-pause-circle"></i></a>
+<?php else: ?>
+<a href="/admin/streams/unsuspend/<?php echo $s->id; ?>" class="btn btn-sm" style="padding:3px 8px;font-size:10px;background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2)"><i class="bi bi-play-circle"></i></a>
+<?php endif; ?>
+<a href="/admin/streams/delete/<?php echo $s->id; ?>" class="btn btn-sm btn-danger" style="padding:3px 8px;font-size:10px" onclick="return confirm('Delete stream?')"><i class="bi bi-trash"></i></a>
+</div>
+</div>
+<?php endforeach; ?>
+</div>
+</div>
+<?php endforeach; else: ?>
+<div class="card" style="text-align:center;padding:40px">
+<div style="font-size:48px;margin-bottom:8px">📻</div>
+<h4 style="margin:0 0 4px">No Streams</h4>
+<p style="color:var(--text_muted);font-size:13px;margin:0 0 14px">No radio streams created yet.</p>
+<a href="/admin/streams/create" class="btn btn-primary">Create First Stream</a>
+</div>
+<?php endif; ?>

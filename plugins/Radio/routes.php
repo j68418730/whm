@@ -42,6 +42,7 @@ $router->get('/admin/djs/edit/{id}', 'Plugins\Radio\Controllers\Admin\DjControll
 $router->post('/admin/djs/update/{id}', 'Plugins\Radio\Controllers\Admin\DjController@update');
 $router->get('/admin/djs/remove/{id}', 'Plugins\Radio\Controllers\Admin\DjController@remove');
 $router->get('/admin/radio/analytics', 'Plugins\Radio\Controllers\Admin\RadioDashboardController@index');
+$router->get('/radio/widgets', 'Plugins\Radio\Controllers\User\RadioController@widgets');
 
 // User Radio Routes
 $router->get('/radio', 'Plugins\Radio\Controllers\User\RadioController@index');

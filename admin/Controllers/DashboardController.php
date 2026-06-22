@@ -72,6 +72,17 @@ class DashboardController extends Controller
 
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
 
+        // Widget system
+        require_once BASE_PATH . '/core/Widget.php';
+        require_once BASE_PATH . '/core/WidgetManager.php';
+        $wm = \Core\WidgetManager::getInstance();
+        $wm->setDb($this->db)->setUserId($user->id);
+        $wm->ensureDefaults();
+        $userWidgets = $wm->getUserWidgets();
+        $allWidgets = $wm->getAllWidgets();
+        $mainZone = $wm->renderZone('main', $userWidgets);
+        $sideZone = $wm->renderZone('side', $userWidgets);
+
         return $this->view('admin.dashboard.index', [
             'user' => $user,
             'server' => $server,
@@ -93,7 +104,24 @@ class DashboardController extends Controller
             'recent_orders' => $recentOrders,
             'addons' => $addons,
             'theme_settings' => $theme_settings,
+            'widgets_main' => $mainZone,
+            'widgets_side' => $sideZone,
+            'all_widgets' => $allWidgets,
         ]);
+    }
+
+    public function version()
+    {
+        require_once BASE_PATH . '/core/Version.php';
+        $check = checkVersion();
+        $this->response->json([
+            'version' => PANEL_VERSION_NAME,
+            'version_code' => PANEL_VERSION_CODE,
+            'serial' => PANEL_SERIAL,
+            'update' => $check,
+        ]);
+        $this->response->send();
+        exit;
     }
 
     public function health()
@@ -155,11 +183,18 @@ class DashboardController extends Controller
 
     private function getServiceStatus()
     {
-        $checks = ['apache2', 'mariadb', 'postfix', 'dovecot', 'vsftpd', 'bind9', 'ssh', 'icecast2', 'firewalld', 'fail2ban', 'redis-server', 'php8.2-fpm'];
+        $checks = ['apache2', 'mariadb', 'postfix', 'dovecot', 'vsftpd', 'bind9', 'ssh', 'icecast2', 'firewalld', 'fail2ban', 'redis-server'];
+        // Detect all PHP-FPM versions
+        exec('ls /usr/bin/php* 2>/dev/null', $out);
+        foreach ($out as $p) {
+            if (preg_match('/php(\d+\.\d+)$/', $p, $m)) {
+                $checks[] = "php{$m[1]}-fpm";
+            }
+        }
         $statuses = [];
         foreach ($checks as $svc) {
-            exec("systemctl is-active {$svc} 2>/dev/null", $out, $code);
-            $statuses[] = ['name' => $svc, 'active' => trim(implode('', $out)) === 'active'];
+            $result = trim(shell_exec("systemctl is-active {$svc} 2>/dev/null") ?: '');
+            $statuses[] = ['name' => $svc, 'active' => $result === 'active', 'status' => $result];
         }
         return $statuses;
     }

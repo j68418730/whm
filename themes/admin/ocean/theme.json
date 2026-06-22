@@ -1,0 +1,29 @@
+{
+  "type": "admin",
+  "description": "ocean theme for Planet-Hosts admin panel.",
+  "version": "2.0",
+  "author": "Planet-Hosts",
+  "assets": {
+    "css": [
+      "assets/css/theme.css"
+    ],
+    "js": []
+  },
+  "name": "en-US.TextInfo.ToTitleCase(ocean) Admin",
+  "fonts": {
+    "heading": "'Inter', sans-serif",
+    "body": "'Inter', sans-serif"
+  },
+  "colors": {
+    "bg": "#000a0f",
+    "card_bg": "rgba(0,26,46,.6)",
+    "success": "#4ade80",
+    "border": "rgba(14,165,233,.1)",
+    "danger": "#f87171",
+    "warning": "#facc15",
+    "sidebar_bg": "#001a2e",
+    "text": "#e0e0e0",
+    "text_muted": "#64748b",
+    "primary": "#0ea5e9"
+  }
+}

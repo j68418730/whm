@@ -1,0 +1,9 @@
+{
+    "name": "Default Public",
+    "version": "1.0", "author": "Planet-Hosts",
+    "description": "Default public-facing website theme.",
+    "type": "public",
+    "colors": { "primary": "#008cff", "bg": "#02050e", "card_bg": "rgba(8,16,28,.8)", "text": "#e0e0e0", "text_muted": "#64748b", "border": "rgba(0,191,255,.08)", "success": "#4ade80", "warning": "#facc15", "danger": "#f87171" },
+    "fonts": { "body": "'Inter', sans-serif", "heading": "'Inter', sans-serif" },
+    "assets": { "css": [], "js": [] }
+}

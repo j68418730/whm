@@ -165,6 +165,25 @@ class PackageController extends Controller
         exit;
     }
 
+    public function upgrade($accountId)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $packageId = (int)$this->request->post('package_id', 0);
+        if (!$packageId) { $_SESSION['error_message'] = 'No package selected.'; $this->response->redirect('/admin/account'); exit; }
+        $this->db->table('hosting_users')->where('id', (int)$accountId)->update(['package_id' => $packageId]);
+        $_SESSION['success_message'] = 'Account upgraded.';
+        $this->response->redirect('/admin/account/show/' . $accountId);
+    }
+
+    public function assignReseller($packageId)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $resellerId = (int)$this->request->post('reseller_id', 0);
+        $this->db->table('hosting_packages')->where('id', (int)$packageId)->update(['reseller_id' => $resellerId ?: null]);
+        $_SESSION['success_message'] = 'Reseller assigned.';
+        $this->response->redirect('/admin/packages');
+    }
+
     public function apiList()
     {
         $packages = $this->db->table('hosting_packages')->where('is_active', 1)->get();

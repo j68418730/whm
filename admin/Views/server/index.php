@@ -25,3 +25,11 @@
 <?php endforeach; ?>
 </div>
 </div>
+<div class="card">
+<h3 style="color:var(--accent);margin-bottom:16px">📹 Voice & Camera Services</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px">
+<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,.02);border-radius:6px"><span>WebRTC Voice (SignalR)</span><span style="font-size:12px;padding:2px 10px;border-radius:4px;background:#1a3a2a;color:#4ade80">active</span></div>
+<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,.02);border-radius:6px"><span>WebRTC Camera</span><span style="font-size:12px;padding:2px 10px;border-radius:4px;background:#1a3a2a;color:#4ade80">available</span></div>
+<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,.02);border-radius:6px"><span>STUN Server</span><span style="font-size:12px;padding:2px 10px;border-radius:4px;background:#1a3a2a;color:#4ade80">Google STUN</span></div>
+</div>
+</div>

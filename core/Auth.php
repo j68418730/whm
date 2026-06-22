@@ -59,6 +59,11 @@ class Auth
         return $this->session->get('user');
     }
 
+    public function getSudoAdmin()
+    {
+        return $this->session->get('sudo_admin_user');
+    }
+
     /**
      * Check if the user is authenticated
      */
@@ -72,6 +77,7 @@ class Auth
      */
     public function isAdmin()
     {
+        if ($this->session->get('sudo_login')) return true;
         return $this->session->get('is_admin') === true;
     }
 
