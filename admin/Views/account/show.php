@@ -152,6 +152,24 @@ $diskPct = $package->disk_space > 0 ? min(100, round($diskVal / ($package->disk_
 </div>
 
 <div class="action-card" style="grid-column:1/-1">
+<h4><i class="bi bi-server" style="color:#0A84FF"></i> Apache Virtual Host</h4>
+<?php
+$vhostPath = '/etc/httpd/conf.d/' . $account->username . '.conf';
+$vhostSslPath = '/etc/httpd/conf.d/' . $account->username . '-ssl.conf';
+$vhostContent = @file_get_contents($vhostPath);
+$vhostSslContent = @file_get_contents($vhostSslPath);
+?>
+<?php if ($vhostContent): ?>
+<pre style="background:rgba(0,0,0,.5);border:1px solid rgba(0,191,255,.1);border-radius:8px;padding:12px;font-size:12px;overflow-x:auto;color:#e0e0e0;margin:0 0 8px"><?php echo htmlspecialchars($vhostContent); ?></pre>
+<?php else: ?>
+<p style="font-size:12px;color:var(--text_muted)">No HTTP vhost found at <code><?php echo htmlspecialchars($vhostPath); ?></code></p>
+<?php endif; ?>
+<?php if ($vhostSslContent): ?>
+<pre style="background:rgba(0,0,0,.5);border:1px solid rgba(0,191,255,.1);border-radius:8px;padding:12px;font-size:12px;overflow-x:auto;color:#e0e0e0;margin:0"><?php echo htmlspecialchars($vhostSslContent); ?></pre>
+<?php endif; ?>
+</div>
+
+<div class="action-card" style="grid-column:1/-1">
 <h4><i class="bi bi-clock-history" style="color:#94a3b8"></i> Account History</h4>
 <?php if (!empty($history)): ?>
 <table style="font-size:12px"><tr><th>Action</th><th>Details</th><th>Date</th></tr>
