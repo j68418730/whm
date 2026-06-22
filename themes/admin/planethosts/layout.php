@@ -141,8 +141,10 @@ function toggleSupportStatus() {
     setSupportStatus(s);
     fetch('/admin/support-status', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'status=' + s});
 }
-// Load status from server
-fetch('/admin/support-status').then(function(r){return r.json()}).then(function(d){setSupportStatus(d.status)}).catch(function(){setSupportStatus('online')});
+// Load status from cookie first, then server
+var cs = document.cookie.split('; ').find(function(r){return r.startsWith('support_status=')});
+if (cs) { setSupportStatus(cs.split('=')[1]); }
+else { fetch('/admin/support-status').then(function(r){return r.json()}).then(function(d){setSupportStatus(d.status)}).catch(function(){setSupportStatus('online')}); }
 </script>
       </div>
     </div>
