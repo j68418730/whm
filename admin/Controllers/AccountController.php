@@ -90,7 +90,7 @@ class AccountController extends Controller
         $serverIp = '45.61.59.55';
         $homeDir = "/home/{$username}";
 
-        $this->db->table('hosting_users')->insertGetId([
+        $userId = $this->db->table('hosting_users')->insertGetId([
             'reseller_id' => 1,
             'package_id' => $packageId ?: null,
             'username' => $username,
