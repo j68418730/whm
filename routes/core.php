@@ -183,6 +183,8 @@ $router->get('/admin/account/create', 'Admin\Controllers\AccountController@creat
 $router->get('/admin/account/list', 'Admin\Controllers\AccountController@index');
 $router->get('/admin/account/edit/{id}', 'Admin\Controllers\AccountController@edit');
 $router->get('/admin/account/delete/{id}', 'Admin\Controllers\AccountController@delete');
+$router->get('/admin/account/summary/{id}', 'Admin\Controllers\AccountController@summary');
+$router->post('/admin/account/email-summary/{id}', 'Admin\Controllers\AccountController@emailSummary');
 $router->get('/admin/account/modify', 'Admin\Controllers\AccountController@index');
 $router->get('/admin/account/modify/{id}', 'Admin\Controllers\AccountController@index');
 $router->get('/admin/account/suspend', 'Admin\Controllers\AccountController@index');
