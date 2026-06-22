@@ -100,7 +100,7 @@
     <div class="logo">PLANET <span>HOSTS</span></div>
     <div class="search" style="position:relative">
        <input type="text" id="menuSearch" class="form-control" placeholder="Search menu..." oninput="filterMenu(this.value)">
-       <span id="collapseToggle" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:11px;color:#64748b" onclick="toggleAllSections()" title="Collapse/Expand All">&#x23cf;</span>
+       
      </div>
     <div class="nav">
 <?php
@@ -203,10 +203,7 @@ document.querySelectorAll('.nav-section').forEach(function(section) {
 })();
 
 // Enhanced menu search
-function filterMenu(q){q=q.toLowerCase().trim();document.querySelectorAll('.nav-section').forEach(function(sec){var links=sec.querySelectorAll('.nav-link');var v=0;links.forEach(function(a){var m=!q||a.textContent.toLowerCase().indexOf(q)>-1;a.style.display=m?'':'none';if(m)v++;});var lbl=sec.querySelector('.nav-label');if(lbl)lbl.style.display=q?(v>0?'':'none'):'';});}
-var allCol=false;
-function toggleAllSections(){allCol=!allCol;document.querySelectorAll('.nav-section').forEach(function(sec){var ic=sec.querySelector('.collapse-icon');if(allCol){sec.classList.add('collapsed');if(ic)ic.classList.add('collapsed');}else{sec.classList.remove('collapsed');if(ic)ic.classList.remove('collapsed');}});document.getElementById('collapseToggle').textContent=allCol?'\u23d0':'\u23cf';}
-['store-front','api-integrations','security','administration'].forEach(function(n){var s=document.querySelector('.nav-section[data-section="'+n+'"]');if(s){var i=s.querySelector('.collapse-icon');s.classList.add('collapsed');if(i)i.classList.add('collapsed');localStorage.setItem('nav_section_'+n,'collapsed');}});
+function filterMenu(q){q=q.toLowerCase().trim();document.querySelectorAll('.sidebar .nav-link').forEach(function(a){var m=!q||a.textContent.toLowerCase().indexOf(q)>-1;a.style.display=m?'':'';});document.getElementById('collapseToggle').style.display='none';}
 
 // Chat waiting count polling
 (function() {
