@@ -67,26 +67,33 @@ class MarketplaceController extends Controller
         if (is_file($installer)) {
             exec("bash {$installer} {$publicHtml} {$domain} 2>&1", $out, $code);
             $result = $code === 0 ? "Installed via script" : "Script failed: " . implode("\n", $out);
-        } elseif (strpos($name, 'wordpress') !== false) {
-            exec("cd {$publicHtml} && wget -q https://wordpress.org/latest.zip -O wp.zip && unzip -q wp.zip && mv wordpress/* . && rm -rf wordpress wp.zip 2>/dev/null", $out, $code);
-            $result = $code === 0 ? 'WordPress downloaded' : 'Failed';
-        } elseif (strpos($name, 'laravel') !== false) {
-            exec("cd {$homeDir} && composer create-project laravel/laravel public_html --no-interaction 2>/dev/null", $out, $code);
-            $result = $code === 0 ? 'Laravel installed' : 'Composer not found';
-        } elseif (strpos($name, 'joomla') !== false) {
-            exec("cd {$publicHtml} && wget -q https://downloads.joomla.org/cms/joomla5/5-1-4/Joomla_5-1-4-Stable-Full_Package.zip -O joomla.zip && unzip -q joomla.zip && rm joomla.zip 2>/dev/null", $out, $code);
-            $result = $code === 0 ? 'Joomla downloaded' : 'Failed';
-        } elseif (strpos($name, 'drupal') !== false) {
-            exec("cd {$publicHtml} && wget -q https://ftp.drupal.org/files/projects/drupal-11.0.1.zip -O drupal.zip && unzip -q drupal.zip && mv drupal-*/* . && rm -rf drupal-* drupal.zip 2>/dev/null", $out, $code);
-            $result = $code === 0 ? 'Drupal downloaded' : 'Failed';
-        } elseif (strpos($name, 'nextcloud') !== false) {
-            exec("cd {$publicHtml} && wget -q https://download.nextcloud.com/server/releases/latest.zip -O nc.zip && unzip -q nc.zip && mv nextcloud/* . && rm -rf nextcloud nc.zip 2>/dev/null", $out, $code);
-            $result = $code === 0 ? 'NextCloud downloaded' : 'Failed';
-        } elseif (strpos($name, 'phpmyadmin') !== false) {
-            exec("cd {$publicHtml} && wget -q https://files.phpmyadmin.net/phpMyAdmin/5.2.1/phpMyAdmin-5.2.1-all-languages.zip -O pma.zip && unzip -q pma.zip && mv phpMyAdmin-*/* . && rm -rf phpMyAdmin-* pma.zip 2>/dev/null", $out, $code);
-            $result = $code === 0 ? 'phpMyAdmin downloaded' : 'Failed';
         } else {
-            $result = "Auto-install not available for {$app->name}. Download manually.";
+            // Map app name to local zip file
+            $localZip = BASE_PATH . '/appsinstall_files/' . $app->name . '.zip';
+            if (!file_exists($localZip)) {
+                // try lowercase name
+                $localZip = BASE_PATH . '/appsinstall_files/' . ucfirst($name) . '.zip';
+            }
+            if (file_exists($localZip)) {
+                $zipFile = $publicHtml . '/installer.zip';
+                copy($localZip, $zipFile);
+                if (file_exists($zipFile) && filesize($zipFile) > 0) {
+                    exec("cd {$publicHtml} && unzip -qo installer.zip 2>/dev/null && rm -f installer.zip", $out, $code);
+                    // Flatten single subdirectory
+                    $subs = glob($publicHtml . '/*', GLOB_ONLYDIR);
+                    if ($subs && count($subs) === 1) {
+                        $bn = basename($subs[0]);
+                        if (is_file($subs[0] . '/index.php') || is_file($subs[0] . '/wp-config-sample.php') || is_file($subs[0] . '/artisan')) {
+                            exec("cd {$publicHtml} && mv {$bn}/* . 2>/dev/null && mv {$bn}/.[!.]* . 2>/dev/null && rmdir {$bn} 2>/dev/null");
+                        }
+                    }
+                    $result = $code === 0 ? 'Installed from local package' : 'Unzip failed';
+                } else {
+                    $result = 'Failed to copy package';
+                }
+            } else {
+                $result = "Auto-install not available for {$app->name}. Download manually.";
+            }
         }
 
         if ($account) exec("chown -R {$username}:{$username} {$homeDir} 2>/dev/null");

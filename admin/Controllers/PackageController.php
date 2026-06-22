@@ -25,6 +25,11 @@ class PackageController extends Controller
         return $this->db->table('package_categories')->get() ?: [];
     }
 
+    protected function getFeatureLists()
+    {
+        return $this->db->table('feature_lists')->where('is_active', 1)->orderBy('name', 'ASC')->get() ?: [];
+    }
+
     public function index()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
@@ -51,8 +56,9 @@ class PackageController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
         $categories = $this->getCategories();
+        $featureLists = $this->getFeatureLists();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-        return $this->view('admin.package.create', ['user' => $user, 'categories' => $categories, 'theme_settings' => $theme_settings]);
+        return $this->view('admin.package.create', ['user' => $user, 'categories' => $categories, 'featureLists' => $featureLists, 'theme_settings' => $theme_settings]);
     }
 
     public function store()
@@ -64,7 +70,14 @@ class PackageController extends Controller
             'type' => $this->request->post('type', 'Web Hosting'),
             'description' => $this->request->post('description', ''),
             'features' => json_encode($features),
+            'feature_list_id' => (int)$this->request->post('feature_list_id', 0) ?: null,
+            'max_domains' => (int)$this->request->post('max_domains', 1),
+            'max_subdomains' => (int)$this->request->post('max_subdomains', 0),
             'monthly_price' => (float)$this->request->post('monthly_price', 0),
+            'quarterly_price' => (float)$this->request->post('quarterly_price', 0),
+            'semi_annual_price' => (float)$this->request->post('semi_annual_price', 0),
+            'annual_price' => (float)$this->request->post('annual_price', 0),
+            'setup_fee' => (float)$this->request->post('setup_fee', 0),
             'disk_space' => (int)$this->request->post('disk_space', 0),
             'bandwidth' => (int)$this->request->post('bandwidth', 0),
             'listener_limit' => (int)$this->request->post('listener_limit', 0),
@@ -91,8 +104,9 @@ class PackageController extends Controller
         if (!$package) { $this->response->redirect('/admin/packages'); exit; }
         if (is_string($package->features)) $package->features = json_decode($package->features, true) ?? [];
         $categories = $this->getCategories();
+        $featureLists = $this->getFeatureLists();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-        return $this->view('admin.package.edit', ['user' => $user, 'package' => $package, 'categories' => $categories, 'theme_settings' => $theme_settings]);
+        return $this->view('admin.package.edit', ['user' => $user, 'package' => $package, 'categories' => $categories, 'featureLists' => $featureLists, 'theme_settings' => $theme_settings]);
     }
 
     public function update($id)
@@ -104,7 +118,14 @@ class PackageController extends Controller
             'type' => $this->request->post('type', 'Web Hosting'),
             'description' => $this->request->post('description', ''),
             'features' => json_encode($features),
+            'feature_list_id' => (int)$this->request->post('feature_list_id', 0) ?: null,
+            'max_domains' => (int)$this->request->post('max_domains', 1),
+            'max_subdomains' => (int)$this->request->post('max_subdomains', 0),
             'monthly_price' => (float)$this->request->post('monthly_price', 0),
+            'quarterly_price' => (float)$this->request->post('quarterly_price', 0),
+            'semi_annual_price' => (float)$this->request->post('semi_annual_price', 0),
+            'annual_price' => (float)$this->request->post('annual_price', 0),
+            'setup_fee' => (float)$this->request->post('setup_fee', 0),
             'disk_space' => (int)$this->request->post('disk_space', 0),
             'bandwidth' => (int)$this->request->post('bandwidth', 0),
             'listener_limit' => (int)$this->request->post('listener_limit', 0),

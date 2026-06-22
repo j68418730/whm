@@ -15,9 +15,23 @@
 <div class="form-group"><label>Description</label><textarea name="description" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:14px;outline:none;resize:vertical;min-height:60px"></textarea></div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
 <div class="form-group"><label>Monthly Price ($)</label><input name="monthly_price" type="number" step="0.01" value="0" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:14px;outline:none"></div>
+<div class="form-group"><label>Quarterly Price ($)</label><input name="quarterly_price" type="number" step="0.01" value="0" style="width:100%"></div>
+<div class="form-group"><label>Semi-Annual Price ($)</label><input name="semi_annual_price" type="number" step="0.01" value="0" style="width:100%"></div>
+<div class="form-group"><label>Annual Price ($)</label><input name="annual_price" type="number" step="0.01" value="0" style="width:100%"></div>
+<div class="form-group"><label>Setup Fee ($)</label><input name="setup_fee" type="number" step="0.01" value="0" style="width:100%"></div>
 <div class="form-group"><label>Sort Order</label><input name="sort_order" type="number" value="0" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:14px;outline:none"></div>
 <div class="form-group"><label>Disk Space (GB)</label><input name="disk_space" type="number" value="0" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:14px;outline:none"></div>
 <div class="form-group"><label>Bandwidth (GB)</label><input name="bandwidth" type="number" value="0" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:14px;outline:none"></div>
+<div class="form-group"><label>Max Domains</label><input name="max_domains" type="number" value="1" style="width:100%"></div>
+<div class="form-group"><label>Max Subdomains</label><input name="max_subdomains" type="number" value="0" style="width:100%"></div>
+<div class="form-group"><label>Feature List</label>
+<select name="feature_list_id" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:14px;outline:none">
+<option value="">— None —</option>
+<?php foreach ($featureLists as $fl): ?>
+<option value="<?php echo $fl->id; ?>"><?php echo htmlspecialchars($fl->name); ?></option>
+<?php endforeach; ?>
+</select>
+</div>
 <div class="form-group"><label>Listener Limit</label><input name="listener_limit" type="number" value="0" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:14px;outline:none"></div>
 <div class="form-group"><label>Bitrate (kbps)</label><input name="bitrate" type="number" value="0" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:14px;outline:none"></div>
 <div class="form-group"><label>Storage Limit (GB)</label><input name="storage_limit" type="number" value="0" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:14px;outline:none"></div>
