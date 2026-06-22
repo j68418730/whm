@@ -17,6 +17,16 @@ $router->post('/admin/change-password', 'Admin\Controllers\AuthController@change
 $router->get('/admin/logout', 'Admin\Controllers\AuthController@logout');
 $router->get('/admin/dashboard', 'Admin\Controllers\DashboardController@index');
 $router->get('/admin/dashboard/health', 'Admin\Controllers\DashboardController@health');
+$router->get('/admin/section/accounts', 'Admin\Controllers\SectionController@accounts');
+$router->get('/admin/section/hosting', 'Admin\Controllers\SectionController@hosting');
+$router->get('/admin/section/billing', 'Admin\Controllers\SectionController@billing');
+$router->get('/admin/section/support', 'Admin\Controllers\SectionController@support');
+$router->get('/admin/section/radio', 'Admin\Controllers\SectionController@radio');
+$router->get('/admin/section/games', 'Admin\Controllers\SectionController@games');
+$router->get('/admin/section/builder', 'Admin\Controllers\SectionController@builder');
+$router->get('/admin/section/domains', 'Admin\Controllers\SectionController@domains');
+$router->get('/admin/section/security', 'Admin\Controllers\SectionController@security');
+$router->get('/admin/section/system', 'Admin\Controllers\SectionController@system');
 $router->get('/admin/support-status', 'Admin\Controllers\SupportStatusController@get');
 $router->post('/admin/support-status', 'Admin\Controllers\SupportStatusController@set');
 $router->get('/admin/support-status/public', 'Admin\Controllers\SupportStatusController@publicStatus');
