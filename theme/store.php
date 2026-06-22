@@ -157,6 +157,7 @@ $shownTypes = [];
 <?php $displayName = ucwords(str_replace(['_', '-'], ' ', $type)); ?>
 <a href="/hosting/<?php echo urlencode($type); ?>" class="cat-link<?php if ($currentCategory === $type): ?> active<?php endif; ?>"><?php echo htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8'); ?></a>
 <?php endforeach; ?>
+<a href="/hosting/Game+Servers" class="cat-link<?php if ($currentCategory === 'Game Servers'): ?> active<?php endif; ?>">Game Servers</a>
 </div>
 <div class="store-main">
 <h1><?php echo $currentCategory ? htmlspecialchars(ucwords(str_replace(['_', '-'], ' ', $currentCategory)), ENT_QUOTES, 'UTF-8') : 'All Products'; ?></h1>
@@ -165,7 +166,25 @@ $shownTypes = [];
 <input type="text" id="storeSearch" placeholder="Search products..." onkeyup="filterStore()">
 </div>
 <div class="store-grid" id="storeGrid">
-<?php if (!empty($currentCategory) && isset($packagesByType[$currentCategory])): ?>
+<?php if ($isGameServers && !empty($gameTypes)): ?>
+<?php foreach ($gameTypes as $gt):
+$minPrice = ($gt->min_slots ?? 10) * ($gt->price_per_slot ?? 0.50) + ($gt->setup_fee ?? 0);
+?>
+<div class="store-card" data-name="<?php echo htmlspecialchars(strtolower($gt->name ?? ""), ENT_QUOTES, "UTF-8"); ?>">
+<h4><?php echo htmlspecialchars($gt->name ?? "", ENT_QUOTES, "UTF-8"); ?></h4>
+<div class="price">$<?php echo number_format($minPrice, 2); ?><small>/mo starting</small></div>
+<p><?php echo htmlspecialchars($gt->description ?? "", ENT_QUOTES, "UTF-8"); ?></p>
+<ul class="features-list">
+<li><i class="fa-solid fa-users"></i> Slots: <?php echo (int)($gt->min_slots ?? 10); ?>-<?php echo (int)($gt->max_slots ?? 100); ?></li>
+<li><i class="fa-solid fa-circle-check"></i> $<?php echo number_format($gt->price_per_slot ?? 0.50, 2); ?>/slot</li>
+<?php if ($gt->setup_fee > 0): ?><li><i class="fa-solid fa-circle-check"></i> $<?php echo number_format($gt->setup_fee, 2); ?> setup</li><?php endif; ?>
+</ul>
+<div class="btn-row">
+<a href="/game-servers.php?game=<?php echo urlencode($gt->name); ?>" class="btn btn-primary"><i class="fa-solid fa-cart-plus"></i> Order Now</a>
+</div>
+</div>
+<?php endforeach; ?>
+<?php elseif (!empty($currentCategory) && isset($packagesByType[$currentCategory])): ?>
 <?php foreach ($packagesByType[$currentCategory] as $i => $pkg): ?>
 <div class="store-card<?php if ($i === 1): ?> featured<?php endif; ?>" data-name="<?php echo htmlspecialchars(strtolower($pkg->name ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
 <h4><?php echo htmlspecialchars($pkg->name, ENT_QUOTES, 'UTF-8'); ?></h4>
@@ -226,9 +245,11 @@ $footerTypes = [];
 <?php $displayName = ucwords(str_replace(['_', '-'], ' ', $type)); ?>
 <a href="/hosting/<?php echo urlencode($type); ?>"><?php echo htmlspecialchars($displayName, ENT_QUOTES, 'UTF-8'); ?></a>
 <?php endforeach; ?>
+<a href="/hosting/Game+Servers" class="cat-link<?php if ($currentCategory === 'Game Servers'): ?> active<?php endif; ?>">Game Servers</a>
 </div>
 <div class="footer-col">
 <h4>Support</h4>
+<a href="/game-servers.php">Game Servers</a>
 <a href="?login">Client Login</a>
 <a href="/admin/support/tickets">Submit Ticket</a>
 <a href="/admin/support/kb">Knowledgebase</a>

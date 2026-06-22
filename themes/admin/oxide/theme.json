@@ -9,7 +9,7 @@
     ],
     "js": []
   },
-  "name": "en-US.TextInfo.ToTitleCase(oxide) Admin",
+  "name": "Oxide Admin",
   "fonts": {
     "heading": "'Inter', sans-serif",
     "body": "'Inter', sans-serif"
