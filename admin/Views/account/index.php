@@ -1,6 +1,6 @@
 <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px">
 <a href="/admin/account/create" class="btn btn-primary"><i class="bi bi-person-plus"></i> Create Account</a>
-<span style="color:var(--text_muted);font-size:13px"><?php echo $accountsStats['total_accounts']; ?> accounts · <?php echo $accountsStats['active_accounts']; ?> active · <?php echo $accountsStats['suspended_accounts']; ?> suspended</span>
+<span style="color:var(--text_muted);font-size:13px"><span data-stat="total"><?php echo $accountsStats['total_accounts']; ?></span> accounts · <span data-stat="active"><?php echo $accountsStats['active_accounts']; ?></span> active · <span data-stat="suspended"><?php echo $accountsStats['suspended_accounts']; ?></span> suspended</span>
 </div>
 
 <table class="table table-hover" style="color:#fff">
@@ -25,6 +25,7 @@ if (isset($packages)) {
 <?php elseif ($a->status === 'suspended'): ?>
 <a href="/admin/account/unsuspend/<?php echo $a->id; ?>" class="btn btn-sm btn-secondary" style="background:rgba(74,222,128,.1);color:#4ade80;border-color:rgba(74,222,128,.2)"><i class="bi bi-play-circle"></i></a>
 <?php endif; ?>
+<a href="#" class="btn btn-sm" style="background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.2)" onclick="return deleteAccount(<?php echo $a->id; ?>, '<?php echo htmlspecialchars($a->username, ENT_QUOTES, 'UTF-8'); ?>', this)"><i class="bi bi-trash"></i></a>
 </td>
 <td><span class="badge bg-<?php echo $a->status === 'active' ? 'success' : ($a->status === 'suspended' ? 'warning' : 'danger'); ?>"><?php echo ucfirst($a->status); ?></span></td>
 </tr>
@@ -33,3 +34,27 @@ if (isset($packages)) {
 <?php endif; ?>
 </tbody>
 </table>
+
+<script>
+function deleteAccount(id, username, btn) {
+    if (!confirm('Permanently delete ' + username + ' and all data? This cannot be undone.')) return false;
+    var x = new XMLHttpRequest();
+    x.open('GET', '/admin/account/delete/' + id, true);
+    x.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    x.onload = function() {
+        if (x.status === 200) {
+            var row = btn.closest('tr');
+            if (row) row.remove();
+            // Update stats
+            var totalEl = document.querySelector('[data-stat="total"]');
+            var activeEl = document.querySelector('[data-stat="active"]');
+            if (totalEl) totalEl.textContent = parseInt(totalEl.textContent) - 1;
+        } else {
+            alert('Delete failed. Check console for details.');
+        }
+    };
+    x.onerror = function() { alert('Network error.'); };
+    x.send();
+    return false;
+}
+</script>

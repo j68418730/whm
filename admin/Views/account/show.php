@@ -43,12 +43,13 @@
 </div>
 </div>
 
-<div class="action-card">
-<h4><i class="bi bi-x-octagon" style="color:#f87171"></i> Terminate</h4>
-<div class="actions">
-<a href="/admin/account/terminate/<?php echo $account->id; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Terminate this account? This will delete the Linux user and all files.')"><i class="bi bi-x-octagon"></i> Terminate Account</a>
-</div>
-</div>
+                <div class="action-card">
+                <h4><i class="bi bi-x-octagon" style="color:#f87171"></i> Terminate / Delete</h4>
+                <div class="actions">
+                <a href="/admin/account/terminate/<?php echo $account->id; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Terminate this account? This will delete the Linux user and all files.')"><i class="bi bi-x-octagon"></i> Terminate</a>
+                <a href="/admin/account/delete/<?php echo $account->id; ?>" class="btn btn-sm" style="background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.3)" onclick="return confirm('DELETE this account permanently? This cannot be undone.')"><i class="bi bi-trash"></i> Delete Permanently</a>
+                </div>
+                </div>
 
 <div class="action-card">
 <h4><i class="bi bi-arrow-left-right" style="color:#38bdf8"></i> Change Ownership</h4>
@@ -121,6 +122,33 @@ $diskPct = $package->disk_space > 0 ? min(100, round($diskVal / ($package->disk_
 ?>
 <div class="progress" style="height:6px;margin-top:4px"><div class="progress-bar" style="width:<?php echo $diskPct; ?>%;background:#facc15"></div></div>
 <?php endif; ?>
+</div>
+
+<div class="action-card">
+<h4><i class="bi bi-rocket-takeoff" style="color:#a78bfa"></i> Quick Install</h4>
+<div class="actions" style="flex-wrap:wrap">
+<form method="POST" action="/admin/installers/install" style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap">
+<input type="hidden" name="app_name" value="WordPress">
+<input type="hidden" name="account_id" value="<?php echo $account->id; ?>">
+<input type="hidden" name="domain" value="<?php echo htmlspecialchars($account->domain ?? ($account->username . '.planet-hosts.com')); ?>">
+<button type="submit" class="btn btn-sm" style="background:rgba(15,117,188,.15);color:#0a84ff;border:1px solid rgba(15,117,188,.2)">📝 Install WordPress</button>
+</form>
+<form method="POST" action="/admin/installers/install" style="display:inline-flex;gap:6px;align-items:center">
+<input type="hidden" name="app_name" value="phpMyAdmin">
+<input type="hidden" name="account_id" value="<?php echo $account->id; ?>">
+<input type="hidden" name="domain" value="<?php echo htmlspecialchars($account->domain ?? ($account->username . '.planet-hosts.com')); ?>">
+<input type="hidden" name="directory" value="phpmyadmin">
+<button type="submit" class="btn btn-sm" style="background:rgba(250,204,21,.12);color:#facc15;border:1px solid rgba(250,204,21,.2)">🗄️ Install phpMyAdmin</button>
+</form>
+<form method="POST" action="/admin/installers/install" style="display:inline-flex;gap:6px;align-items:center">
+<input type="hidden" name="app_name" value="Laravel">
+<input type="hidden" name="account_id" value="<?php echo $account->id; ?>">
+<input type="hidden" name="domain" value="<?php echo htmlspecialchars($account->domain ?? ($account->username . '.planet-hosts.com')); ?>">
+<input type="hidden" name="directory" value="laravel">
+<button type="submit" class="btn btn-sm" style="background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.15)">⚡ Install Laravel</button>
+</form>
+<a href="/admin/installers" class="btn btn-sm btn-secondary" style="font-size:11px">More Apps →</a>
+</div>
 </div>
 
 <div class="action-card" style="grid-column:1/-1">

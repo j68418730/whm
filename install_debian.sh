@@ -41,8 +41,20 @@ systemctl enable --now apache2 mariadb postfix dovecot vsftpd named
 echo "[3/8] Installing streaming stack..."
 apt install -y -qq icecast2 liquidsoap ezstream-ffmpeg ffmpeg
 
-# 4. phpMyAdmin + ModSecurity + RoundCube
-echo "[4/8] Installing phpMyAdmin, ModSecurity, RoundCube..."
+# 4a. SteamCMD + Game Server support
+echo "[4/8 - Game Server] Installing SteamCMD..."
+dpkg --add-architecture i386 2>/dev/null || true
+apt update -qq && apt install -y -qq steamcmd 2>/dev/null || {
+    echo "SteamCMD apt failed, downloading manually..."
+    cd /usr/games
+    curl -sqL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar zxf -
+    ln -sf /usr/games/steamcmd.sh /usr/games/steamcmd
+}
+mkdir -p /home/gameservers
+echo "SteamCMD installed at /usr/games/steamcmd"
+
+# 4b. phpMyAdmin + ModSecurity + RoundCube
+echo "[4/9] Installing phpMyAdmin, ModSecurity, RoundCube..."
 apt install -y -qq phpmyadmin libapache2-mod-security2 roundcube roundcube-mysql roundcube-plugins
 # Enable RoundCube Apache config
 ln -sf /etc/roundcube/apache.conf /etc/apache2/conf-available/roundcube.conf 2>/dev/null || true

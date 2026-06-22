@@ -32,50 +32,12 @@ class GameServersController extends Controller
     public function index()
     {
         $hosting = $this->loadUser();
-        $servers = $this->db->table('game_servers')->where('user_id', $hosting->id)->get() ?: [];
-        require_once BASE_PATH . '/plugins/GameServers/Services/GameServerManager.php';
-        $games = [];
+        $servers = $this->db->table('game_servers')->where('user_id', $hosting->id)->orderBy('created_at', 'DESC')->get() ?: [];
+        $gameTypes = $this->db->table('game_types')->where('is_active', 1)->orderBy('name', 'ASC')->get() ?: [];
         return $this->view('Plugins.GameServers.Views.user.index', [
-            'user' => $this->auth->user(), 'hosting' => $hosting, 'servers' => $servers, 'games' => $games, 'title' => 'Game Servers'
+            'user' => $this->auth->user(), 'hosting' => $hosting,
+            'servers' => $servers, 'gameTypes' => $gameTypes, 'title' => 'Game Servers'
         ]);
-    }
-
-    public function install($type)
-    {
-        $hosting = $this->loadUser();
-        $manager = new \GameServers\Services\GameServerManager();
-        $result = $manager->install($hosting->id, $type, ucfirst($type) . ' Server');
-        if (isset($result['error'])) {
-            $_SESSION['error_message'] = $result['error'];
-        } else {
-            $_SESSION['success_message'] = 'Installing game server...';
-        }
-        $this->response->redirect('/user/games');
-    }
-
-    public function start($id)
-    {
-        $this->loadUser();
-        $manager = new \GameServers\Services\GameServerManager();
-        $manager->start((int)$id);
-        $this->response->redirect('/user/games');
-    }
-
-    public function stop($id)
-    {
-        $this->loadUser();
-        $manager = new \GameServers\Services\GameServerManager();
-        $manager->stop((int)$id);
-        $this->response->redirect('/user/games');
-    }
-
-    public function status($id)
-    {
-        $this->loadUser();
-        $manager = new \GameServers\Services\GameServerManager();
-        $this->response->json($manager->getStatus((int)$id));
-        $this->response->send();
-        exit;
     }
 
     public function show($id)
@@ -83,10 +45,62 @@ class GameServersController extends Controller
         $hosting = $this->loadUser();
         $server = $this->db->table('game_servers')->where('id', (int)$id)->where('user_id', $hosting->id)->first();
         if (!$server) { $this->response->redirect('/user/games'); exit; }
-        $games = \GameServers\Services\GameServerManager::$games;
+        $gameType = $this->db->table('game_types')->where('name', $server->game_type)->first();
+        // Read config file
+        $configContent = '';
+        $configPath = $server->config_path ?: $server->install_path . '/server.cfg';
+        if (file_exists($configPath)) $configContent = file_get_contents($configPath);
+        // Read console log
+        $consoleLog = '';
+        $logFile = $server->install_path . '/console.log';
+        if (file_exists($logFile)) $consoleLog = file_get_contents($logFile);
         return $this->view('Plugins.GameServers.Views.user.show', [
-            'user' => $this->auth->user(), 'hosting' => $hosting, 'server' => $server, 'games' => $games, 'title' => $server->server_name
+            'user' => $this->auth->user(), 'hosting' => $hosting, 'server' => $server,
+            'gameType' => $gameType, 'configContent' => $configContent, 'consoleLog' => $consoleLog,
+            'title' => $server->server_name
         ]);
+    }
+
+    public function start($id)
+    {
+        $this->loadUser();
+        require_once BASE_PATH . '/plugins/GameServers/Services/GameServerManager.php';
+        $manager = new \GameServers\Services\GameServerManager();
+        $manager->start((int)$id);
+        $_SESSION['success_message'] = 'Server starting...';
+        $this->response->redirect('/user/games/show/' . (int)$id);
+    }
+
+    public function stop($id)
+    {
+        $this->loadUser();
+        require_once BASE_PATH . '/plugins/GameServers/Services/GameServerManager.php';
+        $manager = new \GameServers\Services\GameServerManager();
+        $manager->stop((int)$id);
+        $_SESSION['success_message'] = 'Server stopped.';
+        $this->response->redirect('/user/games/show/' . (int)$id);
+    }
+
+    public function restart($id)
+    {
+        $this->loadUser();
+        require_once BASE_PATH . '/plugins/GameServers/Services/GameServerManager.php';
+        $manager = new \GameServers\Services\GameServerManager();
+        $manager->stop((int)$id);
+        sleep(2);
+        $manager->start((int)$id);
+        $_SESSION['success_message'] = 'Server restarting...';
+        $this->response->redirect('/user/games/show/' . (int)$id);
+    }
+
+    public function status($id)
+    {
+        $this->loadUser();
+        require_once BASE_PATH . '/plugins/GameServers/Services/GameServerManager.php';
+        $manager = new \GameServers\Services\GameServerManager();
+        $this->response->json($manager->getStatus((int)$id));
+        $this->response->send();
+        exit;
     }
 
     public function command($id)
@@ -94,10 +108,11 @@ class GameServersController extends Controller
         $hosting = $this->loadUser();
         $server = $this->db->table('game_servers')->where('id', (int)$id)->where('user_id', $hosting->id)->first();
         if ($server && $_POST && isset($_POST['cmd'])) {
-            exec("cd {$server->install_path} && " . escapeshellcmd($_POST['cmd']) . " >> {$server->install_path}/console.log 2>&1 &");
-            $_SESSION['success_message'] = 'Command executed.';
+            $safeCmd = escapeshellcmd($_POST['cmd']);
+            exec("cd {$server->install_path} && {$safeCmd} >> {$server->install_path}/console.log 2>&1 &");
+            $_SESSION['success_message'] = 'Command sent.';
         }
-        $this->response->redirect('/user/games');
+        $this->response->redirect('/user/games/show/' . (int)$id);
     }
 
     public function saveConfig($id)
@@ -107,15 +122,18 @@ class GameServersController extends Controller
         if ($server && $_POST && isset($_POST['config_content'])) {
             $path = $server->config_path ?: $server->install_path . '/server.cfg';
             file_put_contents($path, $_POST['config_content']);
-            $this->db->table('game_servers')->where('id', $id)->update(['config_path' => $path]);
-            $_SESSION['success_message'] = 'Config saved.';
+            if (!$server->config_path) {
+                $this->db->table('game_servers')->where('id', $id)->update(['config_path' => $path]);
+            }
+            $_SESSION['success_message'] = 'Configuration saved.';
         }
-        $this->response->redirect('/user/games');
+        $this->response->redirect('/user/games/show/' . (int)$id);
     }
 
     public function uninstall($id)
     {
         $this->loadUser();
+        require_once BASE_PATH . '/plugins/GameServers/Services/GameServerManager.php';
         $manager = new \GameServers\Services\GameServerManager();
         $manager->uninstall((int)$id);
         $_SESSION['success_message'] = 'Game server uninstalled.';

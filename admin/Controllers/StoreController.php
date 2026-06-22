@@ -21,11 +21,9 @@ class StoreController extends Controller
         $categories = $this->db->table('package_categories')->orderBy('sort_order', 'ASC')->get() ?: [];
         $packages = $this->db->table('hosting_packages')->where('is_active', 1)->orderBy('sort_order', 'ASC')->get() ?: [];
 
-        // Normalize category from URL: decode, replace hyphens with underscores/spaces
         $rawCat = $category;
         if ($rawCat) {
             $rawCat = urldecode($rawCat);
-            // Try various formats to match package types
             $attempts = [
                 $rawCat,
                 str_replace('-', ' ', $rawCat),
@@ -42,52 +40,75 @@ class StoreController extends Controller
         $packagesByType = [];
         foreach ($packages as $pkg) {
             $type = $pkg->type ?? 'Uncategorized';
-            if (!isset($packagesByType[$type])) {
-                $packagesByType[$type] = [];
-            }
+            if (!isset($packagesByType[$type])) $packagesByType[$type] = [];
             $packagesByType[$type][] = $pkg;
         }
 
-        // Match URL category to an actual package type
-        $currentCategory = null;
+        // Check if this is a Game Servers category request
+        $isGameServers = false;
+        $gameCategories = ['game_server', 'Game Servers', 'game-servers', 'Game Servers', 'GAME_SERVER'];
         if ($rawCat) {
-            foreach ($attempts as $try) {
-                if (isset($packagesByType[$try])) {
-                    $currentCategory = $try;
+            foreach ($gameCategories as $gc) {
+                if (in_array(strtolower($rawCat), [strtolower($gc), strtolower(str_replace(' ', '_', $gc)), strtolower(str_replace(' ', '-', $gc))])) {
+                    $isGameServers = true;
                     break;
                 }
             }
-            // Also try case-insensitive match
-            if (!$currentCategory) {
-                $lowerTypes = array_change_key_case($packagesByType, CASE_LOWER);
+        }
+
+        $gameTypes = [];
+        if ($isGameServers) {
+            $gameTypes = $this->db->table('game_types')->where('is_active', 1)->orderBy('name', 'ASC')->get() ?: [];
+            $currentCategory = 'Game Servers';
+            $title = 'Game Servers - Planet Hosts';
+        } else {
+            $currentCategory = null;
+            if ($rawCat) {
                 foreach ($attempts as $try) {
-                    $l = strtolower($try);
-                    if (isset($lowerTypes[$l])) {
-                        // Find original key
-                        foreach ($packagesByType as $origKey => $v) {
-                            if (strtolower($origKey) === $l) {
-                                $currentCategory = $origKey;
-                                break 2;
+                    if (isset($packagesByType[$try])) { $currentCategory = $try; break; }
+                }
+                if (!$currentCategory) {
+                    $lowerTypes = array_change_key_case($packagesByType, CASE_LOWER);
+                    foreach ($attempts as $try) {
+                        $l = strtolower($try);
+                        if (isset($lowerTypes[$l])) {
+                            foreach ($packagesByType as $origKey => $v) {
+                                if (strtolower($origKey) === $l) { $currentCategory = $origKey; break 2; }
                             }
                         }
                     }
                 }
             }
+            if (!$currentCategory && !empty($packagesByType)) {
+                $currentCategory = array_key_first($packagesByType);
+            }
+            $title = $currentCategory ? ucwords(str_replace(['_', '-'], ' ', $currentCategory)) . ' - Planet Hosts' : 'Store - Planet Hosts';
         }
-        if (!$currentCategory && !empty($packagesByType)) {
-            $currentCategory = array_key_first($packagesByType);
-        }
-
-        $title = $currentCategory ? ucwords(str_replace(['_', '-'], ' ', $currentCategory)) . ' - Planet Hosts' : 'Store - Planet Hosts';
 
         $themeFile = BASE_PATH . '/theme/store.php';
         if (is_file($themeFile)) {
             require $themeFile;
             exit;
         }
-
-        header('Content-Type: text/html; charset=utf-8');
         echo '<h1>Store</h1><p>Store page is ready.</p>';
+        exit;
+    }
+
+    public function detail($id)
+    {
+        $id = (int)$id;
+        $product = $this->db->table('hosting_packages')->where('id', $id)->first();
+        if (!$product) {
+            header('Location: /hosting');
+            exit;
+        }
+        $categories = $this->db->table('package_categories')->orderBy('sort_order', 'ASC')->get() ?: [];
+        $themeFile = BASE_PATH . '/theme/product.php';
+        if (is_file($themeFile)) {
+            require $themeFile;
+            exit;
+        }
+        echo '<h1>Product Not Found</h1>';
         exit;
     }
 }

@@ -116,6 +116,8 @@ function filterSidebar(val) {
 <a href="http://45.61.59.55:2096/" target="_blank" style="font-size:12px;padding-left:20px;color:#fb923c" class="<?php echo 0?'active':''; ?>">📧 Webmail (2096)</a>
 <a href="/admin/mysql" class="<?php echo str_contains($currentUrl,'/admin/mysql')?'active':''; ?>">Databases</a>
 <a href="/admin/ftp" class="<?php echo str_contains($currentUrl,'/admin/ftp')?'active':''; ?>">FTP</a>
+<a href="/admin/ip" class="<?php echo str_contains($currentUrl,'/admin/ip')?'active':''; ?>">IP Management</a>
+<a href="/admin/installers" class="<?php echo str_contains($currentUrl,'/admin/installers')?'active':''; ?>">One-Click Installer</a>
 </div>
 
 <div class="nav-section" data-section="security">
@@ -167,6 +169,7 @@ function filterSidebar(val) {
 
 <a href="/admin/cron" class="<?php echo str_contains($currentUrl,'/admin/cron')?'active':''; ?>">Cron</a>
 <a href="/admin/automation" class="<?php echo str_contains($currentUrl,'/admin/automation')?'active':''; ?>">Automation</a>
+<a href="/admin/server/terminal" class="<?php echo str_contains($currentUrl,'/admin/server/terminal') || str_contains($currentUrl,'/admin/terminal') ?'active':''; ?>" style="color:#34d399">🖥 Terminal</a>
 <a href="/admin/serverconfig" class="<?php echo str_contains($currentUrl,'/admin/serverconfig')?'active':''; ?>">Server Config</a>
 <a href="/admin/theme" class="<?php echo str_contains($currentUrl,'/admin/theme')?'active':''; ?>">Theme</a>
 <a href="/admin/settings" class="<?php echo str_contains($currentUrl,'/admin/settings')?'active':''; ?>">Settings</a>

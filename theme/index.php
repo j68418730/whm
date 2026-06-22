@@ -19,6 +19,18 @@ try {
     $app = \Core\Application::getInstance();
     $allCategories = $app->get('db')->table('package_categories')->orderBy('sort_order', 'ASC')->get() ?: [];
 } catch (\Exception $e) {}
+// Auto-load packages from DB if not provided
+if (empty($packagesByType)) {
+    try {
+        $app = \Core\Application::getInstance();
+        $allPkgs = $app->get('db')->table('hosting_packages')->where('is_active', 1)->orderBy('sort_order', 'ASC')->get() ?: [];
+        foreach ($allPkgs as $pkg) {
+            $t = $pkg->type ?? 'Other';
+            if (!isset($packagesByType[$t])) $packagesByType[$t] = [];
+            $packagesByType[$t][] = $pkg;
+        }
+    } catch (\Exception $e) {}
+}
 if ($loggedIn && $user):
 ?><!DOCTYPE html>
 <html lang="en">
@@ -123,14 +135,6 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 .hero-stat p{color:#94a3b8;font-size:13px;margin:0}
 .hero-image img{width:100%;border-radius:20px;border:1px solid rgba(0,191,255,.15);box-shadow:0 0 60px rgba(0,191,255,.12)}
 /* SERVICES GRID */
-.services-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
-.service-card{position:relative;background:rgba(8,16,28,.8);border:1px solid rgba(0,191,255,.1);border-radius:16px;padding:32px;transition:.35s;overflow:hidden}
-.service-card:hover{transform:translateY(-5px);border-color:#0A84FF;box-shadow:0 0 30px rgba(0,191,255,.08)}
-.service-card .icon{font-size:2.2rem;margin-bottom:16px;display:block}
-.service-card h3{font-size:1.2rem;margin-bottom:10px}
-.service-card p{color:#94a3b8;font-size:14px;line-height:1.7;margin-bottom:16px}
-.service-card .learn-more{color:#0A84FF;font-size:13px;font-weight:600;text-decoration:none}
-.service-card .learn-more:hover{text-decoration:underline}
 /* FEATURES GRID */
 .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px}
 .feature-card{background:rgba(8,16,28,.8);border:1px solid rgba(0,191,255,.08);border-radius:14px;padding:28px;text-align:center;transition:.3s}
@@ -138,32 +142,6 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 .feature-card .icon{font-size:2rem;margin-bottom:14px;display:block}
 .feature-card h4{font-size:15px;margin-bottom:8px}
 .feature-card p{color:#94a3b8;font-size:13px;margin:0;line-height:1.6}
-/* PACKAGES HORIZONTAL SCROLL */
-.pkg-cat-bar{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;margin-bottom:24px;scrollbar-width:thin;scrollbar-color:rgba(0,140,255,.3) transparent}
-.pkg-cat-bar::-webkit-scrollbar{height:4px}
-.pkg-cat-bar::-webkit-scrollbar-track{background:transparent}
-.pkg-cat-bar::-webkit-scrollbar-thumb{background:rgba(0,140,255,.3);border-radius:4px}
-.pkg-cat-btn{padding:10px 22px;border-radius:10px;border:1px solid rgba(0,191,255,.12);background:rgba(8,16,28,.8);color:#94a3b8;cursor:pointer;font-size:13px;font-weight:600;transition:.3s;white-space:nowrap;font-family:'Inter',sans-serif;flex-shrink:0}
-.pkg-cat-btn:hover{color:#fff;border-color:#0A84FF;background:rgba(0,191,255,.08)}
-.pkg-cat-btn.active{background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff;border-color:#008cff;box-shadow:0 0 20px rgba(0,140,255,.3)}
-.pkg-scroll{display:flex;gap:20px;overflow-x:auto;padding:8px 4px 16px;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:rgba(0,140,255,.3) transparent}
-.pkg-scroll::-webkit-scrollbar{height:6px}
-.pkg-scroll::-webkit-scrollbar-track{background:transparent}
-.pkg-scroll::-webkit-scrollbar-thumb{background:rgba(0,140,255,.3);border-radius:4px}
-.pkg-scroll-card{min-width:320px;max-width:340px;background:rgba(8,16,28,.9);border:1px solid rgba(0,191,255,.12);border-radius:16px;padding:28px;transition:.35s;scroll-snap-align:start;flex-shrink:0;position:relative;display:flex;flex-direction:column}
-.pkg-scroll-card.featured{border-color:#0A84FF;box-shadow:0 0 30px rgba(0,191,255,.12)}
-.pkg-scroll-card.featured::before{content:"Featured";position:absolute;top:14px;right:14px;background:linear-gradient(135deg,#0A84FF,#00E5FF);color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px}
-.pkg-scroll-card:hover{transform:translateY(-4px);border-color:#0A84FF;box-shadow:0 0 30px rgba(0,191,255,.08)}
-.pkg-scroll-card h4{font-size:1.15rem;margin-bottom:4px}
-.pkg-scroll-card .price{font-size:1.8rem;font-weight:800;color:#0A84FF;margin-bottom:10px}
-.pkg-scroll-card .price small{font-size:.8rem;font-weight:400;color:#64748b}
-.pkg-scroll-card p{color:#94a3b8;font-size:.82rem;line-height:1.6;margin-bottom:10px;flex-grow:1}
-.pkg-scroll-card .features-list{list-style:none;padding:0;margin-bottom:14px}
-.pkg-scroll-card .features-list li{color:#cbd5e1;font-size:.78rem;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);display:flex;align-items:center;gap:8px}
-.pkg-scroll-card .features-list li:last-child{border-bottom:none}
-.pkg-scroll-card .features-list li i{width:16px;color:#4ade80;font-size:10px}
-.pkg-scroll-card .btn-row{display:flex;gap:8px;margin-top:auto}
-.pkg-scroll-card .btn-row .btn{flex:1;text-align:center;padding:10px 8px;font-size:13px}
 /* STATISTICS BANNER */
 .stat-banner{background:linear-gradient(135deg,rgba(0,140,255,.08),rgba(0,229,255,.04));border:1px solid rgba(0,191,255,.1);border-radius:20px;padding:50px 40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:24px;text-align:center}
 .stat-item h3{font-size:2.2rem;color:#0A84FF;margin-bottom:6px}
@@ -281,7 +259,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 <a href="#support">Support</a>
 <a href="?contact">Contact</a>
 <a href="http://45.61.59.55:2082/" class="btn-secondary" style="padding:8px 16px;font-size:13px"><i class="fa-solid fa-user"></i> Client Login</a>
-<a href="?login" class="btn-primary btn-order" style="padding:8px 20px;font-size:13px"><i class="fa-solid fa-cart-plus"></i> Order Now</a>
+<a href="/cart.php" class="btn-primary btn-order" style="padding:8px 20px;font-size:13px"><i class="fa-solid fa-cart-plus"></i> Cart</a>
 </nav>
 </div>
 </header>
@@ -307,54 +285,6 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 </div>
 </section>
 
-<!-- ===== SERVICES ===== -->
-<section class="section" id="services">
-<div class="container">
-<div class="section-title">
-<h2>Our <span>Services</span></h2>
-<p>Comprehensive hosting solutions designed for every need</p>
-</div>
-<div class="services-grid">
-<div class="service-card">
-<span class="icon"><i class="fa-solid fa-globe"></i></span>
-<h3>Web Hosting</h3>
-<p>Fast, secure shared hosting with WHM/cPanel, unlimited databases, email accounts, and one-click installers. Perfect for small to medium websites.</p>
-<a href="#packages" class="learn-more">View Plans <i class="fa-solid fa-arrow-right"></i></a>
-</div>
-<div class="service-card">
-<span class="icon"><i class="fa-solid fa-building"></i></span>
-<h3>Web Hosting Reseller</h3>
-<p>Start your own hosting business with white-label reseller accounts. Full WHM access, custom nameservers, and complete client management tools.</p>
-<a href="#packages" class="learn-more">View Plans <i class="fa-solid fa-arrow-right"></i></a>
-</div>
-<div class="service-card">
-<span class="icon"><i class="fa-solid fa-tower-broadcast"></i></span>
-<h3>SHOUTcast Hosting</h3>
-<p>High-bitrate SHOUTcast streaming with AutoDJ, listener analytics, and easy management. Reach global audiences with zero buffering.</p>
-<a href="#packages" class="learn-more">View Plans <i class="fa-solid fa-arrow-right"></i></a>
-</div>
-<div class="service-card">
-<span class="icon"><i class="fa-solid fa-radio"></i></span>
-<h3>SHOUTcast Reseller</h3>
-<p>Resell SHOUTcast streaming services under your own brand. WHM integration, bulk account management, and automated provisioning included.</p>
-<a href="#packages" class="learn-more">View Plans <i class="fa-solid fa-arrow-right"></i></a>
-</div>
-<div class="service-card">
-<span class="icon"><i class="fa-solid fa-paintbrush"></i></span>
-<h3>Website Builder</h3>
-<p>Create stunning websites with our drag-and-drop builder or AI-powered site generator. Choose from professional templates or generate unique designs.</p>
-<a href="?login" class="learn-more">Learn More <i class="fa-solid fa-arrow-right"></i></a>
-</div>
-<div class="service-card">
-<span class="icon"><i class="fa-solid fa-server"></i></span>
-<h3>VPS &amp; Dedicated</h3>
-<p>Full root access virtual and dedicated servers. Complete isolation, custom configurations, and high-performance hardware for demanding workloads.</p>
-<a href="#packages" class="learn-more">View Plans <i class="fa-solid fa-arrow-right"></i></a>
-</div>
-</div>
-</div>
-</section>
-
 <!-- ===== FEATURES ===== -->
 <section class="section" style="background:rgba(8,16,28,.3);border-top:1px solid rgba(0,191,255,.06);border-bottom:1px solid rgba(0,191,255,.06)">
 <div class="container">
@@ -375,89 +305,105 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 </div>
 </section>
 
-<!-- ===== PACKAGES - HORIZONTAL SCROLL ===== -->
+<!-- ===== PACKAGES - ROTATING CARDS ===== -->
 <section class="section" id="packages">
 <div class="container">
 <div class="section-title">
-<h2>Hosting <span>Plans</span></h2>
-<p>Choose the perfect plan for your project. All plans include 24/7 support.</p>
+<h2>Simple <span>Pricing</span></h2>
+<p>Choose the plan that fits your needs. All plans include our full WHM panel.</p>
 </div>
-<?php
-if (!empty($packagesByType)):
-// Sort categories for consistent order
-$catOrder = ['web_hosting','Web Hosting','web_reseller','Web Hosting Reseller','shoutcast','SHOUTcast','icecast','Icecast Streaming','icecast_reseller','Icecast Reseller','vps','VPS Servers','dedicated','Dedicated Servers','game_server','Game Server'];
-$catLabels = [
-    'web_hosting'=>'Web Hosting','Web Hosting'=>'Web Hosting',
-    'web_reseller'=>'Reseller Hosting','Web Hosting Reseller'=>'Reseller Hosting',
-    'shoutcast'=>'SHOUTcast','SHOUTcast'=>'SHOUTcast',
-    'icecast'=>'Icecast Streaming','Icecast Streaming'=>'Icecast Streaming',
-    'icecast_reseller'=>'Icecast Reseller','Icecast Reseller'=>'Icecast Reseller',
-    'vps'=>'VPS Servers','VPS Servers'=>'VPS Servers',
-    'dedicated'=>'Dedicated Servers','Dedicated Servers'=>'Dedicated Servers',
-    'game_server'=>'Game Servers','Game Servers'=>'Game Servers',
+<?php if (!empty($packagesByType)):
+$catIcons = [
+    'web_hosting'=>'🌐', 'Web Hosting'=>'🌐',
+    'web_reseller'=>'🏢', 'Web Hosting Reseller'=>'🏢',
+    'shoutcast'=>'📡', 'SHOUTcast'=>'📡',
+    'icecast'=>'🎵', 'Icecast Streaming'=>'🎵',
+    'icecast_reseller'=>'🎵', 'Icecast Reseller'=>'🎵',
+    'vps'=>'🖥', 'VPS Servers'=>'🖥',
+    'dedicated'=>'🔧', 'Dedicated Servers'=>'🔧',
+    'game_server'=>'🎮', 'Game Servers'=>'🎮',
 ];
-$sorted = [];
-foreach ($catOrder as $c) {
-    if (isset($packagesByType[$c])) {
-        $sorted[$c] = $packagesByType[$c];
-    }
-}
-foreach ($packagesByType as $type => $pkgs) {
-    if (!isset($sorted[$type])) {
-        $sorted[$type] = $pkgs;
-    }
-}
-$firstType = array_key_first($sorted);
 ?>
-<div class="pkg-cat-bar" id="pkgCatBar">
-<?php foreach ($sorted as $type => $pkgs): ?>
-<button class="pkg-cat-btn<?php if ($type === $firstType): ?> active<?php endif; ?>" onclick="showPkgCat('<?php echo $type; ?>')"><?php echo $catLabels[$type] ?? ucwords(str_replace(['_','-'],' ',$type)); ?></button>
-<?php endforeach; ?>
+<style>
+.pricing-rotate-col{background:rgba(8,16,28,.4);border:1px solid rgba(0,191,255,.08);border-radius:14px;padding:18px;transition:.3s}
+.pricing-rotate-col:hover{border-color:rgba(0,191,255,.18);background:rgba(8,16,28,.6)}
+.pricing-rotate{position:relative;min-height:320px}
+.pkg-rotate{display:none;border:1px solid rgba(0,191,255,.1);border-radius:10px;padding:20px;background:rgba(0,0,0,.2)}
+.pkg-rotate.active{display:block}
+.pkg-rotate ul{list-style:none;padding:0;margin:12px 0 16px}
+.pkg-rotate ul li{padding:6px 0;display:flex;align-items:center;gap:8px;font-size:13px;color:#cbd5e1;border-bottom:1px solid rgba(255,255,255,.04)}
+.pkg-rotate ul li i{color:#4ade80;font-size:11px;width:16px}
+.pkg-rotate .price{font-size:28px;font-weight:800;margin-bottom:4px;color:#0A84FF}
+.pkg-rotate .price span{font-size:14px;font-weight:400;color:#64748b}
+.pkg-rotate h3{font-size:18px;font-weight:700;margin-bottom:4px}
+.pkg-rotate .subtitle{color:#64748b;font-size:13px;margin-bottom:12px}
+.pkg-rotate .btn{display:block;text-align:center;padding:12px;background:linear-gradient(135deg,#008cff,#3bb8ff);border-radius:10px;color:#fff;text-decoration:none;font-weight:600;font-size:14px;transition:.3s}
+.pkg-rotate .btn:hover{transform:translateY(-2px);box-shadow:0 0 30px rgba(0,140,255,.3)}
+.pkg-rotate .btn-outline{border:1px solid rgba(0,191,255,.15);background:transparent;color:#e0e0e0;margin-top:6px;padding:8px;font-size:12px;display:block;text-align:center;border-radius:8px;text-decoration:none;transition:.2s}
+.pkg-rotate .btn-outline:hover{background:rgba(0,140,255,.08);border-color:rgba(0,140,255,.3)}
+.review-dots{display:flex;justify-content:center;gap:6px;margin-top:10px}
+.review-dots .dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.15);cursor:pointer;transition:.3s;flex-shrink:0}
+.review-dots .dot.active{background:#008cff;width:18px;border-radius:4px}
+.review-nav{display:flex;justify-content:center;gap:8px;margin-top:10px}
+.review-nav button{background:rgba(0,140,255,.08);border:1px solid rgba(0,191,255,.12);border-radius:8px;padding:6px 14px;color:#e0e0e0;cursor:pointer;font-size:12px;transition:.3s;font-family:'Inter',sans-serif}
+.review-nav button:hover{background:rgba(0,140,255,.15)}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:20px}
+@media(max-width:768px){.pricing-grid{grid-template-columns:1fr}}
+</style>
+<div class="pricing-grid" id="pricingGrid">
+<?php foreach ($packagesByType as $type => $pkgs):
+$icon = $catIcons[$type] ?? '📦';
+$label = ucwords(str_replace(['_','-'],' ',$type));
+$pkgCount = count($pkgs);
+?>
+<div class="pricing-rotate-col">
+<div style="text-align:center;margin-bottom:10px">
+<span style="font-size:28px"><?php echo $icon; ?></span>
+<h3 style="font-size:16px;margin:4px 0 2px"><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></h3>
+<div style="font-size:11px;color:#64748b"><?php echo $pkgCount; ?> plan<?php if ($pkgCount > 1) echo 's'; ?></div>
 </div>
-<?php foreach ($sorted as $type => $pkgs): ?>
-<div class="pkg-cat-pane" id="pkg-<?php echo $type; ?>"<?php if ($type !== $firstType): ?> style="display:none"<?php endif; ?>>
-<div class="pkg-scroll">
-<?php $pkgCount = 0; foreach ($pkgs as $i => $pkg): ?>
-<?php if ($pkgCount >= 5): continue; endif; $pkgCount++; ?>
-<div class="pkg-scroll-card<?php if ($i === 1): ?> featured<?php endif; ?>">
-<h4><?php echo htmlspecialchars($pkg->name, ENT_QUOTES, 'UTF-8'); ?></h4>
-<div class="price">$<?php echo number_format((float)($pkg->monthly_price ?? $pkg->price ?? 0), 2); ?><small>/mo</small></div>
-<p><?php echo htmlspecialchars($pkg->description ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
-<ul class="features-list">
-<?php if (!empty($pkg->disk_space) && $pkg->disk_space > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $pkg->disk_space; ?> GB Disk</li><?php endif; ?>
-<?php if (!empty($pkg->bandwidth) && $pkg->bandwidth > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $pkg->bandwidth; ?> GB Bandwidth</li><?php endif; ?>
-<?php if (!empty($pkg->listener_limit) && $pkg->listener_limit > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $pkg->listener_limit; ?> Listeners</li><?php endif; ?>
-<?php if (!empty($pkg->bitrate) && $pkg->bitrate > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $pkg->bitrate; ?> kbps Bitrate</li><?php endif; ?>
-<?php if (!empty($pkg->storage_limit) && $pkg->storage_limit > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $pkg->storage_limit; ?> GB Storage</li><?php endif; ?>
-<?php if (!empty($pkg->email_accounts) && $pkg->email_accounts > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $pkg->email_accounts; ?> Emails</li><?php endif; ?>
-<?php if (!empty($pkg->databases) && $pkg->databases > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $pkg->databases; ?> Databases</li><?php endif; ?>
-<?php if (!empty($pkg->addon_domains) && $pkg->addon_domains > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $pkg->addon_domains; ?> Addon Domains</li><?php endif; ?>
-<?php if (!empty($pkg->dj_accounts) && $pkg->dj_accounts > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $pkg->dj_accounts; ?> DJ Accounts</li><?php endif; ?>
-<?php if (!empty($pkg->subdomains) && $pkg->subdomains > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $pkg->subdomains; ?> Subdomains</li><?php endif; ?>
-<li><i class="fa-solid fa-circle-check"></i> Free SSL</li>
-<li><i class="fa-solid fa-circle-check"></i> 24/7 Support</li>
+<div class="pricing-rotate" id="prota-<?php echo $type; ?>">
+<?php foreach ($pkgs as $i => $pkg): ?>
+<div class="pkg-rotate<?php if ($i === 0) echo ' active'; ?>" data-type="<?php echo $type; ?>" data-index="<?php echo $i; ?>">
+<h3><?php echo htmlspecialchars($pkg->name, ENT_QUOTES, 'UTF-8'); ?></h3>
+<div class="subtitle"><?php echo htmlspecialchars($pkg->description ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
+<div class="price">$<?php echo number_format((float)($pkg->monthly_price ?? $pkg->price ?? 0), 2); ?><span>/mo</span></div>
+<ul>
+<?php if (!empty($pkg->disk_space) && $pkg->disk_space > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo $pkg->disk_space; ?> GB Disk</li><?php endif; ?>
+<?php if (!empty($pkg->bandwidth) && $pkg->bandwidth > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo $pkg->bandwidth; ?> GB Bandwidth</li><?php endif; ?>
+<?php if (!empty($pkg->listener_limit) && $pkg->listener_limit > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo $pkg->listener_limit; ?> Listeners</li><?php endif; ?>
+<?php if (!empty($pkg->bitrate) && $pkg->bitrate > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo $pkg->bitrate; ?> kbps</li><?php endif; ?>
+<?php if (!empty($pkg->storage_limit) && $pkg->storage_limit > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo $pkg->storage_limit; ?> GB Storage</li><?php endif; ?>
+<?php if (!empty($pkg->email_accounts) && $pkg->email_accounts > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo $pkg->email_accounts; ?> Emails</li><?php endif; ?>
+<?php if (!empty($pkg->databases) && $pkg->databases > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo $pkg->databases; ?> Databases</li><?php endif; ?>
+<?php if (!empty($pkg->subdomains) && $pkg->subdomains > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo $pkg->subdomains; ?> Subdomains</li><?php endif; ?>
+<?php if (!empty($pkg->addon_domains) && $pkg->addon_domains > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo $pkg->addon_domains; ?> Addon Domains</li><?php endif; ?>
+<?php if (!empty($pkg->dj_accounts) && $pkg->dj_accounts > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo $pkg->dj_accounts; ?> DJ Accounts</li><?php endif; ?>
+<li><i class="fa-solid fa-check"></i> Free SSL</li>
+<li><i class="fa-solid fa-check"></i> 24/7 Support</li>
 </ul>
-<div class="btn-row">
-<a href="?login" class="btn btn-primary"><i class="fa-solid fa-cart-plus"></i> Order Now</a>
-<a href="?login" class="btn btn-secondary">Read More</a>
+<a href="/cart.php?action=add&id=<?php echo (int)$pkg->id; ?>&name=<?php echo urlencode($pkg->name ?? ''); ?>&price=<?php echo (float)($pkg->monthly_price ?? $pkg->price ?? 0); ?>" class="btn">Order Now →</a>
+<a href="/product/<?php echo (int)$pkg->id; ?>" class="btn-outline">Read More →</a>
+</div>
+<?php endforeach; ?>
+</div>
+<div class="review-dots" id="pdots-<?php echo $type; ?>">
+<?php foreach ($pkgs as $i => $pkg): ?>
+<span class="dot<?php if ($i === 0) echo ' active'; ?>" onclick="showPkg(<?php echo $i; ?>, '<?php echo $type; ?>')"></span>
+<?php endforeach; ?>
+</div>
+<div class="review-nav" style="margin-top:8px">
+<button onclick="prevPkg('<?php echo $type; ?>')">← Prev</button>
+<button onclick="nextPkg('<?php echo $type; ?>')">Next →</button>
 </div>
 </div>
 <?php endforeach; ?>
-<?php if (count($pkgs) > 5): ?>
-<div style="text-align:center;padding:16px 0">
-<a href="/hosting/<?php echo htmlspecialchars($type, ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-secondary">View More <i class="fa-solid fa-arrow-right"></i></a>
 </div>
-<?php endif; ?>
-</div>
-</div>
-<?php endforeach; ?>
 <?php else: ?>
 <p style="text-align:center;color:#94a3b8">No packages available yet. <a href="?login" style="color:#0A84FF">Contact us</a> for custom plans.</p>
 <?php endif; ?>
 </div>
 </section>
-
-
 
 <!-- ===== WHY CHOOSE ===== -->
 <section class="section">
@@ -613,6 +559,7 @@ $safeText3 = htmlspecialchars($rv->text ?? '', ENT_QUOTES, 'UTF-8');
 <div class="footer-col">
 <h4>Support</h4>
 <a href="http://45.61.59.55:2082/">Client Login</a>
+<a href="/game-servers.php">Game Servers</a>
 <a href="/admin/support/tickets">Submit Ticket</a>
 <a href="/admin/support/kb">Knowledgebase</a>
 <a href="/admin/livechat">Live Chat</a>
@@ -665,16 +612,34 @@ document.getElementById('loginModal')?.addEventListener('click',function(e){if(e
 
 <script>
 // Category scroll buttons
-function showPkgCat(type){
-var panes=document.querySelectorAll('.pkg-cat-pane');
-var btns=document.querySelectorAll('.pkg-cat-btn');
-for(var i=0;i<panes.length;i++)panes[i].style.display='none';
-for(var i=0;i<btns.length;i++)btns[i].classList.remove('active');
-document.getElementById('pkg-'+type).style.display='block';
-for(var i=0;i<btns.length;i++){
-var onclick=btns[i].getAttribute('onclick');
-if(onclick&&onclick.indexOf('\''+type+'\'')>-1){btns[i].classList.add('active');break;}
+var pkgIntervals = {};
+function showPkg(idx, type) {
+    var cards = document.querySelectorAll('#prota-' + type + ' .pkg-rotate');
+    var dots = document.querySelectorAll('#pdots-' + type + ' .dot');
+    cards.forEach(function(c, i) { c.classList.toggle('active', i === idx); });
+    dots.forEach(function(d, i) { d.classList.toggle('active', i === idx); });
+    if (pkgIntervals[type]) { clearInterval(pkgIntervals[type]); }
+    startPkgRotation(type);
 }
+function nextPkg(type) {
+    var cards = document.querySelectorAll('#prota-' + type + ' .pkg-rotate');
+    if (!cards.length) return;
+    var current = 0;
+    cards.forEach(function(c, i) { if (c.classList.contains('active')) current = i; });
+    showPkg((current + 1) % cards.length, type);
+}
+function prevPkg(type) {
+    var cards = document.querySelectorAll('#prota-' + type + ' .pkg-rotate');
+    if (!cards.length) return;
+    var current = 0;
+    cards.forEach(function(c, i) { if (c.classList.contains('active')) current = i; });
+    showPkg((current - 1 + cards.length) % cards.length, type);
+}
+function startPkgRotation(type) {
+    var cards = document.querySelectorAll('#prota-' + type + ' .pkg-rotate');
+    if (cards.length <= 1) return;
+    if (pkgIntervals[type]) clearInterval(pkgIntervals[type]);
+    pkgIntervals[type] = setInterval(function() { nextPkg(type); }, 7000);
 }
 // Chat panel
 function toggleChatPanel(){

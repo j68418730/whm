@@ -86,8 +86,7 @@ if (isset($hosting) && isset($hosting->id)) {
     try {
         $app = \Core\Application::getInstance();
         $db = $app->get('db');
-        $gc = $db->table('game_servers')->where('user_id', $hosting->id)->get() ?: [];
-        $hasGames = count($gc) > 0;
+        $hasGames = true;
         $sc = $db->table('radio_streams')->where('user_id', $hosting->id)->get() ?: [];
         $hasStreams = count($sc) > 0;
         if ($hasStreams) $isRadio = true;

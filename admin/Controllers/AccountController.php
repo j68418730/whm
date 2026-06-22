@@ -346,4 +346,42 @@ class AccountController extends Controller
         $this->response->redirect('/user');
         exit;
     }
+
+    public function delete($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $account = $this->db->table('hosting_users')->where('id', (int)$id)->first();
+        if (!$account) {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json'); echo json_encode(['success' => false, 'error' => 'Account not found.']); exit;
+            }
+            $_SESSION['error_message'] = 'Account not found.'; $this->response->redirect('/admin/account'); exit;
+        }
+        
+        $username = $account->username;
+        
+        // Delete Linux user
+        exec("userdel -rf {$username} 2>/dev/null");
+        exec("rm -rf /home/{$username} 2>/dev/null");
+        
+        // Delete Apache vhost
+        exec("rm -f /etc/apache2/sites-available/{$username}.conf 2>/dev/null");
+        exec("rm -f /etc/apache2/sites-enabled/{$username}.conf 2>/dev/null");
+        exec("systemctl reload apache2 2>/dev/null");
+        
+        // Delete DNS zone
+        exec("rm -f /etc/bind/db.{$username} 2>/dev/null");
+        exec("systemctl reload bind9 2>/dev/null");
+        
+        // Delete from database
+        $this->db->table('hosting_users')->where('id', $id)->delete();
+        
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            header('Content-Type: application/json'); echo json_encode(['success' => true, 'message' => "Account '{$username}' permanently deleted."]); exit;
+        }
+        
+        $_SESSION['success_message'] = "Account '{$username}' permanently deleted.";
+        $this->response->redirect('/admin/account');
+    }
+
 }

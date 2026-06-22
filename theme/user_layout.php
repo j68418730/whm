@@ -87,7 +87,7 @@ $isReseller = stripos($packageType, 'reseller') !== false;
 <?php endif; ?>
 <div class="nav-group"><div class="label">Domains</div><a href="/user/domains">Domain List</a><a href="/user/domains/add">Add Domain</a><a href="/user/subdomains">Subdomains</a><a href="/user/redirects">Redirects</a></div>
 <div class="nav-group"><div class="label">Email</div><a href="/user/email">Email Accounts</a><a href="http://<?php echo $serverHost; ?>:<?php echo $webmailPort; ?>/" target="_blank">Webmail</a></div>
-<div class="nav-group"><div class="label">Management</div><a href="/user/files">File Manager</a><a href="/user/databases">Databases</a><a href="/user/apps/node">Node.js Apps</a><a href="/user/apps/python">Python Apps</a><a href="/user/usage">Resource Usage</a>
+<div class="nav-group"><div class="label">Management</div><a href="/user/websites">🌐 Websites</a><a href="/user/files">File Manager</a><a href="/user/databases">Databases</a><a href="/user/apps/node">Node.js Apps</a><a href="/user/apps/python">Python Apps</a><a href="/user/usage">Resource Usage</a>
 <?php if ($hasRadio): ?><a href="/dj_panel.php" target="_blank">🎤 DJ Panel</a><?php endif; ?>
 </div>
 <div class="nav-group"><div class="label">Support</div><a href="/user/tickets">Support Tickets</a><a href="/user/invoices">Invoices</a></div>

@@ -23,6 +23,38 @@ if ($action === 'add' && isset($_GET['package'])) {
     exit;
 }
 
+// ─── Add Game Server to Cart ───
+if ($action === 'add_game' && isset($_GET['game_id'])) {
+    $gameId = (int)$_GET['game_id'];
+    $slots = (int)($_GET['slots'] ?? 10);
+    $price = (float)($_GET['price'] ?? 0);
+    $setup = (float)($_GET['setup'] ?? 0);
+    $pps = (float)($_GET['pps'] ?? 0);
+    $pkgId = isset($_GET['package_id']) ? (int)$_GET['package_id'] : 0;
+    $pkgName = $_GET['pkg_name'] ?? '';
+
+    $game = $pdo->prepare("SELECT * FROM game_types WHERE id = ? AND is_active = 1");
+    $game->execute([$gameId]);
+    $game = $game->fetch(PDO::FETCH_OBJ);
+    if ($game) {
+        $name = $game->name . ($pkgName ? ' - ' . $pkgName : '') . ' (' . $slots . ' slots)';
+        $_SESSION['cart'][] = [
+            'type' => 'game',
+            'game_id' => $gameId,
+            'slots' => $slots,
+            'price_per_slot' => $pps,
+            'setup' => $setup,
+            'package_id' => $pkgId,
+            'id' => 'game_' . $gameId . '_' . $slots,
+            'name' => $name,
+            'price' => $price + $setup,
+            'qty' => 1,
+        ];
+    }
+    header('Location: /cart.php');
+    exit;
+}
+
 // ─── Remove from Cart ───
 if ($action === 'remove' && isset($_GET['index'])) {
     $idx = (int)$_GET['index'];
@@ -69,6 +101,10 @@ if ($action === 'checkout' && $_POST) {
 
         // Create order
         $total = array_sum(array_map(fn($i) => $i['price'] * $i['qty'], $_SESSION['cart']));
+        $hasGame = false;
+        foreach ($_SESSION['cart'] as $item) {
+            if (($item['type'] ?? '') === 'game') { $hasGame = true; break; }
+        }
         $itemsJson = json_encode($_SESSION['cart']);
         $pdo->prepare("INSERT INTO billing_orders (user_id, items, total, payment_method, status, created_at)
             VALUES (?, ?, ?, ?, 'pending', NOW())")->execute([$userId, $itemsJson, $total, $method]);
@@ -144,17 +180,23 @@ If you selected manual payment, an admin will review and activate your account.<
 <div style="font-size:48px;margin-bottom:12px">🛒</div>
 <p style="color:#64748b;margin-bottom:16px">Your cart is empty.</p>
 <a href="/" class="btn btn-primary">Browse Plans</a>
+<a href="/game-servers.php" class="btn btn-primary" style="margin-left:8px">Game Servers</a>
 </div>
 <?php else:
 $total = array_sum(array_map(fn($i) => $i['price'] * $i['qty'], $_SESSION['cart']));
 ?>
 <form method="POST" action="/cart.php?action=update">
 <table>
-<tr><th>Package</th><th>Price</th><th>Qty</th><th>Subtotal</th><th></th></tr>
+<tr><th>Item</th><th>Type</th><th>Price</th><th>Qty</th><th>Subtotal</th><th></th></tr>
 <?php foreach ($_SESSION['cart'] as $idx => $item): ?>
 <tr>
-<td><strong><?php echo htmlspecialchars($item['name']); ?></strong></td>
-<td>$<?php echo number_format($item['price'], 2); ?>/mo</td>
+<td><strong><?php echo htmlspecialchars($item['name']); ?></strong>
+<?php if (($item['type'] ?? '') === 'game'): ?>
+<br><small style="color:#64748b"><?php echo $item['slots']; ?> slots @ $<?php echo number_format($item['price_per_slot'] ?? 0, 2); ?>/slot</small>
+<?php endif; ?>
+</td>
+<td><?php echo ($item['type'] ?? 'hosting') === 'game' ? '🎮 Game' : '📦 Hosting'; ?></td>
+<td>$<?php echo number_format($item['price'], 2); ?><?php echo $item['setup'] > 0 ? ' + $'.number_format($item['setup'], 2).' setup' : ''; ?></td>
 <td><input type="number" name="qty[<?php echo $idx; ?>]" value="<?php echo $item['qty']; ?>" min="1" class="qty-input" onchange="this.form.submit()"></td>
 <td>$<?php echo number_format($item['price'] * $item['qty'], 2); ?></td>
 <td><a href="/cart.php?action=remove&index=<?php echo $idx; ?>" class="btn btn-danger" style="padding:4px 10px;font-size:12px">✕</a></td>
@@ -162,7 +204,7 @@ $total = array_sum(array_map(fn($i) => $i['price'] * $i['qty'], $_SESSION['cart'
 <?php endforeach; ?>
 </table>
 <div style="text-align:right;margin-top:16px">
-<div class="total-row">Total: $<?php echo number_format($total, 2); ?>/mo</div>
+<div class="total-row">Total: $<?php echo number_format($total, 2); ?></div>
 </div>
 </form>
 
@@ -183,5 +225,8 @@ $total = array_sum(array_map(fn($i) => $i['price'] * $i['qty'], $_SESSION['cart'
 </div>
 <?php endif; ?>
 
-<p style="text-align:center;margin-top:20px"><a href="/" style="color:#64748b;font-size:13px">← Continue Shopping</a></p>
+<p style="text-align:center;margin-top:20px;display:flex;justify-content:center;gap:16px">
+<a href="/" style="color:#64748b;font-size:13px">← Browse Hosting</a>
+<a href="/game-servers.php" style="color:#64748b;font-size:13px">← Game Servers</a>
+</p>
 </div></body></html>
