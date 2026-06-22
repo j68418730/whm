@@ -116,6 +116,8 @@ class AccountController extends Controller
         // --- Create domain record ---
         try { $this->db->table('domains')->insertGetId(['account_id' => $userId, 'domain' => $domain, 'type' => 'main', 'document_root' => "{$homeDir}/public_html", 'ip' => $serverIp, 'status' => 'active']); } catch (\Exception $e) {}
 
+        $nsList = [];
+        try { $nsList = $this->db->table('dns_nameservers')->get() ?: []; } catch (\Exception $e) {}
         $_SESSION['account_created'] = [
             'username' => $username,
             'password' => $password,
@@ -124,8 +126,7 @@ class AccountController extends Controller
             'ip' => $serverIp,
             'package_id' => $packageId,
             'home_dir' => $homeDir,
-            'nameserver1' => 'ns1.planet-hosts.com',
-            'nameserver2' => 'ns2.planet-hosts.com',
+            'nameservers' => $nsList,
         ];
         header('Location: /admin/account/summary/' . $userId);
         exit;
@@ -144,7 +145,9 @@ class AccountController extends Controller
                 $featureList = $this->db->table('feature_lists')->where('id', $package->feature_list_id)->first();
             }
         }
-        $password = $_SESSION['account_created']['password'] ?? 'Set during creation';
+        $data = $_SESSION['account_created'] ?? [];
+        $password = $data['password'] ?? 'Set during creation';
+        $nameservers = $data['nameservers'] ?? [];
         unset($_SESSION['account_created']);
         $user = $this->auth->user();
         return $this->view('admin.account.summary', [
@@ -153,6 +156,7 @@ class AccountController extends Controller
             'package' => $package,
             'featureList' => $featureList,
             'plainPassword' => $password,
+            'nameservers' => $nameservers,
             'title' => 'Account Created',
         ]);
     }
