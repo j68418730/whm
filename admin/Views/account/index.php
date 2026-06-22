@@ -5,7 +5,7 @@
 
 <table class="table table-hover" style="color:#fff">
 <thead><tr>
-<th>Username</th><th>Domain</th><th>Package</th><th>Actions</th><th>Status</th>
+<th>Username</th><th>Domain</th><th>Package</th><th>Vhost</th><th>Actions</th><th>Status</th>
 </tr></thead>
 <tbody>
 <?php if (!empty($accounts)): foreach ($accounts as $a): 
@@ -13,11 +13,30 @@ $pkgName = 'N/A';
 if (isset($packages)) {
     foreach ($packages as $p) { if ($p->id == $a->package_id) { $pkgName = $p->name; break; } }
 }
+$vhostFile = "/etc/httpd/conf.d/{$a->username}.conf";
+$vhostExists = file_exists($vhostFile);
+$vhostContent = $vhostExists ? @file_get_contents($vhostFile) : '';
+$vhostLines = $vhostContent ? explode("\n", trim($vhostContent)) : [];
+$vhostSummary = '';
+foreach ($vhostLines as $line) {
+    $t = trim($line);
+    if (str_starts_with($t, 'ServerName ')) { $vhostSummary .= $t . ' '; }
+    if (str_starts_with($t, 'DocumentRoot ')) { $vhostSummary .= $t; }
+}
 ?>
 <tr>
 <td><strong><?php echo htmlspecialchars($a->username); ?></strong></td>
 <td><?php echo htmlspecialchars($a->domain ?? '-'); ?></td>
 <td><?php echo htmlspecialchars($pkgName); ?></td>
+<td style="max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+<?php if ($vhostExists && $vhostContent): ?>
+<span style="color:#4ade80" title="<?php echo htmlspecialchars($vhostContent); ?>">&#9679; Active</span>
+<small style="color:#64748b;font-size:10px;display:block"><?php echo htmlspecialchars($vhostSummary ?: basename($vhostFile)); ?></small>
+<?php else: ?>
+<span style="color:#f87171">&#9679; Missing</span>
+<small style="color:#64748b;font-size:10px;display:block">No vhost file</small>
+<?php endif; ?>
+</td>
 <td style="white-space:nowrap">
 <a href="/admin/account/show/<?php echo $a->id; ?>" class="btn btn-sm btn-secondary"><i class="bi bi-eye"></i> View</a>
 <?php if ($a->status === 'active'): ?>
@@ -30,10 +49,21 @@ if (isset($packages)) {
 <td><span class="badge bg-<?php echo $a->status === 'active' ? 'success' : ($a->status === 'suspended' ? 'warning' : 'danger'); ?>"><?php echo ucfirst($a->status); ?></span></td>
 </tr>
 <?php endforeach; else: ?>
-<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text_muted)">No accounts created yet.</td></tr>
+<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text_muted)">No accounts created yet.</td></tr>
 <?php endif; ?>
 </tbody>
 </table>
+
+<style>
+tr[data-vhost="missing"] td:first-child { border-left: 3px solid #f87171; }
+tr[data-vhost="ok"] td:first-child { border-left: 3px solid #4ade80; }
+</style>
+
+<script>
+document.querySelectorAll('td[title]').forEach(function(td) {
+    td.style.cursor = 'help';
+});
+</script>
 
 <script>
 function deleteAccount(id, username, btn) {
