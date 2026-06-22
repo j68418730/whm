@@ -156,8 +156,23 @@ select option{background:#0a0f1a;color:#e0e0e0}
 var currentSession = 0;
 var lastMsgId = 0;
 var pollTimer = null;
+var sidebarTimer = null;
 var visitorMap = {};
 var remoteLink = '';
+
+// Auto-refresh sidebar every 15s
+sidebarTimer = setInterval(function() {
+    var x = new XMLHttpRequest();
+    x.open('GET', '/admin/livechat', true);
+    x.onload = function() {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(x.responseText, 'text/html');
+        var newList = doc.getElementById('chatSidebarList');
+        var oldList = document.getElementById('chatSidebarList');
+        if (newList && oldList) oldList.innerHTML = newList.innerHTML;
+    };
+    x.send();
+}, 15000);
 
 function switchTab(name, el) {
     document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
