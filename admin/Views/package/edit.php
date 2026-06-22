@@ -38,11 +38,31 @@ input:focus,select:focus,textarea:focus{border-color:#0A84FF}
 <div class="form-group"><label>Description</label><textarea name="description"><?php echo htmlspecialchars($package->description ?? '', ENT_QUOTES, 'UTF-8'); ?></textarea></div>
 <div class="row">
 <div class="form-group"><label>Monthly Price ($)</label><input name="monthly_price" type="number" step="0.01" value="<?php echo $package->monthly_price ?? 0; ?>"></div>
+<div class="form-group"><label>Quarterly Price ($)</label><input name="quarterly_price" type="number" step="0.01" value="<?php echo $package->quarterly_price ?? 0; ?>"></div>
+</div>
+<div class="row">
+<div class="form-group"><label>Semi-Annual ($)</label><input name="semi_annual_price" type="number" step="0.01" value="<?php echo $package->semi_annual_price ?? 0; ?>"></div>
+<div class="form-group"><label>Annual Price ($)</label><input name="annual_price" type="number" step="0.01" value="<?php echo $package->annual_price ?? 0; ?>"></div>
+</div>
+<div class="row">
+<div class="form-group"><label>Setup Fee ($)</label><input name="setup_fee" type="number" step="0.01" value="<?php echo $package->setup_fee ?? 0; ?>"></div>
 <div class="form-group"><label>Sort Order</label><input name="sort_order" type="number" value="<?php echo $package->sort_order ?? 0; ?>"></div>
 </div>
 <div class="row">
 <div class="form-group"><label>Disk Space (GB)</label><input name="disk_space" type="number" value="<?php echo $package->disk_space ?? 0; ?>"></div>
 <div class="form-group"><label>Bandwidth (GB)</label><input name="bandwidth" type="number" value="<?php echo $package->bandwidth ?? 0; ?>"></div>
+</div>
+<div class="row">
+<div class="form-group"><label>Max Domains</label><input name="max_domains" type="number" value="<?php echo $package->max_domains ?? 1; ?>"></div>
+<div class="form-group"><label>Max Subdomains</label><input name="max_subdomains" type="number" value="<?php echo $package->max_subdomains ?? 0; ?>"></div>
+</div>
+<div class="form-group"><label>Feature List</label>
+<select name="feature_list_id">
+<option value="">— None —</option>
+<?php foreach ($featureLists as $fl): ?>
+<option value="<?php echo $fl->id; ?>" <?php echo ($package->feature_list_id ?? '') == $fl->id ? 'selected' : ''; ?>><?php echo htmlspecialchars($fl->name); ?></option>
+<?php endforeach; ?>
+</select>
 </div>
 <div class="row">
 <div class="form-group"><label>Listener Limit</label><input name="listener_limit" type="number" value="<?php echo $package->listener_limit ?? 0; ?>"></div>

@@ -82,6 +82,12 @@ $router->post('/admin/plugins/install', 'Admin\Controllers\PluginsController@ins
 $router->get('/admin/plugins/uninstall/{id}', 'Admin\Controllers\PluginsController@uninstall');
 $router->post('/admin/cron', 'Admin\Controllers\CronController@store');
 $router->get('/admin/cron/delete/{id}', 'Admin\Controllers\CronController@destroy');
+$router->get('/admin/feature-lists', 'Admin\Controllers\FeatureListsController@index');
+$router->get('/admin/feature-lists/create', 'Admin\Controllers\FeatureListsController@create');
+$router->post('/admin/feature-lists/store', 'Admin\Controllers\FeatureListsController@store');
+$router->get('/admin/feature-lists/edit/{id}', 'Admin\Controllers\FeatureListsController@edit');
+$router->post('/admin/feature-lists/update/{id}', 'Admin\Controllers\FeatureListsController@update');
+$router->get('/admin/feature-lists/delete/{id}', 'Admin\Controllers\FeatureListsController@delete');
 $router->get('/admin/software', 'Admin\Controllers\SoftwareController@index');
 $router->get('/admin/api', 'Admin\Controllers\ApiController@index');
 $router->post('/admin/api', 'Admin\Controllers\ApiController@store');

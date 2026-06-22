@@ -73,8 +73,8 @@ class InstallersController extends Controller
             $targetDir = "/home/{$account->username}/public_html" . ($dir ? "/{$dir}" : "");
         }
 
-        $downloadUrl = $this->getDownloadUrl($name);
-        if (!$downloadUrl) {
+        $localZip = $this->getLocalZip($name);
+        if (!$localZip || !file_exists($localZip)) {
             $_SESSION['error_message'] = "Unknown application: {$name}";
             $this->response->redirect('/admin/installers');
             exit;
@@ -83,16 +83,10 @@ class InstallersController extends Controller
         @mkdir($targetDir, 0755, true);
 
         $zipFile = $targetDir . '/installer.zip';
-        $downloadCmd = "wget -q -O " . escapeshellarg($zipFile) . " " . escapeshellarg($downloadUrl) . " 2>&1";
-        $output = shell_exec($downloadCmd);
+        copy($localZip, $zipFile);
 
         if (!file_exists($zipFile) || filesize($zipFile) === 0) {
-            $downloadCmd = "curl -sL -o " . escapeshellarg($zipFile) . " " . escapeshellarg($downloadUrl) . " 2>&1";
-            $output = shell_exec($downloadCmd);
-        }
-
-        if (!file_exists($zipFile) || filesize($zipFile) === 0) {
-            $_SESSION['error_message'] = "Failed to download {$name}. Please try again.";
+            $_SESSION['error_message'] = "Failed to copy {$name} files. Please try again.";
             $this->response->redirect('/admin/installers');
             exit;
         }
@@ -185,9 +179,9 @@ class InstallersController extends Controller
 
         $domain = $account->domain ?? "{$account->username}.planet-hosts.com";
         $targetDir = "/home/{$account->username}/public_html";
-        $downloadUrl = $this->getDownloadUrl($appName);
+        $localZip = $this->getLocalZip($appName);
 
-        if (!$downloadUrl) {
+        if (!$localZip || !file_exists($localZip)) {
             $_SESSION['error_message'] = "Unknown app: {$appName}";
             $this->response->redirect('/admin/account/show/' . $accountId);
             exit;
@@ -196,7 +190,7 @@ class InstallersController extends Controller
         @mkdir($targetDir, 0755, true);
 
         $zipFile = $targetDir . '/installer.zip';
-        shell_exec("wget -q -O " . escapeshellarg($zipFile) . " " . escapeshellarg($downloadUrl) . " 2>&1 || curl -sL -o " . escapeshellarg($zipFile) . " " . escapeshellarg($downloadUrl) . " 2>&1");
+        copy($localZip, $zipFile);
 
         if (file_exists($zipFile) && filesize($zipFile) > 0) {
             shell_exec("cd " . escapeshellarg($targetDir) . " && unzip -qo " . escapeshellarg($zipFile) . " 2>&1 && rm -f " . escapeshellarg($zipFile));
@@ -216,19 +210,53 @@ class InstallersController extends Controller
         exit;
     }
 
-    private function getDownloadUrl($name)
+    private function getLocalZip($name)
     {
         $map = [
-            'WordPress' => 'https://wordpress.org/latest.zip',
-            'Joomla' => 'https://downloads.joomla.org/cms/joomla5/5-1-4/Joomla_5-1-4-Stable-Full_Package.zip',
-            'Drupal' => 'https://ftp.drupal.org/files/projects/drupal-11.0.1.zip',
-            'Laravel' => 'https://github.com/laravel/laravel/archive/refs/heads/master.zip',
-            'phpMyAdmin' => 'https://files.phpmyadmin.net/phpMyAdmin/5.2.1/phpMyAdmin-5.2.1-all-languages.zip',
-            'Nextcloud' => 'https://download.nextcloud.com/server/releases/latest.zip',
-            'phpBB' => 'https://www.phpbb.com/files/release/phpBB-3.3.13.zip',
-            'Moodle' => 'https://download.moodle.org/download.php/direct/stable401/moodle-latest-401.zip',
-            'PrestaShop' => 'https://github.com/PrestaShop/PrestaShop/releases/download/8.1.7/prestashop_8.1.7.zip',
-            'MediaWiki' => 'https://releases.wikimedia.org/mediawiki/1.42/mediawiki-1.42.1.zip',
+            'WordPress' => BASE_PATH . '/appsinstall_files/WordPress.zip',
+            'Joomla' => BASE_PATH . '/appsinstall_files/Joomla.zip',
+            'Drupal' => BASE_PATH . '/appsinstall_files/Drupal.zip',
+            'Laravel' => BASE_PATH . '/appsinstall_files/Laravel.zip',
+            'phpMyAdmin' => BASE_PATH . '/appsinstall_files/phpMyAdmin.zip',
+            'Nextcloud' => BASE_PATH . '/appsinstall_files/Nextcloud.zip',
+            'phpBB' => BASE_PATH . '/appsinstall_files/phpBB.zip',
+            'Moodle' => BASE_PATH . '/appsinstall_files/Moodle.zip',
+            'PrestaShop' => BASE_PATH . '/appsinstall_files/PrestaShop.zip',
+            'MediaWiki' => BASE_PATH . '/appsinstall_files/MediaWiki.zip',
+            // Customer Support
+            'osTicket' => BASE_PATH . '/appsinstall_files/osTicket.zip',
+            'FreeScout' => BASE_PATH . '/appsinstall_files/FreeScout.zip',
+            'UVdesk' => BASE_PATH . '/appsinstall_files/UVdesk.zip',
+            // Analytics
+            'Matomo' => BASE_PATH . '/appsinstall_files/Matomo.zip',
+            // Galleries
+            'Piwigo' => BASE_PATH . '/appsinstall_files/Piwigo.zip',
+            'Lychee' => BASE_PATH . '/appsinstall_files/Lychee.zip',
+            // Social Networking
+            'HumHub' => BASE_PATH . '/appsinstall_files/HumHub.zip',
+            'Elgg' => BASE_PATH . '/appsinstall_files/Elgg.zip',
+            // CRM
+            'SuiteCRM' => BASE_PATH . '/appsinstall_files/SuiteCRM.zip',
+            'EspoCRM' => BASE_PATH . '/appsinstall_files/EspoCRM.zip',
+            'Vtiger' => BASE_PATH . '/appsinstall_files/Vtiger.zip',
+            // Project Management
+            'Kanboard' => BASE_PATH . '/appsinstall_files/Kanboard.zip',
+            'Collabtive' => BASE_PATH . '/appsinstall_files/Collabtive.zip',
+            // File Management
+            'eXtplorer' => BASE_PATH . '/appsinstall_files/eXtplorer.zip',
+            'MonstaFTP' => BASE_PATH . '/appsinstall_files/MonstaFTP.zip',
+            // RSS
+            'FreshRSS' => BASE_PATH . '/appsinstall_files/FreshRSS.zip',
+            // ERP
+            'Dolibarr' => BASE_PATH . '/appsinstall_files/Dolibarr.zip',
+            'FrontAccounting' => BASE_PATH . '/appsinstall_files/FrontAccounting.zip',
+            // Calendar/Booking
+            'EasyAppointments' => BASE_PATH . '/appsinstall_files/EasyAppointments.zip',
+            // Music
+            'Ampache' => BASE_PATH . '/appsinstall_files/Ampache.zip',
+            'Castopod' => BASE_PATH . '/appsinstall_files/Castopod.zip',
+            // Video
+            'ClipBucket' => BASE_PATH . '/appsinstall_files/ClipBucket.zip',
         ];
         return $map[$name] ?? null;
     }
@@ -291,6 +319,24 @@ class InstallersController extends Controller
                 return $apps;
             }
         } catch (\Exception $e) {}
-        return [];
+        // Final fallback: list apps from local zip files
+        $localDir = BASE_PATH . '/appsinstall_files';
+        $apps = [];
+        if (is_dir($localDir)) {
+            $files = glob($localDir . '/*.zip');
+            sort($files);
+            foreach ($files as $f) {
+                $name = basename($f, '.zip');
+                $apps[] = [
+                    'name' => $name,
+                    'icon' => '📦',
+                    'desc' => $name,
+                    'version' => 'Latest',
+                    'category' => 'General',
+                    'id' => 0,
+                ];
+            }
+        }
+        return $apps;
     }
 }

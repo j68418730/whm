@@ -68,9 +68,9 @@ class AccountController extends Controller
             $this->response->redirect('/admin/login');
             exit;
         }
-        $username = $this->request->post('username', '');
-        $domain = $this->request->post('domain', '');
-        $email = $this->request->post('email', '');
+        $username = strtolower(preg_replace('/[^a-z0-9]/', '', $this->request->post('username', '')));
+        $domain = strtolower(trim($this->request->post('domain', '')));
+        $email = trim($this->request->post('email', ''));
         $password = $this->request->post('password', '');
         $packageId = (int)$this->request->post('package_id', 0);
 
@@ -80,7 +80,6 @@ class AccountController extends Controller
             exit;
         }
 
-        // Auto-generate domain from username if not provided
         if (!$domain) {
             $domain = "{$username}.planet-hosts.com";
         }
@@ -93,40 +92,123 @@ class AccountController extends Controller
         }
 
         $phpVersion = $this->request->post('php_version', '');
+        $features = $this->request->post('features', []);
+        $selectedIp = trim($this->request->post('ip', ''));
+        $homeDir = "/home/{$username}";
+
+        // --- Step 1: Assign IP ---
+        $serverIp = $selectedIp;
+        if (!$serverIp) {
+            try {
+                $freeIp = $this->db->table('server_ips')->where('assigned_to', null)->orWhere('assigned_to', '')->where('is_active', 1)->first();
+                if ($freeIp) {
+                    $serverIp = $freeIp->ip;
+                    $this->db->table('server_ips')->where('id', $freeIp->id)->update(['assigned_to' => $username]);
+                }
+            } catch (\Exception $e) {}
+        }
+        if (!$serverIp) {
+            $serverIp = $this->getServerIp();
+        }
+
+        // --- Step 2: Create account record ---
         $userId = $this->db->table('hosting_users')->insertGetId([
             'reseller_id' => 1,
             'package_id' => $packageId ?: null,
             'username' => $username,
             'domain' => $domain,
+            'ip' => $serverIp,
             'password_hash' => password_hash($password, PASSWORD_DEFAULT),
             'email' => $email,
             'php_version' => $phpVersion,
             'first_name' => $this->request->post('first_name', ''),
             'last_name' => $this->request->post('last_name', ''),
             'status' => 'active',
+            'nameserver1' => 'ns1.planet-hosts.com',
+            'nameserver2' => 'ns2.planet-hosts.com',
         ]);
 
-        // Create Linux user with home directory
-        $homeDir = "/home/{$username}";
-        exec("useradd -m -d {$homeDir} -s /bin/bash -c \"{$email}\" {$username} 2>/dev/null", $out, $code);
-        if ($code === 0) {
-            mkdir("{$homeDir}/public_html", 0755, true);
-            mkdir("{$homeDir}/logs", 0755, true);
-            mkdir("{$homeDir}/tmp", 0755, true);
-            mkdir("{$homeDir}/.ssh", 0700, true);
-            file_put_contents("{$homeDir}/public_html/index.html", "<!DOCTYPE html><html><head><title>{$domain}</title></head><body><h1>Welcome to {$domain}</h1><p>Account: {$username}</p></body></html>");
-            exec("chown -R {$username}:{$username} {$homeDir} 2>/dev/null");
+        try {
+            // --- Step 3: Create domain record ---
+            try {
+                $this->db->table('domains')->insertGetId([
+                    'account_id' => $userId,
+                    'domain' => $domain,
+                    'type' => 'main',
+                    'document_root' => "{$homeDir}/public_html",
+                    'ip' => $serverIp,
+                    'status' => 'active',
+                ]);
+            } catch (\Exception $e) {}
+
+            // --- Step 4: Create Linux user ---
+            exec("useradd -m -d {$homeDir} -s /bin/bash -c \"{$email}\" {$username} 2>/dev/null");
+
+            // --- Step 5: Create home directory structure ---
+            @mkdir("{$homeDir}/public_html", 0755, true);
+            @mkdir("{$homeDir}/logs", 0755, true);
+            @mkdir("{$homeDir}/mail", 0755, true);
+            @mkdir("{$homeDir}/tmp", 0755, true);
+            @mkdir("{$homeDir}/etc", 0755, true);
+            @mkdir("{$homeDir}/ssl", 0755, true);
+            @mkdir("{$homeDir}/.ssh", 0700, true);
+            @mkdir("{$homeDir}/.cpanel", 0755, true);
+            $welcomeHtml = "<!DOCTYPE html><html><head><title>{$domain}</title></head><body style='font-family:sans-serif;background:#0a0a0f;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0'><div style='text-align:center'><h1 style='color:#0A84FF'>Welcome to {$domain}</h1><p>Account: <strong>{$username}</strong></p><p style='color:#64748b'>This account has been provisioned on Planet-Hosts.</p></div></body></html>";
+            @file_put_contents("{$homeDir}/public_html/index.html", $welcomeHtml);
+            @exec("chown -R {$username}:{$username} {$homeDir} 2>/dev/null");
+
+            // --- Step 6: Create Apache virtual host ---
+            $vhost = "<VirtualHost *:80>\n    ServerName {$domain}\n    ServerAlias www.{$domain}\n    DocumentRoot {$homeDir}/public_html\n    CustomLog {$homeDir}/logs/access.log combined\n    ErrorLog {$homeDir}/logs/error.log\n    <Directory {$homeDir}/public_html>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n</VirtualHost>\n";
+            // Also add HTTPS vhost placeholder (will be enabled by AutoSSL)
+            $vhostSsl = "<VirtualHost *:443>\n    ServerName {$domain}\n    ServerAlias www.{$domain}\n    DocumentRoot {$homeDir}/public_html\n    CustomLog {$homeDir}/logs/access.log combined\n    ErrorLog {$homeDir}/logs/error.log\n    <Directory {$homeDir}/public_html>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n    SSLEngine on\n    SSLCertificateFile {$homeDir}/ssl/cert.pem\n    SSLCertificateKeyFile {$homeDir}/ssl/key.pem\n</VirtualHost>\n";
+            @file_put_contents("/etc/httpd/conf.d/{$username}.conf", $vhost);
+            @file_put_contents("/etc/httpd/conf.d/{$username}-ssl.conf", $vhostSsl);
+            @exec("systemctl reload httpd 2>/dev/null >/dev/null &");
+
+            // --- Step 7: Provision DNS zone ---
+            try {
+                $dns = new \Admin\Services\DnsManager();
+                $dns->provisionDomain($domain, $serverIp, "admin@{$domain}");
+            } catch (\Exception $e) {}
+
+            // --- Step 8: Create FTP user ---
+            @exec("echo '{$password}' | passwd --stdin {$username} 2>/dev/null");
+            // Add to ftp group if exists
+            @exec("usermod -a -G ftp {$username} 2>/dev/null");
+
+            // --- Step 9: Create database user with same credentials ---
+            try {
+                $pdo = $this->db->pdo();
+                $dbUser = substr("{$username}_db", 0, 16);
+                $pdo->exec("CREATE USER IF NOT EXISTS '{$dbUser}'@'localhost' IDENTIFIED BY '{$password}'");
+                $pdo->exec("GRANT USAGE ON *.* TO '{$dbUser}'@'localhost'");
+            } catch (\Exception $e) {}
+
+            // --- Step 10: Generate self-signed SSL placeholder ---
+            @exec("openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout {$homeDir}/ssl/key.pem -out {$homeDir}/ssl/cert.pem -subj '/CN={$domain}/O=Planet-Hosts/C=US' 2>/dev/null");
+            @exec("chown -R {$username}:{$username} {$homeDir}/ssl 2>/dev/null");
+
+        } catch (\Exception $e) {
+            error_log("Account provisioning error for {$username}: " . $e->getMessage());
         }
 
-        // Full DNS provisioning (SOA, NS, A, MX, SPF, DKIM, DMARC)
-        $dns = new \Admin\Services\DnsManager();
-        $serverIp = $this->getServerIp();
-        $dns->provisionDomain($domain, $serverIp, "admin@{$domain}");
-
-        // Create Apache virtual host
-        $vhost = "<VirtualHost *:80>\n    ServerName {$domain}\n    ServerAlias www.{$domain}\n    DocumentRoot {$homeDir}/public_html\n    CustomLog {$homeDir}/logs/access.log combined\n    ErrorLog {$homeDir}/logs/error.log\n    <Directory {$homeDir}/public_html>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n</VirtualHost>";
-        @file_put_contents("/etc/httpd/conf.d/{$username}.conf", $vhost);
-        exec("systemctl reload httpd 2>/dev/null >/dev/null &");
+        // --- Step 11: Send welcome email ---
+        try {
+            $subject = "Welcome to Planet-Hosts – Your Account '{$username}' Is Ready";
+            $message = "Hello" . ($this->request->post('first_name', '') ? ' ' . $this->request->post('first_name', '') : '') . ",\n\n"
+                . "Your hosting account has been created successfully!\n\n"
+                . "Login URL: http://{$domain}/\n"
+                . "Username: {$username}\n"
+                . "Password: (as provided)\n\n"
+                . "Nameservers:\n"
+                . "  ns1.planet-hosts.com\n"
+                . "  ns2.planet-hosts.com\n\n"
+                . "IP Address: {$serverIp}\n\n"
+                . "Thank you for choosing Planet-Hosts!";
+            $headers = "From: support@planet-hosts.com\r\nReply-To: support@planet-hosts.com";
+            @mail($email, $subject, $message, $headers);
+            $this->db->table('hosting_users')->where('id', $userId)->update(['welcome_email_sent' => 1]);
+        } catch (\Exception $e) {}
 
         $_SESSION['success_message'] = "Account '{$username}' created. Domain: {$domain}";
         $this->response->redirect('/admin/account');
@@ -156,6 +238,8 @@ class AccountController extends Controller
         foreach ($packages as $p) {
             if ($p->id == $account->package_id) $package = $p;
         }
+        $domains = [];
+        try { $domains = $this->db->table('domains')->where('account_id', $id)->get() ?: []; } catch (\Exception $e) {}
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         // Usage stats
         $homeDir = '/home/' . $account->username;
@@ -177,6 +261,7 @@ class AccountController extends Controller
             'user' => $user,
             'account' => $account,
             'package' => $package,
+            'domains' => $domains,
             'theme_settings' => $theme_settings,
             'disk_usage' => $diskUsage,
             'bandwidth_usage' => $bandwidthUsage,
@@ -224,6 +309,16 @@ class AccountController extends Controller
         $account = $this->db->table('hosting_users')->where('id', $id)->first();
         if ($account) {
             exec("userdel -r {$account->username} 2>/dev/null");
+            @exec("rm -f /etc/httpd/conf.d/{$account->username}.conf /etc/httpd/conf.d/{$account->username}-ssl.conf 2>/dev/null");
+            try {
+                $this->db->table('domains')->where('account_id', $id)->delete();
+            } catch (\Exception $e) {}
+            // Release IP
+            if (!empty($account->ip)) {
+                try {
+                    $this->db->table('server_ips')->where('assigned_to', $account->username)->update(['assigned_to' => null]);
+                } catch (\Exception $e) {}
+            }
         }
         $this->db->table('hosting_users')->where('id', $id)->update(['status' => 'terminated']);
         $_SESSION['success_message'] = 'Account terminated.';
