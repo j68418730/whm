@@ -20,7 +20,7 @@
 .sidebar .nav{padding:2px 0;flex:1;overflow-y:auto}
 .sidebar .nav-section{margin-bottom:0}
 .sidebar .nav-label{font-size:9px;text-transform:uppercase;color:var(--text_muted,#64748b);padding:5px 14px 2px;letter-spacing:1px;font-weight:700}
-.sidebar .nav-link{display:flex;align-items:center;gap:8px;padding:5px 14px;color:var(--text_muted,#94a3b8);font-size:12.5px;text-decoration:none;transition:.1s;border-left:2px solid transparent}
+.sidebar .nav-link{display:flex;align-items:center;gap:8px;padding:6px 16px;color:var(--text_muted,#94a3b8);font-size:14px;text-decoration:none;transition:.1s;border-left:2px solid transparent}
 .sidebar .nav-link:hover{background:rgba(0,191,255,.04);color:var(--text,#e0e0e0)}
 .sidebar .nav-link.active{color:var(--primary,#008cff);background:rgba(0,140,255,.08);border-left-color:var(--primary,#008cff)}
 .sidebar .nav-link i.bi{font-size:13px;width:16px;text-align:center;flex-shrink:0}
@@ -144,8 +144,10 @@ function toggleSupportStatus() {
     setSupportStatus(s);
     fetch('/admin/support-status', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'status=' + s});
 }
-// Load status from server
-fetch('/admin/support-status').then(function(r){return r.json()}).then(function(d){setSupportStatus(d.status)}).catch(function(){setSupportStatus('online')});
+// Load status from cookie first, then server
+var cs = document.cookie.split('; ').find(function(r){return r.startsWith('support_status=')});
+if (cs) { setSupportStatus(cs.split('=')[1]); }
+else { fetch('/admin/support-status').then(function(r){return r.json()}).then(function(d){setSupportStatus(d.status)}).catch(function(){setSupportStatus('online')}); }
 </script>
       </div>
     </div>
