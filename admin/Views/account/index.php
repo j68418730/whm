@@ -28,13 +28,11 @@ foreach ($vhostLines as $line) {
 <td><strong><?php echo htmlspecialchars($a->username); ?></strong></td>
 <td><?php echo htmlspecialchars($a->domain ?? '-'); ?></td>
 <td><?php echo htmlspecialchars($pkgName); ?></td>
-<td style="max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-<?php if ($vhostExists && $vhostContent): ?>
-<span style="color:#4ade80" title="<?php echo htmlspecialchars($vhostContent); ?>">&#9679; Active</span>
-<small style="color:#64748b;font-size:10px;display:block"><?php echo htmlspecialchars($vhostSummary ?: basename($vhostFile)); ?></small>
+<td style="font-size:12px">
+<?php if ($vhostExists): ?>
+<span style="color:#4ade80">&#9679; Active</span>
 <?php else: ?>
 <span style="color:#f87171">&#9679; Missing</span>
-<small style="color:#64748b;font-size:10px;display:block">No vhost file</small>
 <?php endif; ?>
 </td>
 <td style="white-space:nowrap">
