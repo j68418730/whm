@@ -13,7 +13,7 @@ $pkgName = 'N/A';
 if (isset($packages)) {
     foreach ($packages as $p) { if ($p->id == $a->package_id) { $pkgName = $p->name; break; } }
 }
-$vhostFile = "/etc/httpd/conf.d/{$a->username}.conf";
+$vhostFile = "/etc/apache2/sites-available/{$a->username}.conf";
 $vhostExists = file_exists($vhostFile);
 $vhostContent = $vhostExists ? @file_get_contents($vhostFile) : '';
 $vhostLines = $vhostContent ? explode("\n", trim($vhostContent)) : [];
