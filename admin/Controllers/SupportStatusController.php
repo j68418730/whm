@@ -34,6 +34,28 @@ class SupportStatusController extends Controller
         exit;
     }
 
+    public function publicStatus()
+    {
+        // Aggregate ALL admin statuses for public widget
+        $statuses = [];
+        try {
+            $rows = $this->db->table('automation_settings')->get() ?: [];
+            foreach ($rows as $r) {
+                if (str_starts_with($r->setting_key, 'support_status_admin_')) {
+                    $statuses[] = $r->setting_value;
+                }
+            }
+        } catch (\Exception $e) {}
+
+        $agg = 'offline';
+        if (in_array('online', $statuses)) $agg = 'online';
+        elseif (in_array('away', $statuses)) $agg = 'away';
+
+        $this->response->json(['status' => $agg]);
+        $this->response->send();
+        exit;
+    }
+
     public function set()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { exit; }

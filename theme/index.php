@@ -729,7 +729,7 @@ setTimeout(startTestimonialAutoScroll,1000);
 // Support status check
 
 // Live chat status
-fetch('/admin/support-status').then(function(r){return r.json()}).then(function(d){
+fetch('/admin/support-status/public').then(function(r){return r.json()}).then(function(d){
 var txt=document.getElementById('panelStatus');
 var ttl=document.getElementById('panelTitle');
 var img=document.getElementById('supportBadge');
