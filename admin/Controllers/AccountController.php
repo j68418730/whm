@@ -106,19 +106,12 @@ class AccountController extends Controller
             'nameserver2' => 'ns2.planet-hosts.com',
         ]);
 
-        // --- Create home directories ---
-        @mkdir("{$homeDir}/public_html", 0755, true);
-        @mkdir("{$homeDir}/logs", 0755, true);
-        @mkdir("{$homeDir}/mail", 0755, true);
-        @mkdir("{$homeDir}/tmp", 0755, true);
-        @mkdir("{$homeDir}/etc", 0755, true);
-        @mkdir("{$homeDir}/ssl", 0755, true);
-        @mkdir("{$homeDir}/.ssh", 0700, true);
-        @file_put_contents("{$homeDir}/public_html/index.html", "<!DOCTYPE html><html><head><title>{$domain}</title></head><body style='font-family:sans-serif;background:#0a0a0f;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0'><div style='text-align:center'><h1 style='color:#0A84FF'>Welcome to {$domain}</h1><p>Account: <strong>{$username}</strong></p><p style='color:#64748b'>Provisioned on Planet-Hosts.</p></div></body></html>");
-
-        // --- Create vhost files ---
-        @file_put_contents("/etc/httpd/conf.d/{$username}.conf", "<VirtualHost *:80>\n    ServerName {$domain}\n    ServerAlias www.{$domain}\n    DocumentRoot {$homeDir}/public_html\n</VirtualHost>\n");
-        @file_put_contents("/etc/httpd/conf.d/{$username}-ssl.conf", "<VirtualHost *:443>\n    ServerName {$domain}\n    ServerAlias www.{$domain}\n    DocumentRoot {$homeDir}/public_html\n    SSLEngine on\n    SSLCertificateFile {$homeDir}/ssl/cert.pem\n    SSLCertificateKeyFile {$homeDir}/ssl/key.pem\n</VirtualHost>\n");
+        // --- Provision via background script (runs as root via sudo) ---
+        $escUser = escapeshellarg($username);
+        $escDomain = escapeshellarg($domain);
+        $escHome = escapeshellarg($homeDir);
+        $escPass = escapeshellarg($password);
+        @exec("timeout 30 sudo /var/www/radiohosting/provision.sh {$escUser} {$escDomain} {$escHome} {$escPass} 2>/dev/null >/dev/null &");
 
         // --- Create domain record ---
         try { $this->db->table('domains')->insertGetId(['account_id' => $userId, 'domain' => $domain, 'type' => 'main', 'document_root' => "{$homeDir}/public_html", 'ip' => $serverIp, 'status' => 'active']); } catch (\Exception $e) {}
