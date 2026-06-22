@@ -116,8 +116,62 @@ class AccountController extends Controller
         // --- Create domain record ---
         try { $this->db->table('domains')->insertGetId(['account_id' => $userId, 'domain' => $domain, 'type' => 'main', 'document_root' => "{$homeDir}/public_html", 'ip' => $serverIp, 'status' => 'active']); } catch (\Exception $e) {}
 
-        $_SESSION['success_message'] = "Account '{$username}' created. Domain: {$domain}";
-        ?><!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=/admin/account"><script>location.href='/admin/account'</script></head><body>Created. <a href="/admin/account">Continue</a>.</body></html><?php
+        $_SESSION['account_created'] = [
+            'username' => $username,
+            'password' => $password,
+            'domain' => $domain,
+            'email' => $email,
+            'ip' => $serverIp,
+            'package_id' => $packageId,
+            'home_dir' => $homeDir,
+            'nameserver1' => 'ns1.planet-hosts.com',
+            'nameserver2' => 'ns2.planet-hosts.com',
+        ];
+        header('Location: /admin/account/summary/' . $userId);
+        exit;
+    }
+
+    public function summary($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { header('Location: /admin/login'); exit; }
+        $account = $this->db->table('hosting_users')->where('id', $id)->first();
+        if (!$account) { header('Location: /admin/account'); exit; }
+        $package = null;
+        $featureList = null;
+        if ($account->package_id) {
+            $package = $this->db->table('hosting_packages')->where('id', $account->package_id)->first();
+            if ($package && $package->feature_list_id) {
+                $featureList = $this->db->table('feature_lists')->where('id', $package->feature_list_id)->first();
+            }
+        }
+        $password = $_SESSION['account_created']['password'] ?? 'Set during creation';
+        unset($_SESSION['account_created']);
+        $user = $this->auth->user();
+        return $this->view('admin.account.summary', [
+            'user' => $user,
+            'account' => $account,
+            'package' => $package,
+            'featureList' => $featureList,
+            'plainPassword' => $password,
+            'title' => 'Account Created',
+        ]);
+    }
+
+    public function emailSummary($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { echo 'Unauthorized'; exit; }
+        $account = $this->db->table('hosting_users')->where('id', $id)->first();
+        if (!$account) { echo 'Account not found'; exit; }
+        $to = trim($_POST['email'] ?? $account->email);
+        $subject = "Planet-Hosts Account: {$account->username}";
+        $msg = "Account Created Successfully!\n\n"
+             . "Username: {$account->username}\n"
+             . "Domain: {$account->domain}\n"
+             . "IP: {$account->ip}\n\n"
+             . "Nameservers:\n  ns1.planet-hosts.com\n  ns2.planet-hosts.com\n\n"
+             . "Website: http://{$account->domain}/\n";
+        @mail($to, $subject, $msg, "From: support@planet-hosts.com\r\nReply-To: support@planet-hosts.com");
+        echo 'Email sent to ' . htmlspecialchars($to);
         exit;
     }
 
