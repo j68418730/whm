@@ -158,9 +158,8 @@ class AccountController extends Controller
             @exec("chown -R {$username}:{$username} {$homeDir} 2>/dev/null");
 
             // --- Step 6: Create Apache virtual host ---
-            $vhost = "<VirtualHost *:80>\n    ServerName {$domain}\n    ServerAlias www.{$domain}\n    DocumentRoot {$homeDir}/public_html\n    CustomLog {$homeDir}/logs/access.log combined\n    ErrorLog {$homeDir}/logs/error.log\n    <Directory {$homeDir}/public_html>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n</VirtualHost>\n";
-            // Also add HTTPS vhost placeholder (will be enabled by AutoSSL)
-            $vhostSsl = "<VirtualHost *:443>\n    ServerName {$domain}\n    ServerAlias www.{$domain}\n    DocumentRoot {$homeDir}/public_html\n    CustomLog {$homeDir}/logs/access.log combined\n    ErrorLog {$homeDir}/logs/error.log\n    <Directory {$homeDir}/public_html>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n    SSLEngine on\n    SSLCertificateFile {$homeDir}/ssl/cert.pem\n    SSLCertificateKeyFile {$homeDir}/ssl/key.pem\n</VirtualHost>\n";
+            $vhost = "<VirtualHost *:80>\n    ServerName {$domain}\n    ServerAlias www.{$domain}\n    DocumentRoot {$homeDir}/public_html\n</VirtualHost>\n";
+            $vhostSsl = "<VirtualHost *:443>\n    ServerName {$domain}\n    ServerAlias www.{$domain}\n    DocumentRoot {$homeDir}/public_html\n    SSLEngine on\n    SSLCertificateFile {$homeDir}/ssl/cert.pem\n    SSLCertificateKeyFile {$homeDir}/ssl/key.pem\n</VirtualHost>\n";
             @file_put_contents("/etc/httpd/conf.d/{$username}.conf", $vhost);
             @file_put_contents("/etc/httpd/conf.d/{$username}-ssl.conf", $vhostSsl);
             @exec("systemctl reload httpd 2>/dev/null >/dev/null &");
