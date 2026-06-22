@@ -24,10 +24,15 @@
     <div class="summary-line"><span class="summary-key">CpanelMod:</span><span class="summary-val">jupiter</span></div>
     <div class="summary-line"><span class="summary-key">HomeRoot:</span><span class="summary-val">/home</span></div>
     <div class="summary-line"><span class="summary-key">Quota:</span><span class="summary-val">unlimited</span></div>
-    <div class="summary-line"><span class="summary-key">NameServer1:</span><span class="summary-val">ns1.planet-hosts.com</span></div>
-    <div class="summary-line"><span class="summary-key">NameServer2:</span><span class="summary-val">ns2.planet-hosts.com</span></div>
-    <div class="summary-line"><span class="summary-key">NameServer3:</span><span class="summary-val">ns3.planet-hosts.com</span></div>
-    <div class="summary-line"><span class="summary-key">NameServer4:</span><span class="summary-val">ns4.planet-hosts.com</span></div>
+<?php
+$nsDisplay = $nameservers ?: [];
+if (empty($nsDisplay)) {
+    $nsDisplay = [ (object)['nameserver'=>'ns1.planet-hosts.com','ip_address'=>'45.61.59.55'], (object)['nameserver'=>'ns2.planet-hosts.com','ip_address'=>'45.61.59.55'] ];
+}
+$nsIdx = 1;
+foreach ($nsDisplay as $ns): ?>
+<div class="summary-line"><span class="summary-key">NameServer<?php echo $nsIdx++; ?>:</span><span class="summary-val"><?php echo htmlspecialchars($ns->nameserver ?? 'ns'.$nsIdx.'.planet-hosts.com'); ?> (<?php echo htmlspecialchars($ns->ip_address ?? '45.61.59.55'); ?>)</span></div>
+<?php endforeach; ?>
     <div class="summary-line"><span class="summary-key">Contact Email:</span><span class="summary-val"><?php echo htmlspecialchars($account->email); ?></span></div>
     <div class="summary-line"><span class="summary-key">Package:</span><span class="summary-val"><?php echo $package ? htmlspecialchars($package->name) : 'default'; ?></span></div>
     <div class="summary-line"><span class="summary-key">Feature List:</span><span class="summary-val"><?php echo $featureList ? htmlspecialchars($featureList->name) : 'default'; ?></span></div>
