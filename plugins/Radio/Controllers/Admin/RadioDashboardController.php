@@ -1,5 +1,4 @@
 <?php
-
 namespace Plugins\Radio\Controllers\Admin;
 
 use Core\Controller;
@@ -28,14 +27,25 @@ class RadioDashboardController extends Controller
         foreach ($streams as $s) {
             if ($s->status === 'running') $active++;
             $totalListeners += $s->listener_count ?? 0;
+            // Get user name
+            $u = $this->db->table('hosting_users')->where('id', $s->user_id)->first();
+            $s->user_name = $u ? $u->username : 'N/A';
         }
+        $djs = $this->db->table('radio_djs')->get() ?: [];
         return $this->view('Plugins.Radio.Views.admin.radio_dashboard.index', [
-            'user' => $user, 'radioStats' => [
-                'total_streams' => $total, 'active_streams' => $active,
-                'current_listeners' => $totalListeners, 'peak_listeners_today' => $totalListeners,
-                'stream_status' => $active > 0 ? 'online' : 'offline', 'current_song' => 'AutoDJ',
-                'bandwidth_usage' => $total * 128,
-            ], 'theme_settings' => json_decode($user->theme_settings ?? '{}', true), 'title' => 'Radio Dashboard'
+            'user' => $user, 'streams' => $streams, 'djs' => $djs,
+            'total' => $total, 'active' => $active, 'totalListeners' => $totalListeners,
+            'theme_settings' => json_decode($user->theme_settings ?? '{}', true), 'title' => 'Radio Dashboard'
+        ]);
+    }
+
+    public function widgets()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $streams = $this->db->table('radio_streams')->get() ?: [];
+        return $this->view('Plugins.Radio.Views.admin.radio_dashboard.widgets', [
+            'user' => $user, 'streams' => $streams, 'title' => 'Radio Widgets'
         ]);
     }
 }

@@ -143,7 +143,14 @@ class PaypalController extends Controller
                     $items = json_decode($order->items, true);
                     if (!empty($items)) {
                         require_once BASE_PATH . '/services/AutoProvision.php';
-                        autoProvision($order->user_id, $items[0]['id']);
+                        $pkgId = $items[0]['id'];
+                        autoProvision($order->user_id, $pkgId);
+                        // Check if radio package — auto-create Icecast stream
+                        $pkgCheck = $this->db->table('hosting_packages')->where('id', $pkgId)->first();
+                        if ($pkgCheck && stripos($pkgCheck->type ?? '', 'icecast') !== false) {
+                            require_once BASE_PATH . '/services/RadioProvision.php';
+                            radioProvision($order->user_id, $pkgId);
+                        }
                     }
                 }
             } else {

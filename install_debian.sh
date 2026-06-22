@@ -21,11 +21,11 @@ echo "icecast2 icecast2/adminpassword password $(hostname)" | debconf-set-select
 export DEBIAN_FRONTEND=noninteractive
 
 # 1. System update
-echo "[1/8] Updating system..."
+echo "[1/11] Updating system..."
 apt update -qq && apt upgrade -y -qq
 
 # 2. Full LAMP + services
-echo "[2/8] Installing Apache, PHP, MariaDB, services, and jailkit..."
+echo "[2/10] Installing Apache, PHP, MariaDB, services, and jailkit..."
 apt install -y -qq apache2 mariadb-server jailkit quota quotatool \
   php php-cli php-common php-curl php-gd php-intl php-mbstring php-mysql \
   php-xml php-zip php-bcmath php-bz2 php-ctype php-exif php-fileinfo \
@@ -136,6 +136,14 @@ firewall-cmd --permanent --add-port=6000-10000/tcp 2>/dev/null || true
 iptables -I INPUT -p tcp --dport 5000 -j ACCEPT 2>/dev/null || true
 iptables -I INPUT -p tcp --dport 5001 -j ACCEPT 2>/dev/null || true
 iptables -I INPUT -p tcp --dport 6000:10000 -j ACCEPT 2>/dev/null || true
+# Open game server ports
+firewall-cmd --permanent --add-port=27000-28000/tcp 2>/dev/null || true
+firewall-cmd --permanent --add-port=25560-25660/tcp 2>/dev/null || true
+firewall-cmd --permanent --add-port=10000-20000/tcp 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 27000:28000 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 25560:25660 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 10000:20000 -j ACCEPT 2>/dev/null || true
+firewall-cmd --reload 2>/dev/null || true
 systemctl restart apache2
 
 # 7. Database
@@ -259,6 +267,41 @@ systemctl daemon-reload 2>/dev/null
 systemctl enable planet-support 2>/dev/null
 systemctl start planet-support 2>/dev/null || true
 echo "[9/9] .NET Support Server installed on port 5000"
+
+# 10. SteamCMD for Game Servers
+echo "[10/10] Installing SteamCMD..."
+dpkg --add-architecture i386 2>/dev/null
+apt-get update -qq 2>/dev/null
+apt-get install -y -qq steamcmd 2>/dev/null || {
+    mkdir -p /usr/games
+    cd /usr/games
+    curl -sqL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar zxf - 2>/dev/null
+    chmod +x steamcmd.sh
+    ln -sf /usr/games/steamcmd.sh /usr/games/steamcmd 2>/dev/null
+}
+echo "[10/10] SteamCMD ready"
+
+# 11. Apache proxy for SignalR
+echo "[11/11] Configuring Apache proxy for SignalR..."
+a2enmod proxy proxy_http proxy_wstunnel 2>/dev/null
+printf 'ProxyPass /hub/ http://localhost:5000/hub/\nProxyPassReverse /hub/ http://localhost:5000/hub/\n' > /etc/apache2/conf-enabled/proxy-signalr.conf
+# 12. DJ & Chat dedicated ports
+echo "[12/12] Setting up DJ (2100) and Chat (2101) ports..."
+printf '<VirtualHost *:2100>\n    DocumentRoot /var/www/radiohosting/public\n    ServerName %s\n    <Directory /var/www/radiohosting/public>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n</VirtualHost>\n' "$SERVER_IP" > /etc/apache2/sites-available/dj-panel.conf
+printf '<VirtualHost *:2101>\n    DocumentRoot /var/www/radiohosting/public\n    ServerName %s\n    <Directory /var/www/radiohosting/public>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n</VirtualHost>\n' "$SERVER_IP" > /etc/apache2/sites-available/chat-panel.conf
+printf '\nListen 2100\nListen 2101\n' >> /etc/apache2/ports.conf
+a2ensite dj-panel.conf chat-panel.conf 2>/dev/null
+firewall-cmd --add-port=2100/tcp --permanent 2>/dev/null
+firewall-cmd --add-port=2101/tcp --permanent 2>/dev/null
+firewall-cmd --reload 2>/dev/null
+systemctl reload apache2 2>/dev/null
+echo "[11/11] SignalR proxy configured"
+echo ""
+echo " Gamepack folder (in Masterinstall) contains game definitions for"
+echo " quick deployment. To pre-download game files, run:"
+echo "   bash Masterinstall/Gamepack/predownload.sh"
+echo " on a machine with sufficient disk space, then copy the"
+echo " downloaded/ folder contents into Gamepack/."
 
 # Copy theme into public
 rm -rf "$PANEL_DIR/public/theme" 2>/dev/null

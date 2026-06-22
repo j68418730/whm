@@ -1,3 +1,4 @@
+<?php $currentTab = 'localization'; require __DIR__ . '/_tabs.php'; ?>
 <div class="card" style="max-width:500px">
 <form method="POST" action="/admin/settings/localization/save">
 <h3 style="color:var(--accent);margin-bottom:12px">Localization</h3>
@@ -8,3 +9,4 @@
 <button type="submit" class="btn primary">Save</button>
 <a href="/admin/settings" class="btn secondary">Back</a>
 </form></div>
+

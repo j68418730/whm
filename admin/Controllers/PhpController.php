@@ -20,6 +20,45 @@ class PhpController extends Controller
         $this->db = $app->get('db');
     }
 
+    public function switcher()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $versions = [];
+        exec('ls /usr/bin/php* 2>/dev/null', $out);
+        foreach ($out as $p) {
+            if (preg_match('/php(\d+\.\d+)$/', $p, $m)) $versions[] = $m[1];
+        }
+        if (empty($versions)) $versions = ['8.2'];
+        $domains = $this->db->table('hosting_users')->where('status', 'active')->get() ?: [];
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        return $this->view('admin.php.switcher', [
+            'user' => $user, 'versions' => $versions, 'domains' => $domains,
+            'theme_settings' => $theme_settings, 'title' => 'PHP Version Switcher'
+        ]);
+    }
+
+    public function switcherPost()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $domain = $this->request->post('domain', '');
+        $version = $this->request->post('version', '');
+        if ($domain && $version) {
+            $this->db->table('hosting_users')->where('domain', $domain)->update(['php_version' => $version]);
+            // Update Apache vhost for this domain to use the correct PHP-FPM socket
+            $vhostFile = "/etc/apache2/sites-available/{$domain}.conf";
+            if (file_exists($vhostFile)) {
+                $content = file_get_contents($vhostFile);
+                $content = preg_replace('/SetHandler .*php.*-fpm.*/', "SetHandler \"proxy:unix:/run/php/php{$version}-fpm.sock|fcgi://localhost\"", $content);
+                file_put_contents($vhostFile, $content);
+            }
+            exec("systemctl reload apache2 2>/dev/null");
+            $_SESSION['success_message'] = "PHP version for {$domain} set to {$version}.";
+        }
+        $this->response->redirect('/admin/php-switcher');
+        exit;
+    }
+
     public function index()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }

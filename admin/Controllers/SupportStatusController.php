@@ -1,0 +1,63 @@
+<?php
+namespace Admin\Controllers;
+
+use Core\Controller;
+
+class SupportStatusController extends Controller
+{
+    protected $auth, $response, $request, $db;
+
+    public function __construct()
+    {
+        $app = \Core\Application::getInstance();
+        $this->auth = $app->get('auth');
+        $this->response = $app->get('response');
+        $this->request = $app->get('request');
+        $this->db = $app->get('db');
+    }
+
+    public function get()
+    {
+        // Aggregate all admin statuses
+        $admins = [];
+        try {
+            $rows = $this->db->table('automation_settings')->get() ?: [];
+            foreach ($rows as $r) {
+                if (str_starts_with($r->setting_key, 'support_status_admin_')) {
+                    $admins[] = $r->setting_value;
+                }
+            }
+        } catch (\Exception $e) {}
+
+        $status = 'offline';
+        if (in_array('online', $admins)) {
+            $status = 'online';
+        } elseif (in_array('away', $admins)) {
+            $status = 'away';
+        }
+
+        $this->response->json(['status' => $status]);
+        $this->response->send();
+        exit;
+    }
+
+    public function set()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { exit; }
+        $status = $this->request->post('status', 'online');
+        if (!in_array($status, ['online', 'away', 'offline'])) $status = 'online';
+        $adminId = $this->auth->user()->id;
+        $key = "support_status_admin_{$adminId}";
+        try {
+            $existing = $this->db->table('automation_settings')->where('setting_key', $key)->first();
+            if ($existing) {
+                $this->db->table('automation_settings')->where('setting_key', $key)->update(['setting_value' => $status]);
+            } else {
+                $this->db->table('automation_settings')->insertGetId(['setting_key' => $key, 'setting_value' => $status]);
+            }
+        } catch (\Exception $e) {}
+        $this->response->json(['ok' => true, 'status' => $status]);
+        $this->response->send();
+        exit;
+    }
+}

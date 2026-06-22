@@ -13,7 +13,6 @@ return [
                 'source_password' => 'hackme',
                 'admin_password' => 'hackme',
             ],
-    ],
         ],
         'autodj' => [
             'enabled' => true,

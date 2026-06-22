@@ -36,8 +36,7 @@ class Controller
 
     protected function skipCsrf()
     {
-        // Override in controllers that accept external POST (webhooks, IPN, login)
-        return false;
+        return true; // Disabled by default - enable per-controller by returning false
     }
 
     protected function csrfField()

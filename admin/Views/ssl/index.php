@@ -14,7 +14,17 @@
 </form></div>
 
 <div class="card"><h3 style="color:var(--accent);margin-bottom:12px">AutoSSL Status</h3>
-<p style="color:var(--text-secondary)">AutoSSL is currently <strong style="color:#f87171">disabled</strong>. Enable it above to automatically issue Let's Encrypt certificates.</p></div>
+<p style="color:var(--text-secondary)">AutoSSL is currently <strong style="color:<?php echo !empty($autossl_enabled) ? '#4ade80' : '#f87171'; ?>"><?php echo !empty($autossl_enabled) ? 'enabled' : 'disabled'; ?></strong>. <?php if (!empty($autossl_enabled)): ?>Cron runs every 6 hours to check and renew certificates.<?php else: ?>Enable it above to automatically issue Let's Encrypt certificates.<?php endif; ?></p>
+<?php if (!empty($certs)): ?>
+<div style="margin-top:12px"><strong>Issued Certificates:</strong></div>
+<?php foreach ($certs as $c): ?>
+<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04)">
+<span><?php echo htmlspecialchars($c->domain); ?></span>
+<span style="color:<?php echo $c->status === 'active' ? '#4ade80' : '#facc15'; ?>"><?php echo $c->status; ?> · Expires: <?php echo $c->expires_at ?? 'N/A'; ?></span>
+</div>
+<?php endforeach; ?>
+<?php endif; ?>
+</div>
 <?php else: ?>
 
 <div class="stats-grid" style="margin-bottom:20px">

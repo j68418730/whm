@@ -1,4 +1,4 @@
-<div class="card"><h3 style="color:var(--accent)">Billing Overview</h3>
+<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap"><h3 style="margin:0">Billing Overview</h3><a href="/user/billing/payment-methods" class="btn btn-sm btn-secondary">Manage Payment Methods</a></div>
 <div class="stats-grid" style="margin:12px 0">
 <div class="stat-card"><h3>Outstanding</h3><div class="value">$<?php echo number_format($outstanding ?? 0, 2); ?></div></div>
 <div class="stat-card"><h3>Total Invoices</h3><div class="value"><?php echo count($invoices ?? []); ?></div></div>

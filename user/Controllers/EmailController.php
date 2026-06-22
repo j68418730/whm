@@ -61,8 +61,9 @@ class EmailController extends Controller
                 'quota_mb' => (int)$this->request->post('quota', 1000),
             ]);
             // Create Linux user for mail if possible
-            exec("useradd -m -d /home/{$email} -s /sbin/nologin {$email} 2>/dev/null");
-            exec("echo '{$email}:{$password}' | chpasswd 2>/dev/null");
+            $safeEmail = escapeshellarg($email);
+            exec("useradd -m -d /home/{$safeEmail} -s /sbin/nologin {$safeEmail} 2>/dev/null");
+            exec("echo {$safeEmail}:" . escapeshellarg($password) . " | chpasswd 2>/dev/null");
             $_SESSION['success'] = "Email account {$fullEmail} created.";
         }
         $this->response->redirect('/user/email');
@@ -75,7 +76,7 @@ class EmailController extends Controller
         $acct = $this->db->table('mail_accounts')->where('id', $id)->first();
         if ($acct) {
             $local = explode('@', $acct->email)[0];
-            exec("userdel -r {$local} 2>/dev/null");
+            exec("userdel -r " . escapeshellarg($local) . " 2>/dev/null");
             $this->db->table('mail_accounts')->where('id', $id)->delete();
         }
         $this->response->redirect('/user/email');

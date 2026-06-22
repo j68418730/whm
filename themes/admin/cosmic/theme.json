@@ -1,0 +1,29 @@
+{
+  "type": "admin",
+  "description": "cosmic theme for Planet-Hosts admin panel.",
+  "version": "2.0",
+  "author": "Planet-Hosts",
+  "assets": {
+    "css": [
+      "assets/css/theme.css"
+    ],
+    "js": []
+  },
+  "name": "en-US.TextInfo.ToTitleCase(cosmic) Admin",
+  "fonts": {
+    "heading": "'Inter', sans-serif",
+    "body": "'Inter', sans-serif"
+  },
+  "colors": {
+    "bg": "#0f0a1a",
+    "card_bg": "rgba(26,15,46,.6)",
+    "success": "#4ade80",
+    "border": "rgba(99,102,241,.1)",
+    "danger": "#f87171",
+    "warning": "#facc15",
+    "sidebar_bg": "#1a0f2e",
+    "text": "#e0e0e0",
+    "text_muted": "#64748b",
+    "primary": "#6366f1"
+  }
+}

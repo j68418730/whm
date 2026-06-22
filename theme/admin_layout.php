@@ -74,6 +74,26 @@ if (class_exists('\\Core\\License')) {
 <div class="sidebar" id="adminSidebar">
 <div class="logo-text">PLANET <span>HOSTS</span></div>
 
+<input id="sidebarSearch" type="text" placeholder="🔍 Search menu..." oninput="filterSidebar(this.value)" style="width:100%;padding:8px 10px;margin-bottom:12px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;outline:none;font-size:12px;box-sizing:border-box">
+
+<script>
+function filterSidebar(val) {
+    var items = document.querySelectorAll('.sidebar a');
+    var sections = document.querySelectorAll('.nav-section');
+    var q = val.toLowerCase().trim();
+    sections.forEach(function(s) {
+        var count = 0;
+        s.querySelectorAll('a').forEach(function(a) {
+            var text = a.textContent.toLowerCase();
+            var match = !q || text.indexOf(q) !== -1;
+            a.style.display = match ? '' : 'none';
+            if (match) count++;
+        });
+        s.style.display = count > 0 ? '' : 'none';
+    });
+}
+</script>
+
 <div class="nav-section" data-section="main">
 <div class="nav-label">Main</div>
 <a href="/admin/dashboard" class="<?php echo str_contains($currentUrl,'/admin/dashboard')?'active':''; ?>">Dashboard</a>
@@ -108,7 +128,23 @@ if (class_exists('\\Core\\License')) {
 <a href="/admin/support" class="<?php echo str_contains($currentUrl,'/admin/support') && !str_contains($currentUrl,'/admin/support/tickets') && !str_contains($currentUrl,'/admin/support/kb') && !str_contains($currentUrl,'/admin/support/announcements') && !str_contains($currentUrl,'/admin/support/status') && !str_contains($currentUrl,'/admin/livechat') && !str_contains($currentUrl,'/admin/reviews')?'active':''; ?>">Support Center</a>
 <a href="/admin/livechat" class="<?php echo str_contains($currentUrl,'/admin/livechat')?'active':''; ?>">Live Chat</a>
 <a href="/admin/reviews" class="<?php echo str_contains($currentUrl,'/admin/reviews')?'active':''; ?>" style="font-size:12px;padding-left:20px;color:#facc15">📝 Reviews</a>
-<a href="/voice/admin.php" target="_blank" style="color:#a78bfa;font-size:13px">📞 Voice Test</a>
+</div>
+
+<div class="nav-section" data-section="dashboards">
+<div class="nav-label">📊 Dashboards</div>
+<a href="/admin/radio_dashboard" class="<?php echo str_contains($currentUrl,'/admin/radio_dashboard')?'active':''; ?>">📡 Radio Dashboard</a>
+<a href="/admin/streams" class="<?php echo str_contains($currentUrl,'/admin/streams')?'active':''; ?>">🎵 Streams</a>
+<a href="/admin/djs" class="<?php echo str_contains($currentUrl,'/admin/djs')?'active':''; ?>">🎤 DJ Accounts</a>
+<a href="/admin/autodj" class="<?php echo str_contains($currentUrl,'/admin/autodj')?'active':''; ?>">🤖 AutoDJ</a>
+<a href="/admin/radiosettings" class="<?php echo str_contains($currentUrl,'/admin/radiosettings')?'active':''; ?>">⚙️ Radio Settings</a>
+<a href="/admin/livechat" class="<?php echo str_contains($currentUrl,'/admin/livechat')?'active':''; ?>">💬 Live Chat</a>
+<a href="/admin/games" class="<?php echo str_contains($currentUrl,'/admin/games')?'active':''; ?>">🎮 Game Servers</a>
+<a href="/admin/chat-dashboard" class="<?php echo str_contains($currentUrl,'/admin/chat-dashboard')?'active':''; ?>">💬 Chat Dashboard</a>
+<a href="/admin/djs" style="font-size:12px;padding-left:20px;color:#a78bfa">🎤 DJ Dashboard</a>
+<a href="/chatbox/admin.php" target="_blank" style="font-size:12px;padding-left:20px;color:#38bdf8">💬 Chat Admin</a>
+<?php if (class_exists('\\Plugins\\WebsiteBuilder\\WebsiteBuilderPlugin')): ?>
+<a href="/admin/websitebuilder" style="font-size:12px;padding-left:20px;color:#34d399">🌐 Website Builder</a>
+<?php endif; ?>
 </div>
 
 <div class="nav-section" data-section="billing">
@@ -125,7 +161,10 @@ if (class_exists('\\Core\\License')) {
 <a href="/admin/backup" class="<?php echo str_contains($currentUrl,'/admin/backup')?'active':''; ?>">Backups</a>
 <a href="/admin/apache" class="<?php echo str_contains($currentUrl,'/admin/apache')?'active':''; ?>">Apache</a>
 <a href="/admin/php" class="<?php echo str_contains($currentUrl,'/admin/php')?'active':''; ?>">PHP Manager</a>
+<a href="/admin/php-switcher" style="font-size:12px;padding-left:20px;color:#34d399">🔄 PHP Version</a>
+<a href="/admin/process-manager" style="font-size:12px;padding-left:20px;color:#f87171">🖥 Process Manager</a>
 <a href="/admin/plugins" class="<?php echo str_contains($currentUrl,'/admin/plugins')?'active':''; ?>">Plugins</a>
+
 <a href="/admin/cron" class="<?php echo str_contains($currentUrl,'/admin/cron')?'active':''; ?>">Cron</a>
 <a href="/admin/automation" class="<?php echo str_contains($currentUrl,'/admin/automation')?'active':''; ?>">Automation</a>
 <a href="/admin/serverconfig" class="<?php echo str_contains($currentUrl,'/admin/serverconfig')?'active':''; ?>">Server Config</a>
@@ -134,6 +173,7 @@ if (class_exists('\\Core\\License')) {
 <a href="/admin/licensing" class="<?php echo str_contains($currentUrl,'/admin/licensing') && !str_contains($currentUrl,'/generate')?'active':''; ?>">Licensing</a>
 <a href="/admin/licensing/generate" class="<?php echo str_contains($currentUrl,'/admin/licensing/generate')?'active':''; ?>">Generate License</a>
 <a href="/admin/todo" class="<?php echo str_contains($currentUrl,'/admin/todo')?'active':''; ?>">ToDo List</a>
+<a href="/admin/admins" class="<?php echo str_contains($currentUrl,'/admin/admins')?'active':''; ?>" style="color:#facc15">👤 Admins</a>
 </div>
 
 <div class="nav-section" data-section="api">
@@ -162,8 +202,12 @@ if (class_exists('\\Core\\License')) {
 <?php endif; ?>
 </div>
 <div class="content">
+<div id="chatAlert" class="alert alert-info" style="display:none;cursor:pointer;background:rgba(56,189,248,.1);color:#38bdf8;border:1px solid rgba(56,189,248,.15);border-radius:8px;font-size:13px;padding:12px 16px;margin-bottom:16px" onclick="window.location.href='/admin/livechat'"><i class="bi bi-chat-dots me-1"></i> <strong>New Chat Messages</strong> &mdash; <span id="chatAlertCount">0</span> waiting. <u>Click to view &rarr;</u></div>
 <?php echo $content; ?>
 </div>
+<script>
+(function(){var a=document.getElementById('chatAlert');if(!a)return;var c=document.getElementById('chatAlertCount');function p(){var x=new XMLHttpRequest();x.open('GET','/admin/livechat/waiting-count',true);x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.waiting>0){c.textContent=d.waiting;a.style.display='';}else{a.style.display='none';}}catch(e){}};x.send();}p();setInterval(p,15000);})();
+</script>
 </div>
 </div>
 
@@ -203,6 +247,15 @@ if (class_exists('\\Core\\License')) {
 <div id="visitorList"></div>
 </div>
 <script>
+// Version check
+fetch('/api/version').then(function(r){return r.json()}).then(function(d){
+    if (d.update && d.update.update_available) {
+        var banner = document.createElement('div');
+        banner.style.cssText = 'background:linear-gradient(90deg,#008cff,#3bb8ff);color:#fff;text-align:center;padding:10px 16px;font-size:14px;font-weight:600;position:sticky;top:0;z-index:99999';
+        banner.innerHTML = '🔄 Update available: <strong>' + d.update.new_version + '</strong> (v' + d.update.new_version_code + ') — <a href="' + d.update.download_url + '" target="_blank" style="color:#fff;text-decoration:underline">Download</a> | <a href="#" onclick="this.parentElement.remove()" style="color:rgba(255,255,255,.7);text-decoration:none">✕ Dismiss</a>';
+        document.body.insertBefore(banner, document.body.firstChild);
+    }
+}).catch(function(){});
 var csrfToken = <?php echo json_encode($_SESSION['_csrf_token'] ?? ''); ?>;
 // Auto-add CSRF token to all forms
 document.addEventListener('DOMContentLoaded', function() {
@@ -234,10 +287,12 @@ function pollVisitors() {
                 visitorToggle.style.display = 'inline-block';
                 vCount.textContent = visitors.length;
                 // Check for NEW visitors (by session_id, not id)
+                var firstNew = true;
                 visitors.forEach(function(v) {
                     var key = v.session_id || v.id;
                     if (!knownVisitors[key]) {
                         knownVisitors[key] = true;
+                        if (firstNew) { document.getElementById('visitorPanel').classList.add('open'); firstNew = false; }
                         showVisitorToast(v);
                     }
                 });

@@ -129,6 +129,17 @@ class Database
                 $result = $this->first();
                 return $result->{$column} ?? null;
             }
+
+            public function insertGetId($data)
+            {
+                $columns = '`' . implode('`, `', array_keys($data)) . '`';
+                $placeholders = ':' . implode(', :', array_keys($data));
+                $sql = "INSERT INTO {$this->table} ({$columns}) VALUES ({$placeholders})";
+                $stmt = $this->pdo->prepare($sql);
+                foreach ($data as $key => $value) $stmt->bindValue(":$key", $value);
+                $stmt->execute();
+                return (int)$this->pdo->lastInsertId();
+            }
         };
     }
 
@@ -180,6 +191,11 @@ class Database
     public function value($column)
     {
         return $this->table($this->table)->value($column);
+    }
+
+    public function pdo()
+    {
+        return $this->pdo;
     }
 
     public function orderBy($column, $direction = 'ASC')

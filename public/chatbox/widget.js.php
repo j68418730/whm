@@ -3,13 +3,13 @@ header('Content-Type: application/javascript');
 header('Access-Control-Allow-Origin: *');
 
 $tenantId = (int)($_GET['tenant_id'] ?? 0);
-if (!$tenantId) { echo 'console.error("Chatbox: Invalid tenant_id"); exit; }
+if (!$tenantId) { echo 'console.error("Chatbox: Invalid tenant_id");'; exit; }
 
 $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
 $stmt = $pdo->prepare("SELECT * FROM chatbox_tenants WHERE id = ?");
 $stmt->execute([$tenantId]);
 $tenant = $stmt->fetch(PDO::FETCH_OBJ);
-if (!$tenant) { echo 'console.error("Chatbox: Tenant not found"); exit; }
+if (!$tenant) { echo 'console.error("Chatbox: Tenant not found");'; exit; }
 
 $rooms = $pdo->prepare("SELECT * FROM chatbox_rooms WHERE tenant_id = ? AND is_active = 1 ORDER BY sort_order");
 $rooms->execute([$tenantId]);
@@ -25,13 +25,49 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
     var logoUrl = <?php echo json_encode($tenant->logo_url ?? ''); ?>;
     var guestEnabled = <?php echo $tenant->guest_enabled ? 'true' : 'false'; ?>;
     var regEnabled = <?php echo $tenant->registration_enabled ? 'true' : 'false'; ?>;
-    var signalrUrl = 'http://45.61.59.55:5000/hub/chatbox';
+    var signalrUrl = 'http://45.61.59.55/hub/chatbox';
     var rooms = <?php echo json_encode($roomsList); ?>;
     var playerHtml = <?php echo json_encode($tenant->player_html ?? ''); ?>;
+    var currentTheme = <?php echo json_encode($tenant->theme ?? 'default'); ?>;
+    var customCss = <?php echo json_encode($tenant->custom_css ?? ''); ?>;
+
+    // Theme definitions
+    var themes = {
+        'default': { accent: '#008cff', bg: '#0a0e1a', text: '#ffffff', input: 'rgba(0,0,0,.2)', msg_bg: 'rgba(255,255,255,.06)', msg_own: 'rgba(0,140,255,.15)', border: 'rgba(255,255,255,.1)' },
+        'blue': { accent: '#0066ff', bg: '#001433', text: '#ffffff', input: 'rgba(0,0,0,.3)', msg_bg: 'rgba(255,255,255,.05)', msg_own: 'rgba(0,102,255,.15)', border: 'rgba(0,102,255,.2)' },
+        'black': { accent: '#333333', bg: '#000000', text: '#e0e0e0', input: 'rgba(255,255,255,.05)', msg_bg: 'rgba(255,255,255,.04)', msg_own: 'rgba(255,255,255,.08)', border: 'rgba(255,255,255,.06)' },
+        'white': { accent: '#0066cc', bg: '#f5f5f5', text: '#222222', input: 'rgba(0,0,0,.05)', msg_bg: 'rgba(0,0,0,.04)', msg_own: 'rgba(0,102,204,.1)', border: 'rgba(0,0,0,.1)' },
+        'gray': { accent: '#666666', bg: '#1a1a1a', text: '#cccccc', input: 'rgba(255,255,255,.06)', msg_bg: 'rgba(255,255,255,.04)', msg_own: 'rgba(255,255,255,.08)', border: 'rgba(255,255,255,.08)' },
+        'transparent': { accent: '#008cff', bg: 'transparent', text: '#ffffff', input: 'rgba(255,255,255,.1)', msg_bg: 'rgba(255,255,255,.06)', msg_own: 'rgba(0,140,255,.15)', border: 'rgba(255,255,255,.12)' },
+        'neon': { accent: '#00ff88', bg: '#001a0a', text: '#00ff88', input: 'rgba(0,255,136,.05)', msg_bg: 'rgba(0,255,136,.04)', msg_own: 'rgba(0,255,136,.12)', border: 'rgba(0,255,136,.2)' },
+        'gaming': { accent: '#ff6600', bg: '#0d0d0d', text: '#ff9933', input: 'rgba(255,102,0,.05)', msg_bg: 'rgba(255,102,0,.04)', msg_own: 'rgba(255,102,0,.12)', border: 'rgba(255,102,0,.2)' },
+        'hacker': { accent: '#00ff00', bg: '#000a00', text: '#00ff00', input: 'rgba(0,255,0,.05)', msg_bg: 'rgba(0,255,0,.04)', msg_own: 'rgba(0,255,0,.1)', border: 'rgba(0,255,0,.15)' },
+        'matrix': { accent: '#00cc41', bg: '#000502', text: '#00cc41', input: 'rgba(0,204,65,.05)', msg_bg: 'rgba(0,204,65,.04)', msg_own: 'rgba(0,204,65,.1)', border: 'rgba(0,204,65,.15)' },
+        'discord': { accent: '#5865f2', bg: '#313338', text: '#dbdee1', input: 'rgba(0,0,0,.3)', msg_bg: 'rgba(255,255,255,.04)', msg_own: 'rgba(88,101,242,.15)', border: 'rgba(255,255,255,.06)' },
+        'twitch': { accent: '#9146ff', bg: '#0e0e10', text: '#efeff1', input: 'rgba(255,255,255,.05)', msg_bg: 'rgba(255,255,255,.04)', msg_own: 'rgba(145,70,255,.15)', border: 'rgba(255,255,255,.06)' },
+        'retro': { accent: '#00ff00', bg: '#000080', text: '#00ff00', input: 'rgba(0,255,0,.1)', msg_bg: 'rgba(0,255,0,.05)', msg_own: 'rgba(0,255,0,.15)', border: 'rgba(0,255,0,.2)' },
+        'cyberpunk': { accent: '#f0f', bg: '#0a0014', text: '#fff', input: 'rgba(255,0,255,.05)', msg_bg: 'rgba(255,0,255,.04)', msg_own: 'rgba(255,0,255,.12)', border: 'rgba(255,0,255,.2)' },
+        'purple': { accent: '#a855f7', bg: '#0a0014', text: '#e9d5ff', input: 'rgba(168,85,247,.05)', msg_bg: 'rgba(168,85,247,.04)', msg_own: 'rgba(168,85,247,.12)', border: 'rgba(168,85,247,.15)' },
+        'red': { accent: '#ef4444', bg: '#140000', text: '#fca5a5', input: 'rgba(239,68,68,.05)', msg_bg: 'rgba(239,68,68,.04)', msg_own: 'rgba(239,68,68,.12)', border: 'rgba(239,68,68,.15)' },
+        'gold': { accent: '#f59e0b', bg: '#0a0800', text: '#fbbf24', input: 'rgba(245,158,11,.05)', msg_bg: 'rgba(245,158,11,.04)', msg_own: 'rgba(245,158,11,.12)', border: 'rgba(245,158,11,.15)' },
+        'spectre': { accent: '#7c3aed', bg: '#0d001a', text: '#c4b5fd', input: 'rgba(124,58,237,.05)', msg_bg: 'rgba(124,58,237,.04)', msg_own: 'rgba(124,58,237,.12)', border: 'rgba(124,58,237,.15)' },
+    };
+    // Apply theme
+    if (themes[currentTheme]) {
+        var t = themes[currentTheme];
+        accentColor = t.accent;
+        bgColor = t.bg;
+        textColor = t.text;
+    }
 
     // Create widget container
     var container = document.createElement('div');
     container.id = 'chatbox-widget';
+    if (customCss) {
+        var styleTag = document.createElement('style');
+        styleTag.textContent = customCss;
+        document.head.appendChild(styleTag);
+    }
     container.innerHTML = `
         <style>
             #chatbox-widget * { margin:0; padding:0; box-sizing:border-box; font-family:${fontFamily}; }
@@ -116,6 +152,7 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
                 </div>
                 <div style="display:flex;gap:4px;width:100%">
                     <button id="cb-voice-btn" class="cb-voice-btn" onclick="cbToggleVoice()">🎤 Voice</button>
+                    <button class="cb-voice-btn" onclick="cbToggleEmojiPicker()">😊 Emoji</button>
                 </div>
             </div>
         </div>
@@ -184,6 +221,18 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
                 var el = document.querySelector('[data-msg-id="' + data.messageId + '"]');
                 if (el) el.remove();
             });
+            connection.on('MessageReacted', function(data) { addSystemMsg(data.username + ' reacted with ' + data.emoji); });
+            connection.on('PrivateMessage', function(data) {
+                alert('💬 Private message from ' + data.from + ': ' + data.message);
+                addSystemMsg('Private from ' + data.from + ': ' + data.message);
+            });
+            connection.on('ModeratorAction', function(data) {
+                addSystemMsg('🔨 ' + data.by + ' ' + data.action + ' ' + data.target + (data.reason ? ' (' + data.reason + ')' : ''));
+                if ((data.action === 'ban' || data.action === 'kick') && data.target === (currentUser ? currentUser.username : '')) {
+                    alert('You have been ' + data.action + (data.reason ? ': ' + data.reason : ''));
+                    if (data.action === 'ban') setTimeout(function() { location.reload(); }, 2000);
+                }
+            });
 
             connection.start().then(function() {
                 if (currentRoom) {
@@ -241,19 +290,31 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
         el.className = 'cb-msg' + (msg.messageType === 'system' ? ' system' : '');
         el.setAttribute('data-msg-id', msg.id);
         var isMine = msg.username === (currentUser ? currentUser.username : '');
-        var bubble = document.createElement('div');
-        bubble.className = 'bubble';
-        if (msg.messageType === 'image') {
-            bubble.innerHTML = '<img src="' + msg.imageUrl + '" class="cb-msg-img" onclick="window.open(this.src)">';
+        var roleBadge = '';
+        if (msg.role === 'owner') roleBadge = '<span style="color:#facc15;font-size:10px;margin-left:4px" title="Owner">👑</span>';
+        else if (msg.role === 'admin') roleBadge = '<span style="color:#ef4444;font-size:10px;margin-left:4px" title="Admin">🛡️</span>';
+        else if (msg.role === 'mod') roleBadge = '<span style="color:#38bdf8;font-size:10px;margin-left:4px" title="Mod">⚔️</span>';
+
+        if (msg.messageType === 'system') {
+            el.innerHTML = '<div class="bubble" style="font-size:11px;color:rgba(255,255,255,.4);background:transparent;text-align:center;width:100%">' + msg.message + '</div>';
         } else {
-            bubble.textContent = msg.message;
-        }
-        el.appendChild(bubble);
-        if (!isMine && msg.messageType !== 'system') {
-            var meta = document.createElement('div');
-            meta.className = 'meta';
-            meta.textContent = msg.displayName || msg.username;
-            el.appendChild(meta);
+            el.innerHTML = '<div style="display:flex;flex-direction:column;width:100%">' +
+                '<div style="font-size:10px;color:' + (accentColor || '#008cff') + ';margin-bottom:2px">' +
+                (msg.displayName || msg.username) + roleBadge +
+                ' <span style="color:#64748b;font-size:9px">' + (msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString() : '') + '</span></div>' +
+                '<div class="bubble">' + (msg.message || '').replace(/</g,'&lt;') + '</div>' +
+                '<div style="display:flex;gap:4px;margin-top:2px;font-size:10px">' +
+                '<span onclick="cbReactToMessage(' + msg.id + ',\'👍\')" style="cursor:pointer;color:#64748b">👍</span>' +
+                '<span onclick="cbReactToMessage(' + msg.id + ',\'❤️\')" style="cursor:pointer;color:#64748b">❤️</span>' +
+                '<span onclick="cbReactToMessage(' + msg.id + ',\'😂\')" style="cursor:pointer;color:#64748b">😂</span>' +
+                (!isMine ? '<span onclick="cbPrivateMessage(\'' + (msg.username||'') + '\')" style="cursor:pointer;color:#64748b" title="Private reply">💬</span>' : '') +
+                (currentUser && (currentUser.role === 'mod' || currentUser.role === 'admin' || currentUser.role === 'owner') ?
+                    '<span onclick="cbDeleteMessage(' + msg.id + ')" style="cursor:pointer;color:#f87171" title="Delete">🗑</span>' +
+                    '<span onclick="cbKickUser(\'' + (msg.username||'') + '\')" style="cursor:pointer;color:#facc15" title="Kick">👢</span>' +
+                    '<span onclick="cbBanUser(\'' + (msg.username||'') + '\')" style="cursor:pointer;color:#ef4444" title="Ban">🚫</span>' +
+                    '<span onclick="cbMuteUser(\'' + (msg.username||'') + '\')" style="cursor:pointer;color:#f59e0b" title="Mute">🔇</span>'
+                : '') +
+                '</div></div>';
         }
         div.appendChild(el);
         div.scrollTop = div.scrollHeight;
@@ -294,6 +355,52 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
             + '<button onclick="cbRegister()">Register</button>'
             + '<br><br><button onclick="showJoinForm()" style="font-size:12px;background:transparent;color:' + accentColor + '">Back</button>';
     };
+
+    // ─── Emoji Picker ───
+    var emojiList = ['😊','😂','❤️','👍','🎉','😍','🤔','👋','🔥','💀','😎','🙏','💯','⭐','🎶','😢','😡','🥳','🤯','😱','🤗','🤩','😈','👽','💩','🎸','🥺','😴','🤠','👾'];
+
+    window.cbToggleEmojiPicker = function() {
+        var picker = document.getElementById('cb-emoji-picker');
+        if (picker) { picker.remove(); return; }
+        picker = document.createElement('div');
+        picker.id = 'cb-emoji-picker';
+        picker.style.cssText = 'position:absolute;bottom:100px;left:12px;background:' + bgColor + ';border:1px solid ' + accentColor + ';border-radius:10px;padding:10px;display:grid;grid-template-columns:repeat(8,1fr);gap:4px;z-index:999;box-shadow:0 5px 20px rgba(0,0,0,.5)';
+        emojiList.forEach(function(e) {
+            var s = document.createElement('span');
+            s.textContent = e;
+            s.style.cssText = 'cursor:pointer;font-size:22px;padding:4px;text-align:center;border-radius:4px';
+            s.onclick = function() { document.getElementById('cb-msg-input').value += e; document.getElementById('cb-msg-input').focus(); picker.remove(); };
+            picker.appendChild(s);
+        });
+        document.getElementById('cb-input').appendChild(picker);
+    };
+
+    // ─── Message Actions (reply, react, report, delete) ───
+    window.cbReactToMessage = function(msgId, emoji) {
+        if (connection && connection.state === 'Connected')
+            connection.invoke('ReactToMessage', tenantId.toString(), currentRoom.toString(), msgId, emoji);
+    };
+
+    window.cbDeleteMessage = function(msgId) {
+        if (connection && connection.state === 'Connected')
+            connection.invoke('DeleteMessage', tenantId.toString(), currentRoom.toString(), msgId);
+    };
+
+    window.cbReportMessage = function(msgId) {
+        var reason = prompt('Reason for reporting this message?');
+        if (reason && connection && connection.state === 'Connected')
+            connection.invoke('ModeratorAction', tenantId.toString(), currentRoom.toString(), 'report', msgId.toString(), reason);
+    };
+
+    window.cbPrivateMessage = function(username) {
+        var msg = prompt('Private message to ' + username + ':');
+        if (msg && connection && connection.state === 'Connected')
+            connection.invoke('SendPrivateMessage', tenantId.toString(), username, msg);
+    };
+
+    window.cbKickUser = function(username) { if (confirm('Kick ' + username + '?')) connection.invoke('ModeratorAction', tenantId.toString(), currentRoom.toString(), 'kick', username, ''); };
+    window.cbBanUser = function(username) { var r = prompt('Ban reason for ' + username + ':'); if (r) connection.invoke('ModeratorAction', tenantId.toString(), currentRoom.toString(), 'ban', username, r); };
+    window.cbMuteUser = function(username) { var r = prompt('Mute reason for ' + username + ':'); if (r) connection.invoke('ModeratorAction', tenantId.toString(), currentRoom.toString(), 'mute', username, r); };
 
     // ─── Voice Call ───
     var localStream = null;

@@ -1,3 +1,4 @@
+<?php $currentTab = 'smtp'; require __DIR__ . '/_tabs.php'; ?>
 <div class="card" style="max-width:500px">
 <form method="POST" action="/admin/settings/smtp/save">
 <h3 style="color:var(--accent);margin-bottom:12px">SMTP Settings</h3>

@@ -22,7 +22,13 @@ class StreamsController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         license_check('radio');
         $user = $this->auth->user();
-        $streams = $this->db->table('radio_streams')->get() ?: [];
+        $rows = $this->db->table('radio_streams')->get() ?: [];
+        $streams = [];
+        foreach ($rows as $s) {
+            $u = $this->db->table('hosting_users')->where('id', $s->user_id)->first();
+            $s->user_name = $u ? $u->username . ' (' . $u->email . ')' : 'Unassigned';
+            $streams[] = $s;
+        }
         $total = count($streams);
         $active = 0;
         foreach ($streams as $s) { if ($s->status === 'running') $active++; }
@@ -46,14 +52,20 @@ class StreamsController extends Controller
     public function store()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $port = (int)$this->request->post('port', 8000);
+        require_once BASE_PATH . '/core/PortManager.php';
+        $pm = new \Core\PortManager();
+        $port = $pm->allocate('icecast');
+        if (!$port) { $_SESSION['error_message'] = 'No available ports in icecast range (6000-10000).'; $this->response->redirect('/admin/streams/create'); exit; }
         $password = $this->request->post('password', bin2hex(random_bytes(8)));
         $uid = (int)$this->request->post('user_id', 0);
-        $existing = $this->db->table('radio_streams')->where('port', $port)->first();
-        if ($existing) { $_SESSION['success_message'] = "Port $port is already in use."; $this->response->redirect('/admin/streams/create'); exit; }
+        $name = trim($this->request->post('server_name', ''));
+        $mount = trim($this->request->post('mount_point', '/live'));
+        $bitrate = (int)$this->request->post('bitrate', 128);
+        $format = $this->request->post('format', 'mp3');
         $configPath = "/home/radio/streams/{$uid}_icecast.xml";
         $this->db->table('radio_streams')->insertGetId([
-            'user_id' => $uid, 'server_type' => 'icecast', 'port' => $port,
+            'user_id' => $uid, 'server_type' => 'icecast', 'server_name' => $name ?: "Stream {$uid}",
+            'port' => $port, 'mount_point' => $mount, 'bitrate' => $bitrate, 'format' => $format,
             'password' => password_hash($password, PASSWORD_DEFAULT), 'config_path' => $configPath, 'status' => 'stopped',
         ]);
         $_SESSION['success_message'] = "Stream created on port $port. Source password: $password";

@@ -16,11 +16,14 @@ return [
         // Radio streaming (Icecast, SHOUTcast, AutoDJ, transcoding)
         \Plugins\Radio\RadioPlugin::class,
 
+        // Game Servers (CS2, TF2, MC, etc.)
+        \Plugins\GameServers\GameServersPlugin::class,
+
         // Billing system (invoices, subscriptions, payments)
         // \Plugins\Billing\BillingPlugin::class,
 
         // Website builder (AI site generator, templates)
-        // \Plugins\WebsiteBuilder\WebsiteBuilderPlugin::class,
+        \Plugins\WebsiteBuilder\WebsiteBuilderPlugin::class,
     ],
 
     /*

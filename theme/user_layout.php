@@ -73,11 +73,17 @@ $isReseller = stripos($packageType, 'reseller') !== false;
 <div class="nav-group"><div class="label">Home</div><a href="/user">Dashboard</a></div>
 <div class="nav-group"><div class="label">Services</div><a href="/user/services">My Services</a>
 <?php if ($hasWeb): ?><a href="/user/services/web">Web Hosting</a><?php endif; ?>
-<?php if ($hasRadio): ?><a href="/user/services/radio">Radio Hosting</a><?php endif; ?>
+<?php if ($hasRadio): ?><a href="/user/services/radio">Radio Hosting</a>
+<a href="/user/dj-manager" style="font-size:12px;padding-left:20px;color:#a78bfa">🎤 DJ Manager</a>
+<a href="/dj_hub.php?action=public" target="_blank" style="font-size:12px;padding-left:20px;color:#a78bfa">🎤 DJ List</a>
+<a href="/dj_hub.php?action=public_schedule" target="_blank" style="font-size:12px;padding-left:20px;color:#facc15">📅 Schedule</a>
+<a href="/dj_hub.php?action=listen&stream=1" target="_blank" style="font-size:12px;padding-left:20px;color:#4ade80">🎧 Listen Live</a>
+<a href="http://<?php echo $serverHost; ?>:2100/dj_panel.php" target="_blank" style="font-size:12px;padding-left:20px;color:#38bdf8">🎤 DJ Panel</a><?php endif; ?>
 <?php if ($hasVps): ?><a href="/user/services/vps">VPS</a><?php endif; ?>
 <a href="/user/services/domains">Domains</a></div>
 <?php if ($hasChatbox): ?>
-<div class="nav-group"><div class="label">Chat</div><a href="/chatbox/admin.php">💬 Chat Room</a></div>
+<div class="nav-group"><div class="label">Chat</div><a href="/user/chat">💬 My Chat Room</a>
+<a href="http://<?php echo $serverHost; ?>:2101/chatbox/embed.php?tenant_id=<?php echo $chatboxTenantId; ?>" target="_blank" style="font-size:12px;padding-left:20px;color:#a78bfa">🎧 Chat Widget</a></div>
 <?php endif; ?>
 <div class="nav-group"><div class="label">Domains</div><a href="/user/domains">Domain List</a><a href="/user/domains/add">Add Domain</a><a href="/user/subdomains">Subdomains</a><a href="/user/redirects">Redirects</a></div>
 <div class="nav-group"><div class="label">Email</div><a href="/user/email">Email Accounts</a><a href="http://<?php echo $serverHost; ?>:<?php echo $webmailPort; ?>/" target="_blank">Webmail</a></div>
@@ -85,7 +91,7 @@ $isReseller = stripos($packageType, 'reseller') !== false;
 <?php if ($hasRadio): ?><a href="/dj_panel.php" target="_blank">🎤 DJ Panel</a><?php endif; ?>
 </div>
 <div class="nav-group"><div class="label">Support</div><a href="/user/tickets">Support Tickets</a><a href="/user/invoices">Invoices</a></div>
-<div class="nav-group"><div class="label">Account</div><a href="/user/profile">Profile</a><a href="/user/security">Security</a></div>
+<div class="nav-group"><div class="label">Account</div><a href="/user/profile">Profile</a><a href="/user/security">Security</a><a href="/user/admins">👥 Admins & Permissions</a></div>
 <div class="nav-group" style="margin-top:8px"><a href="/user/logout" style="color:#ff6b6b">Logout</a></div>
 </div>
 <div class="user-main">

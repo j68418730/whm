@@ -1,7 +1,7 @@
 <?php
 $room = $_GET['room'] ?? '';
 if (!$room) { header('Location: /voice/admin.php'); exit; }
-$signalrUrl = "http://45.61.59.55:5000/hub/chat";
+$signalrUrl = "http://45.61.59.55/hub/chat";
 ?>
 <!DOCTYPE html>
 <html lang="en">

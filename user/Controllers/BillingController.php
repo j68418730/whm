@@ -47,6 +47,67 @@ class BillingController extends Controller
         return $this->view('user.invoices', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Invoices', 'invoices' => $invoices]);
     }
 
+    // Payment Methods
+    public function paymentMethods()
+    {
+        $u = $this->loadUser();
+        $uid = $this->hostingUser->id ?? 0;
+        $methods = [];
+        try { $methods = $this->db->table('user_payment_methods')->where('user_id', $uid)->get() ?: []; } catch (\Exception $e) {}
+        return $this->view('user.payment_methods', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Payment Methods', 'methods' => $methods]);
+    }
+
+    public function addMethod()
+    {
+        $u = $this->loadUser();
+        $uid = $this->hostingUser->id ?? 0;
+        if (!$uid) { $this->response->redirect('/user/billing'); exit; }
+        $type = $this->request->post('type', 'card');
+        $details = $this->request->post('details', '');
+        $billingAddress = $this->request->post('billing_address', '');
+        // Create table if needed
+        try {
+            $this->db->pdo()->exec("CREATE TABLE IF NOT EXISTS user_payment_methods (
+                id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL,
+                type VARCHAR(50) NOT NULL DEFAULT 'card',
+                details TEXT, billing_address TEXT,
+                is_default TINYINT DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        } catch (\Exception $e) {}
+        // If first method, make it default
+        $existing = $this->db->table('user_payment_methods')->where('user_id', $uid)->get() ?: [];
+        $isDefault = count($existing) === 0 ? 1 : 0;
+        $this->db->table('user_payment_methods')->insertGetId([
+            'user_id' => $uid, 'type' => $type,
+            'details' => $details, 'billing_address' => $billingAddress,
+            'is_default' => $isDefault,
+        ]);
+        $_SESSION['success_message'] = 'Payment method added.';
+        $this->response->redirect('/user/billing/payment-methods');
+        exit;
+    }
+
+    public function deleteMethod($id)
+    {
+        $u = $this->loadUser();
+        $uid = $this->hostingUser->id ?? 0;
+        $this->db->table('user_payment_methods')->where('id', $id)->where('user_id', $uid)->delete();
+        $_SESSION['success_message'] = 'Payment method removed.';
+        $this->response->redirect('/user/billing/payment-methods');
+        exit;
+    }
+
+    public function defaultMethod($id)
+    {
+        $u = $this->loadUser();
+        $uid = $this->hostingUser->id ?? 0;
+        $this->db->table('user_payment_methods')->where('user_id', $uid)->update(['is_default' => 0]);
+        $this->db->table('user_payment_methods')->where('id', $id)->where('user_id', $uid)->update(['is_default' => 1]);
+        $_SESSION['success_message'] = 'Default payment method updated.';
+        $this->response->redirect('/user/billing/payment-methods');
+        exit;
+    }
+
     public function pay($id)
     {
         $u = $this->loadUser();

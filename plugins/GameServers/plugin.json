@@ -1,0 +1,27 @@
+<?php
+/**
+ * Game Servers Plugin - Planet Hosts
+ * Manage Linux game servers with one-click install and real-time status
+ */
+return [
+    'name' => 'Game Servers',
+    'version' => '1.0.0',
+    'description' => 'Deploy and manage Linux dedicated game servers. Supports CS2, TF2, Minecraft, Valheim, ARK, and 20+ more games with one-click install and real-time status.',
+    'author' => 'Planet Hosts',
+    'icon' => '🎮',
+    'routes' => __DIR__ . '/routes.php',
+    'database' => __DIR__ . '/Database/schema.sql',
+    'services' => [
+        'GameServerManager' => 'GameServers\Services\GameServerManager',
+    ],
+    'admin_menu' => [
+        'label' => 'Game Servers',
+        'icon' => '🎮',
+        'route' => '/admin/games',
+    ],
+    'user_menu' => [
+        'label' => 'Game Servers',
+        'icon' => '🎮',
+        'route' => '/user/games',
+    ],
+];

@@ -47,11 +47,18 @@ class ServerOverviewController extends Controller
         $checks[] = ['name' => 'Web Server', 'test' => $this->checkService('apache2', 'httpd'), 'severity' => 'critical'];
         $checks[] = ['name' => 'Database', 'test' => $this->checkService('mariadb', 'mysql'), 'severity' => 'critical'];
         $checks[] = ['name' => 'Mail Server', 'test' => $this->checkService('postfix', 'exim'), 'severity' => 'high'];
+        $checks[] = ['name' => 'Dovecot', 'test' => $this->checkService('dovecot'), 'severity' => 'high'];
         $checks[] = ['name' => 'FTP Server', 'test' => $this->checkService('vsftpd', 'pure-ftpd'), 'severity' => 'low'];
         $checks[] = ['name' => 'DNS Server', 'test' => $this->checkService('bind9', 'named'), 'severity' => 'high'];
         $checks[] = ['name' => 'SSH', 'test' => $this->checkService('ssh', 'sshd'), 'severity' => 'high'];
         $checks[] = ['name' => 'Icecast', 'test' => $this->checkService('icecast2', 'icecast'), 'severity' => 'low'];
-        $checks[] = ['name' => 'PHP-FPM', 'test' => $this->checkService('php8.2-fpm', 'php-fpm'), 'severity' => 'medium'];
+        // Detect all PHP-FPM versions
+        $phpServices = $this->detectPhpVersions();
+        foreach ($phpServices as $ps) {
+            $checks[] = ['name' => $ps['label'], 'test' => $ps['status'], 'severity' => 'medium'];
+        }
+        $checks[] = ['name' => 'Firewall', 'test' => $this->checkService('firewalld', 'ufw'), 'severity' => 'high'];
+        $checks[] = ['name' => 'Fail2Ban', 'test' => $this->checkService('fail2ban'), 'severity' => 'medium'];
         $checks[] = ['name' => 'Redis', 'test' => $this->checkService('redis-server', 'redis'), 'severity' => 'low'];
         $checks[] = ['name' => 'Disk Space', 'test' => $this->checkDisk(), 'severity' => 'high'];
         $checks[] = ['name' => 'Memory', 'test' => $this->checkMemory(), 'severity' => 'high'];
@@ -89,6 +96,30 @@ class ServerOverviewController extends Controller
         if ($pct > 95) return ['status' => 'fail', 'msg' => sprintf('%.1f%% used', $pct)];
         if ($pct > 85) return ['status' => 'warn', 'msg' => sprintf('%.1f%% used', $pct)];
         return ['status' => 'pass', 'msg' => sprintf('%.1f%% used', $pct)];
+    }
+
+    private function detectPhpVersions()
+    {
+        $versions = [];
+        exec('ls /usr/bin/php* 2>/dev/null', $out);
+        foreach ($out as $p) {
+            if (preg_match('/php(\d+\.\d+)$/', $p, $m)) {
+                $ver = $m[1];
+                $svc = "php{$ver}-fpm";
+                $active = trim(shell_exec("systemctl is-active {$svc} 2>/dev/null") ?: 'missing');
+                $versions[] = [
+                    'label' => "PHP {$ver}-FPM",
+                    'status' => [
+                        'status' => $active === 'active' ? 'pass' : ($active === 'missing' ? 'warn' : ($active === 'inactive' ? 'warn' : 'fail')),
+                        'msg' => $active === 'active' ? "Running" : ($active === 'missing' ? "FPM not installed" : "Installed (inactive)")
+                    ]
+                ];
+            }
+        }
+        if (empty($versions)) {
+            $versions[] = ['label' => 'PHP-FPM', 'status' => ['status' => 'warn', 'msg' => 'No PHP versions detected']];
+        }
+        return $versions;
     }
 
     private function checkCpu()

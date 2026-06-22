@@ -168,4 +168,14 @@ class RadioController extends Controller
         $this->response->redirect('/radio/stream/' . $streamId);
         exit;
     }
+
+    public function widgets()
+    {
+        if (!$this->auth->check()) { $this->response->redirect('/?login'); exit; }
+        $userId = $this->auth->user()->id;
+        $streams = $this->streamManager->getUserStreams($userId);
+        return $this->view('Plugins.Radio.Views.user.radio.widgets', [
+            'user' => $this->auth->user(), 'streams' => $streams, 'title' => 'Radio Widgets'
+        ]);
+    }
 }

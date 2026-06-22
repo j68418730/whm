@@ -115,6 +115,24 @@ class ApiController extends Controller {
         return $this->view('admin.api.docs', ['user' => $user, 'endpoints' => $endpoints, 'theme_settings' => $this->theme(), 'title' => 'API Documentation']);
     }
 
+    public function logs()
+    {
+        $this->guard();
+        $user = $this->auth->user();
+        $logs = [];
+        try {
+            $logs = $this->db->table('api_logs')->orderBy('created_at', 'DESC')->limit(50)->get() ?: [];
+        } catch (\Throwable $e) {
+            $logs = [];
+        }
+        return $this->view('admin.api.logs', [
+            'user' => $user,
+            'logs' => $logs,
+            'theme_settings' => $this->theme(),
+            'title' => 'API Logs',
+        ]);
+    }
+
     private function getEndpoints()
     {
         $base = 'https://45.61.59.55';

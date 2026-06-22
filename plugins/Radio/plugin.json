@@ -1,0 +1,1 @@
+{"name":"Radio","version":"2.0","author":"Planet-Hosts","description":"Icecast radio streaming with AutoDJ, DJ accounts, and billing integration.","routes":"routes.php","controllers":"Controllers","views":"Views","services":"Services","entry":"RadioPlugin.php"}

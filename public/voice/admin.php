@@ -1,6 +1,6 @@
 <?php
 $room = bin2hex(random_bytes(4));
-$signalrUrl = "http://45.61.59.55:5000/hub/chat";
+$signalrUrl = "http://45.61.59.55/hub/chat";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -136,7 +136,7 @@ connection.start().then(function() {
     connection.invoke('JoinVoiceRoom', roomId);
     setStatus('waiting', '🟢 Connected. Waiting for client...');
 }).catch(function(e) {
-    setStatus('error', '❌ SignalR connection failed');
+    setStatus('error', '❌ SignalR: ' + (e.message || e || 'Connection failed'));
 });
 </script>
 </body>

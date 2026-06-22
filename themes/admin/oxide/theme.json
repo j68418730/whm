@@ -1,0 +1,29 @@
+{
+  "type": "admin",
+  "description": "oxide theme for Planet-Hosts admin panel.",
+  "version": "2.0",
+  "author": "Planet-Hosts",
+  "assets": {
+    "css": [
+      "assets/css/theme.css"
+    ],
+    "js": []
+  },
+  "name": "en-US.TextInfo.ToTitleCase(oxide) Admin",
+  "fonts": {
+    "heading": "'Inter', sans-serif",
+    "body": "'Inter', sans-serif"
+  },
+  "colors": {
+    "bg": "#020a05",
+    "card_bg": "rgba(4,26,14,.6)",
+    "success": "#4ade80",
+    "border": "rgba(16,185,129,.1)",
+    "danger": "#f87171",
+    "warning": "#facc15",
+    "sidebar_bg": "#041a0e",
+    "text": "#e0e0e0",
+    "text_muted": "#64748b",
+    "primary": "#10b981"
+  }
+}

@@ -11,7 +11,11 @@ class View
     {
         $this->viewPath = rtrim(BASE_PATH, '/');
         if ($viewPath) {
-            $this->viewPath .= '/' . str_replace('.', '/', trim($viewPath, '/'));
+            $path = str_replace('.', '/', trim($viewPath, '/'));
+            // Lowercase first segment for Linux
+            $segments = explode('/', $path);
+            $segments[0] = strtolower($segments[0]);
+            $this->viewPath .= '/' . implode('/', $segments);
         }
     }
 
@@ -37,6 +41,21 @@ class View
         }
 
         if (!is_file($viewFile)) {
+            // Try lowercase first segment (Linux case fix)
+            $parts = explode('/', $viewFile);
+            $basePath = BASE_PATH;
+            $relPath = substr($viewFile, strlen($basePath) + 1);
+            $segments = explode('/', $relPath);
+            if (!empty($segments)) {
+                $segments[0] = strtolower($segments[0]);
+                $lowerFile = $basePath . '/' . implode('/', $segments);
+                if (is_file($lowerFile)) {
+                    $viewFile = $lowerFile;
+                }
+            }
+        }
+
+        if (!is_file($viewFile)) {
             return $this->renderFallback($viewFile);
         }
 
@@ -47,6 +66,64 @@ class View
 
         $isAdmin = str_contains($viewFile, '/admin/') || str_contains($viewFile, '\admin\\');
         $isUser = str_contains($viewFile, '/user/') || str_contains($viewFile, '\user\\');
+
+        // Try theme engine for admin AND user views
+        if ($isAdmin || $isUser) {
+            require_once BASE_PATH . '/core/ThemeEngine.php';
+            $te = \Core\ThemeEngine::getInstance();
+            $theme = $te->getAdminTheme();
+            if ($theme && isset($theme['dir'])) {
+                $layoutFile = $isUser ? ($theme['dir'] . '/user_layout.php') : ($theme['dir'] . '/layout.php');
+                if (!is_file($layoutFile)) $layoutFile = $theme['dir'] . '/layout.php';
+                if (is_file($layoutFile)) {
+                    // Strip full HTML from views that have DOCTYPE (legacy standalone views)
+                    $bodyContent = $content;
+                    if (preg_match('/<body[^>]*>(.*)<\/body>/si', $content, $m)) {
+                        $bodyContent = $m[1];
+                    } elseif (preg_match('/<main[^>]*>(.*)<\/main>/si', $content, $m)) {
+                        $bodyContent = $m[1];
+                    }
+                    $content = $bodyContent;
+                    $title = $this->data['title'] ?? 'Dashboard';
+                    $user = $this->data['user'] ?? null;
+                    $hosting = $this->data['hosting'] ?? null;
+                    $theme_settings = $this->data['theme_settings'] ?? [];
+                    ob_start();
+                    require $layoutFile;
+                    return ob_get_clean();
+                }
+            }
+        }
+
+        if ($isAdmin && !$isUser) {
+            require_once BASE_PATH . '/core/ThemeEngine.php';
+            $te = \Core\ThemeEngine::getInstance();
+            $theme = $te->getAdminTheme();
+            if ($theme && isset($theme['dir'])) {
+                $layoutFile = $theme['dir'] . '/layout.php';
+                if (is_file($layoutFile)) {
+                    $title = $this->data['title'] ?? 'Dashboard';
+                    $user = $this->data['user'] ?? null;
+                    ob_start();
+                    require $layoutFile;
+                    return ob_get_clean();
+                }
+            }
+            // Fallback to old admin_layout.php
+            $bodyContent = $content;
+            if (preg_match('/<body[^>]*>(.*)<\/body>/si', $content, $m)) {
+                $bodyContent = $m[1];
+            }
+            $layoutFile = BASE_PATH . '/theme/admin_layout.php';
+            if (is_file($layoutFile)) {
+                $title = $this->data['title'] ?? 'Dashboard';
+                $user = $this->data['user'] ?? null;
+                ob_start();
+                require $layoutFile;
+                return ob_get_clean();
+            }
+            return $bodyContent;
+        }
 
         if ($isUser && !$isAdmin) {
             $layoutFile = BASE_PATH . '/theme/user_layout.php';

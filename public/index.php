@@ -41,6 +41,21 @@ spl_autoload_register(function ($class) {
     $lowerFile = BASE_PATH . '/' . implode('/', $parts);
     if (is_file($lowerFile)) {
         require $lowerFile;
+        return;
+    }
+    // Plugin fallback: check plugins/{Namespace}
+    $pluginFile = BASE_PATH . '/plugins/' . $relative;
+    if (is_file($pluginFile)) {
+        require $pluginFile;
+        return;
+    }
+    $pluginParts = explode('/', $relative);
+    if (count($pluginParts) > 1) {
+        $pluginParts[0] = strtolower($pluginParts[0]);
+        $pluginLower = BASE_PATH . '/plugins/' . implode('/', $pluginParts);
+        if (is_file($pluginLower)) {
+            require $pluginLower;
+        }
     }
 });
 

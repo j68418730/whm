@@ -1,0 +1,1 @@
+{"name":"WebsiteBuilder","version":"1.0","author":"Planet-Hosts","description":"AI-powered website builder with premade templates.","routes":"routes.php","controllers":"Controllers","views":"Views","services":"Services","entry":"WebsiteBuilderPlugin.php"}
