@@ -18,22 +18,15 @@ class SupportStatusController extends Controller
 
     public function get()
     {
-        // Aggregate all admin statuses
-        $admins = [];
-        try {
-            $rows = $this->db->table('automation_settings')->get() ?: [];
-            foreach ($rows as $r) {
-                if (str_starts_with($r->setting_key, 'support_status_admin_')) {
-                    $admins[] = $r->setting_value;
-                }
-            }
-        } catch (\Exception $e) {}
-
-        $status = 'offline';
-        if (in_array('online', $admins)) {
-            $status = 'online';
-        } elseif (in_array('away', $admins)) {
-            $status = 'away';
+        // Return the current admin's personal status
+        $status = 'online';
+        if ($this->auth->check() && $this->auth->isAdmin()) {
+            $adminId = $this->auth->user()->id;
+            $key = "support_status_admin_{$adminId}";
+            try {
+                $row = $this->db->table('automation_settings')->where('setting_key', $key)->first();
+                if ($row) $status = $row->setting_value;
+            } catch (\Exception $e) {}
         }
 
         $this->response->json(['status' => $status]);
