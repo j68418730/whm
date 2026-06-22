@@ -1,3 +1,4 @@
+<?php $currentTab = 'company'; require __DIR__ . '/_tabs.php'; ?>
 <div class="card" style="max-width:500px">
 <form method="POST" action="/admin/settings/company/save">
 <h3 style="color:var(--accent);margin-bottom:12px">Company Settings</h3>

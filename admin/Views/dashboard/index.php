@@ -45,16 +45,26 @@ $services = $services ?? [];
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
 <?php foreach ($services as $svc): ?>
 <div style="display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:4px;font-size:12px;background:rgba(255,255,255,.02)">
-<span style="width:8px;height:8px;border-radius:50%;background:<?php echo $svc['active'] ? '#4ade80' : '#ef4444'; ?>;flex-shrink:0"></span>
-<span style="color:<?php echo $svc['active'] ? '#e0e0e0' : '#f87171'; ?>"><?php echo htmlspecialchars($svc['name']); ?></span>
+<span style="width:8px;height:8px;border-radius:50%;background:<?php echo $svc['active'] ? '#4ade80' : ((($svc['status'] ?? '') === 'active' || ($svc['status'] ?? '') === '') ? '#64748b' : '#facc15'); ?>;flex-shrink:0"></span>
+<span style="color:<?php echo $svc['active'] ? '#e0e0e0' : ((($svc['status'] ?? '') === 'active' || ($svc['status'] ?? '') === '') ? '#64748b' : '#facc15'); ?>"><?php echo htmlspecialchars($svc['name']); ?></span>
 </div>
 <?php endforeach; ?>
 </div>
 </div>
 </div>
 
-<!-- ─── Recent Activity + Quick Actions ─── -->
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px">
+<!-- ─── Quick Actions + Recent Activity ─── -->
+<div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:16px">
+<div class="card">
+<h3 style="color:var(--accent);font-size:14px;margin-bottom:12px"><i class="fas fa-bolt"></i> Quick Actions</h3>
+<a href="/admin/account" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(0,140,255,.08);border:1px solid rgba(0,191,255,.12);border-radius:8px;text-decoration:none;color:#fff;margin-bottom:6px;transition:.2s;font-size:13px"><i class="fas fa-user-plus" style="color:var(--accent)"></i> Create Account</a>
+<a href="/admin/account" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.12);border-radius:8px;text-decoration:none;color:#fff;margin-bottom:6px;transition:.2s;font-size:13px"><i class="fas fa-pause-circle" style="color:#f87171"></i> Suspend Account</a>
+<a href="/admin/packages" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.12);border-radius:8px;text-decoration:none;color:#fff;margin-bottom:6px;transition:.2s;font-size:13px"><i class="fas fa-box" style="color:#4ade80"></i> Manage Packages</a>
+<a href="/admin/backup" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.12);border-radius:8px;text-decoration:none;color:#fff;margin-bottom:6px;transition:.2s;font-size:13px"><i class="fas fa-database" style="color:#fbbf24"></i> Backups</a>
+<a href="/admin/security" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.12);border-radius:8px;text-decoration:none;color:#fff;margin-bottom:6px;transition:.2s;font-size:13px"><i class="fas fa-shield-alt" style="color:#a855f7"></i> Security Center</a>
+<a href="/admin/support" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(236,72,153,.06);border:1px solid rgba(236,72,153,.12);border-radius:8px;text-decoration:none;color:#fff;transition:.2s;font-size:13px"><i class="fas fa-headset" style="color:#ec4899"></i> Support Center</a>
+</div>
+
 <div class="card">
 <h3 style="color:var(--accent);font-size:14px;margin-bottom:12px"><i class="fas fa-clock"></i> Recent Activity</h3>
 
@@ -92,35 +102,167 @@ $services = $services ?? [];
 <p style="color:#64748b;font-size:13px">No recent activity yet.</p>
 <?php endif; ?>
 </div>
-
-<div class="card">
-<h3 style="color:var(--accent);font-size:14px;margin-bottom:12px"><i class="fas fa-bolt"></i> Quick Actions</h3>
-<a href="/admin/account" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(0,140,255,.08);border:1px solid rgba(0,191,255,.12);border-radius:8px;text-decoration:none;color:#fff;margin-bottom:6px;transition:.2s;font-size:13px"><i class="fas fa-user-plus" style="color:var(--accent)"></i> Create Account</a>
-<a href="/admin/account" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.12);border-radius:8px;text-decoration:none;color:#fff;margin-bottom:6px;transition:.2s;font-size:13px"><i class="fas fa-pause-circle" style="color:#f87171"></i> Suspend Account</a>
-<a href="/admin/packages" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.12);border-radius:8px;text-decoration:none;color:#fff;margin-bottom:6px;transition:.2s;font-size:13px"><i class="fas fa-box" style="color:#4ade80"></i> Manage Packages</a>
-<a href="/admin/backup" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.12);border-radius:8px;text-decoration:none;color:#fff;margin-bottom:6px;transition:.2s;font-size:13px"><i class="fas fa-database" style="color:#fbbf24"></i> Backups</a>
-<a href="/admin/security" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.12);border-radius:8px;text-decoration:none;color:#fff;margin-bottom:6px;transition:.2s;font-size:13px"><i class="fas fa-shield-alt" style="color:#a855f7"></i> Security Center</a>
-<a href="/admin/support" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(236,72,153,.06);border:1px solid rgba(236,72,153,.12);border-radius:8px;text-decoration:none;color:#fff;transition:.2s;font-size:13px"><i class="fas fa-headset" style="color:#ec4899"></i> Support Center</a>
-</div>
 </div>
 
-<!-- ─── Summary Grid ─── -->
+<!-- ─── Widget System: Customizable Dashboard Zones ─── -->
+<div class="card" style="margin-bottom:16px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+<h3 style="color:var(--primary,#008cff);font-size:14px;margin:0"><i class="bi bi-grid-3x3-gap"></i> Dashboard Widgets</h3>
+<div>
+<button class="btn btn-sm btn-secondary" onclick="document.getElementById('widgetPicker').classList.toggle('hidden')">+ Add Widget</button>
+</div>
+</div>
+
+<div id="widgetPicker" class="hidden" style="margin-bottom:12px;padding:12px;background:rgba(255,255,255,.02);border:1px solid var(--border,rgba(0,191,255,.1));border-radius:8px">
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<?php foreach ($all_widgets as $key => $w): ?>
+<button class="btn btn-sm btn-secondary add-widget-btn" data-key="<?php echo $key; ?>"><i class="bi <?php echo $w->getIcon(); ?>"></i> <?php echo htmlspecialchars($w->getName()); ?></button>
+<?php endforeach; ?>
+</div>
+</div>
+
+<div class="widget-zone" id="widget-zone-main" data-zone="main">
+<?php echo $widgets_main; ?>
+</div>
+</div>
+
 <div class="card">
-<h3 style="color:var(--accent);font-size:14px;margin-bottom:12px"><i class="fas fa-th-large"></i> Module Access</h3>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px">
-<a href="/admin/account" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:8px;text-decoration:none;color:#e0e0e0;font-size:13px;transition:.2s"><i class="fas fa-users" style="color:var(--accent);width:16px"></i> Accounts</a>
-<a href="/admin/packages" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:8px;text-decoration:none;color:#e0e0e0;font-size:13px;transition:.2s"><i class="fas fa-cube" style="color:#4ade80;width:16px"></i> Packages</a>
-<a href="/admin/dns" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:8px;text-decoration:none;color:#e0e0e0;font-size:13px;transition:.2s"><i class="fas fa-globe" style="color:#facc15;width:16px"></i> DNS Zones</a>
-<a href="/admin/email" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:8px;text-decoration:none;color:#e0e0e0;font-size:13px;transition:.2s"><i class="fas fa-envelope" style="color:#fb923c;width:16px"></i> Email</a>
-<a href="/admin/mysql" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:8px;text-decoration:none;color:#e0e0e0;font-size:13px;transition:.2s"><i class="fas fa-database" style="color:#a78bfa;width:16px"></i> Databases</a>
-<a href="/admin/ftp" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:8px;text-decoration:none;color:#e0e0e0;font-size:13px;transition:.2s"><i class="fas fa-upload" style="color:#34d399;width:16px"></i> FTP</a>
-<a href="/admin/billing" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:8px;text-decoration:none;color:#e0e0e0;font-size:13px;transition:.2s"><i class="fas fa-credit-card" style="color:#f472b6;width:16px"></i> Billing</a>
-<a href="/admin/livechat" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:8px;text-decoration:none;color:#e0e0e0;font-size:13px;transition:.2s"><i class="fas fa-comment-dots" style="color:#38bdf8;width:16px"></i> Live Chat</a>
-<a href="/admin/ssl" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:8px;text-decoration:none;color:#e0e0e0;font-size:13px;transition:.2s"><i class="fas fa-lock" style="color:#e879f9;width:16px"></i> SSL</a>
-<a href="/admin/serverconfig" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:8px;text-decoration:none;color:#e0e0e0;font-size:13px;transition:.2s"><i class="fas fa-sliders-h" style="color:#fbbf24;width:16px"></i> Server Config</a>
-<a href="http://45.61.59.55:2096/" target="_blank" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:8px;text-decoration:none;color:#e0e0e0;font-size:13px;transition:.2s"><i class="fas fa-envelope" style="color:#fb923c;width:16px"></i> Webmail (2096)</a>
+<div class="widget-zone" id="widget-zone-side" data-zone="side" style="min-height:60px">
+<h3 style="color:var(--text_muted,#64748b);font-size:12px;margin:0 0 8px">Side Widgets</h3>
+<?php echo $widgets_side; ?>
 </div>
 </div>
+
+<style>
+.widget-item{background:var(--card_bg,rgba(8,16,28,.8));border:1px solid var(--border,rgba(0,191,255,.1));border-radius:10px;margin-bottom:10px;overflow:hidden}
+.widget-item.dragging{opacity:.5;border-style:dashed}
+.widget-item.drag-over{border-color:var(--primary,#008cff);box-shadow:0 0 15px rgba(0,140,255,.15)}
+.widget-header{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border,rgba(0,191,255,.06));cursor:move;background:rgba(0,0,0,.15)}
+.widget-header .widget-handle{color:var(--text_muted,#64748b);font-size:14px;cursor:grab}
+.widget-header .widget-title{flex:1;font-size:12px;font-weight:600}
+.widget-actions{display:flex;gap:4px}
+.widget-actions .btn-icon{background:none;border:none;color:var(--text_muted,#64748b);cursor:pointer;padding:2px 6px;border-radius:4px;font-size:12px}
+.widget-actions .btn-icon:hover{background:rgba(255,255,255,.06);color:#fff}
+.widget-body{padding:12px}
+.widget-body .stats-grid{margin:0}
+.widget-body table{font-size:12px}
+.widget-body td,.widget-body th{padding:4px 6px}
+.hidden{display:none!important}
+.widget-empty{text-align:center;padding:30px;color:var(--text_muted,#64748b);font-size:13px}
+.widget-zone.drag-over-zone{background:rgba(0,140,255,.03);border-radius:8px}
+</style>
+
+<script>
+// Drag and drop with cross-zone and intra-zone reordering
+var dragSrcId = null;
+document.querySelectorAll('.widget-item[draggable]').forEach(function(el) {
+    el.addEventListener('dragstart', function(e) {
+        dragSrcId = this.dataset.widgetId;
+        e.dataTransfer.setData('text/plain', this.dataset.widgetId);
+        this.classList.add('dragging');
+    });
+    el.addEventListener('dragend', function(e) {
+        this.classList.remove('dragging');
+        dragSrcId = null;
+    });
+    el.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        var rect = this.getBoundingClientRect();
+        var y = e.clientY - rect.top;
+        if (y < rect.height / 2) this.style.borderTop = '2px solid var(--primary)';
+        else this.style.borderBottom = '2px solid var(--primary)';
+    });
+    el.addEventListener('dragleave', function(e) {
+        this.style.borderTop = '';
+        this.style.borderBottom = '';
+    });
+    el.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.style.borderTop = '';
+        this.style.borderBottom = '';
+        var id = e.dataTransfer.getData('text/plain');
+        if (!id || id === this.dataset.widgetId) return;
+        var widget = document.querySelector('[data-widget-id="' + id + '"]');
+        if (!widget) return;
+        var rect = this.getBoundingClientRect();
+        var y = e.clientY - rect.top;
+        if (y < rect.height / 2) this.parentNode.insertBefore(widget, this);
+        else this.parentNode.insertBefore(widget, this.nextSibling);
+        saveWidgetLayout();
+    });
+});
+
+document.querySelectorAll('.widget-zone').forEach(function(zone) {
+    zone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        zone.classList.add('drag-over-zone');
+    });
+    zone.addEventListener('dragleave', function(e) {
+        zone.classList.remove('drag-over-zone');
+    });
+    zone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        zone.classList.remove('drag-over-zone');
+        var id = e.dataTransfer.getData('text/plain');
+        if (!id) return;
+        var widget = document.querySelector('[data-widget-id="' + id + '"]');
+        var target = e.target.closest('.widget-item');
+        if (widget) {
+            if (target && target.parentElement === zone) {
+                var rect = target.getBoundingClientRect();
+                var y = e.clientY - rect.top;
+                if (y < rect.height / 2) target.parentNode.insertBefore(widget, target);
+                else target.parentNode.insertBefore(widget, target.nextSibling);
+            } else {
+                zone.appendChild(widget);
+            }
+            saveWidgetLayout();
+        }
+    });
+});
+
+function saveWidgetLayout() {
+    var layout = [];
+    document.querySelectorAll('.widget-zone').forEach(function(zone) {
+        var zoneName = zone.dataset.zone;
+        zone.querySelectorAll('.widget-item').forEach(function(w, i) {
+            if (w.dataset.widgetId) layout.push({id: parseInt(w.dataset.widgetId), zone: zoneName, sort_order: i});
+        });
+    });
+    fetch('/admin/widgets/save-layout', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({layout: layout})
+    }).catch(function(e){});
+}
+
+// Remove widget
+document.querySelectorAll('.widget-remove').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        if (!confirm('Remove this widget?')) return;
+        var key = this.dataset.key;
+        var item = this.closest('.widget-item');
+        var form = new FormData();
+        form.append('key', key);
+        fetch('/admin/widgets/remove', {method: 'POST', body: form}).then(function(r) {
+            item.remove();
+        });
+    });
+});
+
+// Add widget
+document.querySelectorAll('.add-widget-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var key = this.dataset.key;
+        var form = new FormData();
+        form.append('key', key);
+        form.append('zone', 'main');
+        fetch('/admin/widgets/add', {method: 'POST', body: form}).then(function(r) {
+            location.reload();
+        });
+    });
+});
+</script>
 
 <script>
 // Auto-refresh server health every 15 seconds

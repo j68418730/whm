@@ -12,10 +12,19 @@ $router->get('/', 'Admin\Controllers\AuthController@landing');
 $router->get('/admin', 'Admin\Controllers\DashboardController@index');
 $router->get('/admin/login', 'Admin\Controllers\AuthController@login');
 $router->post('/admin/login/post', 'Admin\Controllers\AuthController@postLogin');
+$router->get('/admin/change-password', 'Admin\Controllers\AuthController@changePassword');
+$router->post('/admin/change-password', 'Admin\Controllers\AuthController@changePasswordPost');
 $router->get('/admin/logout', 'Admin\Controllers\AuthController@logout');
 $router->get('/admin/dashboard', 'Admin\Controllers\DashboardController@index');
 $router->get('/admin/dashboard/health', 'Admin\Controllers\DashboardController@health');
+$router->get('/admin/support-status', 'Admin\Controllers\SupportStatusController@get');
+$router->post('/admin/support-status', 'Admin\Controllers\SupportStatusController@set');
 $router->get('/admin/theme', 'Admin\Controllers\ThemeController@index');
+$router->get('/admin/themes', 'Admin\Controllers\ThemesController@index');
+$router->get('/admin/themes/activate/{type}/{name}', 'Admin\Controllers\ThemesController@activate');
+$router->post('/admin/themes/upload', 'Admin\Controllers\ThemesController@upload');
+$router->get('/admin/themes/export/{type}/{name}', 'Admin\Controllers\ThemesController@export');
+$router->get('/admin/themes/delete/{type}/{name}', 'Admin\Controllers\ThemesController@delete');
 $router->post('/admin/theme/update', 'Admin\Controllers\ThemeController@update');
 $router->post('/admin/theme', 'Admin\Controllers\ThemeController@update');
 $router->get('/admin/account', 'Admin\Controllers\AccountController@index');
@@ -59,6 +68,12 @@ $router->get('/admin/ipblocker', 'Admin\Controllers\IpBlockerController@index');
 $router->post('/admin/ipblocker/store', 'Admin\Controllers\IpBlockerController@store');
 $router->get('/admin/ipblocker/delete/{id}', 'Admin\Controllers\IpBlockerController@delete');
 $router->get('/admin/monitoring', 'Admin\Controllers\MonitoringController@index');
+$router->get('/admin/activity-log', 'Admin\Controllers\ActivityLogController@index');
+$router->get('/admin/notifications', 'Admin\Controllers\NotificationsController@index');
+$router->post('/admin/notifications/mark-read/{id}', 'Admin\Controllers\NotificationsController@markRead');
+$router->post('/admin/notifications/delete/{id}', 'Admin\Controllers\NotificationsController@delete');
+$router->post('/admin/notifications/mark-all-read', 'Admin\Controllers\NotificationsController@markAllRead');
+$router->get('/admin/notifications/api/latest', 'Admin\Controllers\NotificationsController@apiLatest');
 $router->get('/admin/php/install/{ext}', 'Admin\Controllers\PhpController@install');
 $router->get('/admin/plugins', 'Admin\Controllers\PluginsController@index');
 $router->get('/admin/plugins/toggle/{id}', 'Admin\Controllers\PluginsController@toggle');
@@ -71,6 +86,7 @@ $router->get('/admin/software', 'Admin\Controllers\SoftwareController@index');
 $router->get('/admin/api', 'Admin\Controllers\ApiController@index');
 $router->post('/admin/api', 'Admin\Controllers\ApiController@store');
 $router->get('/admin/api/delete/{id}', 'Admin\Controllers\ApiController@destroy');
+$router->get('/admin/api/logs', 'Admin\Controllers\ApiController@logs');
 $router->get('/admin/roles', 'Admin\Controllers\RolesController@index');
 $router->post('/admin/roles/create', 'Admin\Controllers\RolesController@create');
 $router->post('/admin/roles/{userId}', 'Admin\Controllers\RolesController@setRole');
@@ -82,6 +98,7 @@ $router->post('/admin/branding/save', 'Admin\Controllers\BrandingController@save
 $router->get('/admin/clustering', 'Admin\Controllers\ClusteringController@index');
 $router->get('/admin/filesystem', 'Admin\Controllers\FilesystemController@index');
 $router->get('/admin/terminal', 'Admin\Controllers\TerminalController@index');
+$router->get('/admin/widgets', 'Admin\Controllers\WidgetController@index');
 $router->get('/admin/metrics', 'Admin\Controllers\MetricsController@index');
 $router->get('/admin/installers', 'Admin\Controllers\InstallersController@index');
 $router->post('/admin/installers/install', 'Admin\Controllers\InstallersController@install');
@@ -89,6 +106,9 @@ $router->get('/admin/marketplace', 'Admin\Controllers\MarketplaceController@inde
 $router->post('/admin/marketplace/install/{id}', 'Admin\Controllers\MarketplaceController@install');
 $router->post('/admin/terminal/exec', 'Admin\Controllers\TerminalController@exec');
 $router->get('/admin/ssl/autossl', 'Admin\Controllers\SslController@autossl');
+$router->get('/admin/process-manager', 'Admin\Controllers\ServerConfigController@processManager');
+$router->get('/admin/php-switcher', 'Admin\Controllers\PhpController@switcher');
+$router->post('/admin/php-switcher', 'Admin\Controllers\PhpController@switcherPost');
 $router->post('/admin/ssl/install', 'Admin\Controllers\SslController@install');
 $router->post('/admin/ssl/autossl-enable', 'Admin\Controllers\SslController@autossl');
 $router->post('/admin/container/pull', 'Admin\Controllers\ContainerController@pull');
@@ -121,6 +141,8 @@ $router->post('/admin/livechat/group/store', 'Admin\Controllers\LiveChatControll
 $router->get('/admin/livechat/group/delete/{id}', 'Admin\Controllers\LiveChatController@groupDelete');
 $router->post('/admin/livechat/track', 'Admin\Controllers\LiveChatController@track');
 $router->get('/admin/livechat/visitors/online', 'Admin\Controllers\LiveChatController@visitorsOnline');
+$router->get('/admin/livechat/waiting-count', 'Admin\Controllers\LiveChatController@waitingCount');
+$router->get('/admin/chat-dashboard', 'Admin\Controllers\ChatDashboardController@index');
 $router->get('/admin/firewall', 'Admin\Controllers\FirewallController@index');
 $router->get('/admin/firewall/service/{action}/{svc}', 'Admin\Controllers\FirewallController@service');
 $router->get('/admin/firewall/modsec/{action}', 'Admin\Controllers\FirewallController@modsec');
@@ -133,6 +155,11 @@ $router->get('/admin/server', 'Admin\Controllers\ServerOverviewController@index'
 $router->get('/admin/server/health', 'Admin\Controllers\ServerOverviewController@health');
 
 // -- Account sub-routes --
+// Widget routes
+$router->post('/admin/widgets/save-layout', 'Admin\Controllers\WidgetController@saveLayout');
+$router->post('/admin/widgets/remove', 'Admin\Controllers\WidgetController@remove');
+$router->post('/admin/widgets/add', 'Admin\Controllers\WidgetController@add');
+
 $router->get('/admin/account/create', 'Admin\Controllers\AccountController@create');
 $router->get('/admin/account/list', 'Admin\Controllers\AccountController@index');
 $router->get('/admin/account/edit/{id}', 'Admin\Controllers\AccountController@edit');
@@ -154,6 +181,7 @@ $router->get('/admin/account/suspend/{id}', 'Admin\Controllers\AccountController
 $router->get('/admin/account/unsuspend/{id}', 'Admin\Controllers\AccountController@unsuspend');
 $router->get('/admin/account/terminate/{id}', 'Admin\Controllers\AccountController@terminate');
 $router->post('/admin/account/password/{id}', 'Admin\Controllers\AccountController@password');
+$router->post('/admin/account/change-owner/{id}', 'Admin\Controllers\AccountController@changeOwner');
 $router->post('/admin/account/ssh/access/{id}', 'Admin\Controllers\AccountController@sshAccess');
 $router->post('/admin/account/ssh/key-generate/{id}', 'Admin\Controllers\AccountController@sshKeyGenerate');
 $router->post('/admin/account/ssh/key-delete/{id}', 'Admin\Controllers\AccountController@sshKeyDelete');
@@ -170,6 +198,9 @@ $router->get('/admin/packages/categories', 'Admin\Controllers\PackageController@
 $router->post('/admin/packages/categories', 'Admin\Controllers\PackageController@storeCategory');
 $router->get('/admin/packages/categories/delete/{id}', 'Admin\Controllers\PackageController@deleteCategory');
 // JSON endpoint for landing page
+$router->get('/admin/admins', 'Admin\Controllers\AdminsController@index');
+$router->post('/admin/admins/create', 'Admin\Controllers\AdminsController@create');
+$router->get('/admin/admins/delete/{id}', 'Admin\Controllers\AdminsController@delete');
 $router->get('/admin/todo', 'Admin\Controllers\TodoController@index');
 $router->post('/admin/todo', 'Admin\Controllers\TodoController@store');
 $router->post('/admin/todo/{id}', 'Admin\Controllers\TodoController@update');
@@ -177,12 +208,14 @@ $router->get('/admin/todo/delete/{id}', 'Admin\Controllers\TodoController@destro
 $router->get('/admin/todo/delete-category/{category}', 'Admin\Controllers\TodoController@destroyCategory');
 $router->get('/api/packages', 'Admin\Controllers\PackageController@apiList');
 $router->get('/api/icon', 'Admin\Controllers\IconController@generate');
+$router->get('/api/version', 'Admin\Controllers\DashboardController@version');
 // Reviews
 $router->get('/admin/reviews', 'Admin\Controllers\ReviewsController@index');
 $router->get('/admin/reviews/approve/{id}', 'Admin\Controllers\ReviewsController@approve');
 $router->get('/admin/reviews/delete/{id}', 'Admin\Controllers\ReviewsController@delete');
 // Login as user
 $router->get('/admin/account/login-as/{id}', 'Admin\Controllers\AccountController@loginAs');
+$router->get('/admin/exit-sudo', 'Admin\Controllers\AccountController@exitSudo');
 
 // -- Reseller sub-routes --
 $router->get('/admin/reseller/create', 'Admin\Controllers\ResellerController@create');
@@ -330,6 +363,18 @@ $router->get('/admin/billing/coupons/delete/{id}', 'Admin\Controllers\BillingCon
 $router->get('/admin/billing/credits', 'Admin\Controllers\BillingController@credits');
 $router->post('/admin/billing/credits/store', 'Admin\Controllers\BillingController@creditStore');
 $router->get('/admin/billing/refunds', 'Admin\Controllers\BillingController@refunds');
+
+// -- Gateway routes --
+$router->get('/admin/gateways', 'Admin\Controllers\GatewayController@index');
+$router->post('/admin/gateways/store', 'Admin\Controllers\GatewayController@store');
+$router->get('/admin/gateways/delete/{id}', 'Admin\Controllers\GatewayController@delete');
+$router->get('/admin/gateways/test/{id}', 'Admin\Controllers\GatewayController@test');
+
+// -- Public store category routes --
+$router->get('/hosting/{category}', 'Admin\Controllers\StoreController@category');
+$router->get('/hosting', 'Admin\Controllers\StoreController@category');
+$router->get('/store/{category}', 'Admin\Controllers\StoreController@category');
+$router->get('/store', 'Admin\Controllers\StoreController@category');
 
 // -- Catch-all for unknown /admin/* routes (redirects to dashboard) --
 $router->get('/admin/{any}', 'Admin\Controllers\DashboardController@index');

@@ -60,7 +60,8 @@ class SecurityController extends Controller
                 'status' => 'pending', 'type' => 'letsencrypt',
             ]);
             // Trigger AutoSSL in background
-            exec("certbot certonly --webroot -w /home/{$this->hostingUser->username}/public_html -d {$domain} --non-interactive --agree-tos --email {$this->hostingUser->email} 2>/dev/null >/dev/null &");
+            $cmd = 'certbot certonly --webroot -w /home/' . escapeshellarg($this->hostingUser->username) . '/public_html -d ' . escapeshellarg($domain) . ' --non-interactive --agree-tos --email ' . escapeshellarg($this->hostingUser->email) . ' 2>/dev/null >/dev/null &';
+            exec($cmd);
             $_SESSION['success'] = "SSL requested for {$domain}. It may take a few minutes.";
         }
         $this->response->redirect('/user/ssl');
@@ -119,7 +120,7 @@ class SecurityController extends Controller
             $this->db->table('hosting_users')->where('id', $this->hostingUser->id)->update([
                 'password_hash' => password_hash($newPass, PASSWORD_DEFAULT)
             ]);
-            exec("echo '{$this->hostingUser->username}:{$newPass}' | chpasswd 2>/dev/null");
+            exec('echo ' . escapeshellarg($this->hostingUser->username . ':' . $newPass) . ' | chpasswd 2>/dev/null');
             $_SESSION['success'] = 'Password changed.';
         }
         $this->response->redirect('/user/security');

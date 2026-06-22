@@ -1,0 +1,4 @@
+:root{--bg-primary:#0d0a1a!important;--bg-card:rgba(13,10,26,.95)!important;--bg-sidebar:rgba(13,10,26,.97)!important;--accent:#8b5cf6!important;--accent-hover:#a78bfa!important;--border-color:rgba(13,10,26,.15)!important;--text-primary:#e8e0f0!important;--text-secondary:#9990b0!important}
+body,.sidebar{background:#0d0a1a!important}.card,.stat-card{background:rgba(13,10,26,.95)!important;border-color:rgba(13,10,26,.15)!important}
+a,.accent,.nav-label{color:#8b5cf6!important}.btn.primary{background:linear-gradient(135deg,#8b5cf6,#a78bfa)!important}
+h1,h2,h3,h4,.stat-card .value{color:#e8e0f0!important}p,.text-secondary,.stat-card h3,.topbar h1{color:#9990b0!important}

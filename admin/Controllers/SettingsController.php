@@ -140,13 +140,14 @@ class SettingsController extends Controller
             'api_enabled' => $this->getSetting('api_enabled', '1'),
             'api_rate_limit_default' => $this->getSetting('api_rate_limit_default', '60'),
             'api_debug_mode' => $this->getSetting('api_debug_mode', '0'),
+            'openai_api_key' => $this->getSetting('openai_api_key', ''),
         ]);
     }
 
     public function apiSave()
     {
         $this->guard();
-        foreach (['api_enabled','api_rate_limit_default','api_debug_mode'] as $k) {
+        foreach (['api_enabled','api_rate_limit_default','api_debug_mode','openai_api_key'] as $k) {
             $this->setSetting($k, $this->request->post($k, ''));
         }
         $_SESSION['success_message'] = 'API settings saved.';

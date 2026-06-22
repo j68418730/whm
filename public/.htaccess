@@ -1,9 +1,5 @@
 RewriteEngine On
 
-# Redirect trailing slashes
-RewriteRule ^(.*)/$ /$1 [L,R=301]
-
-# Handle front controller
-RewriteCond %{REQUEST_FILENAME} !-d
+# Handle front controller — skip only existing files, route everything else
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^ index.php [L]

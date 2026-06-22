@@ -1,0 +1,24 @@
+{
+    "name": "PlanetHosts",
+    "version": "2.0",
+    "author": "Planet-Hosts",
+    "description": "Official Planet-Hosts WHM theme with dark sidebar and blue accents.",
+    "type": "admin",
+    "colors": {
+        "primary": "#008cff",
+        "bg": "#02050e",
+        "sidebar_bg": "#0b1728",
+        "card_bg": "rgba(8,16,28,.8)",
+        "text": "#e0e0e0",
+        "text_muted": "#64748b",
+        "border": "rgba(0,191,255,.08)",
+        "success": "#4ade80",
+        "warning": "#facc15",
+        "danger": "#f87171"
+    },
+    "fonts": { "body": "'Inter', sans-serif", "heading": "'Inter', sans-serif" },
+    "assets": {
+        "css": ["assets/css/theme.css"],
+        "js": []
+    }
+}

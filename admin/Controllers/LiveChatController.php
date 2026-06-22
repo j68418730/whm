@@ -17,6 +17,17 @@ class LiveChatController extends Controller
         $this->db = $app->get('db');
     }
 
+    public function portal()
+    {
+        if (!$this->auth->check()) { $this->response->redirect('/admin/login'); exit; }
+        $isAdmin = $this->auth->isAdmin();
+        if (!$isAdmin) { $this->response->redirect('/user/dashboard'); exit; }
+        $user = $this->auth->user();
+        return $this->view('admin.livechat.portal', [
+            'user' => $user, 'title' => 'Live Chat',
+        ]);
+    }
+
     public function index()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
@@ -123,10 +134,16 @@ class LiveChatController extends Controller
     public function delete($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $this->db->table('chat_messages')->where('session_id', $id)->delete();
-        $this->db->table('chat_attachments')->where('session_id', $id)->delete();
-        $this->db->table('chat_ratings')->where('session_id', $id)->delete();
-        $this->db->table('chat_sessions')->where('id', $id)->delete();
+        $pdo = $this->db->pdo();
+        // Get message IDs for this session to delete attachments
+        $msgIds = $pdo->query("SELECT id FROM chat_messages WHERE session_id=" . (int)$id)->fetchAll(\PDO::FETCH_COLUMN);
+        if (!empty($msgIds)) {
+            $ids = implode(',', array_map('intval', $msgIds));
+            $pdo->exec("DELETE FROM chat_attachments WHERE message_id IN ($ids)");
+        }
+        $pdo->exec("DELETE FROM chat_ratings WHERE chat_id=" . (int)$id);
+        $pdo->exec("DELETE FROM chat_messages WHERE session_id=" . (int)$id);
+        $pdo->exec("DELETE FROM chat_sessions WHERE id=" . (int)$id);
         $_SESSION['success_message'] = "Chat #{$id} deleted.";
         $this->response->redirect('/admin/livechat');
     }
@@ -197,8 +214,41 @@ class LiveChatController extends Controller
                 'page_history' => json_encode([['page' => $page, 'time' => date('Y-m-d H:i:s')]]),
                 'last_seen' => date('Y-m-d H:i:s'), 'first_seen' => date('Y-m-d H:i:s'),
             ]);
+            // Notify admins about new visitor
+            $now = date('Y-m-d H:i:s');
+            $admins = $this->db->table('admins')->get() ?: [];
+            foreach ($admins as $admin) {
+                $existingNotif = $this->db->table('notifications')
+                    ->where('user_id', $admin->id)
+                    ->where('type', 'visitor')
+                    ->where('created_at', '>=', date('Y-m-d H:') . '00:00')
+                    ->first();
+                if (!$existingNotif) {
+                    $this->db->table('notifications')->insertGetId([
+                        'user_id' => $admin->id,
+                        'type' => 'visitor',
+                        'title' => 'New Visitor on Site',
+                        'message' => 'A new visitor is browsing ' . $page . ' (' . $browser . ', ' . $os . ')',
+                        'created_at' => $now,
+                    ]);
+                }
+            }
         }
         echo 'ok';
+        exit;
+    }
+
+    public function waitingCount()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) {
+            $this->response->json(['waiting' => 0]);
+            $this->response->send();
+            exit;
+        }
+        $pdo = $this->db->pdo();
+        $count = $pdo->query("SELECT COUNT(*) FROM chat_sessions WHERE status='waiting'")->fetchColumn();
+        $this->response->json(['waiting' => (int)$count]);
+        $this->response->send();
         exit;
     }
 }

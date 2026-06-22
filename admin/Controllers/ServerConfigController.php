@@ -79,6 +79,16 @@ class ServerConfigController extends Controller
         $this->response->redirect('/admin/serverconfig');
     }
 
+    public function processManager()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        return $this->view('admin.server.process_manager', [
+            'user' => $user, 'theme_settings' => $theme_settings, 'title' => 'Process Manager'
+        ]);
+    }
+
     public function setupPorts()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
