@@ -154,8 +154,8 @@ $diskPct = $package->disk_space > 0 ? min(100, round($diskVal / ($package->disk_
 <div class="action-card" style="grid-column:1/-1">
 <h4><i class="bi bi-server" style="color:#0A84FF"></i> Apache Virtual Host</h4>
 <?php
-$vhostPath = '/etc/httpd/conf.d/' . $account->username . '.conf';
-$vhostSslPath = '/etc/httpd/conf.d/' . $account->username . '-ssl.conf';
+$vhostPath = '/etc/apache2/sites-available/' . $account->username . '.conf';
+$vhostSslPath = '/etc/apache2/sites-available/' . $account->username . '-ssl.conf';
 $vhostContent = @file_get_contents($vhostPath);
 $vhostSslContent = @file_get_contents($vhostSslPath);
 ?>

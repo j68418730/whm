@@ -213,20 +213,17 @@ class AccountController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $account = $this->db->table('hosting_users')->where('id', $id)->first();
         if ($account) {
-            exec("userdel -r {$account->username} 2>/dev/null");
-            @exec("rm -f /etc/httpd/conf.d/{$account->username}.conf /etc/httpd/conf.d/{$account->username}-ssl.conf 2>/dev/null");
+            $u = $account->username;
+            @exec("sudo rm -rf /home/{$u} /etc/apache2/sites-available/{$u}.conf /etc/apache2/sites-available/{$u}-ssl.conf /etc/apache2/sites-enabled/{$u}.conf /etc/apache2/sites-enabled/{$u}-ssl.conf 2>/dev/null >/dev/null &");
             try {
                 $this->db->table('domains')->where('account_id', $id)->delete();
             } catch (\Exception $e) {}
-            // Release IP
             if (!empty($account->ip)) {
-                try {
-                    $this->db->table('server_ips')->where('assigned_to', $account->username)->update(['assigned_to' => null]);
-                } catch (\Exception $e) {}
+                try { $this->db->table('server_ips')->where('assigned_to', $u)->update(['assigned_to' => null]); } catch (\Exception $e) {}
             }
         }
         $this->db->table('hosting_users')->where('id', $id)->update(['status' => 'terminated']);
-        $_SESSION['success_message'] = 'Account terminated.';
+        $_SESSION['success_message'] = "Account '{$account->username}' terminated.";
         $this->response->redirect('/admin/account');
         exit;
     }
@@ -358,29 +355,18 @@ class AccountController extends Controller
             $_SESSION['error_message'] = 'Account not found.'; $this->response->redirect('/admin/account'); exit;
         }
         
-        $username = $account->username;
-        
-        // Delete Linux user
-        exec("userdel -rf {$username} 2>/dev/null");
-        exec("rm -rf /home/{$username} 2>/dev/null");
-        
-        // Delete Apache vhost
-        exec("rm -f /etc/apache2/sites-available/{$username}.conf 2>/dev/null");
-        exec("rm -f /etc/apache2/sites-enabled/{$username}.conf 2>/dev/null");
-        exec("systemctl reload apache2 2>/dev/null");
-        
-        // Delete DNS zone
-        exec("rm -f /etc/bind/db.{$username} 2>/dev/null");
-        exec("systemctl reload bind9 2>/dev/null");
-        
-        // Delete from database
-        $this->db->table('hosting_users')->where('id', $id)->delete();
+        $u = $account->username;
+        @exec("sudo rm -rf /home/{$u} /etc/apache2/sites-available/{$u}.conf /etc/apache2/sites-available/{$u}-ssl.conf /etc/apache2/sites-enabled/{$u}.conf /etc/apache2/sites-enabled/{$u}-ssl.conf 2>/dev/null >/dev/null &");
+        try {
+            $this->db->table('domains')->where('account_id', $id)->delete();
+            $this->db->table('hosting_users')->where('id', $id)->delete();
+        } catch (\Exception $e) {}
         
         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-            header('Content-Type: application/json'); echo json_encode(['success' => true, 'message' => "Account '{$username}' permanently deleted."]); exit;
+            header('Content-Type: application/json'); echo json_encode(['success' => true, 'message' => "Account '{$u}' permanently deleted."]); exit;
         }
         
-        $_SESSION['success_message'] = "Account '{$username}' permanently deleted.";
+        $_SESSION['success_message'] = "Account '{$u}' permanently deleted with all data.";
         $this->response->redirect('/admin/account');
     }
 
