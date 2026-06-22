@@ -22,10 +22,10 @@ class SectionController extends Controller
         $user = $this->auth->user();
         return $this->view('admin.sections.accounts', [
             'user' => $user,
-            'total_accounts' => $this->db->table('hosting_users')->count() ?: 0,
-            'total_packages' => $this->db->table('hosting_packages')->count() ?: 0,
-            'total_resellers' => $this->db->table('resellers')->count() ?: 0,
-            'total_admins' => $this->db->table('admins')->count() ?: 0,
+            'total_accounts' => count($this->db->table('hosting_users')->get() ?: []),
+            'total_packages' => count($this->db->table('hosting_packages')->get() ?: []),
+            'total_resellers' => count($this->db->table('resellers')->get() ?: []),
+            'total_admins' => count($this->db->table('admins')->get() ?: []),
             'title' => 'Accounts',
         ]);
     }
