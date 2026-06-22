@@ -210,8 +210,7 @@ class AccountController extends Controller
         } catch (\Exception $e) {}
 
         $_SESSION['success_message'] = "Account '{$username}' created. Domain: {$domain}";
-        if (ob_get_level()) ob_clean();
-        header('Location: /admin/account');
+        echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=/admin/account"></head><body><p>Redirecting...</p></body></html>';
         exit;
     }
 
