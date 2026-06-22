@@ -153,6 +153,19 @@ $router->get('/admin/firewall/port/remove/{port}/{proto}', 'Admin\Controllers\Fi
 $router->post('/admin/firewall/whitelist', 'Admin\Controllers\FirewallController@whitelist');
 $router->get('/admin/server', 'Admin\Controllers\ServerOverviewController@index');
 $router->get('/admin/server/health', 'Admin\Controllers\ServerOverviewController@health');
+$router->get('/admin/server/terminal', 'Admin\Controllers\ServerController@terminal');
+$router->post('/admin/server/terminal/exec', 'Admin\Controllers\ServerController@exec');
+
+// -- IP Management routes --
+$router->get('/admin/ip', 'Admin\Controllers\IpController@index');
+$router->post('/admin/ip/store', 'Admin\Controllers\IpController@store');
+$router->get('/admin/ip/assign/{id}', 'Admin\Controllers\IpController@assign');
+$router->get('/admin/ip/unassign/{id}', 'Admin\Controllers\IpController@unassign');
+$router->get('/admin/ip/delete/{id}', 'Admin\Controllers\IpController@delete');
+$router->post('/admin/ip/nameservers', 'Admin\Controllers\IpController@nameservers');
+
+// -- Quick Install route --
+$router->post('/admin/installers/quick-install', 'Admin\Controllers\InstallersController@quickInstall');
 
 // -- Account sub-routes --
 // Widget routes
@@ -375,6 +388,19 @@ $router->get('/hosting/{category}', 'Admin\Controllers\StoreController@category'
 $router->get('/hosting', 'Admin\Controllers\StoreController@category');
 $router->get('/store/{category}', 'Admin\Controllers\StoreController@category');
 $router->get('/store', 'Admin\Controllers\StoreController@category');
+
+// -- Game Server Pricing System --
+$router->get('/admin/games', 'Admin\Controllers\GameServersController@types');
+$router->post('/admin/games/store', 'Admin\Controllers\GameServersController@typesStore');
+$router->get('/admin/games/delete/{id}', 'Admin\Controllers\GameServersController@typesDelete');
+$router->get('/admin/games/pricing', 'Admin\Controllers\GameServersController@pricing');
+$router->post('/admin/games/pricing/store', 'Admin\Controllers\GameServersController@pricingStore');
+$router->get('/admin/games/pricing/delete/{id}', 'Admin\Controllers\GameServersController@pricingDelete');
+$router->get('/admin/games/packages', 'Admin\Controllers\GameServersController@packages');
+$router->post('/admin/games/packages/store', 'Admin\Controllers\GameServersController@packagesStore');
+$router->get('/admin/games/packages/delete/{id}', 'Admin\Controllers\GameServersController@packagesDelete');
+$router->get('/admin/games/settings', 'Admin\Controllers\GameServersController@settings');
+$router->post('/admin/games/settings/save', 'Admin\Controllers\GameServersController@settingsSave');
 
 // -- Catch-all for unknown /admin/* routes (redirects to dashboard) --
 $router->get('/admin/{any}', 'Admin\Controllers\DashboardController@index');
