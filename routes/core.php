@@ -19,6 +19,7 @@ $router->get('/admin/dashboard', 'Admin\Controllers\DashboardController@index');
 $router->get('/admin/dashboard/health', 'Admin\Controllers\DashboardController@health');
 $router->get('/admin/support-status', 'Admin\Controllers\SupportStatusController@get');
 $router->post('/admin/support-status', 'Admin\Controllers\SupportStatusController@set');
+$router->get('/admin/support-status/public', 'Admin\Controllers\SupportStatusController@publicStatus');
 $router->get('/admin/theme', 'Admin\Controllers\ThemeController@index');
 $router->get('/admin/themes', 'Admin\Controllers\ThemesController@index');
 $router->get('/admin/themes/activate/{type}/{name}', 'Admin\Controllers\ThemesController@activate');
