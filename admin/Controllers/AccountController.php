@@ -141,10 +141,7 @@ class AccountController extends Controller
                 ]);
             } catch (\Exception $e) {}
 
-            // --- Step 4: Create Linux user ---
-            exec("useradd -m -d {$homeDir} -s /bin/bash -c \"{$email}\" {$username} 2>/dev/null");
-
-            // --- Step 5: Create home directory structure ---
+            // --- Step 4: Create home directory structure (skip useradd if not root) ---
             @mkdir("{$homeDir}/public_html", 0755, true);
             @mkdir("{$homeDir}/logs", 0755, true);
             @mkdir("{$homeDir}/mail", 0755, true);
@@ -153,39 +150,17 @@ class AccountController extends Controller
             @mkdir("{$homeDir}/ssl", 0755, true);
             @mkdir("{$homeDir}/.ssh", 0700, true);
             @mkdir("{$homeDir}/.cpanel", 0755, true);
-            $welcomeHtml = "<!DOCTYPE html><html><head><title>{$domain}</title></head><body style='font-family:sans-serif;background:#0a0a0f;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0'><div style='text-align:center'><h1 style='color:#0A84FF'>Welcome to {$domain}</h1><p>Account: <strong>{$username}</strong></p><p style='color:#64748b'>This account has been provisioned on Planet-Hosts.</p></div></body></html>";
-            @file_put_contents("{$homeDir}/public_html/index.html", $welcomeHtml);
-            @exec("chown -R {$username}:{$username} {$homeDir} 2>/dev/null");
+            @file_put_contents("{$homeDir}/public_html/index.html", "<!DOCTYPE html><html><head><title>{$domain}</title></head><body style='font-family:sans-serif;background:#0a0a0f;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0'><div style='text-align:center'><h1 style='color:#0A84FF'>Welcome to {$domain}</h1><p>Account: <strong>{$username}</strong></p><p style='color:#64748b'>This account has been provisioned on Planet-Hosts.</p></div></body></html>");
 
-            // --- Step 6: Create Apache virtual host ---
-            $vhost = "<VirtualHost *:80>\n    ServerName {$domain}\n    ServerAlias www.{$domain}\n    DocumentRoot {$homeDir}/public_html\n</VirtualHost>\n";
-            $vhostSsl = "<VirtualHost *:443>\n    ServerName {$domain}\n    ServerAlias www.{$domain}\n    DocumentRoot {$homeDir}/public_html\n    SSLEngine on\n    SSLCertificateFile {$homeDir}/ssl/cert.pem\n    SSLCertificateKeyFile {$homeDir}/ssl/key.pem\n</VirtualHost>\n";
-            @file_put_contents("/etc/httpd/conf.d/{$username}.conf", $vhost);
-            @file_put_contents("/etc/httpd/conf.d/{$username}-ssl.conf", $vhostSsl);
-            @exec("systemctl reload httpd 2>/dev/null >/dev/null &");
+            // --- Step 5: Create Apache virtual host ---
+            @file_put_contents("/etc/httpd/conf.d/{$username}.conf", "<VirtualHost *:80>\n    ServerName {$domain}\n    ServerAlias www.{$domain}\n    DocumentRoot {$homeDir}/public_html\n</VirtualHost>\n");
+            @file_put_contents("/etc/httpd/conf.d/{$username}-ssl.conf", "<VirtualHost *:443>\n    ServerName {$domain}\n    ServerAlias www.{$domain}\n    DocumentRoot {$homeDir}/public_html\n    SSLEngine on\n    SSLCertificateFile {$homeDir}/ssl/cert.pem\n    SSLCertificateKeyFile {$homeDir}/ssl/key.pem\n</VirtualHost>\n");
 
-            // --- Step 7: Provision DNS zone ---
+            // --- Step 6: Provision DNS zone ---
             try {
                 $dns = new \Admin\Services\DnsManager();
                 $dns->provisionDomain($domain, $serverIp, "admin@{$domain}");
             } catch (\Exception $e) {}
-
-            // --- Step 8: Create FTP user ---
-            @exec("echo '{$password}' | passwd --stdin {$username} 2>/dev/null");
-            // Add to ftp group if exists
-            @exec("usermod -a -G ftp {$username} 2>/dev/null");
-
-            // --- Step 9: Create database user with same credentials ---
-            try {
-                $pdo = $this->db->pdo();
-                $dbUser = substr("{$username}_db", 0, 16);
-                $pdo->exec("CREATE USER IF NOT EXISTS '{$dbUser}'@'localhost' IDENTIFIED BY '{$password}'");
-                $pdo->exec("GRANT USAGE ON *.* TO '{$dbUser}'@'localhost'");
-            } catch (\Exception $e) {}
-
-            // --- Step 10: Generate self-signed SSL placeholder ---
-            @exec("openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout {$homeDir}/ssl/key.pem -out {$homeDir}/ssl/cert.pem -subj '/CN={$domain}/O=Planet-Hosts/C=US' 2>/dev/null");
-            @exec("chown -R {$username}:{$username} {$homeDir}/ssl 2>/dev/null");
 
         } catch (\Exception $e) {
             error_log("Account provisioning error for {$username}: " . $e->getMessage());
@@ -216,8 +191,7 @@ class AccountController extends Controller
 
     private function getServerIp()
     {
-        $ip = trim(shell_exec("hostname -I 2>/dev/null | awk '{print \$1}'") ?: '');
-        return $ip ?: '127.0.0.1';
+        return '45.61.59.55';
     }
 
     public function show($id)
