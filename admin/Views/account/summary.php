@@ -1,86 +1,63 @@
 <style>
-.cred-box{border:1px solid rgba(0,191,255,.15);border-radius:12px;padding:20px;margin-bottom:16px}
-.cred-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)}
-.cred-row:last-child{border:none}
-.cred-label{color:#64748b;font-size:13px}
-.cred-value{font-weight:600;font-size:13px}
-.login-link{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:500;margin:4px}
-.feature-tag{display:inline-block;padding:4px 10px;border-radius:6px;font-size:11px;margin:2px;background:rgba(0,191,255,.08);border:1px solid rgba(0,191,255,.15)}
+.summary-wrap{max-width:700px;margin:auto}
+.summary-card{background:rgba(8,16,28,.8);border:1px solid rgba(0,191,255,.12);border-radius:14px;padding:28px;margin-bottom:16px}
+.summary-title{color:#4ade80;font-size:18px;font-weight:600;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.summary-grid{display:grid;gap:4px}
+.summary-line{display:flex;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;font-family:'Courier New',monospace}
+.summary-line:last-child{border:none}
+.summary-key{color:#64748b;min-width:180px;flex-shrink:0}
+.summary-val{color:#e0e0e0;font-weight:500}
+.login-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.login-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:500;font-family:inherit;cursor:pointer;border:1px solid rgba(255,255,255,.08)}
+.action-bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
 </style>
 
-<div class="card" style="max-width:800px;margin:auto">
-<div style="text-align:center;margin-bottom:24px">
-<div style="font-size:48px;margin-bottom:8px">✅</div>
-<h2 style="color:#4ade80;margin:0">Account Created Successfully</h2>
-<p style="color:#64748b;margin:4px 0 0">Account <strong><?php echo htmlspecialchars($account->username); ?></strong> has been provisioned.</p>
+<div class="summary-wrap">
+<div class="summary-card">
+  <div class="summary-title">✅ Account Created Successfully</div>
+  <div class="summary-grid">
+    <div class="summary-line"><span class="summary-key">Domain:</span><span class="summary-val"><?php echo htmlspecialchars($account->domain); ?></span></div>
+    <div class="summary-line"><span class="summary-key">Ip:</span><span class="summary-val"><?php echo htmlspecialchars($account->ip ?? '45.61.59.55'); ?></span></div>
+    <div class="summary-line"><span class="summary-key">HasCgi:</span><span class="summary-val">y</span></div>
+    <div class="summary-line"><span class="summary-key">UserName:</span><span class="summary-val"><?php echo htmlspecialchars($account->username); ?></span></div>
+    <div class="summary-line"><span class="summary-key">PassWord:</span><span class="summary-val"><code style="user-select:all;background:rgba(0,0,0,.4);padding:2px 6px;border-radius:4px"><?php echo htmlspecialchars($plainPassword); ?></code> <button class="login-btn" style="background:rgba(0,191,255,.1);color:#0A84FF;padding:2px 8px;font-size:11px" onclick="navigator.clipboard.writeText('<?php echo htmlspecialchars($plainPassword, ENT_QUOTES); ?>')">Copy</button></span></div>
+    <div class="summary-line"><span class="summary-key">CpanelMod:</span><span class="summary-val">jupiter</span></div>
+    <div class="summary-line"><span class="summary-key">HomeRoot:</span><span class="summary-val">/home</span></div>
+    <div class="summary-line"><span class="summary-key">Quota:</span><span class="summary-val">unlimited</span></div>
+    <div class="summary-line"><span class="summary-key">NameServer1:</span><span class="summary-val">ns1.planet-hosts.com</span></div>
+    <div class="summary-line"><span class="summary-key">NameServer2:</span><span class="summary-val">ns2.planet-hosts.com</span></div>
+    <div class="summary-line"><span class="summary-key">NameServer3:</span><span class="summary-val">ns3.planet-hosts.com</span></div>
+    <div class="summary-line"><span class="summary-key">NameServer4:</span><span class="summary-val">ns4.planet-hosts.com</span></div>
+    <div class="summary-line"><span class="summary-key">Contact Email:</span><span class="summary-val"><?php echo htmlspecialchars($account->email); ?></span></div>
+    <div class="summary-line"><span class="summary-key">Package:</span><span class="summary-val"><?php echo $package ? htmlspecialchars($package->name) : 'default'; ?></span></div>
+    <div class="summary-line"><span class="summary-key">Feature List:</span><span class="summary-val"><?php echo $featureList ? htmlspecialchars($featureList->name) : 'default'; ?></span></div>
+    <div class="summary-line"><span class="summary-key">Account Enhancements:</span><span class="summary-val">None</span></div>
+    <div class="summary-line"><span class="summary-key">Language:</span><span class="summary-val">en</span></div>
+  </div>
 </div>
 
-<div class="cred-box">
-<h3 style="color:var(--accent);margin-bottom:16px;font-size:15px">Account Credentials</h3>
-<div class="cred-row"><span class="cred-label">Username</span><span class="cred-value"><?php echo htmlspecialchars($account->username); ?></span></div>
-<div class="cred-row"><span class="cred-label">Password</span><span class="cred-value"><code style="user-select:all"><?php echo htmlspecialchars($plainPassword); ?></code> <button class="btn btn-sm secondary" style="padding:2px 8px;font-size:11px" onclick="navigator.clipboard.writeText('<?php echo htmlspecialchars($plainPassword, ENT_QUOTES); ?>')">Copy</button></span></div>
-<div class="cred-row"><span class="cred-label">Domain</span><span class="cred-value"><?php echo htmlspecialchars($account->domain); ?></span></div>
-<div class="cred-row"><span class="cred-label">IP Address</span><span class="cred-value"><?php echo htmlspecialchars($account->ip ?? '45.61.59.55'); ?></span></div>
-<div class="cred-row"><span class="cred-label">Package</span><span class="cred-value"><?php echo $package ? htmlspecialchars($package->name) : 'N/A'; ?></span></div>
-<div class="cred-row"><span class="cred-label">Nameserver 1</span><span class="cred-value">ns1.planet-hosts.com</span></div>
-<div class="cred-row"><span class="cred-label">Nameserver 2</span><span class="cred-value">ns2.planet-hosts.com</span></div>
+<div class="summary-card">
+  <div class="summary-title" style="color:#0A84FF">🔗 Login Links</div>
+  <div class="login-links">
+    <a href="http://<?php echo htmlspecialchars($account->domain); ?>/" class="login-btn" style="background:rgba(0,191,255,.08);color:#0A84FF" target="_blank">🌐 Website</a>
+    <a href="http://<?php echo htmlspecialchars($account->domain); ?>:2083" class="login-btn" style="background:rgba(74,222,128,.08);color:#4ade80" target="_blank">🔑 cPanel (2083)</a>
+    <a href="http://<?php echo htmlspecialchars($account->domain); ?>:2096" class="login-btn" style="background:rgba(250,204,21,.08);color:#facc15" target="_blank">📧 Webmail (2096)</a>
+    <a href="http://<?php echo htmlspecialchars($account->domain); ?>/phpmyadmin" class="login-btn" style="background:rgba(168,85,247,.08);color:#a855f7" target="_blank">🗄️ phpMyAdmin</a>
+    <a href="ftp://<?php echo htmlspecialchars($account->domain); ?>" class="login-btn" style="background:rgba(251,146,60,.08);color:#fb923c" target="_blank">📁 FTP</a>
+  </div>
 </div>
 
-<div class="cred-box">
-<h3 style="color:var(--accent);margin-bottom:16px;font-size:15px">Login Links</h3>
-<div style="display:flex;flex-wrap:wrap;gap:8px">
-<a href="http://<?php echo htmlspecialchars($account->domain); ?>/" class="login-link" style="background:rgba(0,191,255,.1);color:#0A84FF;border:1px solid rgba(0,191,255,.2)" target="_blank">🌐 Website</a>
-<a href="http://<?php echo htmlspecialchars($account->domain); ?>/cpanel" class="login-link" style="background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2)" target="_blank">🔑 cPanel</a>
-<a href="http://<?php echo htmlspecialchars($account->domain); ?>/webmail" class="login-link" style="background:rgba(250,204,21,.1);color:#facc15;border:1px solid rgba(250,204,21,.2)" target="_blank">📧 Webmail</a>
-<a href="http://<?php echo htmlspecialchars($account->domain); ?>/phpmyadmin" class="login-link" style="background:rgba(168,85,247,.1);color:#a855f7;border:1px solid rgba(168,85,247,.2)" target="_blank">🗄️ phpMyAdmin</a>
-<a href="ftp://<?php echo htmlspecialchars($account->domain); ?>/" class="login-link" style="background:rgba(251,146,60,.1);color:#fb923c;border:1px solid rgba(251,146,60,.2)" target="_blank">📁 FTP</a>
-</div>
-</div>
-
-<?php if ($featureList): ?>
-<div class="cred-box">
-<h3 style="color:var(--accent);margin-bottom:16px;font-size:15px">Features & Limits</h3>
-<div style="display:flex;flex-wrap:wrap;gap:4px">
-<?php
-$features = [
-    'Email Accounts' => $featureList->email_accounts,
-    'FTP Accounts' => $featureList->ftp_accounts,
-    'Databases' => $featureList->databases,
-    'Database Users' => $featureList->database_users,
-    'Subdomains' => $featureList->subdomains,
-    'Parked Domains' => $featureList->parked_domains,
-    'Addon Domains' => $featureList->addon_domains,
-];
-foreach ($features as $label => $val) {
-    $display = $val < 0 ? '∞' : $val;
-    echo "<span class=\"feature-tag\">{$label}: {$display}</span>";
-}
-?>
-</div>
-<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;font-size:12px">
-<?php $toggles = ['cron_jobs'=>'Cron Jobs','ssh_access'=>'SSH','ssl_allowed'=>'SSL','git_access'=>'Git','nodejs'=>'Node.js','python'=>'Python','ruby'=>'Ruby','terminal'=>'Terminal','backups'=>'Backups'];
-foreach ($toggles as $key => $label): ?>
-<?php if ($featureList->$key): ?>
-<span style="color:#4ade80">✓ <?php echo $label; ?></span>
-<?php else: ?>
-<span style="color:#64748b">✗ <?php echo $label; ?></span>
-<?php endif; ?>
-<?php endforeach; ?>
-</div>
-</div>
-<?php endif; ?>
-
-<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:20px">
-<a href="/admin/account" class="btn primary"><i class="bi bi-arrow-left"></i> Back to Accounts</a>
-<button class="btn secondary" onclick="window.print()"><i class="bi bi-printer"></i> Print / Save PDF</button>
-<button class="btn secondary" onclick="sendEmail()"><i class="bi bi-envelope"></i> Email Client</button>
-<a href="/admin/account/create" class="btn secondary"><i class="bi bi-person-plus"></i> Create Another</a>
+<div class="action-bar">
+  <a href="/admin/account" class="login-btn" style="background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff;border:none">← Back to Accounts</a>
+  <button class="login-btn" style="background:rgba(255,255,255,.06);color:#ccc" onclick="window.print()">🖨️ Print / Save PDF</button>
+  <button class="login-btn" style="background:rgba(255,255,255,.06);color:#ccc" onclick="sendEmail()">📧 Email Client</button>
+  <a href="/admin/account/create" class="login-btn" style="background:rgba(255,255,255,.06);color:#ccc">➕ Create Another</a>
 </div>
 </div>
 
 <script>
 function sendEmail() {
-    var email = prompt('Send account details to email:', '<?php echo htmlspecialchars($account->email); ?>');
+    var email = prompt('Send account details to:', '<?php echo htmlspecialchars($account->email); ?>');
     if (!email) return;
     var x = new XMLHttpRequest();
     x.open('POST', '/admin/account/email-summary/<?php echo $account->id; ?>', true);
