@@ -7,7 +7,6 @@ $router->get('/user', 'User\Controllers\UserController@index');
 $router->get('/user/services', 'User\Controllers\UserController@services');
 $router->get('/user/usage', 'User\Controllers\UserController@usage');
 $router->get('/user/profile', 'User\Controllers\UserController@profile');
-$router->get('/user/security', 'User\Controllers\UserController@security');
 $router->get('/user/files', 'User\Controllers\FileManagerController@index');
 $router->post('/user/files/upload', 'User\Controllers\FileManagerController@upload');
 $router->get('/user/files/download', 'User\Controllers\FileManagerController@download');
@@ -74,6 +73,12 @@ $router->get('/user/php-switcher', 'User\Controllers\UserController@phpSwitcher'
 $router->post('/user/php-switcher', 'User\Controllers\UserController@phpSwitcher');
 $router->get('/user/tools', 'User\Controllers\UserController@tools');
 $router->get('/user/terminal', 'User\Controllers\UserController@terminal');
+$router->get('/user/ftp', 'User\Controllers\UserController@ftp');
+$router->get('/user/cron', 'User\Controllers\UserController@cron');
+$router->get('/user/git', 'User\Controllers\UserController@git');
+$router->get('/user/backup', 'User\Controllers\UserController@backup');
+$router->get('/user/games', 'User\Controllers\UserController@games');
+$router->get('/user/websitebuilder', 'User\Controllers\UserController@websiteBuilder');
 $router->post('/user/login', 'User\Controllers\UserController@login');
 $router->get('/user/logout', 'User\Controllers\UserController@logout');
 $router->get('/user/section/hosting', 'User\Controllers\SectionController@hosting');
@@ -95,7 +100,6 @@ $router->post('/user/apps/python/create', 'User\Controllers\AppsController@pytho
 $router->get('/user/apps/python/start/{id}', 'User\Controllers\AppsController@pythonStart');
 $router->get('/user/apps/python/stop/{id}', 'User\Controllers\AppsController@pythonStop');
 $router->get('/user/apps/python/delete/{id}', 'User\Controllers\AppsController@pythonDelete');
-$router->get('/admin/ssl/autossl-run', 'Admin\Controllers\SslController@autosslRun');
 // Chat routes
 $router->post('/chat/start', 'User\Controllers\ChatController@start');
 $router->get('/chat/poll/{sessionId}', 'User\Controllers\ChatController@poll');
