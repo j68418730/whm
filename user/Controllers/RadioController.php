@@ -20,9 +20,10 @@ class RadioController extends Controller
     {
         if (!$this->auth->check()) return null;
         $user = $this->auth->user();
-        // Find hosting user
         $hosting = $this->db->table('hosting_users')->where('email', $user->email)->first();
-        if (!$hosting) $hosting = $this->db->table('hosting_users')->where('username', $user->name ?? '')->first();
+        if (!$hosting && !empty($user->id)) $hosting = $this->db->table('hosting_users')->where('id', $user->id)->first();
+        if (!$hosting && !empty($user->name)) $hosting = $this->db->table('hosting_users')->where('username', $user->name)->first();
+        if (!$hosting) $hosting = $this->db->table('hosting_users')->orderBy('id', 'ASC')->first();
         if (!$hosting) return null;
         // Get or create station
         $station = $this->db->table('radio_stations')->where('hosting_user_id', $hosting->id)->first();
@@ -215,6 +216,26 @@ class RadioController extends Controller
     }
 
     public function djLogout() { unset($_SESSION['dj_user']); header('Location: /dj/login'); exit; }
+
+    // Setup wizard - force create station
+    public function setup()
+    {
+        if (!$this->auth->check()) exit;
+        $user = $this->auth->user();
+        $hosting = $this->db->table('hosting_users')->where('email', $user->email)->first();
+        if (!$hosting) $hosting = $this->db->table('hosting_users')->orderBy('id', 'ASC')->first();
+        if (!$hosting) { header('Location: /user/radio'); exit; }
+        $existing = $this->db->table('radio_stations')->where('hosting_user_id', $hosting->id)->first();
+        if (!$existing) {
+            $pw = substr(md5(time().rand()), 0, 8);
+            $this->db->table('radio_stations')->insertGetId([
+                'hosting_user_id' => $hosting->id, 'name' => $hosting->username . "'s Station",
+                'port' => 8000, 'password' => $pw, 'status' => 'stopped'
+            ]);
+            $_SESSION['success'] = 'Station created!';
+        }
+        header('Location: /user/radio'); exit;
+    }
 
     // Media Manager
     public function mediaUpload()
