@@ -78,13 +78,14 @@ $currentUrl = $_SERVER['REQUEST_URI'] ?? '';
 $pkgType = isset($package) && isset($package->type) ? $package->type : (isset($hosting) && isset($hosting->plan_type) ? $hosting->plan_type : '');
 $isWeb = $pkgType === '' || $pkgType === 'web_hosting' || $pkgType === 'hosting' || str_contains($pkgType, 'web');
 $features = [];
-if ($package && !empty($package->feature_list_id)) {
-    try { $db = \Core\Application::getInstance()->get('db'); $fl = $db->table('feature_lists')->where('id', $package->feature_list_id)->first(); if($fl) $features = (array)$fl; } catch(\Exception $e) {}
+$pkg = isset($package) ? $package : null;
+if ($pkg && !empty($pkg->feature_list_id)) {
+    try { $db = \Core\Application::getInstance()->get('db'); $fl = $db->table('feature_lists')->where('id', $pkg->feature_list_id)->first(); if($fl) $features = (array)$fl; } catch(\Exception $e) {}
 }
-if ($isRadio || ($package->icecast_enabled ?? 0)) $features['radio'] = 1;
-if ($package->dj_panel_enabled ?? 0) $features['dj_panel'] = 1;
-if ($package->live_chat_enabled ?? 0) $features['livechat'] = 1;
-if ($package->game ?? 0) $features['game'] = 1;
+if (($pkg->icecast_enabled ?? 0)) $features['radio'] = 1;
+if (($pkg->dj_panel_enabled ?? 0)) $features['dj_panel'] = 1;
+if (($pkg->live_chat_enabled ?? 0)) $features['livechat'] = 1;
+if (($pkg->game ?? 0)) $features['game'] = 1;
 if (class_exists('\\Plugins\\WebsiteBuilder\\WebsiteBuilderPlugin')) $features['builder'] = 1;
 $features['web'] = $isWeb;
 require_once BASE_PATH . '/core/UserMenu.php';
