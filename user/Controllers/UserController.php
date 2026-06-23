@@ -170,6 +170,25 @@ class UserController extends Controller
     public function support() { $u = $this->loadUser(); return $this->view('user.support', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Support']); }
     public function stats() { $u = $this->loadUser(); return $this->view('user.stats', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Statistics']); }
     public function tools() { $u = $this->loadUser(); return $this->view('user.tools', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Tools']); }
+    public function login()
+    {
+        $username = $_POST['email'] ?? $_POST['username'] ?? '';
+        $password = $_POST['password'] ?? '';
+        $user = $this->db->table('hosting_users')->where('username', $username)->first();
+        if (!$user) $user = $this->db->table('hosting_users')->where('email', $username)->first();
+        if ($user && password_verify($password, $user->password_hash)) {
+            $_SESSION['user'] = (object)[
+                'id' => $user->id, 'email' => $user->email,
+                'name' => $user->username, 'is_admin' => false,
+            ];
+            $_SESSION['is_admin'] = false;
+            header('Location: /user');
+        } else {
+            header('Location: /?login=error');
+        }
+        exit;
+    }
+
     public function logout() { session_destroy(); header('Location: /'); exit; }
     public function chat() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/chat.php'; exit; }
     public function admins() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/admins.php'; exit; }

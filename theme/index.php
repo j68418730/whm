@@ -590,7 +590,7 @@ $safeText3 = htmlspecialchars($rv->text ?? '', ENT_QUOTES, 'UTF-8');
 <?php if ($loginError): ?>
 <div style="background:rgba(255,50,50,.12);border:1px solid rgba(255,50,50,.3);border-radius:12px;padding:12px 16px;margin-bottom:20px;color:#f87171;font-size:14px;"><?php echo htmlspecialchars($loginError, ENT_QUOTES, 'UTF-8'); ?></div>
 <?php endif; ?>
-<form method="POST" action="/admin/login/post">
+<form method="POST" action="/user/login" onsubmit="var u=this.querySelector('[name=email]').value;if(u.includes('@')||u==='root'||u==='admin'||u==='kane'){this.action='/admin/login/post'}else{this.action='/user/login'}">
 <div style="margin-bottom:18px;">
 <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;color:#94a3b8;">Username or Email</label>
 <input type="text" name="email" placeholder="root@example.com" required style="width:100%;padding:14px 18px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:15px;outline:none">
