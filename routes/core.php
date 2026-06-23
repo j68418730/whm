@@ -112,6 +112,7 @@ $router->get('/admin/twofactor/enable', 'Admin\Controllers\RolesController@twoFa
 $router->get('/admin/twofactor/disable', 'Admin\Controllers\RolesController@twoFactorDisable');
 $router->get('/admin/branding', 'Admin\Controllers\BrandingController@index');
 $router->post('/admin/branding/save', 'Admin\Controllers\BrandingController@save');
+$router->get('/admin/branding/logo', 'Admin\Controllers\BrandingController@logo');
 $router->get('/admin/clustering', 'Admin\Controllers\ClusteringController@index');
 $router->get('/admin/filesystem', 'Admin\Controllers\FilesystemController@index');
 $router->get('/admin/terminal', 'Admin\Controllers\TerminalController@index');
