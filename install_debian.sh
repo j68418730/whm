@@ -53,12 +53,43 @@ apt update -qq && apt install -y -qq steamcmd 2>/dev/null || {
 mkdir -p /home/gameservers
 echo "SteamCMD installed at /usr/games/steamcmd"
 
-# 4b. phpMyAdmin + ModSecurity + RoundCube
-echo "[4/9] Installing phpMyAdmin, ModSecurity, RoundCube..."
-apt install -y -qq phpmyadmin libapache2-mod-security2 roundcube roundcube-mysql roundcube-plugins
-# Enable RoundCube Apache config
-ln -sf /etc/roundcube/apache.conf /etc/apache2/conf-available/roundcube.conf 2>/dev/null || true
-a2enconf roundcube 2>/dev/null || true
+# 4b. phpMyAdmin + SnappyMail (replaces Roundcube)
+echo "[4/9] Installing phpMyAdmin, SnappyMail..."
+apt install -y -qq phpmyadmin
+SM_VER="2.38.2"
+if [ ! -d "$PANEL_DIR/public/snappymail" ]; then
+    mkdir -p "$PANEL_DIR/public/snappymail"
+    cd /tmp
+    curl -sL -o snappymail.zip "https://github.com/the-djmaze/snappymail/releases/download/v${SM_VER}/snappymail-${SM_VER}.zip"
+    unzip -qo snappymail.zip -d "$PANEL_DIR/public/snappymail"
+    rm -f snappymail.zip
+    chown -R www-data:www-data "$PANEL_DIR/public/snappymail"
+    # Configure default domain with shortLogin (local part only for IMAP)
+    mkdir -p "$PANEL_DIR/public/snappymail/data/_data_/_default_/domains" 2>/dev/null || true
+    cat > "$PANEL_DIR/public/snappymail/data/_data_/_default_/domains/default.json" <<'SMCFG'
+{
+    "IMAP": {
+        "host": "localhost", "port": 143, "type": 0, "timeout": 300,
+        "shortLogin": true, "lowerLogin": true,
+        "sasl": ["SCRAM-SHA3-512", "SCRAM-SHA-512", "SCRAM-SHA-256", "SCRAM-SHA-1", "PLAIN", "LOGIN"],
+        "ssl": { "verify_peer": false, "verify_peer_name": false, "allow_self_signed": false, "SNI_enabled": true, "disable_compression": true, "security_level": 1 },
+        "disabled_capabilities": ["METADATA", "OBJECTID", "PREVIEW","STATUS=SIZE"],
+        "use_expunge_all_on_delete": false, "fast_simple_search": true,
+        "force_select": false, "message_all_headers": false, "message_list_limit": 10000, "search_filter": ""
+    },
+    "SMTP": {
+        "host": "localhost", "port": 25, "type": 0, "timeout": 60,
+        "shortLogin": true, "lowerLogin": true,
+        "sasl": ["SCRAM-SHA3-512", "SCRAM-SHA-512", "SCRAM-SHA-256", "SCRAM-SHA-1", "PLAIN", "LOGIN"],
+        "ssl": { "verify_peer": false, "verify_peer_name": false, "allow_self_signed": false, "SNI_enabled": true, "disable_compression": true, "security_level": 1 },
+        "useAuth": false, "setSender": false, "usePhpMail": false
+    },
+    "Sieve": { "host": "localhost", "port": 4190, "type": 0, "timeout": 10, "shortLogin": false, "lowerLogin": true, "sasl": ["SCRAM-SHA3-512", "SCRAM-SHA-512", "SCRAM-SHA-256", "SCRAM-SHA-1", "PLAIN", "LOGIN"], "ssl": { "verify_peer": false, "verify_peer_name": false, "allow_self_signed": false, "SNI_enabled": true, "disable_compression": true, "security_level": 1 }, "enabled": false },
+    "whiteList": ""
+}
+SMCFG
+    chown -R www-data:www-data "$PANEL_DIR/public/snappymail"
+fi
 
 # Create panel ports vhost config
 cat > /etc/apache2/sites-available/panel-ports.conf <<'VHOSTS'

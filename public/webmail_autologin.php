@@ -68,19 +68,13 @@ body{background:#02050e;color:#fff;font-family:'Inter',sans-serif;display:flex;j
 <p>Connecting to webmail...</p>
 <div class="spinner"></div>
 </div>
-<form id="rcForm" method="POST" action="/roundcube/">
-<input type="hidden" name="_task" value="login">
-<input type="hidden" name="_action" value="login">
-<input type="hidden" name="_user" value="<?php echo htmlspecialchars($email); ?>">
-<input type="hidden" name="_pass" value="<?php echo htmlspecialchars($password); ?>">
-</form>
 <script>
 <?php if ($email && $password): ?>
-setTimeout(function(){document.getElementById('rcForm').submit();}, 1200);
+setTimeout(function(){window.location.href='/sso_webmail.php?email=' + encodeURIComponent('<?php echo htmlspecialchars($email); ?>');}, 500);
 <?php elseif ($email): ?>
-setTimeout(function(){window.location.href='/roundcube/?_user=' + encodeURIComponent('<?php echo htmlspecialchars($email); ?>');}, 1200);
+setTimeout(function(){window.location.href='/sso_webmail.php?email=' + encodeURIComponent('<?php echo htmlspecialchars($email); ?>');}, 500);
 <?php else: ?>
-setTimeout(function(){window.location.href='/roundcube/';}, 1500);
+setTimeout(function(){window.location.href='/snappymail/';}, 500);
 <?php endif; ?>
 </script>
 </body></html>
