@@ -56,7 +56,13 @@ if (is_file($ckFile)) {
         $line = trim($line);
         if ($line && !str_starts_with($line, '#')) {
             $parts = preg_split('/\s+/', $line);
-            if (count($parts) >= 7) $cookies[] = ['name' => $parts[5], 'value' => $parts[6]];
+            // Netscape cookie format: domain, flag, path, secure, expiry, name, value
+            // Sometimes the domain has #HttpOnly prefix
+            $nameIdx = count($parts) - 2;
+            $valIdx = count($parts) - 1;
+            if (count($parts) >= 2) {
+                $cookies[] = ['name' => $parts[$nameIdx], 'value' => $parts[$valIdx]];
+            }
         }
     }
 }
@@ -72,7 +78,12 @@ if (!file_exists($lf)) $logo = '/theme/assets/img/logo.png';
 // Build cookie-setting JavaScript
 $cookieJS = '';
 foreach ($cookies as $c) {
-    $cookieJS .= 'document.cookie="' . $c['name'] . '=' . $c['value'] . ';path=/roundcube/;max-age=86400";';
+    $name = $c['name'];
+    $val = $c['value'];
+    // Roundcube uses roundcube_sessid, not PHPSESSID
+    if ($name === 'PHPSESSID' || $name === 'roundcube_sessid') {
+        $cookieJS .= 'document.cookie="' . $name . '=' . $val . ';path=/;max-age=86400";';
+    }
 }
 ?><!DOCTYPE html>
 <html><head><title>Opening Webmail...</title>
