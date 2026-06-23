@@ -97,6 +97,7 @@ $router->get('/webmail', 'User\Controllers\UserController@webmailRedirect');
 $router->post('/user/login', 'User\Controllers\UserController@login');
 $router->get('/user/logout', 'User\Controllers\UserController@logout');
 $router->get('/user/alert/dismiss/{id}', 'User\Controllers\UserController@dismissAlert');
+$router->get('/user/alert/fetch', 'User\Controllers\UserController@fetchAlerts');
 $router->get('/user/section/hosting', 'User\Controllers\SectionController@hosting');
 $router->get('/user/section/email', 'User\Controllers\SectionController@email');
 $router->get('/user/section/domains', 'User\Controllers\SectionController@domains');
