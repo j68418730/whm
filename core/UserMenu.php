@@ -17,7 +17,7 @@ if (!function_exists('user_menu_sections')) {
             $sections[] = ['label' => 'Email', 'href' => '/user/section/email', 'icon' => '📧', 'match' => ['/user/email','/user/section/email']];
 
         if (!empty($f->radio) || !empty($f->icecast))
-            $sections[] = ['label' => 'Radio', 'href' => '/user/section/radio', 'icon' => '📻', 'match' => ['/user/radio','/user/dj-manager','/dj_panel.php','/user/stats','/user/section/radio']];
+            $sections[] = ['label' => 'Radio', 'href' => '/user/section/radio', 'icon' => '📻', 'match' => ['/user/radio','/user/dj-manager','/dj_panel.php','/user/stats','/user/public-djs','/user/section/radio']];
 
         if (!empty($f->game))
             $sections[] = ['label' => 'Games', 'href' => '/user/section/games', 'icon' => '🎮', 'match' => ['/user/games','/user/section/games']];
