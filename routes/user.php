@@ -74,6 +74,14 @@ $router->get('/user/php-switcher', 'User\Controllers\UserController@phpSwitcher'
 $router->post('/user/php-switcher', 'User\Controllers\UserController@phpSwitcher');
 $router->get('/user/tools', 'User\Controllers\UserController@tools');
 $router->get('/user/logout', 'User\Controllers\UserController@logout');
+$router->get('/user/section/hosting', 'User\Controllers\SectionController@hosting');
+$router->get('/user/section/email', 'User\Controllers\SectionController@email');
+$router->get('/user/section/domains', 'User\Controllers\SectionController@domains');
+$router->get('/user/section/billing', 'User\Controllers\SectionController@billing');
+$router->get('/user/section/support', 'User\Controllers\SectionController@support');
+$router->get('/user/section/radio', 'User\Controllers\SectionController@radio');
+$router->get('/user/section/games', 'User\Controllers\SectionController@games');
+$router->get('/user/section/builder', 'User\Controllers\SectionController@builder');
 $router->get('/user/apps/node', 'User\Controllers\AppsController@node');
 $router->post('/user/apps/node/create', 'User\Controllers\AppsController@nodeCreate');
 $router->get('/user/apps/node/start/{id}', 'User\Controllers\AppsController@nodeStart');
