@@ -32,6 +32,16 @@ if (!$email) {
     }
 }
 
+// Try to get plain password for this email
+if ($email) {
+    try {
+        $pwStmt = $pdo->prepare("SELECT password_plain FROM mail_accounts WHERE email = ? LIMIT 1");
+        $pwStmt->execute([$email]);
+        $pwRow = $pwStmt->fetch(PDO::FETCH_OBJ);
+        if ($pwRow && $pwRow->password_plain) $password = $pwRow->password_plain;
+    } catch (Exception $e) {}
+}
+
 // Get logo
 $pdo2 = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
 $q = $pdo2->query("SELECT setting_value FROM automation_settings WHERE setting_key='company_logo'");
@@ -57,11 +67,16 @@ body{background:#02050e;color:#fff;font-family:'Inter',sans-serif;display:flex;j
 <p>Connecting to webmail...</p>
 <div class="spinner"></div>
 </div>
-<form id="rcForm" method="GET" action="/roundcube/">
+<form id="rcForm" method="POST" action="/roundcube/">
+<input type="hidden" name="_task" value="login">
+<input type="hidden" name="_action" value="login">
 <input type="hidden" name="_user" value="<?php echo htmlspecialchars($email); ?>">
+<input type="hidden" name="_pass" value="<?php echo htmlspecialchars($password); ?>">
 </form>
 <script>
-<?php if ($email): ?>
+<?php if ($email && $password): ?>
+setTimeout(function(){document.getElementById('rcForm').submit();}, 1200);
+<?php elseif ($email): ?>
 setTimeout(function(){window.location.href='/roundcube/?_user=' + encodeURIComponent('<?php echo htmlspecialchars($email); ?>');}, 1200);
 <?php else: ?>
 setTimeout(function(){window.location.href='/roundcube/';}, 1500);
