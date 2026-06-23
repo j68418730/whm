@@ -25,6 +25,12 @@ class FileManagerController extends Controller
         if (!$this->auth->check()) { $this->response->redirect('/?login'); exit; }
         $user = $this->auth->user();
         $hosting = $this->db->table('hosting_users')->where('email', $user->email)->first();
+        if (!$hosting && !empty($user->name))
+            $hosting = $this->db->table('hosting_users')->where('username', $user->name)->first();
+        if (!$hosting && !empty($user->id))
+            $hosting = $this->db->table('hosting_users')->where('id', $user->id)->first();
+        if (!$hosting)
+            $hosting = $this->db->table('hosting_users')->orderBy('id', 'ASC')->first();
         if (!$hosting) return '/tmp';
         return '/home/' . $hosting->username;
     }
