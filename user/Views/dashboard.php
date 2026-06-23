@@ -24,6 +24,23 @@
 <h2 style="font-size:22px;font-weight:700;margin-bottom:4px">Dashboard</h2>
 <p class="subtitle" style="color:#64748b;font-size:13px;margin-bottom:24px">Welcome back, <?php echo htmlspecialchars(($hosting->first_name ?? $hosting->username) ?: $user->name ?? 'User'); ?></p>
 
+<div id="supportStatusBar" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.08);border-radius:10px;margin-bottom:18px;font-size:13px;cursor:pointer" onclick="window.location='/user/tickets'">
+<span id="supportIcon" style="width:10px;height:10px;border-radius:50%;background:#64748b"></span>
+<span id="supportLabel">Checking support status...</span>
+<a href="/user/chat" style="margin-left:auto;color:#0A84FF;text-decoration:none;font-size:12px">💬 Live Chat →</a>
+</div>
+
+<script>
+fetch('/admin/support-status/public').then(function(r){return r.json()}).then(function(d){
+    var bar=document.getElementById('supportStatusBar');
+    var icon=document.getElementById('supportIcon');
+    var label=document.getElementById('supportLabel');
+    if(d.status==='online'){icon.style.background='#4ade80';label.textContent='Support is Online — Click to get help';bar.style.borderColor='rgba(74,222,128,.3)';}
+    else if(d.status==='away'){icon.style.background='#facc15';label.textContent='Support is Away — Leave a message';bar.style.borderColor='rgba(250,204,21,.3)';}
+    else{icon.style.background='#64748b';label.textContent='Support is Offline — Submit a ticket';bar.style.borderColor='rgba(100,116,139,.3)';}
+}).catch(function(){document.getElementById('supportStatusBar').style.display='none'});
+</script>
+
 <!-- Quick Actions -->
 <div class="quick-grid">
 <a href="/user/services" class="quick-link"><span class="qicon">🌐</span>My Services</a>
