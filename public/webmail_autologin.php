@@ -1,61 +1,32 @@
 <?php
-/**
- * Roundcube/Webmail Auto-Login for Planet-Hosts
- * Signs in using the Roundcube internal API
- */
 session_start();
-
-$email = $_SESSION['webmail_email'] ?? ($_SESSION['user']->email ?? '');
-$password = $_SESSION['webmail_password'] ?? '';
-
-if (!$email || !$password) {
-    header('Location: /webmail/');
-    exit;
+$user = $_SESSION['user'] ?? null;
+$email = '';
+$password = '';
+if (is_object($user)) {
+    $email = $user->email ?? '';
+} elseif (is_array($user)) {
+    $email = $user['email'] ?? '';
 }
+if (!empty($_SESSION['webmail_email'])) $email = $_SESSION['webmail_email'];
+if (!empty($_SESSION['webmail_password'])) $password = $_SESSION['webmail_password'];
 
-// Use Roundcube's built-in auth API
-$rcUrl = 'http://localhost/roundcube/?_task=login';
-$postData = [
-    '_user' => $email,
-    '_pass' => $password,
-    '_action' => 'login',
-];
-
-$ch = curl_init($rcUrl);
-curl_setopt_array($ch, [
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_POST => true,
-    CURLOPT_POSTFIELDS => http_build_query($postData),
-    CURLOPT_HEADER => true,
-    CURLOPT_COOKIEJAR => '/tmp/rc_' . session_id() . '.txt',
-    CURLOPT_COOKIEFILE => '/tmp/rc_' . session_id() . '.txt',
-    CURLOPT_FOLLOWLOCATION => true,
-]);
-$resp = curl_exec($ch);
-$info = curl_getinfo($ch);
-curl_close($ch);
-
-// Forward cookies to browser
-$cookieFile = '/tmp/rc_' . session_id() . '.txt';
-if (is_file($cookieFile)) {
-    $lines = file($cookieFile);
-    foreach ($lines as $line) {
-        $line = trim($line);
-        if ($line && !str_starts_with($line, '#')) {
-            $parts = preg_split('/\s+/', $line);
-            if (count($parts) >= 7) {
-                setcookie($parts[5], $parts[6], [
-                    'expires' => time() + 86400,
-                    'path' => '/roundcube/',
-                    'domain' => '',
-                    'secure' => false,
-                    'httponly' => false,
-                ]);
-            }
-        }
-    }
-}
-
-// Redirect to webmail
-header('Location: /roundcube/');
-exit;
+// Simple auto-login form that posts to Roundcube
+?><!DOCTYPE html>
+<html><head><title>Redirecting to Webmail...</title></head>
+<body>
+<form id="rcForm" method="POST" action="/roundcube/">
+<input type="hidden" name="_task" value="login">
+<input type="hidden" name="_action" value="login">
+<input type="hidden" name="_user" value="<?php echo htmlspecialchars($email); ?>">
+<input type="hidden" name="_pass" value="<?php echo htmlspecialchars($password); ?>">
+</form>
+<script>
+<?php if ($email && $password): ?>
+document.getElementById('rcForm').submit();
+<?php else: ?>
+window.location.href = '/roundcube/';
+<?php endif; ?>
+</script>
+<p>Redirecting to webmail...</p>
+</body></html>
