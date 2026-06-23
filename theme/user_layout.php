@@ -12,8 +12,8 @@ if ($package && $package->feature_list_id) {
 }
 // Merge package type flags into features array
 if ($hasRadio || ($package->icecast_enabled ?? 0)) $features['radio'] = 1;
-if ($hasGame) $features['game'] = 1;
-if ($hasBuilder) $features['builder'] = 1;
+if ($hasGame || ($package->game ?? 0)) $features['game'] = 1;
+if ($hasBuilder || class_exists('\\Plugins\\WebsiteBuilder\\WebsiteBuilderPlugin')) $features['builder'] = 1;
 if ($package->dj_panel_enabled ?? 0) $features['dj_panel'] = 1;
 if ($package->live_chat_enabled ?? 0) $features['livechat'] = 1;
 $features['web'] = $hasWeb;
