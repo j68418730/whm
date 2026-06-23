@@ -1,294 +1,218 @@
 <?php
-/**
- * Radio Controller
- * Handles radio streaming requests for the user panel
- */
-
 namespace User\Controllers;
 
 use Core\Controller;
-use Services\Stream\StreamManager;
-use Services\AutoDJ\AutoDJManager;
-use Services\Transcoding\TranscodingManager;
-use Core\Auth;
-use Core\Request;
-use Core\Response;
 
 class RadioController extends Controller
 {
-    protected $streamManager;
-    protected $autodjManager;
-    protected $transcodingManager;
-    protected $auth;
-    protected $request;
-    protected $response;
+    protected $auth, $request, $response, $db;
 
     public function __construct()
     {
-        // Get services from the application container
         $app = \Core\Application::getInstance();
-        $this->streamManager = $app->get('radio.stream');
-        $this->autodjManager = $app->get('radio.autodj');
-        $this->transcodingManager = $app->get('radio.transcoding');
         $this->auth = $app->get('auth');
         $this->request = $app->get('request');
         $this->response = $app->get('response');
+        $this->db = $app->get('db');
     }
 
-    /**
-     * Show the radio dashboard
-     */
-    public function index()
+    protected function getStation()
     {
-        // Check if user is logged in
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
+        if (!$this->auth->check()) return null;
+        $user = $this->auth->user();
+        // Find hosting user
+        $hosting = $this->db->table('hosting_users')->where('email', $user->email)->first();
+        if (!$hosting) $hosting = $this->db->table('hosting_users')->where('username', $user->name ?? '')->first();
+        if (!$hosting) return null;
+        // Get or create station
+        $station = $this->db->table('radio_stations')->where('hosting_user_id', $hosting->id)->first();
+        if (!$station) {
+            $pkg = $this->db->table('hosting_packages')->where('id', $hosting->package_id)->first();
+            if ($pkg && ($pkg->icecast_enabled ?? 0)) {
+                $pw = substr(md5(time().rand()), 0, 8);
+                $sid = $this->db->table('radio_stations')->insertGetId([
+                    'hosting_user_id' => $hosting->id, 'name' => $hosting->username . "'s Station",
+                    'port' => 8000, 'password' => $pw, 'status' => 'stopped'
+                ]);
+                $station = $this->db->table('radio_stations')->where('id', $sid)->first();
+            }
         }
+        return $station;
+    }
 
-        // Get the current user's streams
-        $userId = $this->auth->user()->id;
-        $streams = $this->streamManager->getUserStreams($userId);
-
-        // Render the view
+    public function dashboard()
+    {
+        if (!$this->auth->check()) { header('Location: /?login'); exit; }
+        $station = $this->getStation();
+        $djs = []; $requests = []; $schedule = [];
+        if ($station) {
+            try { $djs = $this->db->table('radio_djs')->where('station_id', $station->id)->get() ?: []; } catch(\Exception $e) {}
+            try { $requests = $this->db->table('radio_requests')->where('station_id', $station->id)->where('status', 'pending')->limit(10)->get() ?: []; } catch(\Exception $e) {}
+            try { $schedule = $this->db->table('radio_schedule')->where('station_id', $station->id)->where('is_active', 1)->orderBy('day_of_week')->orderBy('start_time')->get() ?: []; } catch(\Exception $e) {}
+        }
+        $user = $this->auth->user();
         return $this->view('user.radio.index', [
-            'streams' => $streams
+            'user' => $user, 'station' => $station, 'djs' => $djs,
+            'requests' => $requests, 'schedule' => $schedule, 'title' => 'Radio Dashboard'
         ]);
     }
 
-    /**
-     * Show the create stream form
-     */
-    public function create()
-    {
-        // Check if user is logged in
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
-        }
+    public function start($id) { if($this->auth->check()) { @exec("sudo systemctl start icecast@{$id} 2>/dev/null >/dev/null &"); $this->db->table('radio_stations')->where('id', $id)->update(['status'=>'starting']); } header('Location: /user/radio'); exit; }
+    public function stop($id) { if($this->auth->check()) { @exec("sudo systemctl stop icecast@{$id} 2>/dev/null >/dev/null &"); $this->db->table('radio_stations')->where('id', $id)->update(['status'=>'stopped']); } header('Location: /user/radio'); exit; }
+    public function restart($id) { if($this->auth->check()) { @exec("sudo systemctl restart icecast@{$id} 2>/dev/null >/dev/null &"); $this->db->table('radio_stations')->where('id', $id)->update(['status'=>'starting']); } header('Location: /user/radio'); exit; }
 
-        return $this->view('user.radio.create');
+    public function toggleAutodj($id)
+    {
+        if (!$this->auth->check()) exit;
+        $s = $this->db->table('radio_stations')->where('id', $id)->first();
+        if ($s) {
+            $new = $s->autodj_enabled ? 0 : 1;
+            $this->db->table('radio_stations')->where('id', $id)->update(['autodj_enabled' => $new, 'autodj_status' => $new ? 'running' : 'stopped']);
+        }
+        header('Location: /user/radio'); exit;
     }
 
-    /**
-     * Store a new stream
-     */
-    public function store()
+    // DJ Management
+    public function createDj()
     {
-        // Check if user is logged in
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) { header('Location: /user/radio'); exit; }
+        $username = strtolower(preg_replace('/[^a-z0-9]/', '', $_POST['username'] ?? ''));
+        $password = $_POST['password'] ?? '';
+        $name = $_POST['name'] ?? $username;
+        if ($username && $password) {
+            try {
+                $this->db->table('radio_djs')->insertGetId([
+                    'station_id' => $station->id, 'username' => $username,
+                    'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+                    'display_name' => $name, 'email' => $_POST['email'] ?? '',
+                    'bio' => $_POST['bio'] ?? '', 'genres' => $_POST['genres'] ?? '',
+                    'status' => 'active'
+                ]);
+                $_SESSION['success'] = "DJ '{$name}' created.";
+            } catch(\Exception $e) { $_SESSION['error'] = 'Username already exists.'; }
         }
+        header('Location: /user/radio?tab=djs'); exit;
+    }
 
-        // Validate input
-        $serverType = $this->request->post('server_type') ?? 'icecast';
-        $port = $this->request->post('port') ?? null;
-        $password = $this->request->post('password') ?? null;
+    public function deleteDj($id)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) {
+            $this->db->table('radio_djs')->where('id', $id)->where('station_id', $station->id)->delete();
+            $_SESSION['success'] = 'DJ deleted.';
+        }
+        header('Location: /user/radio?tab=djs'); exit;
+    }
 
-        $userId = $this->auth->user()->id;
+    public function toggleDj($id)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) {
+            $dj = $this->db->table('radio_djs')->where('id', $id)->where('station_id', $station->id)->first();
+            if ($dj) {
+                $new = $dj->status === 'active' ? 'suspended' : 'active';
+                $this->db->table('radio_djs')->where('id', $id)->update(['status' => $new]);
+                $_SESSION['success'] = "DJ {$new}.";
+            }
+        }
+        header('Location: /user/radio?tab=djs'); exit;
+    }
 
+    // Schedule
+    public function addSchedule()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) { header('Location: /user/radio'); exit; }
         try {
-            $stream = $this->streamManager->createStream($userId, $serverType, $port, $password);
-
-            // Redirect to the stream management page
-            $this->response->redirect('/radio/stream/'.$stream['id']);
-            exit;
-        } catch (\Exception $e) {
-            // Show error
-            return $this->view('user.radio.create', [
-                'error' => $e->getMessage()
+            $this->db->table('radio_schedule')->insertGetId([
+                'station_id' => $station->id, 'dj_id' => (int)($_POST['dj_id'] ?? 0) ?: null,
+                'show_name' => $_POST['show_name'] ?? 'Untitled',
+                'day_of_week' => (int)($_POST['day_of_week'] ?? 0),
+                'start_time' => $_POST['start_time'] ?? '00:00',
+                'end_time' => $_POST['end_time'] ?? '01:00',
             ]);
-        }
+            $_SESSION['success'] = 'Show added.';
+        } catch(\Exception $e) { $_SESSION['error'] = 'Failed to add show.'; }
+        header('Location: /user/radio?tab=schedule'); exit;
     }
 
-    /**
-     * Show a specific stream
-     */
-    public function show($streamId)
+    public function deleteSchedule($id)
     {
-        // Check if user is logged in
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) {
+            $this->db->table('radio_schedule')->where('id', $id)->where('station_id', $station->id)->delete();
         }
-
-        $userId = $this->auth->user()->id;
-        $stream = $this->streamManager->getStream($streamId, $userId);
-
-        if (!$stream) {
-            $this->response->setStatusCode(404);
-            $this->response->setContent('404 - Stream not found');
-            $this->response->send();
-            exit;
-        }
-
-        // Get AutoDJ status if enabled
-        $autodj = null;
-        try {
-            $autodj = $this->autodjManager->getByStreamId($streamId);
-        } catch (\Exception $e) {
-            // AutoDJ not enabled
-        }
-
-        // Get transcoding options
-        $transcodingOptions = $this->transcodingManager->getOptions();
-
-        return $this->view('user.radio.show', [
-            'stream' => $stream,
-            'autodj' => $autodj,
-            'transcodingOptions' => $transcodingOptions
-        ]);
+        header('Location: /user/radio?tab=schedule'); exit;
     }
 
-    /**
-     * Start a stream
-     */
-    public function start($streamId)
+    // Requests
+    public function approveRequest($id)
     {
-        // Check if user is logged in
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
-        }
-
-        $userId = $this->auth->user()->id;
-        $this->streamManager->startStream($streamId, $userId);
-
-        $this->response->redirect('/radio/stream/'.$streamId);
-        exit;
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) { $this->db->table('radio_requests')->where('id', $id)->where('station_id', $station->id)->update(['status' => 'approved']); }
+        header('Location: /user/radio?tab=requests'); exit;
     }
-
-    /**
-     * Stop a stream
-     */
-    public function stop($streamId)
+    public function rejectRequest($id)
     {
-        // Check if user is logged in
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
-        }
-
-        $userId = $this->auth->user()->id;
-        $this->streamManager->stopStream($streamId, $userId);
-
-        $this->response->redirect('/radio/stream/'.$streamId);
-        exit;
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) { $this->db->table('radio_requests')->where('id', $id)->where('station_id', $station->id)->update(['status' => 'rejected']); }
+        header('Location: /user/radio?tab=requests'); exit;
     }
 
-    /**
-     * Enable AutoDJ for a stream
-     */
+    // Source kick (Icecast)
     public function kickSource()
     {
         header('Content-Type: application/json');
         if (!$this->auth->check()) { echo json_encode(['error'=>'Unauthorized']); exit; }
-        $streamId = (int)($_POST['stream_id'] ?? 0);
-        if (!$streamId) { echo json_encode(['error'=>'No stream ID']); exit; }
-        $app = \Core\Application::getInstance();
-        $db = $app->get('db');
-        $stream = $db->table('radio_streams')->where('id', $streamId)->first();
-        if (!$stream) { echo json_encode(['error'=>'Stream not found']); exit; }
-        $port = $stream->port ?? 8000;
-        $pass = $stream->password ?? 'admin';
-        $ch = curl_init("http://localhost:{$port}/admin/killsource?mount=/stream");
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_USERPWD=>"admin:{$pass}", CURLOPT_TIMEOUT=>5]);
-        $resp = curl_exec($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        echo json_encode($code === 200 ? ['success'=>true] : ['error'=>"HTTP {$code}"]);
+        $id = (int)($_POST['station_id'] ?? 0);
+        $s = $this->db->table('radio_stations')->where('id', $id)->first();
+        if (!$s) { echo json_encode(['error'=>'Not found']); exit; }
+        $ch = curl_init("http://localhost:{$s->port}/admin/killsource?mount={$s->mount}");
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_USERPWD=>"admin:{$s->admin_password}", CURLOPT_TIMEOUT=>5]);
+        curl_exec($ch); $code = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+        echo json_encode($code===200 ? ['success'=>true] : ['error'=>"HTTP $code"]);
         exit;
     }
 
-    public function approveRequest($id)
+    // DJ Portal (separate login)
+    public function djLogin()
     {
-        if (!$this->auth->check()) exit;
-        try { $app = \Core\Application::getInstance(); $db = $app->get('db'); $db->table('radio_requests')->where('id', $id)->update(['status'=>'approved']); } catch(\Exception $e) {}
-        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/user/radio'));
-        exit;
-    }
-
-    public function rejectRequest($id)
-    {
-        if (!$this->auth->check()) exit;
-        try { $app = \Core\Application::getInstance(); $db = $app->get('db'); $db->table('radio_requests')->where('id', $id)->update(['status'=>'rejected']); } catch(\Exception $e) {}
-        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/user/radio'));
-        exit;
-    }
-
-    public function enableAutodj($streamId)
-    {
-        // Check if user is logged in
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
+        $error = '';
+        if ($_POST) {
+            $username = $_POST['username'] ?? '';
+            $password = $_POST['password'] ?? '';
+            $dj = $this->db->table('radio_djs')->where('username', $username)->where('status', 'active')->first();
+            if ($dj && password_verify($password, $dj->password_hash)) {
+                $_SESSION['dj_user'] = $dj;
+                $this->db->table('radio_djs')->where('id', $dj->id)->update(['last_login' => date('Y-m-d H:i:s')]);
+                header('Location: /dj/portal'); exit;
+            }
+            $error = 'Invalid credentials';
         }
-
-        $userId = $this->auth->user()->id;
-        $this->autodjManager->enableAutodj($streamId, $userId);
-
-        $this->response->redirect('/radio/stream/'.$streamId);
-        exit;
+        return $this->view('user.radio.dj_login', ['error' => $error, 'title' => 'DJ Login']);
     }
 
-    /**
-     * Disable AutoDJ for a stream
-     */
-    public function disableAutodj($streamId)
+    public function djPortal()
     {
-        // Check if user is logged in
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
-        }
-
-        $userId = $this->auth->user()->id;
-        $this->autodjManager->disableAutodj($streamId, $userId);
-
-        $this->response->redirect('/radio/stream/'.$streamId);
-        exit;
+        $dj = $_SESSION['dj_user'] ?? null;
+        if (!$dj) { header('Location: /dj/login'); exit; }
+        $station = $this->db->table('radio_stations')->where('id', $dj->station_id)->first();
+        $requests = $this->db->table('radio_requests')->where('station_id', $dj->station_id)->where('status', 'pending')->get() ?: [];
+        $schedule = $this->db->table('radio_schedule')->where('station_id', $dj->station_id)->where('dj_id', $dj->id)->get() ?: [];
+        $this->db->table('radio_djs')->where('id', $dj->id)->update(['last_active' => date('Y-m-d H:i:s')]);
+        return $this->view('user.radio.dj_portal', [
+            'dj' => $dj, 'station' => $station, 'requests' => $requests,
+            'schedule' => $schedule, 'title' => 'DJ Portal'
+        ]);
     }
 
-    /**
-     * Start AutoDJ
-     */
-    public function startAutodj($autodjId)
-    {
-        // Check if user is logged in
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
-        }
-
-        $this->autodjManager->startAutodj($autodjId);
-
-        // Get the stream ID from the AutoDJ record to redirect back
-        $autodj = $this->autodjManager->getById($autodjId);
-        $streamId = $autodj ? $autodj->stream_id : 0;
-
-        $this->response->redirect('/radio/stream/'.$streamId);
-        exit;
-    }
-
-    /**
-     * Stop AutoDJ
-     */
-    public function stopAutodj($autodjId)
-    {
-        // Check if user is logged in
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
-        }
-
-        $this->autodjManager->stopAutodj($autodjId);
-
-        // Get the stream ID from the AutoDJ record to redirect back
-        $autodj = $this->autodjManager->getById($autodjId);
-        $streamId = $autodj ? $autodj->stream_id : 0;
-
-        $this->response->redirect('/radio/stream/'.$streamId);
-        exit;
-    }
+    public function djLogout() { unset($_SESSION['dj_user']); header('Location: /dj/login'); exit; }
 }
