@@ -75,6 +75,8 @@ $router->get('/user/tools', 'User\Controllers\UserController@tools');
 $router->get('/user/terminal', 'User\Controllers\UserController@terminal');
 $router->get('/user/ftp', 'User\Controllers\UserController@ftp');
 $router->post('/user/ftp/create', 'User\Controllers\UserController@ftpCreate');
+$router->post('/user/ftp/password/{id}', 'User\Controllers\UserController@ftpPassword');
+$router->get('/user/ftp/toggle/{id}', 'User\Controllers\UserController@ftpToggle');
 $router->get('/user/ftp/delete/{id}', 'User\Controllers\UserController@ftpDelete');
 $router->get('/user/cron', 'User\Controllers\UserController@cron');
 $router->get('/user/git', 'User\Controllers\UserController@git');
