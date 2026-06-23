@@ -3,7 +3,6 @@ session_start();
 $email = $_GET['email'] ?? '';
 if (!$email) { header('Location: /webmail_autologin.php'); exit; }
 
-// Get password
 $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
 $stmt = $pdo->prepare("SELECT password_plain FROM mail_accounts WHERE email = ? LIMIT 1");
 $stmt->execute([$email]);
@@ -16,52 +15,54 @@ $localPart = explode('@', $email)[0];
 // Ensure system user exists
 exec("id " . escapeshellarg($localPart) . " 2>/dev/null || (useradd -m -d /home/" . escapeshellarg($localPart) . " -s /sbin/nologin " . escapeshellarg($localPart) . " 2>/dev/null && echo " . escapeshellarg($localPart) . ":" . escapeshellarg($password) . " | chpasswd 2>/dev/null)");
 
-// Use cURL to login to Roundcube and capture session
+// Step 1: Get Roundcube login page to obtain CSRF token + session cookie
 $ckFile = '/tmp/rc_' . session_id() . '.txt';
 @unlink($ckFile);
 
-// Step 1: Get login page + CSRF token
 $ch = curl_init('http://localhost/roundcube/');
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_HEADER => true,
     CURLOPT_COOKIEJAR => $ckFile,
-    CURLOPT_COOKIEFILE => $ckFile,
     CURLOPT_TIMEOUT => 10,
 ]);
-$resp = curl_exec($ch);
+$html = curl_exec($ch);
 curl_close($ch);
-preg_match('/name="_token" value="([^"]+)"/', $resp, $m);
-$token = $m[1] ?? '';
 
-// Step 2: POST login
+// Extract CSRF token
+preg_match('/name="_token" value="([^"]+)"/', $html, $m);
+$token = $m[1] ?? '';
+if (!$token) { die('Failed to get token.'); }
+
+// Step 2: POST login with the token and session cookie
 $ch2 = curl_init('http://localhost/roundcube/?_task=login&_action=login');
 curl_setopt_array($ch2, [
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_HEADER => true,
-    CURLOPT_FOLLOWLOCATION => true,
     CURLOPT_POST => true,
-    CURLOPT_POSTFIELDS => http_build_query(['_token'=>$token,'_task'=>'login','_action'=>'login','_timezone'=>'_default_','_url'=>'','_user'=>$localPart,'_pass'=>$password]),
+    CURLOPT_POSTFIELDS => http_build_query([
+        '_token' => $token, '_task' => 'login', '_action' => 'login',
+        '_timezone' => '_default_', '_url' => '',
+        '_user' => $localPart, '_pass' => $password,
+    ]),
     CURLOPT_COOKIEJAR => $ckFile,
     CURLOPT_COOKIEFILE => $ckFile,
     CURLOPT_TIMEOUT => 10,
 ]);
-curl_exec($ch2);
+$resp2 = curl_exec($ch2);
+$httpCode = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
 curl_close($ch2);
 
-// Step 3: Read cookies from jar
-$cookies = [];
+// Step 3: Read the roundcube_sessid cookie from the jar
+$sessId = '';
 if (is_file($ckFile)) {
     foreach (file($ckFile, FILE_IGNORE_NEW_LINES) as $line) {
         $line = trim($line);
         if ($line && !str_starts_with($line, '#')) {
             $parts = preg_split('/\s+/', $line);
-            // Netscape cookie format: domain, flag, path, secure, expiry, name, value
-            // Sometimes the domain has #HttpOnly prefix
-            $nameIdx = count($parts) - 2;
-            $valIdx = count($parts) - 1;
-            if (count($parts) >= 2) {
-                $cookies[] = ['name' => $parts[$nameIdx], 'value' => $parts[$valIdx]];
+            // Format: domain flag path secure expiry name value
+            if (count($parts) >= 7) {
+                $cname = $parts[count($parts)-2];
+                $cval = $parts[count($parts)-1];
+                if ($cname === 'roundcube_sessid') $sessId = $cval;
             }
         }
     }
@@ -74,17 +75,6 @@ $lr = $q->fetch(PDO::FETCH_OBJ);
 $logo = $lr ? $lr->setting_value : '/theme/assets/img/logo.png';
 $lf = __DIR__ . '/../' . ltrim($logo, '/');
 if (!file_exists($lf)) $logo = '/theme/assets/img/logo.png';
-
-// Build cookie-setting JavaScript
-$cookieJS = '';
-foreach ($cookies as $c) {
-    $name = $c['name'];
-    $val = $c['value'];
-    // Roundcube uses roundcube_sessid, not PHPSESSID
-    if ($name === 'PHPSESSID' || $name === 'roundcube_sessid') {
-        $cookieJS .= 'document.cookie="' . $name . '=' . $val . ';path=/;max-age=86400";';
-    }
-}
 ?><!DOCTYPE html>
 <html><head><title>Opening Webmail...</title>
 <style>
@@ -98,12 +88,14 @@ body{background:#02050e;color:#fff;font-family:'Inter',sans-serif;display:flex;j
 </style></head>
 <body>
 <div class="card">
-<img src="<?php echo htmlspecialchars($logo); ?>" alt="" onerror="this.style.display=\'none\'">
+<img src="<?php echo htmlspecialchars($logo); ?>" alt="" onerror="this.style.display='none'">
 <p>Signing in to webmail...</p>
 <div class="sp"></div>
 </div>
 <script>
-<?php echo $cookieJS; ?>
+<?php if ($sessId): ?>
+document.cookie = 'roundcube_sessid=<?php echo $sessId; ?>;path=/;max-age=86400';
+<?php endif; ?>
 setTimeout(function(){window.location.href='/roundcube/';}, 500);
 </script>
 </body></html>
