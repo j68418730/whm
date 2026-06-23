@@ -10,6 +10,15 @@ $features = [];
 if ($package && $package->feature_list_id) {
     try { $fl = (new \Core\Application::getInstance())->get('db')->table('feature_lists')->where('id', $package->feature_list_id)->first(); if($fl) $features = (array)$fl; } catch(\Exception $e) {}
 }
+// Merge package type flags into features array
+if ($hasRadio) $features['radio'] = 1;
+if ($hasGame) $features['game'] = 1;
+if ($hasBuilder) $features['builder'] = 1;
+$features['web'] = $hasWeb;
+// Load feature-aware menu
+require_once BASE_PATH . '/core/UserMenu.php';
+$userMenuItems = user_menu_items($features);
+$currentUrl = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/user';
 
 $hasWeb = stripos($pkgType, 'web') !== false || stripos($pkgType, 'hosting') !== false || !$pkgType;
 $hasRadio = stripos($pkgType, 'icecast') !== false || stripos($pkgType, 'radio') !== false;
@@ -29,7 +38,6 @@ $hasBackups = $features['backups'] ?? 1;
 
 $serverHost = $_SERVER['HTTP_HOST'] ?? 'planet-hosts.com';
 $domain = $hosting->domain ?? $serverHost;
-$active = $_GET['route'] ?? 'dashboard';
 ?><!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -52,14 +60,16 @@ body{font-family:Inter,sans-serif;background:#070b14;color:#e0e0e0;display:flex;
 .sidebar-user .name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sidebar-user .email{font-size:10px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-.sidebar-nav{padding:10px 8px;flex:1}
-.sidebar-section{margin-bottom:16px}
-.sidebar-section .label{font-size:9px;text-transform:uppercase;color:#475569;letter-spacing:1.5px;padding:0 10px;margin-bottom:4px;font-weight:700}
-.sidebar-section a{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:#94a3b8;text-decoration:none;font-size:13px;margin-bottom:1px;transition:all .15s}
-.sidebar-section a:hover{background:rgba(0,191,255,.08);color:#e0e0e0}
-.sidebar-section a.active{background:rgba(0,140,255,.12);color:#0A84FF;font-weight:600}
-.sidebar-section a .icon{width:18px;text-align:center;font-size:14px}
-.sidebar-section a .badge{margin-left:auto;font-size:9px;padding:2px 6px;border-radius:4px}
+.sidebar-nav{padding:4px 0;flex:1;overflow-y:auto}
+.nav-section{margin-bottom:2px}
+.nav-section .nav-label{font-size:9px;text-transform:uppercase;color:#475569;letter-spacing:1.5px;padding:6px 14px 2px;font-weight:700}
+.nav-section .nav-link{display:flex;align-items:center;gap:8px;padding:5px 14px;color:#94a3b8;text-decoration:none;font-size:12.5px;transition:.1s;border-left:2px solid transparent}
+.nav-section .nav-link:hover{background:rgba(0,191,255,.04);color:#e0e0e0}
+.nav-section .nav-link.active{color:#0A84FF;background:rgba(0,140,255,.08);border-left-color:#0A84FF}
+.nav-section .nav-link .icon{width:18px;text-align:center;font-size:13px}
+.search-box{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.06)}
+.search-box input{width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px;outline:none}
+.search-box input:focus{border-color:#0A84FF}
 
 /* Main */
 .main{flex:1;margin-left:250px;padding:24px 32px;max-width:1400px}
@@ -91,27 +101,8 @@ body{font-family:Inter,sans-serif;background:#070b14;color:#e0e0e0;display:flex;
 <div class="sidebar">
 <div class="sidebar-logo"><img src="/theme/assets/img/logo.png" alt=""><h1>PLANET-<span>HOSTS</span></h1></div>
 <div class="sidebar-user"><div class="avatar"><?php echo strtoupper(substr($username, 0, 1)); ?></div><div class="info"><div class="name"><?php echo htmlspecialchars($username); ?></div><div class="email"><?php echo htmlspecialchars($userEmail); ?></div></div></div>
-<nav class="sidebar-nav">
-<a href="/user" class="<?php echo $active==='dashboard'?'active':''; ?>"><span class="icon">🏠</span><span>Dashboard</span></a>
-<a href="/user/section/hosting"><span class="icon">🌐</span><span>Hosting</span></a>
-<?php if ($hasEmail): ?>
-<a href="/user/section/email"><span class="icon">📧</span><span>Email</span></a>
-<?php endif; ?>
-<a href="/user/section/domains"><span class="icon">🌍</span><span>Domains</span></a>
-<a href="/user/section/billing"><span class="icon">💳</span><span>Billing</span></a>
-<a href="/user/section/support"><span class="icon">🎫</span><span>Support</span></a>
-<?php if ($hasRadio): ?>
-<a href="/user/section/radio"><span class="icon">📻</span><span>Radio</span></a>
-<?php endif; ?>
-<?php if ($hasGame): ?>
-<a href="/user/section/games"><span class="icon">🎮</span><span>Games</span></a>
-<?php endif; ?>
-<?php if ($hasBuilder): ?>
-<a href="/user/section/builder"><span class="icon">🏗️</span><span>Builder</span></a>
-<?php endif; ?>
-<a href="/user/profile"><span class="icon">👤</span><span>Account</span></a>
-<a href="/user/logout" style="color:#f87171"><span class="icon">🚪</span><span>Logout</span></a>
-</nav>
+<div class="search-box"><input type="text" id="menuSearch" placeholder="Search..." oninput="var q=this.value.toLowerCase();document.querySelectorAll('.sidebar-nav .nav-link').forEach(function(a){a.style.display=q?a.textContent.toLowerCase().indexOf(q)>-1?'':'none':''})"></div>
+<div id="sidebarMenu"><?php echo render_user_sidebar($userMenuItems, $currentUrl); ?></div>
 </div>
 <?php endif; ?>
 
