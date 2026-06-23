@@ -2,14 +2,16 @@
 session_start();
 $email = $_GET['email'] ?? '';
 if (!$email) { header('Location: /webmail_autologin.php'); exit; }
-
 $user = $_SESSION['user'] ?? null;
 if (!$user) { header('Location: /?login'); exit; }
 
 $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
-$token = bin2hex(random_bytes(32));
-$pdo->prepare("INSERT INTO sso_tokens (token, email) VALUES (?, ?)")->execute([$token, $email]);
-$pdo->exec("DELETE FROM sso_tokens WHERE created_at < NOW() - INTERVAL 1 HOUR");
+
+// Get the password from mail_accounts
+$stmt = $pdo->prepare("SELECT password_plain FROM mail_accounts WHERE email = ? LIMIT 1");
+$stmt->execute([$email]);
+$row = $stmt->fetch(PDO::FETCH_OBJ);
+$password = $row ? $row->password_plain : '';
 
 // Get logo
 $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='company_logo'");
@@ -35,9 +37,9 @@ body{background:#02050e;color:#fff;font-family:'Inter',sans-serif;display:flex;j
 <div class="sp"></div>
 </div>
 <form id="f" method="POST" action="/roundcube/?_task=login&_action=login">
-<input type="hidden" name="_sso" value="<?php echo $token; ?>">
 <input type="hidden" name="_user" value="<?php echo htmlspecialchars($email); ?>">
-<input type="hidden" name="_pass" value="sso">
+<input type="hidden" name="_pass" value="<?php echo htmlspecialchars($password); ?>">
+<input type="hidden" name="_timezone" value="default">
 </form>
 <script>setTimeout(function(){document.getElementById('f').submit();},800);</script>
 </body></html>
