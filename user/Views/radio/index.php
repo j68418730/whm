@@ -43,8 +43,12 @@ Peak: <strong><?php echo (int)($station->listener_peak ?? 0); ?></strong>
 <a href="?tab=djs" class="<?php echo $tab==='djs'?'active':'';?>">🎧 DJs</a>
 <a href="?tab=schedule" class="<?php echo $tab==='schedule'?'active':'';?>">📅 Schedule</a>
 <a href="?tab=requests" class="<?php echo $tab==='requests'?'active':'';?>">🙋 Requests</a>
+<a href="?tab=media" class="<?php echo $tab==='media'?'active':'';?>">🎶 Media</a>
 <a href="?tab=playlists" class="<?php echo $tab==='playlists'?'active':'';?>">📂 Playlists</a>
+<a href="?tab=mounts" class="<?php echo $tab==='mounts'?'active':'';?>">🔗 Mounts</a>
 <a href="?tab=widgets" class="<?php echo $tab==='widgets'?'active':'';?>">🧩 Widgets</a>
+<a href="?tab=stats" class="<?php echo $tab==='stats'?'active':'';?>">📊 Stats</a>
+<a href="?tab=backups" class="<?php echo $tab==='backups'?'active':'';?>">💾 Backups</a>
 </div>
 
 <!-- Overview -->
@@ -144,10 +148,75 @@ echo htmlspecialchars($djName);?></td>
 <a href="/user/radio/request/reject/<?php echo $r->id;?>" class="btn btn-sm btn-danger">✕</a></div></div>
 <?php endforeach; endif;?></div></div>
 
+<!-- Media Manager -->
+<div class="tab <?php echo $tab==='media'?'active':'';?>">
+<div class="r-card"><h3>🎶 Media Library</h3>
+<?php $musicDir = '/home/radio/' . $station->id . '/music'; $files = []; if (is_dir($musicDir)) $files = array_diff(scandir($musicDir), ['.','..']); ?>
+<div style="margin-bottom:10px">
+<form method="POST" action="/user/radio/media/upload" enctype="multipart/form-data" style="display:flex;gap:6px">
+<input type="file" name="file[]" multiple required style="flex:1;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px">
+<button type="submit" class="btn btn-sm btn-primary">📤 Upload</button>
+</form>
+<small style="color:#64748b">Supported: MP3, AAC, OGG, FLAC, WAV</small>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px">
+<?php if (empty($files)):?><p style="color:#64748b;font-size:12px;grid-column:1/-1;text-align:center;padding:15px">No music files uploaded.</p>
+<?php else: foreach($files as $f): $ext = strtolower(pathinfo($f, PATHINFO_EXTENSION)); if (is_file("$musicDir/$f")): $sz = filesize("$musicDir/$f"); ?>
+<div style="background:rgba(8,16,28,.6);border:1px solid rgba(0,191,255,.06);border-radius:8px;padding:10px;text-align:center;font-size:11px">
+<div style="font-size:24px;margin-bottom:4px">🎵</div>
+<div style="font-weight:600;word-break:break-all"><?php echo htmlspecialchars($f);?></div>
+<div style="color:#64748b;font-size:10px"><?php echo $sz > 1048576 ? round($sz/1048576,1).' MB' : round($sz/1024,1).' KB'; ?></div>
+<a href="/user/radio/media/delete?file=<?php echo urlencode($f);?>" class="btn btn-sm btn-danger" style="margin-top:4px" onclick="return confirm('Delete?')">✕</a>
+</div><?php endif; endforeach; endif; ?>
+</div></div></div>
+
 <!-- Playlists -->
 <div class="tab <?php echo $tab==='playlists'?'active':'';?>">
 <div class="r-card"><h3>📂 Playlists</h3>
 <p style="color:#64748b;font-size:12px">Playlist management coming soon.</p></div></div>
+
+<!-- Mount Points -->
+<div class="tab <?php echo $tab==='mounts'?'active':'';?>">
+<?php $mounts = []; try { $mounts = $this->db->table('radio_mounts')->where('station_id', $station->id)->get() ?: []; } catch(\Exception $e) {} ?>
+<div class="r-card"><h3>🔗 Mount Points</h3>
+<form method="POST" action="/user/radio/mount/add" style="display:grid;grid-template-columns:1fr 1fr 80px;gap:6px;margin-bottom:10px">
+<input name="mount" placeholder="/stream2" value="/" style="padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
+<select name="bitrate" style="padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none"><option value="64">64 kbps</option><option value="128" selected>128 kbps</option><option value="192">192 kbps</option><option value="320">320 kbps</option></select>
+<button type="submit" class="btn btn-sm btn-primary">➕</button>
+</form>
+<?php if (empty($mounts)):?><p style="color:#64748b;font-size:12px;text-align:center;padding:10px">No additional mounts.</p>
+<?php else:?>
+<table class="table"><thead><tr><th>Mount</th><th>Bitrate</th><th>Listeners</th><th></th></tr></thead>
+<tbody><?php foreach($mounts as $m):?><tr><td><code><?php echo htmlspecialchars($m->mount);?></code></td><td><?php echo $m->bitrate;?> kbps</td><td><?php echo (int)$m->listener_count;?></td>
+<td><a href="/user/radio/mount/delete/<?php echo $m->id;?>" class="btn btn-sm btn-danger">✕</a></td></tr><?php endforeach;?></tbody></table>
+<?php endif;?></div></div>
+
+<!-- Statistics -->
+<div class="tab <?php echo $tab==='stats'?'active':'';?>">
+<div class="r-card"><h3>📊 Listener Statistics</h3>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">
+<div style="text-align:center;padding:14px;background:rgba(8,16,28,.6);border-radius:8px"><div style="font-size:22px;font-weight:700;color:#0A84FF"><?php echo (int)($station->listener_count??0);?></div><div style="font-size:10px;color:#64748b">Current</div></div>
+<div style="text-align:center;padding:14px;background:rgba(8,16,28,.6);border-radius:8px"><div style="font-size:22px;font-weight:700;color:#38bdf8"><?php echo (int)($station->listener_peak??0);?></div><div style="font-size:10px;color:#64748b">Peak</div></div>
+<div style="text-align:center;padding:14px;background:rgba(8,16,28,.6);border-radius:8px"><div style="font-size:22px;font-weight:700;color:#a78bfa"><?php echo $station->bitrate??128;?>k</div><div style="font-size:10px;color:#64748b">Bitrate</div></div>
+</div>
+<p style="color:#64748b;font-size:12px">Detailed analytics available when stream is active.</p></div></div>
+
+<!-- Backups -->
+<div class="tab <?php echo $tab==='backups'?'active':'';?>">
+<?php $backupDir = '/home/radio/' . $station->id; $backups = is_dir($backupDir) ? glob($backupDir . '/backup_*.tar.gz') : []; rsort($backups); ?>
+<div class="r-card"><h3>💾 Backups</h3>
+<a href="/user/radio/backup/create" class="btn btn-sm btn-primary" style="margin-bottom:10px;display:inline-block">📦 Create Backup</a>
+<?php if (empty($backups)):?><p style="color:#64748b;font-size:12px;text-align:center;padding:10px">No backups yet.</p>
+<?php else:?>
+<table class="table"><thead><tr><th>Filename</th><th>Size</th><th>Date</th><th></th></tr></thead>
+<tbody><?php foreach(array_slice($backups,0,10) as $bf): $bn=basename($bf); $sz=filesize($bf); $dt=date('M j Y',filemtime($bf)); ?>
+<tr><td style="font-size:11px"><?php echo htmlspecialchars($bn);?></td>
+<td><?php echo $sz>1048576?round($sz/1048576,1).'MB':round($sz/1024,1).'KB';?></td>
+<td style="font-size:11px;color:#64748b"><?php echo $dt;?></td>
+<td style="display:flex;gap:4px"><a href="/user/radio/backup/download?file=<?php echo urlencode($bn);?>" class="btn btn-sm btn-primary">⬇</a>
+<a href="/user/radio/backup/delete?file=<?php echo urlencode($bn);?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">✕</a></td></tr>
+<?php endforeach;?></tbody></table>
+<?php endif;?></div></div>
 
 <!-- Widgets -->
 <div class="tab <?php echo $tab==='widgets'?'active':'';?>">

@@ -215,4 +215,98 @@ class RadioController extends Controller
     }
 
     public function djLogout() { unset($_SESSION['dj_user']); header('Location: /dj/login'); exit; }
+
+    // Media Manager
+    public function mediaUpload()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $dir = '/home/radio/' . $station->id . '/music';
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        if (!empty($_FILES['file']['name'][0])) {
+            foreach ((array)$_FILES['file']['name'] as $i => $name) {
+                $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                if (in_array($ext, ['mp3','aac','ogg','flac','wav'])) {
+                    move_uploaded_file($_FILES['file']['tmp_name'][$i], $dir . '/' . basename($name));
+                }
+            }
+            $_SESSION['success'] = 'Files uploaded.';
+        }
+        header('Location: /user/radio?tab=media'); exit;
+    }
+
+    public function mediaDelete()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $file = basename($_GET['file'] ?? '');
+        $path = '/home/radio/' . $station->id . '/music/' . $file;
+        if ($file && is_file($path)) unlink($path);
+        header('Location: /user/radio?tab=media'); exit;
+    }
+
+    // Mount Points
+    public function addMount()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $mount = '/' . ltrim($_POST['mount'] ?? 'stream2', '/');
+        try {
+            $this->db->table('radio_mounts')->insertGetId([
+                'station_id' => $station->id, 'mount' => $mount,
+                'bitrate' => (int)($_POST['bitrate'] ?? 128),
+                'description' => $_POST['description'] ?? '',
+            ]);
+            $_SESSION['success'] = "Mount {$mount} created.";
+        } catch(\Exception $e) { $_SESSION['error'] = 'Mount already exists.'; }
+        header('Location: /user/radio?tab=mounts'); exit;
+    }
+
+    public function deleteMount($id)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) {
+            $this->db->table('radio_mounts')->where('id', $id)->where('station_id', $station->id)->delete();
+        }
+        header('Location: /user/radio?tab=mounts'); exit;
+    }
+
+    // Backups
+    public function backupCreate()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $dir = '/home/radio/' . $station->id;
+        $file = $dir . '/backup_' . date('Y-m-d_H-i-s') . '.tar.gz';
+        @exec("tar czf '{$file}' -C '{$dir}/music' . 2>/dev/null");
+        $_SESSION['success'] = 'Backup created.';
+        header('Location: /user/radio?tab=backups'); exit;
+    }
+
+    public function backupDownload()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $file = basename($_GET['file'] ?? '');
+        $path = '/home/radio/' . $station->id . '/' . $file;
+        if (is_file($path)) { header('Content-Type: application/octet-stream'); header('Content-Disposition: attachment; filename="'.$file.'"'); readfile($path); exit; }
+        header('Location: /user/radio?tab=backups'); exit;
+    }
+
+    public function backupDelete()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $file = basename($_GET['file'] ?? '');
+        $path = '/home/radio/' . $station->id . '/' . $file;
+        if ($file && is_file($path)) unlink($path);
+        header('Location: /user/radio?tab=backups'); exit;
+    }
 }
