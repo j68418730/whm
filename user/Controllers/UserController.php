@@ -26,15 +26,19 @@ class UserController extends Controller
     {
         if (!$this->auth->check()) { $this->response->redirect('/?login'); exit; }
         $user = $this->auth->user();
-        // Try email match first, then username/id match
-        $this->hostingUser = $this->db->table('hosting_users')->where('email', $user->email)->first();
+        // Check sudo/admin viewing mode
+        if (!empty($_SESSION['sudo_admin_id'])) {
+            $this->hostingUser = $this->db->table('hosting_users')->where('id', $user->id)->first();
+        }
+        // Try email match
+        if (!$this->hostingUser) {
+            $this->hostingUser = $this->db->table('hosting_users')->where('email', $user->email)->first();
+        }
+        // Try username match
         if (!$this->hostingUser && !empty($user->name)) {
             $this->hostingUser = $this->db->table('hosting_users')->where('username', $user->name)->first();
         }
-        if (!$this->hostingUser && !empty($user->id)) {
-            $this->hostingUser = $this->db->table('hosting_users')->where('id', $user->id)->first();
-        }
-        // If admin is viewing without sudo, grab first hosting account
+        // Admin fallback: first hosting account
         if (!$this->hostingUser && $this->auth->isAdmin()) {
             $this->hostingUser = $this->db->table('hosting_users')->orderBy('id', 'ASC')->first();
         }
