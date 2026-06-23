@@ -63,4 +63,10 @@ class SectionController extends Controller
         if (!$this->auth->check()) { header('Location: /?login'); exit; }
         return $this->view('user.sections.builder', ['title' => 'Website Builder']);
     }
+
+    public function chat()
+    {
+        if (!$this->auth->check()) { header('Location: /?login'); exit; }
+        return $this->view('user.sections.chat', ['title' => 'Live Chat']);
+    }
 }
