@@ -35,6 +35,7 @@ $router->get('/user/email/forwarder/delete/{id}', 'User\Controllers\EmailControl
 $router->post('/user/email/autoresponder', 'User\Controllers\EmailController@setAutoresponder');
 $router->get('/user/email/autoresponder/disable/{id}', 'User\Controllers\EmailController@disableAutoresponder');
 $router->post('/user/email/spam', 'User\Controllers\EmailController@setSpam');
+$router->post('/user/email/password/{id}', 'User\Controllers\EmailController@changePassword');
 $router->get('/user/security', 'User\Controllers\SecurityController@index');
 $router->get('/user/ssl', 'User\Controllers\SecurityController@ssl');
 $router->post('/user/ssl/install', 'User\Controllers\SecurityController@sslInstall');

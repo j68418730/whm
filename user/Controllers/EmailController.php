@@ -139,4 +139,18 @@ class EmailController extends Controller
         $this->response->redirect('/user/email');
         exit;
     }
+
+    public function changePassword($id)
+    {
+        $this->requireUser();
+        $pw = $_POST['password'] ?? '';
+        if (strlen($pw) >= 6) {
+            try {
+                $this->db->table('mail_accounts')->where('id', $id)->where('domain', $this->domain)->update(['password_hash' => password_hash($pw, PASSWORD_DEFAULT)]);
+                $_SESSION['success'] = 'Email password changed.';
+            } catch (\Exception $e) { $_SESSION['error'] = 'Failed to change password.'; }
+        } else { $_SESSION['error'] = 'Password too short.'; }
+        $this->response->redirect('/user/email');
+        exit;
+    }
 }
