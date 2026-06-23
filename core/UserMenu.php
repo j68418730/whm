@@ -79,9 +79,11 @@ if (!function_exists('user_menu_items')) {
 
         // Live Chat
         if (!empty($f->livechat)) {
-            $items[] = ['label' => 'Live Chat', 'href' => '/user/chat', 'icon' => '💬', 'section' => 'chat'];
-            $items[] = ['label' => 'Chat History', 'href' => '/user/chat', 'icon' => '📋', 'section' => 'chat'];
-            $items[] = ['label' => 'Widget Generator', 'href' => '/user/chat', 'icon' => '🔌', 'section' => 'chat'];
+            $items[] = ['label' => 'Dashboard', 'href' => '/user/chat', 'icon' => '💬', 'section' => 'chat'];
+            $items[] = ['label' => 'Operators', 'href' => '/chatbox/admin.php?action=operators', 'icon' => '👥', 'section' => 'chat', 'external' => true];
+            $items[] = ['label' => 'History', 'href' => '/chatbox/admin.php?action=history', 'icon' => '📋', 'section' => 'chat', 'external' => true];
+            $items[] = ['label' => 'Departments', 'href' => '/chatbox/admin.php?action=departments', 'icon' => '🏢', 'section' => 'chat', 'external' => true];
+            $items[] = ['label' => 'Embed Widget', 'href' => '/chatbox/admin.php?action=widget', 'icon' => '🔌', 'section' => 'chat', 'external' => true];
         }
 
         // Billing - always shown
