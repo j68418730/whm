@@ -92,69 +92,26 @@ body{font-family:Inter,sans-serif;background:#070b14;color:#e0e0e0;display:flex;
 <div class="sidebar-logo"><img src="/theme/assets/img/logo.png" alt=""><h1>PLANET-<span>HOSTS</span></h1></div>
 <div class="sidebar-user"><div class="avatar"><?php echo strtoupper(substr($username, 0, 1)); ?></div><div class="info"><div class="name"><?php echo htmlspecialchars($username); ?></div><div class="email"><?php echo htmlspecialchars($userEmail); ?></div></div></div>
 <nav class="sidebar-nav">
-
-<div class="sidebar-section">
-<div class="label">Home</div>
 <a href="/user" class="<?php echo $active==='dashboard'?'active':''; ?>"><span class="icon">🏠</span><span>Dashboard</span></a>
-</div>
-
-<div class="sidebar-section">
-<div class="label">My Hosting</div>
-<?php if ($hasWeb): ?>
-<a href="/user/services" class="<?php echo $active==='services'?'active':''; ?>"><span class="icon">🖥</span><span>My Services</span></a>
-<a href="/user/files"><span class="icon">📁</span><span>File Manager</span></a>
-<a href="/user/ftp"><span class="icon">📤</span><span>FTP Accounts</span></a>
-<?php endif; ?>
-<?php if ($hasDB): ?>
-<a href="/user/databases"><span class="icon">🗄️</span><span>Databases</span></a>
-<a href="/pma_autologin.php" target="_blank"><span class="icon">🐘</span><span>phpMyAdmin</span></a>
-<?php endif; ?>
-<?php if ($hasWeb): ?>
-<a href="/user/domains"><span class="icon">🌐</span><span>Domain Manager</span></a>
-<a href="/user/subdomains"><span class="icon">🔗</span><span>Subdomains</span></a>
-<a href="/user/redirects"><span class="icon">↪️</span><span>Redirects</span></a>
-<?php endif; ?>
-<?php if ($hasSSL): ?>
-<a href="/user/ssl"><span class="icon">🔒</span><span>SSL Certificates</span></a>
-<?php endif; ?>
-<?php if ($hasCron): ?>
-<a href="/user/cron"><span class="icon">⏰</span><span>Cron Jobs</span></a>
-<?php endif; ?>
-<?php if ($hasNode): ?>
-<a href="/user/apps/node"><span class="icon">🟢</span><span>Node.js Apps</span></a>
-<?php endif; ?>
-<?php if ($hasPython): ?>
-<a href="/user/apps/python"><span class="icon">🐍</span><span>Python Apps</span></a>
-<?php endif; ?>
-<a href="/user/usage"><span class="icon">📊</span><span>Resource Usage</span></a>
-</div>
-
+<a href="/user/section/hosting"><span class="icon">🌐</span><span>Hosting</span></a>
 <?php if ($hasEmail): ?>
-<div class="sidebar-section">
-<div class="label">Email</div>
-<a href="/user/email" class="<?php echo $active==='email'?'active':''; ?>"><span class="icon">📧</span><span>Email Accounts</span></a>
-<a href="/webmail_autologin.php" target="_blank"><span class="icon">📨</span><span>Webmail</span></a>
-</div>
+<a href="/user/section/email"><span class="icon">📧</span><span>Email</span></a>
 <?php endif; ?>
-
-<div class="sidebar-section">
-<div class="label">Billing</div>
-<a href="/user/billing"><span class="icon">💳</span><span>Billing Overview</span></a>
-<a href="/user/invoices"><span class="icon">📄</span><span>Invoices</span></a>
-</div>
-
-<div class="sidebar-section">
-<div class="label">Support</div>
-<a href="/user/tickets"><span class="icon">🎫</span><span>Support Tickets</span></a>
-<a href="/user/support"><span class="icon">📚</span><span>Knowledge Base</span></a>
-<a href="/livechat" target="_blank"><span class="icon">💬</span><span>Live Chat</span></a>
-</div>
-
+<a href="/user/section/domains"><span class="icon">🌍</span><span>Domains</span></a>
+<a href="/user/section/billing"><span class="icon">💳</span><span>Billing</span></a>
+<a href="/user/section/support"><span class="icon">🎫</span><span>Support</span></a>
 <?php if ($hasRadio): ?>
-<div class="sidebar-section">
-<div class="label">Radio Hosting</div>
-<a href="/user/dj-manager"><span class="icon">📻</span><span>Radio Dashboard</span></a>
-<a href="/user/dj-manager"><span class="icon">🎤</span><span>DJ Accounts</span></a>
+<a href="/user/section/radio"><span class="icon">📻</span><span>Radio</span></a>
+<?php endif; ?>
+<?php if ($hasGame): ?>
+<a href="/user/section/games"><span class="icon">🎮</span><span>Games</span></a>
+<?php endif; ?>
+<?php if ($hasBuilder): ?>
+<a href="/user/section/builder"><span class="icon">🏗️</span><span>Builder</span></a>
+<?php endif; ?>
+<a href="/user/profile"><span class="icon">👤</span><span>Account</span></a>
+<a href="/user/logout" style="color:#f87171"><span class="icon">🚪</span><span>Logout</span></a>
+</nav>
 </div>
 <?php endif; ?>
 
@@ -169,14 +126,6 @@ body{font-family:Inter,sans-serif;background:#070b14;color:#e0e0e0;display:flex;
 <div class="sidebar-section">
 <div class="label">Website Builder</div>
 <a href="/user/websitebuilder"><span class="icon">🏗️</span><span>My Websites</span></a>
-</div>
-<?php endif; ?>
-
-<div class="sidebar-section">
-<div class="label">Account</div>
-<a href="/user/profile"><span class="icon">👤</span><span>My Profile</span></a>
-<a href="/user/security"><span class="icon">🔐</span><span>Security</span></a>
-<a href="/user/logout" style="color:#f87171"><span class="icon">🚪</span><span>Logout</span></a>
 </div>
 </nav>
 </div>
