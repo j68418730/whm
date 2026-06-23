@@ -17,17 +17,9 @@ $token = bin2hex(random_bytes(32));
 $pdo->prepare("INSERT INTO sso_tokens (token, email) VALUES (?, ?)")->execute([$token, $email]);
 $pdo->exec("DELETE FROM sso_tokens WHERE created_at < NOW() - INTERVAL 5 MINUTE");
 
-// Get default site URL from panel settings
-$siteUrl = 'http://planet-hosts.com';
-try {
-    $q2 = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='company_website'");
-    $siteRow = $q2->fetch(PDO::FETCH_OBJ);
-    if ($siteRow && $siteRow->setting_value) {
-        $siteUrl = rtrim($siteRow->setting_value, '/');
-        // Remove https?:// and get just the domain
-        $siteParts = parse_url($siteUrl);
-        $siteUrl = ($siteParts['scheme'] ?? 'http') . '://' . ($siteParts['host'] ?? 'planet-hosts.com');
-    }
-} catch (Exception $e) {}
-header("Location: {$siteUrl}/roundcube/?_ph_token=" . $token);
+// Redirect to Roundcube on the user's current host
+$host = $_SERVER['HTTP_HOST'] ?? 'planet-hosts.com';
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$baseUrl = "{$scheme}://{$host}";
+header("Location: {$baseUrl}/roundcube/?_ph_token=" . $token);
 exit;
