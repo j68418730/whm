@@ -1,139 +1,57 @@
 <?php
-/**
- * Feature-aware client menu for Planet-Hosts
- * Every menu item is gated by package feature permissions.
- */
 
-if (!function_exists('user_menu_items')) {
-    function user_menu_items($features): array
+if (!function_exists('user_menu_sections')) {
+    function user_menu_sections($features = []): array
     {
         $f = (object)$features;
+        $sections = [];
 
-        $items = [];
+        $sections[] = ['label' => 'Dashboard', 'href' => '/user', 'icon' => '🏠', 'match' => ['/user']];
 
-        // Dashboard - always shown
-        $items[] = ['label' => 'Dashboard', 'href' => '/user', 'icon' => '🏠', 'section' => 'home'];
+        if (!isset($f->web) || $f->web)
+            $sections[] = ['label' => 'Hosting', 'href' => '/user/section/hosting', 'icon' => '🌐', 'match' => ['/user/services','/user/files','/user/ftp','/user/databases','/user/ssl','/user/cron','/user/usage','/user/git','/user/apps','/user/backup','/user/installer','/user/section/hosting']];
 
-        // Hosting - if web hosting enabled
-        if (!isset($f->web) || $f->web) {
-            $items[] = ['label' => 'My Services', 'href' => '/user/services', 'icon' => '🖥', 'section' => 'hosting'];
-            $items[] = ['label' => 'File Manager', 'href' => '/user/files', 'icon' => '📁', 'section' => 'hosting'];
-            if (!isset($f->ftp_accounts) || $f->ftp_accounts != 0)
-                $items[] = ['label' => 'FTP Accounts', 'href' => '/user/ftp', 'icon' => '📤', 'section' => 'hosting'];
-            if (!isset($f->databases) || $f->databases != 0)
-                $items[] = ['label' => 'Databases', 'href' => '/user/databases', 'icon' => '🗄️', 'section' => 'hosting'];
-            if (!isset($f->databases) || $f->databases != 0)
-                $items[] = ['label' => 'phpMyAdmin', 'href' => '/pma_autologin.php', 'icon' => '🐘', 'section' => 'hosting', 'external' => true];
-            if (!isset($f->ssl_allowed) || $f->ssl_allowed)
-                $items[] = ['label' => 'SSL Certificates', 'href' => '/user/ssl', 'icon' => '🔒', 'section' => 'hosting'];
-            if (!isset($f->cron_jobs) || $f->cron_jobs)
-                $items[] = ['label' => 'Cron Jobs', 'href' => '/user/cron', 'icon' => '⏰', 'section' => 'hosting'];
-            $items[] = ['label' => 'Resource Usage', 'href' => '/user/usage', 'icon' => '📊', 'section' => 'hosting'];
-            if (!isset($f->git_access) || $f->git_access)
-                $items[] = ['label' => 'Git Deployments', 'href' => '/user/git', 'icon' => '🔀', 'section' => 'hosting'];
-            if (!isset($f->nodejs) || $f->nodejs)
-                $items[] = ['label' => 'Node.js Apps', 'href' => '/user/apps/node', 'icon' => '🟢', 'section' => 'hosting'];
-            if (!isset($f->python) || $f->python)
-                $items[] = ['label' => 'Python Apps', 'href' => '/user/apps/python', 'icon' => '🐍', 'section' => 'hosting'];
+        $sections[] = ['label' => 'Domains', 'href' => '/user/section/domains', 'icon' => '🌍', 'match' => ['/user/domains','/user/subdomains','/user/redirects','/user/section/domains']];
 
-            if (!isset($f->backups) || $f->backups)
-                $items[] = ['label' => 'Backups', 'href' => '/user/backup', 'icon' => '💾', 'section' => 'hosting'];
-            if (!isset($f->installer) || $f->installer)
-                $items[] = ['label' => 'Quick Install', 'href' => '/user/installer', 'icon' => '📦', 'section' => 'hosting'];
-        }
+        if (!isset($f->email_accounts) || $f->email_accounts != 0)
+            $sections[] = ['label' => 'Email', 'href' => '/user/section/email', 'icon' => '📧', 'match' => ['/user/email','/user/section/email']];
 
-        // Domains
-        $items[] = ['label' => 'My Domains', 'href' => '/user/domains', 'icon' => '🌍', 'section' => 'domains'];
-        $items[] = ['label' => 'Subdomains', 'href' => '/user/subdomains', 'icon' => '🔗', 'section' => 'domains'];
-        $items[] = ['label' => 'Redirects', 'href' => '/user/redirects', 'icon' => '↪️', 'section' => 'domains'];
+        if (!empty($f->radio) || !empty($f->icecast))
+            $sections[] = ['label' => 'Radio', 'href' => '/user/section/radio', 'icon' => '📻', 'match' => ['/user/radio','/user/dj-manager','/user/dj-panel','/user/stats','/user/section/radio']];
 
-        // Email - if email accounts enabled
-        if (!isset($f->email_accounts) || $f->email_accounts != 0) {
-            $items[] = ['label' => 'Email Accounts', 'href' => '/user/email', 'icon' => '📧', 'section' => 'email'];
-            $items[] = ['label' => 'Webmail', 'href' => '/webmail_autologin.php', 'icon' => '📨', 'section' => 'email', 'external' => true];
-        }
+        if (!empty($f->game))
+            $sections[] = ['label' => 'Games', 'href' => '/user/section/games', 'icon' => '🎮', 'match' => ['/user/games','/user/section/games']];
 
-        // Radio (icecast)
-        if (!empty($f->radio) || !empty($f->icecast)) {
-            $items[] = ['label' => 'Radio Dashboard', 'href' => '/user/dj-manager', 'icon' => '📻', 'section' => 'radio'];
-            $items[] = ['label' => 'Streams', 'href' => '/user/dj-manager', 'icon' => '🎵', 'section' => 'radio'];
-            $items[] = ['label' => 'AutoDJ', 'href' => '/user/dj-manager', 'icon' => '🤖', 'section' => 'radio'];
-            $items[] = ['label' => 'DJ Accounts', 'href' => '/user/dj-manager', 'icon' => '🎤', 'section' => 'radio'];
-            $items[] = ['label' => 'Song Requests', 'href' => '/user/dj-manager', 'icon' => '📝', 'section' => 'radio'];
-            $items[] = ['label' => 'Listener Stats', 'href' => '/user/stats', 'icon' => '📈', 'section' => 'radio'];
-            if (!empty($f->dj_panel))
-                $items[] = ['label' => 'DJ Panel', 'href' => '/user/dj-panel', 'icon' => '🎧', 'section' => 'radio'];
-        }
+        if (!empty($f->builder))
+            $sections[] = ['label' => 'Builder', 'href' => '/user/section/builder', 'icon' => '🏗️', 'match' => ['/user/websitebuilder','/user/section/builder']];
 
-        // Games
-        if (!empty($f->game)) {
-            $items[] = ['label' => 'Game Servers', 'href' => '/user/games', 'icon' => '🎮', 'section' => 'games'];
-            $items[] = ['label' => 'Console', 'href' => '/user/games', 'icon' => '🖥️', 'section' => 'games'];
-            $items[] = ['label' => 'File Manager', 'href' => '/user/files', 'icon' => '📁', 'section' => 'games'];
-            $items[] = ['label' => 'Backups', 'href' => '/user/backup', 'icon' => '💾', 'section' => 'games'];
-        }
+        if (!empty($f->chatbox) || !empty($f->livechat))
+            $sections[] = ['label' => 'Chat', 'href' => '/user/section/chat', 'icon' => '💬', 'match' => ['/user/chat','/user/section/chat']];
 
-        // Website Builder
-        if (!empty($f->builder)) {
-            $items[] = ['label' => 'My Websites', 'href' => '/user/websitebuilder', 'icon' => '🏗️', 'section' => 'builder'];
-            $items[] = ['label' => 'Themes', 'href' => '/user/websitebuilder/themes', 'icon' => '🎨', 'section' => 'builder'];
-            $items[] = ['label' => 'SEO Tools', 'href' => '/user/websitebuilder/seo', 'icon' => '📈', 'section' => 'builder'];
-        }
+        $sections[] = ['label' => 'Billing', 'href' => '/user/section/billing', 'icon' => '💳', 'match' => ['/user/billing','/user/invoices','/user/section/billing']];
 
-        // Live Chat (chatbox)
-        if (!empty($f->chatbox) || !empty($f->livechat)) {
-            $items[] = ['label' => 'Dashboard', 'href' => '/user/chat', 'icon' => '💬', 'section' => 'chat'];
-            $items[] = ['label' => 'Operators', 'href' => '/chatbox/admin.php?action=operators', 'icon' => '👥', 'section' => 'chat', 'external' => true];
-            $items[] = ['label' => 'History', 'href' => '/chatbox/admin.php?action=history', 'icon' => '📋', 'section' => 'chat', 'external' => true];
-            $items[] = ['label' => 'Departments', 'href' => '/chatbox/admin.php?action=departments', 'icon' => '🏢', 'section' => 'chat', 'external' => true];
-            $items[] = ['label' => 'Embed Widget', 'href' => '/chatbox/admin.php?action=widget', 'icon' => '🔌', 'section' => 'chat', 'external' => true];
-        }
+        $sections[] = ['label' => 'Support', 'href' => '/user/section/support', 'icon' => '🎫', 'match' => ['/user/tickets','/user/support','/user/section/support']];
 
-        // Billing - always shown
-        $items[] = ['label' => 'Billing', 'href' => '/user/billing', 'icon' => '💳', 'section' => 'billing'];
-        $items[] = ['label' => 'Invoices', 'href' => '/user/invoices', 'icon' => '📄', 'section' => 'billing'];
+        $sections[] = ['label' => 'Account', 'href' => '/user/profile', 'icon' => '👤', 'match' => ['/user/profile','/user/security','/user/admins']];
 
-        // Support - always shown
-        $items[] = ['label' => 'Tickets', 'href' => '/user/tickets', 'icon' => '🎫', 'section' => 'support'];
-        $items[] = ['label' => 'K. Base', 'href' => '/user/support', 'icon' => '📚', 'section' => 'support'];
-        $items[] = ['label' => 'Live Chat', 'href' => '/user/chat', 'icon' => '💬', 'section' => 'support'];
-
-        // Account - always shown
-        $items[] = ['label' => 'Profile', 'href' => '/user/profile', 'icon' => '👤', 'section' => 'account'];
-        $items[] = ['label' => 'Security', 'href' => '/user/security', 'icon' => '🔐', 'section' => 'account'];
-
-        return $items;
+        return $sections;
     }
 }
 
 if (!function_exists('render_user_sidebar')) {
-    function render_user_sidebar(array $items, string $currentUrl): string
+    function render_user_sidebar(string $currentUrl): string
     {
-        $html = '';
-        $currentSection = '';
-        // Determine which section is active
-        foreach ($items as $item) {
-            $match = $item['href'];
-            if ($currentUrl === $match || ($match !== '/user' && str_starts_with($currentUrl, $match))) {
-                $currentSection = $item['section'];
-            }
-        }
         $html = '<nav class="sidebar-nav">';
-        $lastSection = '';
-        foreach ($items as $item) {
-            if ($item['section'] !== $lastSection) {
-                if ($lastSection !== '') $html .= '</div>';
-                $html .= '<div class="nav-section">';
-                $html .= '<div class="nav-label">' . htmlspecialchars(ucfirst($item['section'])) . '</div>';
-                $lastSection = $item['section'];
+        foreach (user_menu_sections([]) as $item) {
+            $isActive = false;
+            foreach ($item['match'] as $m) {
+                if ($m && $currentUrl !== '/' && str_starts_with($currentUrl, $m)) { $isActive = true; break; }
             }
-            $active = $item['section'] === $currentSection ? 'active' : '';
-            $target = !empty($item['external']) ? ' target="_blank"' : '';
-            $html .= '<a href="' . $item['href'] . '" class="nav-link ' . $active . '"' . $target . '>'
+            if ($currentUrl === '/user' && $item['href'] === '/user') $isActive = true;
+            $html .= '<a href="' . $item['href'] . '" class="nav-link ' . ($isActive ? 'active' : '') . '">'
                    . '<span class="icon">' . $item['icon'] . '</span> '
                    . '<span class="label">' . htmlspecialchars($item['label']) . '</span></a>';
         }
-        if ($lastSection !== '') $html .= '</div>';
         $html .= '</nav>';
         return $html;
     }
