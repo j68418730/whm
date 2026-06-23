@@ -161,6 +161,25 @@ class AccountController extends Controller
         ]);
     }
 
+    public function sendAlert($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { echo 'Unauthorized'; exit; }
+        $account = $this->db->table('hosting_users')->where('id', $id)->first();
+        if (!$account) { echo 'Account not found'; exit; }
+        $title = trim($_POST['alert_title'] ?? '');
+        $message = trim($_POST['alert_message'] ?? '');
+        $type = in_array($_POST['alert_type'] ?? '', ['info','warning','success','danger']) ? $_POST['alert_type'] : 'info';
+        if ($title && $message) {
+            $this->db->table('user_alerts')->insertGetId([
+                'hosting_user_id' => $id, 'admin_id' => $this->auth->user()->id,
+                'title' => $title, 'message' => $message, 'type' => $type,
+            ]);
+            $_SESSION['success_message'] = "Alert sent to {$account->username}.";
+        }
+        $this->response->redirect('/admin/account/show/' . $id);
+        exit;
+    }
+
     public function emailSummary($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { echo 'Unauthorized'; exit; }

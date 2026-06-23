@@ -151,6 +151,20 @@ $diskPct = $package->disk_space > 0 ? min(100, round($diskVal / ($package->disk_
 </div>
 </div>
 
+<div class="action-card">
+<h4><i class="bi bi-megaphone" style="color:#facc15"></i> Send Alert</h4>
+<form method="POST" action="/admin/account/send-alert/<?php echo $account->id; ?>" class="actions" style="flex-direction:column;gap:6px">
+<input name="alert_title" placeholder="Alert title" required style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;font-size:12px;outline:none">
+<textarea name="alert_message" placeholder="Alert message" required rows="2" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;font-size:12px;outline:none"></textarea>
+<div style="display:flex;gap:6px">
+<select name="alert_type" style="padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;font-size:12px;outline:none">
+<option value="info">ℹ️ Info</option><option value="warning">⚠️ Warning</option><option value="success">✅ Success</option><option value="danger">⛔ Urgent</option>
+</select>
+<button type="submit" class="btn btn-sm primary">Send Alert</button>
+</div>
+</form>
+</div>
+
 <div class="action-card" style="grid-column:1/-1">
 <h4><i class="bi bi-server" style="color:#0A84FF"></i> Apache Virtual Host</h4>
 <?php
