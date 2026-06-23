@@ -88,8 +88,7 @@ if ($package->game ?? 0) $features['game'] = 1;
 if (class_exists('\\Plugins\\WebsiteBuilder\\WebsiteBuilderPlugin')) $features['builder'] = 1;
 $features['web'] = $isWeb;
 require_once BASE_PATH . '/core/UserMenu.php';
-$items = user_menu_items($features);
-echo render_user_sidebar($items, $currentUrl); ?>
+echo render_user_sidebar($currentUrl); ?>
     </div>
   </div>
     <div class="main">
