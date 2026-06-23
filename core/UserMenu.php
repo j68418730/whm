@@ -52,7 +52,7 @@ if (!function_exists('user_menu_items')) {
             $items[] = ['label' => 'Webmail', 'href' => '/webmail_autologin.php', 'icon' => '📨', 'section' => 'email', 'external' => true];
         }
 
-        // Radio
+        // Radio (icecast)
         if (!empty($f->radio) || !empty($f->icecast)) {
             $items[] = ['label' => 'Radio Dashboard', 'href' => '/user/dj-manager', 'icon' => '📻', 'section' => 'radio'];
             $items[] = ['label' => 'Streams', 'href' => '/user/dj-manager', 'icon' => '🎵', 'section' => 'radio'];
@@ -60,6 +60,8 @@ if (!function_exists('user_menu_items')) {
             $items[] = ['label' => 'DJ Accounts', 'href' => '/user/dj-manager', 'icon' => '🎤', 'section' => 'radio'];
             $items[] = ['label' => 'Song Requests', 'href' => '/user/dj-manager', 'icon' => '📝', 'section' => 'radio'];
             $items[] = ['label' => 'Listener Stats', 'href' => '/user/stats', 'icon' => '📈', 'section' => 'radio'];
+            if (!empty($f->dj_panel))
+                $items[] = ['label' => 'DJ Panel', 'href' => '/dj_panel.php', 'icon' => '🎧', 'section' => 'radio', 'external' => true];
         }
 
         // Games

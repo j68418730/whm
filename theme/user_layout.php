@@ -11,9 +11,11 @@ if ($package && $package->feature_list_id) {
     try { $fl = (new \Core\Application::getInstance())->get('db')->table('feature_lists')->where('id', $package->feature_list_id)->first(); if($fl) $features = (array)$fl; } catch(\Exception $e) {}
 }
 // Merge package type flags into features array
-if ($hasRadio) $features['radio'] = 1;
+if ($hasRadio || ($package->icecast_enabled ?? 0)) $features['radio'] = 1;
 if ($hasGame) $features['game'] = 1;
 if ($hasBuilder) $features['builder'] = 1;
+if ($package->dj_panel_enabled ?? 0) $features['dj_panel'] = 1;
+if ($package->live_chat_enabled ?? 0) $features['livechat'] = 1;
 $features['web'] = $hasWeb;
 // Load feature-aware menu
 require_once BASE_PATH . '/core/UserMenu.php';
@@ -49,7 +51,7 @@ body{font-family:Inter,sans-serif;background:#070b14;color:#e0e0e0;display:flex;
 .bg-overlay{position:fixed;inset:0;background:linear-gradient(rgba(2,8,23,.92),rgba(2,8,23,.98)),url(/theme/assets/img/background.png);background-size:cover;z-index:-2}
 
 /* Sidebar */
-.sidebar{width:250px;background:rgba(8,16,28,.95);border-right:1px solid rgba(0,191,255,.08);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto}
+.sidebar{width:250px;background:#0a1628;border-right:1px solid rgba(0,191,255,.08);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto}
 .sidebar-logo{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
 .sidebar-logo img{width:32px;height:32px;border-radius:8px}
 .sidebar-logo h1{font-size:16px;font-weight:800}
