@@ -10,12 +10,6 @@
 </style>
 <h2>🎧 Our DJs</h2>
 <p style="color:#64748b;margin-bottom:16px">Browse our roster of talented radio DJs.</p>
-<?php
-$allDjs = [];
-try {
-    $allDjs = $this->db->table('radio_djs')->where('status', 'active')->orderBy('name', 'ASC')->get() ?: [];
-} catch(\Exception $e) {}
-?>
 <div class="dj-grid">
 <?php if (empty($allDjs)): ?>
 <div style="grid-column:1/-1;text-align:center;padding:40px;color:#64748b">No DJs registered yet.</div>
