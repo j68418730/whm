@@ -14,9 +14,21 @@ if (!isset($_SESSION['dj_user']) && isset($_SESSION['user'])) {
     $hStmt->execute([$hostingId, $user->email ?? '', $user->name ?? '']);
     $hosting = $hStmt->fetch(PDO::FETCH_OBJ);
     if ($hosting) {
+        // Auto-create stream if icecast package and no stream exists
         $streamStmt = $pdo->prepare("SELECT id, port, status FROM radio_streams WHERE user_id = ? LIMIT 1");
         $streamStmt->execute([$hosting->id]);
         $stream = $streamStmt->fetch(PDO::FETCH_OBJ);
+        if (!$stream) {
+            $pkgStmt = $pdo->prepare("SELECT p.* FROM hosting_packages p JOIN hosting_users h ON h.package_id = p.id WHERE h.id = ?");
+            $pkgStmt->execute([$hosting->id]);
+            $pkg = $pkgStmt->fetch(PDO::FETCH_OBJ);
+            if ($pkg && !empty($pkg->icecast_enabled)) {
+                $pw = substr(md5(time().rand()), 0, 8);
+                $pdo->prepare("INSERT INTO radio_streams (user_id, server_type, port, password, config_path, status) VALUES (?, 'icecast', 8000, ?, '/etc/icecast/radiohosting', 'stopped')")->execute([$hosting->id, $pw]);
+                $streamStmt->execute([$hosting->id]);
+                $stream = $streamStmt->fetch(PDO::FETCH_OBJ);
+            }
+        }
         if ($stream) {
             // Auto-login as the stream owner
             $_SESSION['dj_user'] = [
@@ -26,6 +38,7 @@ if (!isset($_SESSION['dj_user']) && isset($_SESSION['user'])) {
                 'is_owner' => true,
             ];
             $action = $_GET['action'] ?? 'dashboard';
+            if ($action === 'login') $action = 'dashboard';
         }
     }
 }
