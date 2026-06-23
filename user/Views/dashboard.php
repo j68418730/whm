@@ -24,27 +24,39 @@
 <h2 style="font-size:22px;font-weight:700;margin-bottom:4px">Dashboard</h2>
 <p class="subtitle" style="color:#64748b;font-size:13px;margin-bottom:24px">Welcome back, <?php echo htmlspecialchars(($hosting->first_name ?? $hosting->username) ?: $user->name ?? 'User'); ?></p>
 
-<?php
-// Load user alerts
-$alerts = [];
-if ($hosting && !empty($hosting->id)) {
-    try { $alerts = $this->db->table('user_alerts')->where('hosting_user_id', $hosting->id)->where('is_read', 0)->orderBy('created_at', 'DESC')->get() ?: []; } catch (\Exception $e) {}
-}
-$alertTypes = ['info'=>'#0A84FF','warning'=>'#facc15','success'=>'#4ade80','danger'=>'#f87171'];
-foreach ($alerts as $alert): $ac = $alertTypes[$alert->type] ?? '#0A84FF'; ?>
-<div style="display:flex;align-items:start;gap:10px;padding:12px 16px;background:rgba(8,16,28,.85);border:1px solid <?php echo $ac; ?>33;border-radius:10px;margin-bottom:10px;border-left:3px solid <?php echo $ac; ?>">
-<div style="font-size:18px;margin-top:1px"><?php echo $alert->type==='danger'?'⛔':($alert->type==='warning'?'⚠️':($alert->type==='success'?'✅':'ℹ️')); ?></div>
-<div style="flex:1"><strong style="font-size:13px;color:<?php echo $ac; ?>"><?php echo htmlspecialchars($alert->title); ?></strong>
-<p style="font-size:12px;color:#94a3b8;margin:2px 0 0"><?php echo nl2br(htmlspecialchars($alert->message)); ?></p></div>
-<a href="/user/alert/dismiss/<?php echo $alert->id; ?>" style="color:#64748b;text-decoration:none;font-size:16px;padding:2px" title="Dismiss" onclick="return markRead(<?php echo $alert->id; ?>,this)">✕</a>
-</div>
-<?php endforeach; ?>
+<div id="alertsContainer"></div>
 
 <script>
-function markRead(id, el) {
+function loadAlerts() {
+    var x = new XMLHttpRequest();
+    x.open('GET', '/user/alert/fetch', true);
+    x.onload = function() {
+        try {
+            var data = JSON.parse(x.responseText);
+            var html = '';
+            var types = {'info':'ℹ️','warning':'⚠️','success':'✅','danger':'⛔'};
+            var colors = {'info':'#0A84FF','warning':'#facc15','success':'#4ade80','danger':'#f87171'};
+            data.forEach(function(a) {
+                var canDel = a.can_delete !== 0;
+                html += '<div class="alert-item" data-id="' + a.id + '" style="display:flex;align-items:start;gap:10px;padding:12px 16px;background:rgba(8,16,28,.85);border:1px solid ' + colors[a.type] + '33;border-radius:10px;margin-bottom:10px;border-left:3px solid ' + colors[a.type] + '">';
+                html += '<div style="font-size:18px;margin-top:1px">' + (types[a.type] || 'ℹ️') + '</div>';
+                html += '<div style="flex:1"><strong style="font-size:13px;color:' + colors[a.type] + '">' + a.title + '</strong>';
+                html += '<p style="font-size:12px;color:#94a3b8;margin:2px 0 0">' + a.message + '</p></div>';
+                if (canDel) html += '<a href="#" style="color:#64748b;text-decoration:none;font-size:16px;padding:2px" onclick="return dismissAlert(' + a.id + ',this)">✕</a>';
+                html += '</div>';
+            });
+            document.getElementById('alertsContainer').innerHTML = html;
+        } catch(e) {}
+    };
+    x.send();
+}
+loadAlerts();
+setInterval(loadAlerts, 15000);
+
+function dismissAlert(id, el) {
     var x = new XMLHttpRequest();
     x.open('GET', '/user/alert/dismiss/' + id, true);
-    x.onload = function() { if (x.status === 200) el.closest('div[style*="border-left"]').remove(); };
+    x.onload = function() { if (x.status === 200) { var item = el.closest('.alert-item'); if (item) item.remove(); } };
     x.send();
     return false;
 }
