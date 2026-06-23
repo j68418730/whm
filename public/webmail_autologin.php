@@ -5,6 +5,7 @@ $email = '';
 $password = '';
 if (is_object($user)) { $email = $user->email ?? ''; }
 elseif (is_array($user)) { $email = $user['email'] ?? ''; }
+if (!empty($_GET['email'])) $email = $_GET['email'];
 if (!empty($_SESSION['webmail_email'])) $email = $_SESSION['webmail_email'];
 if (!empty($_SESSION['webmail_password'])) $password = $_SESSION['webmail_password'];
 
