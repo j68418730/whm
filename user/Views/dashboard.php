@@ -1,5 +1,5 @@
 <h2>Dashboard</h2>
-<p class="subtitle">Welcome back, <?php echo htmlspecialchars(($hosting->first_name ?? '') ?: $username); ?></p>
+<p class="subtitle">Welcome back, <?php echo htmlspecialchars(($hosting->first_name ?? '') ?: ($hosting->username ?? 'User')); ?></p>
 
 <!-- Quick Actions -->
 <div class="quick-grid" style="margin-bottom:20px">
