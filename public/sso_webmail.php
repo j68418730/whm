@@ -17,6 +17,7 @@ $token = bin2hex(random_bytes(32));
 $pdo->prepare("INSERT INTO sso_tokens (token, email) VALUES (?, ?)")->execute([$token, $email]);
 $pdo->exec("DELETE FROM sso_tokens WHERE created_at < NOW() - INTERVAL 5 MINUTE");
 
-// Redirect to Roundcube with token
-header("Location: /roundcube/?_ph_token=" . $token);
+// Redirect to Roundcube on the correct domain
+$baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://planet-hosts.com';
+header("Location: {$baseUrl}/roundcube/?_ph_token=" . $token);
 exit;
