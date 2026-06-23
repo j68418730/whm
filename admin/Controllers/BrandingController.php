@@ -30,7 +30,7 @@ class BrandingController extends Controller
             'company_name' => $settings['company_name'] ?? 'Planet-Hosts',
             'company_email' => $settings['company_email'] ?? 'admin@planet-hosts.com',
             'company_website' => $settings['company_website'] ?? 'https://planet-hosts.com',
-            'company_logo' => $settings['company_logo'] ?? '/theme/assets/img/logo.png',
+            'company_logo' => $settings['company_logo'] ?? (is_file(BASE_PATH . '/theme/assets/img/logo.png') ? '/theme/assets/img/logo.png' : null),
             'theme_settings' => $theme_settings,
         ]);
     }
