@@ -77,8 +77,8 @@ if (!function_exists('user_menu_items')) {
             $items[] = ['label' => 'SEO Tools', 'href' => '/user/websitebuilder/seo', 'icon' => '📈', 'section' => 'builder'];
         }
 
-        // Live Chat
-        if (!empty($f->livechat)) {
+        // Live Chat (chatbox)
+        if (!empty($f->chatbox) || !empty($f->livechat)) {
             $items[] = ['label' => 'Dashboard', 'href' => '/user/chat', 'icon' => '💬', 'section' => 'chat'];
             $items[] = ['label' => 'Operators', 'href' => '/chatbox/admin.php?action=operators', 'icon' => '👥', 'section' => 'chat', 'external' => true];
             $items[] = ['label' => 'History', 'href' => '/chatbox/admin.php?action=history', 'icon' => '📋', 'section' => 'chat', 'external' => true];
