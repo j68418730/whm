@@ -73,6 +73,7 @@ $router->post('/user/dj-manager', 'User\Controllers\UserController@djManager');
 $router->get('/user/php-switcher', 'User\Controllers\UserController@phpSwitcher');
 $router->post('/user/php-switcher', 'User\Controllers\UserController@phpSwitcher');
 $router->get('/user/tools', 'User\Controllers\UserController@tools');
+$router->get('/user/terminal', 'User\Controllers\UserController@terminal');
 $router->post('/user/login', 'User\Controllers\UserController@login');
 $router->get('/user/logout', 'User\Controllers\UserController@logout');
 $router->get('/user/section/hosting', 'User\Controllers\SectionController@hosting');
