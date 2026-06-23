@@ -111,6 +111,14 @@ $router->post('/user/apps/python/create', 'User\Controllers\AppsController@pytho
 $router->get('/user/apps/python/start/{id}', 'User\Controllers\AppsController@pythonStart');
 $router->get('/user/apps/python/stop/{id}', 'User\Controllers\AppsController@pythonStop');
 $router->get('/user/apps/python/delete/{id}', 'User\Controllers\AppsController@pythonDelete');
+// Radio routes
+$router->get('/user/radio', 'User\Controllers\RadioController@index');
+$router->get('/user/radio/settings/{id}', 'User\Controllers\RadioController@show');
+$router->get('/user/radio/start/{id}', 'User\Controllers\RadioController@start');
+$router->get('/user/radio/stop/{id}', 'User\Controllers\RadioController@stop');
+$router->get('/user/radio/restart/{id}', 'User\Controllers\RadioController@restart');
+$router->post('/user/radio/autodj/toggle/{id}', 'User\Controllers\RadioController@enableAutodj');
+$router->get('/user/radio/autodj/disable/{id}', 'User\Controllers\RadioController@disableAutodj');
 // Chat routes
 $router->post('/chat/start', 'User\Controllers\ChatController@start');
 $router->get('/chat/poll/{sessionId}', 'User\Controllers\ChatController@poll');
