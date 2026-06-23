@@ -190,6 +190,12 @@ class UserController extends Controller
     }
 
     public function terminal() { $u = $this->loadUser(); return $this->view('user.terminal', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Terminal']); }
+    public function ftp() { $u = $this->loadUser(); return $this->view('user.ftp', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'FTP Accounts']); }
+    public function cron() { $u = $this->loadUser(); return $this->view('user.cron', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Cron Jobs']); }
+    public function git() { $u = $this->loadUser(); return $this->view('user.git', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Git Deployments']); }
+    public function backup() { $u = $this->loadUser(); return $this->view('user.backup', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Backups']); }
+    public function games() { $u = $this->loadUser(); return $this->view('user.games', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Game Servers']); }
+    public function websiteBuilder() { $u = $this->loadUser(); return $this->view('user.websitebuilder', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Website Builder']); }
     public function logout() { session_destroy(); header('Location: /'); exit; }
     public function chat() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/chat.php'; exit; }
     public function admins() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/admins.php'; exit; }
