@@ -74,6 +74,8 @@ $router->post('/user/php-switcher', 'User\Controllers\UserController@phpSwitcher
 $router->get('/user/tools', 'User\Controllers\UserController@tools');
 $router->get('/user/terminal', 'User\Controllers\UserController@terminal');
 $router->get('/user/ftp', 'User\Controllers\UserController@ftp');
+$router->post('/user/ftp/create', 'User\Controllers\UserController@ftpCreate');
+$router->get('/user/ftp/delete/{id}', 'User\Controllers\UserController@ftpDelete');
 $router->get('/user/cron', 'User\Controllers\UserController@cron');
 $router->get('/user/git', 'User\Controllers\UserController@git');
 $router->get('/user/backup', 'User\Controllers\UserController@backup');
