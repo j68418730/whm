@@ -7,11 +7,13 @@
 .section-card .desc{font-size:11px;color:#64748b;margin-top:2px}
 </style>
 <h2>Radio</h2>
-<p style="color:#64748b;margin-bottom:20px">Manage your radio station, DJs, and streaming.</p>
+<p style="color:#64748b;margin-bottom:20px">Manage your radio station, DJs, music, and listeners.</p>
 <div class="section-grid">
-<a href="/user/radio" class="section-card"><span class="icon">📻</span><div class="name">Radio Dashboard</div><div class="desc">Station overview & stats</div></a>
+<a href="/user/radio" class="section-card"><span class="icon">📻</span><div class="name">Radio Dashboard</div><div class="desc">Stream status & controls</div></a>
+<a href="/user/dj-panel" class="section-card"><span class="icon">🎤</span><div class="name">DJ Panel</div><div class="desc">Connect & broadcast</div></a>
 <a href="/user/dj-manager" class="section-card"><span class="icon">🎧</span><div class="name">DJ Manager</div><div class="desc">Manage DJ accounts</div></a>
-<a href="/user/autodj" class="section-card"><span class="icon">🤖</span><div class="name">AutoDJ</div><div class="desc">Automated playlist</div></a>
-<a href="/user/listen" class="section-card"><span class="icon">🔊</span><div class="name">Listen Live</div><div class="desc">Stream the station</div></a>
-<a href="/user/dj-panel" class="section-card"><span class="icon">🎚️</span><div class="name">DJ Panel</div><div class="desc">Live broadcast panel</div></a>
+<a href="/user/public-djs" class="section-card"><span class="icon">👥</span><div class="name">Our DJs</div><div class="desc">Public DJ roster</div></a>
+<a href="/user/radio?tab=requests" class="section-card"><span class="icon">🙋</span><div class="name">Requests</div><div class="desc">Song requests</div></a>
+<a href="/user/stats" class="section-card"><span class="icon">📊</span><div class="name">Statistics</div><div class="desc">Listener stats & analytics</div></a>
+<a href="/user/radio?tab=player" class="section-card"><span class="icon">▶️</span><div class="name">Stream Player</div><div class="desc">Listen live</div></a>
 </div>
