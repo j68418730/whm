@@ -35,7 +35,8 @@ if (!$email) {
 // Try to get plain password for this email
 if ($email) {
     try {
-        $pwStmt = $pdo->prepare("SELECT password_plain FROM mail_accounts WHERE email = ? LIMIT 1");
+        $pwPdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+        $pwStmt = $pwPdo->prepare("SELECT password_plain FROM mail_accounts WHERE email = ? LIMIT 1");
         $pwStmt->execute([$email]);
         $pwRow = $pwStmt->fetch(PDO::FETCH_OBJ);
         if ($pwRow && $pwRow->password_plain) $password = $pwRow->password_plain;
