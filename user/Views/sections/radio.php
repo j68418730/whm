@@ -10,7 +10,7 @@
 <p style="color:#64748b;margin-bottom:20px">Manage your radio station, DJs, music, and listeners.</p>
 <div class="section-grid">
 <a href="/user/radio" class="section-card"><span class="icon">📻</span><div class="name">Radio Dashboard</div><div class="desc">Stream status & controls</div></a>
-<a href="/user/dj-panel" class="section-card"><span class="icon">🎤</span><div class="name">DJ Panel</div><div class="desc">Connect & broadcast</div></a>
+<a href="/dj_panel.php" class="section-card"><span class="icon">🎤</span><div class="name">DJ Panel</div><div class="desc">Full DJ dashboard</div></a>
 <a href="/user/dj-manager" class="section-card"><span class="icon">🎧</span><div class="name">DJ Manager</div><div class="desc">Manage DJ accounts</div></a>
 <a href="/user/public-djs" class="section-card"><span class="icon">👥</span><div class="name">Our DJs</div><div class="desc">Public DJ roster</div></a>
 <a href="/user/radio?tab=requests" class="section-card"><span class="icon">🙋</span><div class="name">Requests</div><div class="desc">Song requests</div></a>
