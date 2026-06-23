@@ -5,6 +5,31 @@ $error = '';
 $success = '';
 $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
 
+// ─── AUTO-LOGIN for account owners ───
+if (!isset($_SESSION['dj_user']) && isset($_SESSION['user'])) {
+    $user = $_SESSION['user'];
+    // Check if user has a radio stream
+    $hostingId = $user->id ?? 0;
+    $hStmt = $pdo->prepare("SELECT id FROM hosting_users WHERE id = ? OR email = ? OR username = ? LIMIT 1");
+    $hStmt->execute([$hostingId, $user->email ?? '', $user->name ?? '']);
+    $hosting = $hStmt->fetch(PDO::FETCH_OBJ);
+    if ($hosting) {
+        $streamStmt = $pdo->prepare("SELECT id, port, status FROM radio_streams WHERE user_id = ? LIMIT 1");
+        $streamStmt->execute([$hosting->id]);
+        $stream = $streamStmt->fetch(PDO::FETCH_OBJ);
+        if ($stream) {
+            // Auto-login as the stream owner
+            $_SESSION['dj_user'] = [
+                'id' => 0, 'stream_id' => $stream->id, 'username' => $user->name ?? 'Owner',
+                'name' => $user->name ?? 'Station Owner', 'stream_name' => 'My Stream',
+                'port' => $stream->port, 'stream_status' => $stream->status,
+                'is_owner' => true,
+            ];
+            $action = $_GET['action'] ?? 'dashboard';
+        }
+    }
+}
+
 // ─── LOGIN ───
 if ($_POST && $action === 'login') {
     $username = $_POST['username'] ?? '';
