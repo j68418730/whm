@@ -8,15 +8,27 @@ elseif (is_array($user)) { $email = $user['email'] ?? ''; }
 if (!empty($_SESSION['webmail_email'])) $email = $_SESSION['webmail_email'];
 if (!empty($_SESSION['webmail_password'])) $password = $_SESSION['webmail_password'];
 
-// Try to get email from hosting account if available
+// Get domain email accounts instead
 if (!$email) {
     $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
-    $stmt = $pdo->prepare("SELECT email FROM hosting_users WHERE id = ? OR username = ? LIMIT 1");
     $uid = is_object($user) ? ($user->id ?? 0) : ($user['id'] ?? 0);
     $uname = is_object($user) ? ($user->name ?? '') : ($user['name'] ?? '');
-    $stmt->execute([$uid, $uname]);
-    $hosting = $stmt->fetch(PDO::FETCH_OBJ);
-    if ($hosting && $hosting->email) $email = $hosting->email;
+    // Find hosting user
+    $hStmt = $pdo->prepare("SELECT id, domain FROM hosting_users WHERE id = ? OR username = ? LIMIT 1");
+    $hStmt->execute([$uid, $uname]);
+    $hosting = $hStmt->fetch(PDO::FETCH_OBJ);
+    // If no match from session, try first hosting account
+    if (!$hosting) {
+        $hStmt2 = $pdo->query("SELECT id, domain FROM hosting_users ORDER BY id ASC LIMIT 1");
+        $hosting = $hStmt2->fetch(PDO::FETCH_OBJ);
+    }
+    if ($hosting && $hosting->domain) {
+        // Get the first email account for this domain
+        $eStmt = $pdo->prepare("SELECT email FROM mail_accounts WHERE domain = ? LIMIT 1");
+        $eStmt->execute([$hosting->domain]);
+        $mailAcct = $eStmt->fetch(PDO::FETCH_OBJ);
+        if ($mailAcct) $email = $mailAcct->email;
+    }
 }
 
 // Get logo
