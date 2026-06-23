@@ -101,6 +101,15 @@ class UserController extends Controller
 
         // Services / Orders (all account types)
         $services = $uid ? ($this->db->table('billing_services')->where('user_id', $uid)->get() ?: []) : [];
+        // If no billing services, show the hosting package as a service
+        if (empty($services) && $hosting && $package) {
+            $svc = new \stdClass();
+            $svc->id = $hosting->id;
+            $svc->name = $package->name;
+            $svc->type = $package->type ?? 'web_hosting';
+            $svc->price = $package->monthly_price ?? 0;
+            $services = [$svc];
+        }
         $orders = $uid ? ($this->db->table('billing_orders')->where('user_id', $uid)->get() ?: []) : [];
 
         // Game servers (all account types)
