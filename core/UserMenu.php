@@ -62,7 +62,7 @@ if (!function_exists('user_menu_items')) {
             $items[] = ['label' => 'Song Requests', 'href' => '/user/dj-manager', 'icon' => '📝', 'section' => 'radio'];
             $items[] = ['label' => 'Listener Stats', 'href' => '/user/stats', 'icon' => '📈', 'section' => 'radio'];
             if (!empty($f->dj_panel))
-                $items[] = ['label' => 'DJ Panel', 'href' => '/dj_panel.php', 'icon' => '🎧', 'section' => 'radio', 'external' => true];
+                $items[] = ['label' => 'DJ Panel', 'href' => '/user/dj-panel', 'icon' => '🎧', 'section' => 'radio'];
         }
 
         // Games

@@ -69,6 +69,7 @@ $router->get('/user/stats', 'User\Controllers\UserController@stats');
 $router->get('/user/admins', 'User\Controllers\UserController@admins');
 $router->post('/user/admins', 'User\Controllers\UserController@admins');
 $router->get('/user/dj-manager', 'User\Controllers\UserController@djManager');
+$router->get('/user/dj-panel', 'User\Controllers\UserController@djPanel');
 $router->post('/user/dj-manager', 'User\Controllers\UserController@djManager');
 $router->get('/user/php-switcher', 'User\Controllers\UserController@phpSwitcher');
 $router->post('/user/php-switcher', 'User\Controllers\UserController@phpSwitcher');
