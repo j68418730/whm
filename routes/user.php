@@ -82,6 +82,7 @@ $router->get('/user/section/support', 'User\Controllers\SectionController@suppor
 $router->get('/user/section/radio', 'User\Controllers\SectionController@radio');
 $router->get('/user/section/games', 'User\Controllers\SectionController@games');
 $router->get('/user/section/builder', 'User\Controllers\SectionController@builder');
+$router->get('/user/section/chat', 'User\Controllers\SectionController@chat');
 $router->get('/user/apps/node', 'User\Controllers\AppsController@node');
 $router->post('/user/apps/node/create', 'User\Controllers\AppsController@nodeCreate');
 $router->get('/user/apps/node/start/{id}', 'User\Controllers\AppsController@nodeStart');
