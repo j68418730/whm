@@ -28,6 +28,7 @@
 <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="ruby" value="1"> Ruby</label>
 <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="terminal" value="1"> Terminal</label>
 <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="backups" value="1" checked> Backups</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="installer" value="1" checked> One-Click Installer</label>
 </div>
 
 <div style="margin-top:24px;display:flex;gap:12px">
