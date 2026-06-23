@@ -45,7 +45,7 @@ input:focus{border-color:#0A84FF}
 <h3>📧 <?php echo htmlspecialchars($a->email); ?></h3>
 <div class="email-addr">Quota: <?php echo $a->quota_mb ?? 1000; ?> MB · <span style="color:#4ade80">● Active</span></div>
 <div class="actions">
-<a href="<?php echo $webmailUrl; ?>" target="_blank" style="background:rgba(74,222,128,.1);color:#4ade80;border-color:rgba(74,222,128,.2)">📨 Webmail</a>
+<a href="<?php echo $webmailUrl; ?>?email=<?php echo urlencode($a->email); ?>" target="_blank" style="background:rgba(74,222,128,.1);color:#4ade80;border-color:rgba(74,222,128,.2)">📨 Webmail</a>
 <a href="/user/email/password/<?php echo $a->id;?>" style="background:rgba(250,204,21,.1);color:#facc15;border-color:rgba(250,204,21,.2)" onclick="return promptEmailPw(<?php echo $a->id;?>)">🔑 Password</a>
 <a href="/user/email/forwarder" style="background:rgba(56,189,248,.1);color:#38bdf8;border-color:rgba(56,189,248,.2)">↪ Forwarders</a>
 <a href="/user/email/autoresponder" style="background:rgba(168,85,247,.1);color:#a855f7;border-color:rgba(168,85,247,.2)">📝 Autoresponder</a>
