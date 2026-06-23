@@ -189,6 +189,7 @@ class UserController extends Controller
         exit;
     }
 
+    public function terminal() { $u = $this->loadUser(); return $this->view('user.terminal', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Terminal']); }
     public function logout() { session_destroy(); header('Location: /'); exit; }
     public function chat() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/chat.php'; exit; }
     public function admins() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/admins.php'; exit; }
