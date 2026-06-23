@@ -16,57 +16,31 @@ class SectionController extends Controller
         $this->db = $app->get('db');
     }
 
-    public function hosting()
+    protected function loadHosting()
     {
-        if (!$this->auth->check()) { header('Location: /?login'); exit; }
-        return $this->view('user.sections.hosting', ['title' => 'Hosting']);
+        if (!$this->auth->check()) return null;
+        $user = $this->auth->user();
+        $hosting = $this->db->table('hosting_users')->where('email', $user->email)->first();
+        if (!$hosting && !empty($user->id)) $hosting = $this->db->table('hosting_users')->where('id', $user->id)->first();
+        if (!$hosting && !empty($user->name)) $hosting = $this->db->table('hosting_users')->where('username', $user->name)->first();
+        if (!$hosting) $hosting = $this->db->table('hosting_users')->orderBy('id', 'ASC')->first();
+        return $hosting;
     }
 
-    public function email()
+    protected function sectionView($view, $title)
     {
         if (!$this->auth->check()) { header('Location: /?login'); exit; }
-        return $this->view('user.sections.email', ['title' => 'Email']);
+        $hosting = $this->loadHosting();
+        return $this->view($view, ['user' => $this->auth->user(), 'hosting' => $hosting, 'title' => $title]);
     }
 
-    public function domains()
-    {
-        if (!$this->auth->check()) { header('Location: /?login'); exit; }
-        return $this->view('user.sections.domains', ['title' => 'Domains']);
-    }
-
-    public function billing()
-    {
-        if (!$this->auth->check()) { header('Location: /?login'); exit; }
-        return $this->view('user.sections.billing', ['title' => 'Billing']);
-    }
-
-    public function support()
-    {
-        if (!$this->auth->check()) { header('Location: /?login'); exit; }
-        return $this->view('user.sections.support', ['title' => 'Support']);
-    }
-
-    public function radio()
-    {
-        if (!$this->auth->check()) { header('Location: /?login'); exit; }
-        return $this->view('user.sections.radio', ['title' => 'Radio']);
-    }
-
-    public function games()
-    {
-        if (!$this->auth->check()) { header('Location: /?login'); exit; }
-        return $this->view('user.sections.games', ['title' => 'Games']);
-    }
-
-    public function builder()
-    {
-        if (!$this->auth->check()) { header('Location: /?login'); exit; }
-        return $this->view('user.sections.builder', ['title' => 'Website Builder']);
-    }
-
-    public function chat()
-    {
-        if (!$this->auth->check()) { header('Location: /?login'); exit; }
-        return $this->view('user.sections.chat', ['title' => 'Live Chat']);
-    }
+    public function hosting() { return $this->sectionView('user.sections.hosting', 'Hosting'); }
+    public function email() { return $this->sectionView('user.sections.email', 'Email'); }
+    public function domains() { return $this->sectionView('user.sections.domains', 'Domains'); }
+    public function billing() { return $this->sectionView('user.sections.billing', 'Billing'); }
+    public function support() { return $this->sectionView('user.sections.support', 'Support'); }
+    public function radio() { return $this->sectionView('user.sections.radio', 'Radio'); }
+    public function games() { return $this->sectionView('user.sections.games', 'Games'); }
+    public function builder() { return $this->sectionView('user.sections.builder', 'Website Builder'); }
+    public function chat() { return $this->sectionView('user.sections.chat', 'Live Chat'); }
 }
