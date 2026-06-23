@@ -38,6 +38,8 @@ if (!function_exists('user_menu_items')) {
 
             if (!isset($f->backups) || $f->backups)
                 $items[] = ['label' => 'Backups', 'href' => '/user/backup', 'icon' => '💾', 'section' => 'hosting'];
+            if (!isset($f->installer) || $f->installer)
+                $items[] = ['label' => 'Quick Install', 'href' => '/user/installer', 'icon' => '📦', 'section' => 'hosting'];
         }
 
         // Domains
