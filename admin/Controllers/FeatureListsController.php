@@ -69,6 +69,9 @@ class FeatureListsController extends Controller
             'terminal' => (int)$this->request->post('terminal', 0),
             'backups' => (int)$this->request->post('backups', 1),
             'installer' => (int)$this->request->post('installer', 1),
+            'chatbox' => (int)$this->request->post('chatbox', 0),
+            'chatbox_voice' => (int)$this->request->post('chatbox_voice', 0),
+            'chatbox_video' => (int)$this->request->post('chatbox_video', 0),
         ]);
         $_SESSION['success_message'] = "Feature list '{$name}' created.";
         $this->response->redirect('/admin/feature-lists');
@@ -117,6 +120,9 @@ class FeatureListsController extends Controller
             'terminal' => (int)$this->request->post('terminal', 0),
             'backups' => (int)$this->request->post('backups', 1),
             'installer' => (int)$this->request->post('installer', 1),
+            'chatbox' => (int)$this->request->post('chatbox', 0),
+            'chatbox_voice' => (int)$this->request->post('chatbox_voice', 0),
+            'chatbox_video' => (int)$this->request->post('chatbox_video', 0),
             'is_active' => (int)$this->request->post('is_active', 1),
         ]);
         $_SESSION['success_message'] = "Feature list '{$name}' updated.";
