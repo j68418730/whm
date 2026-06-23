@@ -77,63 +77,15 @@
 $currentUrl = $_SERVER['REQUEST_URI'] ?? '';
 $pkgType = isset($package) && isset($package->type) ? $package->type : (isset($hosting) && isset($hosting->plan_type) ? $hosting->plan_type : '');
 $isWeb = $pkgType === '' || $pkgType === 'web_hosting' || $pkgType === 'hosting' || str_contains($pkgType, 'web');
-$isRadio = str_contains($pkgType, 'icecast') || str_contains($pkgType, 'shoutcast') || str_contains($pkgType, 'radio') || str_contains($pkgType, 'stream');
-$isVps = str_contains($pkgType, 'vps') || str_contains($pkgType, 'virtual');
-$isDedicated = str_contains($pkgType, 'dedicated') || str_contains($pkgType, 'ded');
-$hasGames = false;
-$hasStreams = false;
-if (isset($hosting) && isset($hosting->id)) {
-    try {
-        $app = \Core\Application::getInstance();
-        $db = $app->get('db');
-        $hasGames = true;
-        $sc = $db->table('radio_streams')->where('user_id', $hosting->id)->get() ?: [];
-        $hasStreams = count($sc) > 0;
-        if ($hasStreams) $isRadio = true;
-    } catch (\Exception $e) {}
+$features = [];
+if ($package && !empty($package->feature_list_id)) {
+    try { $fl = (new \Core\Application::getInstance())->get('db')->table('feature_lists')->where('id', $package->feature_list_id)->first(); if($fl) $features = (array)$fl; } catch(\Exception $e) {}
 }
-?>
-    <div class="nav-section"><div class="nav-label">Dashboard</div>
-    <a href="/user" class="nav-link<?php echo $currentUrl === '/user' ? ' active' : ''; ?>"><i class="bi bi-speedometer2"></i>Dashboard</a>
-    <a href="/user/stats" class="nav-link<?php echo str_contains($currentUrl, '/user/stats') ? ' active' : ''; ?>"><i class="bi bi-bar-chart"></i>Stats</a>
-    </div>
-    <div class="nav-section"><div class="nav-label">Services</div>
-<?php if ($isWeb || $isVps || $isDedicated): ?>
-    <a href="/user/services" class="nav-link<?php echo str_contains($currentUrl, '/user/services') ? ' active' : ''; ?>"><i class="bi bi-hdd-stack"></i>My Services</a>
-<?php endif; ?>
-<?php if ($isWeb): ?>
-    <a href="/user/domains" class="nav-link<?php echo str_contains($currentUrl, '/user/domains') ? ' active' : ''; ?>"><i class="bi bi-globe"></i>Domains</a>
-<?php endif; ?>
-<?php if ($isRadio || $hasStreams): ?>
-    <a href="/radio" class="nav-link<?php echo $currentUrl === '/radio' ? ' active' : ''; ?>"><i class="bi bi-broadcast"></i>Radio Dashboard</a>
-    <a href="/radio/create" class="nav-link<?php echo str_contains($currentUrl, '/radio/create') ? ' active' : ''; ?>"><i class="bi bi-plus-circle"></i>New Stream</a>
-    <a href="/user/dj-manager" class="nav-link<?php echo str_contains($currentUrl, '/user/dj-manager') ? ' active' : ''; ?>"><i class="bi bi-mic"></i>DJ Accounts</a>
-    <a href="/radio/widgets" class="nav-link<?php echo str_contains($currentUrl, '/radio/widgets') ? ' active' : ''; ?>"><i class="bi bi-code-slash"></i>Widgets</a>
-<?php endif; ?>
-<?php if ($hasGames): ?>
-    <a href="/user/games" class="nav-link<?php echo str_contains($currentUrl, '/user/games') ? ' active' : ''; ?>"><i class="bi bi-controller"></i>Game Servers</a>
-<?php endif; ?>
-<?php if ($isWeb): ?>
-    <a href="/user/email" class="nav-link<?php echo str_contains($currentUrl, '/user/email') ? ' active' : ''; ?>"><i class="bi bi-envelope"></i>Email</a>
-    <a href="/user/databases" class="nav-link<?php echo str_contains($currentUrl, '/user/databases') ? ' active' : ''; ?>"><i class="bi bi-database"></i>Databases</a>
-    <a href="/user/files" class="nav-link<?php echo str_contains($currentUrl, '/user/files') ? ' active' : ''; ?>"><i class="bi bi-upload"></i>File Manager</a>
-<?php endif; ?>
-    </div>
-    <div class="nav-section"><div class="nav-label">Billing</div>
-    <a href="/user/billing" class="nav-link<?php echo str_contains($currentUrl, '/user/billing') ? ' active' : ''; ?>"><i class="bi bi-credit-card"></i>Billing</a>
-    <a href="/user/invoices" class="nav-link<?php echo str_contains($currentUrl, '/user/invoices') ? ' active' : ''; ?>"><i class="bi bi-file-text"></i>Invoices</a>
-    </div>
-    <div class="nav-section"><div class="nav-label">Support</div>
-    <a href="/user/support" class="nav-link<?php echo str_contains($currentUrl, '/user/support') ? ' active' : ''; ?>"><i class="bi bi-headset"></i>Support</a>
-    <a href="/user/tickets" class="nav-link<?php echo str_contains($currentUrl, '/user/tickets') ? ' active' : ''; ?>"><i class="bi bi-ticket"></i>Tickets</a>
-    <a href="/user/chat" class="nav-link<?php echo str_contains($currentUrl, '/user/chat') ? ' active' : ''; ?>"><i class="bi bi-chat-dots"></i>Live Chat</a>
-    </div>
-    <div class="nav-section"><div class="nav-label">Account</div>
-    <a href="/user/profile" class="nav-link<?php echo str_contains($currentUrl, '/user/profile') ? ' active' : ''; ?>"><i class="bi bi-person"></i>Profile</a>
-    <a href="/user/security" class="nav-link<?php echo str_contains($currentUrl, '/user/security') ? ' active' : ''; ?>"><i class="bi bi-shield-check"></i>Security</a>
-    <a href="/user/admins" class="nav-link<?php echo str_contains($currentUrl, '/user/admins') ? ' active' : ''; ?>"><i class="bi bi-people"></i>Sub-Users</a>
-    <a href="/user/tools" class="nav-link<?php echo str_contains($currentUrl, '/user/tools') ? ' active' : ''; ?>"><i class="bi bi-tools"></i>Tools</a>
-    </div>
+if ($isRadio) $features['radio'] = 1;
+$features['web'] = $isWeb;
+require_once BASE_PATH . '/core/UserMenu.php';
+$items = user_menu_items($features);
+echo render_user_sidebar($items, $currentUrl); ?>
     </div>
   </div>
     <div class="main">
