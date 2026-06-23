@@ -207,6 +207,7 @@ class UserController extends Controller
     public function games() { $u = $this->loadUser(); return $this->view('user.games', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Game Servers']); }
     public function websiteBuilder() { $u = $this->loadUser(); return $this->view('user.websitebuilder', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Website Builder']); }
     public function webmailRedirect() { header('Location: /webmail_autologin.php'); exit; }
+    public function dismissAlert($id) { $u = $this->loadUser(); if ($this->hostingUser) { try { $this->db->table('user_alerts')->where('id', $id)->where('hosting_user_id', $this->hostingUser->id)->update(['is_read' => 1]); echo 'OK'; } catch (\Exception $e) {} } exit; }
     public function logout() { session_destroy(); header('Location: /'); exit; }
     public function chat() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/chat.php'; exit; }
     public function admins() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/admins.php'; exit; }
