@@ -7,7 +7,7 @@ if (!$user) { header('Location: /?login'); exit; }
 
 $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
 
-// Get the password from mail_accounts
+// Get password
 $stmt = $pdo->prepare("SELECT password_plain FROM mail_accounts WHERE email = ? LIMIT 1");
 $stmt->execute([$email]);
 $row = $stmt->fetch(PDO::FETCH_OBJ);
@@ -19,6 +19,36 @@ $lr = $q->fetch(PDO::FETCH_OBJ);
 $logo = $lr ? $lr->setting_value : '/theme/assets/img/logo.png';
 $lf = __DIR__ . '/../' . ltrim($logo, '/');
 if (!file_exists($lf)) $logo = '/theme/assets/img/logo.png';
+
+// Fetch Roundcube login page to get CSRF token
+$ch = curl_init('http://localhost/roundcube/');
+curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HEADER => true,
+    CURLOPT_COOKIEJAR => '/tmp/rc_sso_' . session_id() . '.txt',
+    CURLOPT_COOKIEFILE => '/tmp/rc_sso_' . session_id() . '.txt',
+]);
+$resp = curl_exec($ch);
+curl_close($ch);
+
+// Extract CSRF token
+preg_match('/name="_token" value="([^"]+)"/', $resp, $m);
+$token = $m[1] ?? '';
+
+// Extract cookies and forward them
+$cookieFile = '/tmp/rc_sso_' . session_id() . '.txt';
+if (is_file($cookieFile)) {
+    $lines = file($cookieFile, FILE_IGNORE_NEW_LINES);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line && !str_starts_with($line, '#')) {
+            $parts = preg_split('/\s+/', $line);
+            if (count($parts) >= 7) {
+                setcookie($parts[5], $parts[6], time() + 86400, '/roundcube/');
+            }
+        }
+    }
+}
 ?><!DOCTYPE html>
 <html><head><title>Opening Webmail...</title>
 <style>
@@ -37,9 +67,13 @@ body{background:#02050e;color:#fff;font-family:'Inter',sans-serif;display:flex;j
 <div class="sp"></div>
 </div>
 <form id="f" method="POST" action="/roundcube/?_task=login&_action=login">
+<input type="hidden" name="_token" value="<?php echo htmlspecialchars($token); ?>">
+<input type="hidden" name="_task" value="login">
+<input type="hidden" name="_action" value="login">
+<input type="hidden" name="_timezone" value="_default_">
+<input type="hidden" name="_url" value="">
 <input type="hidden" name="_user" value="<?php echo htmlspecialchars($email); ?>">
 <input type="hidden" name="_pass" value="<?php echo htmlspecialchars($password); ?>">
-<input type="hidden" name="_timezone" value="default">
 </form>
 <script>setTimeout(function(){document.getElementById('f').submit();},800);</script>
 </body></html>
