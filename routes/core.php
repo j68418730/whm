@@ -196,6 +196,7 @@ $router->get('/admin/account/edit/{id}', 'Admin\Controllers\AccountController@ed
 $router->get('/admin/account/delete/{id}', 'Admin\Controllers\AccountController@delete');
 $router->get('/admin/account/summary/{id}', 'Admin\Controllers\AccountController@summary');
 $router->post('/admin/account/email-summary/{id}', 'Admin\Controllers\AccountController@emailSummary');
+$router->post('/admin/account/send-alert/{id}', 'Admin\Controllers\AccountController@sendAlert');
 $router->get('/admin/account/modify', 'Admin\Controllers\AccountController@index');
 $router->get('/admin/account/modify/{id}', 'Admin\Controllers\AccountController@index');
 $router->get('/admin/account/suspend', 'Admin\Controllers\AccountController@index');
