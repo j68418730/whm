@@ -19,7 +19,10 @@
 <p style="color:#64748b;margin-bottom:14px">Manage your station, DJs, music, and listeners.</p>
 
 <?php if (!$station): ?>
-<div class="r-card" style="text-align:center;padding:30px"><h3>No Station</h3><p style="color:#64748b">Your package does not include radio hosting.</p></div>
+<div class="r-card" style="text-align:center;padding:30px"><h3>No Station</h3><p style="color:#64748b">No radio station found. Make sure your package includes radio hosting, then <a href="?tab=setup" style="color:#0A84FF">create one</a>.</p>
+<form method="POST" action="/user/radio/setup" style="margin-top:10px">
+<button type="submit" class="btn btn-sm btn-primary">Create Station</button>
+</form></div>
 <?php else: ?>
 
 <div class="nowplaying">

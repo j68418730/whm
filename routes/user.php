@@ -80,6 +80,7 @@ $router->get('/user/radio/mount/delete/{id}', 'User\Controllers\RadioController@
 $router->get('/user/radio/backup/create', 'User\Controllers\RadioController@backupCreate');
 $router->get('/user/radio/backup/download', 'User\Controllers\RadioController@backupDownload');
 $router->get('/user/radio/backup/delete', 'User\Controllers\RadioController@backupDelete');
+$router->post('/user/radio/setup', 'User\Controllers\RadioController@setup');
 $router->get('/user/public-djs', 'User\Controllers\UserController@publicDjs');
 $router->get('/user/dj/apply', 'User\Controllers\UserController@djApply');
 $router->post('/user/dj/apply', 'User\Controllers\UserController@djApplySubmit');
