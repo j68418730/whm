@@ -35,8 +35,7 @@ if (!function_exists('user_menu_items')) {
                 $items[] = ['label' => 'Node.js Apps', 'href' => '/user/apps/node', 'icon' => '🟢', 'section' => 'hosting'];
             if (!isset($f->python) || $f->python)
                 $items[] = ['label' => 'Python Apps', 'href' => '/user/apps/python', 'icon' => '🐍', 'section' => 'hosting'];
-            if (!isset($f->terminal) || $f->terminal)
-                $items[] = ['label' => 'Terminal', 'href' => '/user/terminal', 'icon' => '💻', 'section' => 'hosting'];
+
             if (!isset($f->backups) || $f->backups)
                 $items[] = ['label' => 'Backups', 'href' => '/user/backup', 'icon' => '💾', 'section' => 'hosting'];
         }
