@@ -39,10 +39,10 @@ if (!function_exists('user_menu_sections')) {
 }
 
 if (!function_exists('render_user_sidebar')) {
-    function render_user_sidebar(string $currentUrl): string
+    function render_user_sidebar(string $currentUrl, array $features = []): string
     {
         $html = '<nav class="sidebar-nav">';
-        foreach (user_menu_sections([]) as $item) {
+        foreach (user_menu_sections($features) as $item) {
             $isActive = false;
             foreach ($item['match'] as $m) {
                 if ($m && $currentUrl !== '/' && str_starts_with($currentUrl, $m)) { $isActive = true; break; }

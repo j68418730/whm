@@ -103,7 +103,7 @@ body{font-family:Inter,sans-serif;background:#070b14;color:#e0e0e0;display:flex;
 <div class="sidebar-logo"><img src="/theme/assets/img/logo.png" alt=""><h1>PLANET-<span>HOSTS</span></h1></div>
 <div class="sidebar-user"><div class="avatar"><?php echo strtoupper(substr($username, 0, 1)); ?></div><div class="info"><div class="name"><?php echo htmlspecialchars($username); ?></div><div class="email"><?php echo htmlspecialchars($userEmail); ?></div></div></div>
 <div class="search-box"><input type="text" id="menuSearch" placeholder="Search..." oninput="var q=this.value.toLowerCase();document.querySelectorAll('.sidebar-nav .nav-link').forEach(function(a){a.style.display=q?a.textContent.toLowerCase().indexOf(q)>-1?'':'none':''})"></div>
-<div id="sidebarMenu"><?php echo render_user_sidebar($currentUrl); ?></div>
+<div id="sidebarMenu"><?php echo render_user_sidebar($currentUrl, $features); ?></div>
 </div>
 <?php endif; ?>
 
