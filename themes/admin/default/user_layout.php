@@ -79,7 +79,7 @@ $pkgType = isset($package) && isset($package->type) ? $package->type : (isset($h
 $isWeb = $pkgType === '' || $pkgType === 'web_hosting' || $pkgType === 'hosting' || str_contains($pkgType, 'web');
 $features = [];
 if ($package && !empty($package->feature_list_id)) {
-    try { $fl = (new \Core\Application::getInstance())->get('db')->table('feature_lists')->where('id', $package->feature_list_id)->first(); if($fl) $features = (array)$fl; } catch(\Exception $e) {}
+    try { $db = \Core\Application::getInstance()->get('db'); $fl = $db->table('feature_lists')->where('id', $package->feature_list_id)->first(); if($fl) $features = (array)$fl; } catch(\Exception $e) {}
 }
 if ($isRadio) $features['radio'] = 1;
 $features['web'] = $isWeb;
