@@ -180,6 +180,43 @@ class RadioController extends Controller
     /**
      * Enable AutoDJ for a stream
      */
+    public function kickSource()
+    {
+        header('Content-Type: application/json');
+        if (!$this->auth->check()) { echo json_encode(['error'=>'Unauthorized']); exit; }
+        $streamId = (int)($_POST['stream_id'] ?? 0);
+        if (!$streamId) { echo json_encode(['error'=>'No stream ID']); exit; }
+        $app = \Core\Application::getInstance();
+        $db = $app->get('db');
+        $stream = $db->table('radio_streams')->where('id', $streamId)->first();
+        if (!$stream) { echo json_encode(['error'=>'Stream not found']); exit; }
+        $port = $stream->port ?? 8000;
+        $pass = $stream->password ?? 'admin';
+        $ch = curl_init("http://localhost:{$port}/admin/killsource?mount=/stream");
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_USERPWD=>"admin:{$pass}", CURLOPT_TIMEOUT=>5]);
+        $resp = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        echo json_encode($code === 200 ? ['success'=>true] : ['error'=>"HTTP {$code}"]);
+        exit;
+    }
+
+    public function approveRequest($id)
+    {
+        if (!$this->auth->check()) exit;
+        try { $app = \Core\Application::getInstance(); $db = $app->get('db'); $db->table('radio_requests')->where('id', $id)->update(['status'=>'approved']); } catch(\Exception $e) {}
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/user/radio'));
+        exit;
+    }
+
+    public function rejectRequest($id)
+    {
+        if (!$this->auth->check()) exit;
+        try { $app = \Core\Application::getInstance(); $db = $app->get('db'); $db->table('radio_requests')->where('id', $id)->update(['status'=>'rejected']); } catch(\Exception $e) {}
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/user/radio'));
+        exit;
+    }
+
     public function enableAutodj($streamId)
     {
         // Check if user is logged in

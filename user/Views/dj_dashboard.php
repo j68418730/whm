@@ -43,6 +43,11 @@ $port = $djStream->port ?? 8000;
 <button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('Server: <?php echo $host;?>\nPort: <?php echo $port;?>\nMount: /stream\nUser: source\nPass: <?php echo htmlspecialchars($djStream->password ?? 'changeme');?>')">📋 Copy Connection Details</button>
 </div>
 
+<div class="r-card"><h3>🔌 Source Control</h3>
+<button class="btn btn-sm" style="background:rgba(248,113,113,.1);color:#f87171;border:1px solid rgba(248,113,113,.2);padding:6px 14px;border-radius:6px;cursor:pointer" onclick="kickSource(<?php echo $djStream->id;?>)">⛔ Kick Current Source</button>
+<span id="kickResult" style="font-size:11px;margin-left:8px;color:#64748b"></span>
+</div>
+
 <div class="r-card"><h3>🎧 DJ Accounts <span>(<?php echo count($djs);?>)</span></h3>
 <?php if (empty($djs)): ?>
 <p style="color:#64748b;font-size:12px">No DJ accounts. <a href="/user/dj-manager" style="color:#0A84FF">Create one →</a></p>
@@ -65,4 +70,27 @@ $port = $djStream->port ?? 8000;
 <a href="/user/radio" class="btn btn-sm" style="background:rgba(0,140,255,.1);color:#0A84FF;border:1px solid rgba(0,140,255,.2);padding:6px 14px;border-radius:6px;text-decoration:none;font-size:12px">📻 Radio Dashboard</a>
 <a href="/user/dj-manager" class="btn btn-sm" style="background:rgba(168,85,247,.1);color:#a855f7;border:1px solid rgba(168,85,247,.2);padding:6px 14px;border-radius:6px;text-decoration:none;font-size:12px">🎤 DJ Manager</a>
 </div>
+
+<script>
+function kickSource(streamId) {
+    if (!confirm('Kick the current source/DJ from the stream?')) return;
+    var el = document.getElementById('kickResult');
+    if (!el) return;
+    el.textContent = '⏳ Kicking...';
+    el.style.color = '#facc15';
+    var x = new XMLHttpRequest();
+    x.open('POST', '/user/radio/kick-source', true);
+    x.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    x.onload = function() {
+        try {
+            var d = JSON.parse(x.responseText);
+            el.textContent = d.success ? '✅ Source kicked!' : '❌ ' + (d.error || 'Failed');
+            el.style.color = d.success ? '#4ade80' : '#f87171';
+        } catch(e) { el.textContent = '❌ Error'; el.style.color = '#f87171'; }
+    };
+    x.onerror = function() { el.textContent = '❌ Connection error'; el.style.color = '#f87171'; };
+    x.send('stream_id=' + streamId);
+}
+</script>
+
 <?php endif; ?>
