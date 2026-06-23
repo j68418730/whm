@@ -74,6 +74,8 @@ $router->get('/user/php-switcher', 'User\Controllers\UserController@phpSwitcher'
 $router->post('/user/php-switcher', 'User\Controllers\UserController@phpSwitcher');
 $router->get('/user/tools', 'User\Controllers\UserController@tools');
 $router->get('/user/terminal', 'User\Controllers\UserController@terminal');
+$router->get('/user/installer', 'User\Controllers\UserController@installer');
+$router->post('/user/installer/install', 'User\Controllers\UserController@installerInstall');
 $router->get('/user/ftp', 'User\Controllers\UserController@ftp');
 $router->post('/user/ftp/create', 'User\Controllers\UserController@ftpCreate');
 $router->post('/user/ftp/password/{id}', 'User\Controllers\UserController@ftpPassword');
