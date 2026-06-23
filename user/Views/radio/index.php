@@ -1,156 +1,164 @@
 <style>
-.r-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:16px}
-.r-stat{background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.08);border-radius:10px;padding:16px;text-align:center}
-.r-stat .num{font-size:24px;font-weight:800}
+.r-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:14px}
+.r-stat{background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.08);border-radius:10px;padding:14px;text-align:center}
+.r-stat .num{font-size:22px;font-weight:800}
 .r-stat .lbl{font-size:10px;color:#64748b;margin-top:2px}
-.r-card{background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.08);border-radius:10px;padding:18px;margin-bottom:14px}
+.r-card{background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.08);border-radius:10px;padding:18px;margin-bottom:12px}
 .r-card h3{font-size:14px;font-weight:600;margin:0 0 10px}
 .r-card h3 span{font-size:12px;color:#64748b;font-weight:400}
-.tab-bar{display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:14px;flex-wrap:wrap}
-.tab{padding:8px 14px;font-size:11px;cursor:pointer;color:#64748b;border-bottom:2px solid transparent;transition:.15s}
-.tab:hover{color:#e0e0e0}
-.tab.active{color:#0A84FF;border-bottom-color:#0A84FF}
-.tab-content{display:none}
-.tab-content.active{display:block}
-.tbl{width:100%;border-collapse:collapse;font-size:12px}
-.tbl th{text-align:left;padding:7px 10px;color:#64748b;font-size:10px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06)}
-.tbl td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.04)}
-.nowplaying{display:flex;align-items:center;gap:14px;padding:12px;background:rgba(0,0,0,.3);border-radius:8px;margin-bottom:10px}
-.nowplaying .cover{width:60px;height:60px;border-radius:8px;background:linear-gradient(135deg,#0A84FF,#a855f7);display:flex;align-items:center;justify-content:center;font-size:24px}
-.nowplaying .info{flex:1}
-.nowplaying .info .song{font-size:16px;font-weight:700}
-.nowplaying .info .artist{font-size:12px;color:#64748b}
+.nav-pills{display:flex;gap:2px;flex-wrap:wrap;margin-bottom:14px;background:rgba(8,16,28,.6);border-radius:8px;padding:3px}
+.nav-pills a{padding:6px 12px;border-radius:6px;font-size:11px;text-decoration:none;color:#94a3b8;transition:.1s;white-space:nowrap}
+.nav-pills a:hover{color:#e0e0e0;background:rgba(255,255,255,.04)}
+.nav-pills a.active{color:#fff;background:rgba(0,140,255,.2)}
+.tab{display:none}
+.tab.active{display:block}
+.nowplaying{display:flex;align-items:center;gap:14px;padding:14px;background:linear-gradient(135deg,rgba(0,140,255,.06),rgba(168,85,247,.04));border:1px solid rgba(0,191,255,.1);border-radius:12px;margin-bottom:14px}
+.nowplaying .cover{width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,#0A84FF,#a855f7);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.nowplaying .info{flex:1;min-width:0}
+.nowplaying .info .song{font-size:15px;font-weight:700}
+.nowplaying .info .artist{font-size:11px;color:#64748b;margin-top:1px}
 </style>
 
 <?php $streams = $streams ?? []; $s = $streams[0] ?? null; ?>
-
 <h2>📻 Radio Dashboard</h2>
-<p style="color:#64748b;margin-bottom:16px">Manage your radio station, streams, DJs, and music.</p>
+<p style="color:#64748b;margin-bottom:14px">Manage your station, DJs, playlists, and listeners.</p>
 
 <?php if (!$s): ?>
-<div class="r-card" style="text-align:center;padding:40px"><h3>No Radio Streams</h3><p style="color:#64748b">You don't have any radio streams yet.</p></div>
-<?php else: ?>
+<div class="r-card" style="text-align:center;padding:30px"><h3>No Stream</h3><p style="color:#64748b">No radio streams assigned to your account.</p></div>
+<?php else: $tab = $_GET['tab'] ?? 'overview'; ?>
 
 <div class="nowplaying">
 <div class="cover">📻</div>
 <div class="info"><div class="song"><?php echo htmlspecialchars($s->current_song ?? 'Not Playing'); ?></div>
-<div class="artist"><?php echo htmlspecialchars($s->server_name ?? 'Station'); ?> • <?php echo $s->status === 'running' ? '<span style="color:#4ade80">● Live</span>' : '<span style="color:#f87171">● Offline</span>'; ?></div></div>
-<div style="text-align:right;font-size:12px;color:#64748b">
-<div>Listeners: <strong style="color:#e0e0e0"><?php echo (int)($s->listeners_current ?? 0); ?></strong></div>
-<div>Peak: <strong style="color:#e0e0e0"><?php echo (int)($s->listeners_peak ?? 0); ?></strong></div>
-</div>
-</div>
+<div class="artist"><?php echo htmlspecialchars($s->server_name ?? 'Station'); ?> • <?php echo $s->status === 'running' ? '<span style="color:#4ade80">● Live</span>' : '<span style="color:#64748b">● Offline</span>'; ?>
+ • Listeners: <strong><?php echo (int)($s->listeners_current ?? 0); ?></strong> / Peak: <strong><?php echo (int)($s->listeners_peak ?? 0); ?></strong></div></div>
+<div style="display:flex;gap:4px;flex-shrink:0">
+<a href="/user/radio/start/<?php echo $s->id; ?>" class="btn btn-sm" style="background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2);padding:5px 10px;border-radius:5px;text-decoration:none;font-size:10px">▶</a>
+<a href="/user/radio/stop/<?php echo $s->id; ?>" class="btn btn-sm" style="background:rgba(248,113,113,.1);color:#f87171;border:1px solid rgba(248,113,113,.2);padding:5px 10px;border-radius:5px;text-decoration:none;font-size:10px">⏹</a>
+<a href="/user/radio/restart/<?php echo $s->id; ?>" class="btn btn-sm" style="background:rgba(250,204,21,.1);color:#facc15;border:1px solid rgba(250,204,21,.2);padding:5px 10px;border-radius:5px;text-decoration:none;font-size:10px">🔄</a>
+</div></div>
 
 <div class="r-grid">
-<div class="r-stat"><div class="num" style="color:#4ade80"><?php echo $s->status === 'running' ? 'Live' : 'Offline'; ?></div><div class="lbl">Status</div></div>
 <div class="r-stat"><div class="num" style="color:#0A84FF"><?php echo (int)($s->listeners_current ?? 0); ?></div><div class="lbl">Listeners</div></div>
 <div class="r-stat"><div class="num" style="color:#38bdf8"><?php echo (int)($s->listeners_peak ?? 0); ?></div><div class="lbl">Peak</div></div>
 <div class="r-stat"><div class="num" style="color:#a78bfa"><?php echo $s->bitrate ?? 128; ?>k</div><div class="lbl">Bitrate</div></div>
+<div class="r-stat"><div class="num" style="color:#4ade80"><?php echo $s->status === 'running' ? 'Live' : 'Offline'; ?></div><div class="lbl">Status</div></div>
 </div>
 
-<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
-<a href="/user/radio/start/<?php echo $s->id; ?>" class="btn btn-sm" style="background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2);padding:6px 14px;border-radius:6px;text-decoration:none;font-size:12px">▶ Start</a>
-<a href="/user/radio/stop/<?php echo $s->id; ?>" class="btn btn-sm" style="background:rgba(248,113,113,.1);color:#f87171;border:1px solid rgba(248,113,113,.2);padding:6px 14px;border-radius:6px;text-decoration:none;font-size:12px">⏹ Stop</a>
-<a href="/user/radio/restart/<?php echo $s->id; ?>" class="btn btn-sm" style="background:rgba(250,204,21,.1);color:#facc15;border:1px solid rgba(250,204,21,.2);padding:6px 14px;border-radius:6px;text-decoration:none;font-size:12px">🔄 Restart</a>
-<a href="http://<?php echo htmlspecialchars($_SERVER['HTTP_HOST'] ?? ''); ?>:<?php echo $s->port ?? 8000; ?>/stream" target="_blank" class="btn btn-sm" style="background:rgba(0,140,255,.1);color:#0A84FF;border:1px solid rgba(0,140,255,.2);padding:6px 14px;border-radius:6px;text-decoration:none;font-size:12px">🔗 Listen</a>
+<div class="nav-pills">
+<a href="?tab=overview" class="<?php echo $tab==='overview'?'active':'';?>">📊 Overview</a>
+<a href="?tab=autodj" class="<?php echo $tab==='autodj'?'active':'';?>">🎵 AutoDJ</a>
+<a href="?tab=playlists" class="<?php echo $tab==='playlists'?'active':'';?>">📂 Playlists</a>
+<a href="?tab=library" class="<?php echo $tab==='library'?'active':'';?>">🎶 Library</a>
+<a href="?tab=djs" class="<?php echo $tab==='djs'?'active':'';?>">🎧 DJs</a>
+<a href="?tab=schedule" class="<?php echo $tab==='schedule'?'active':'';?>">📅 Schedule</a>
+<a href="?tab=requests" class="<?php echo $tab==='requests'?'active':'';?>">🙋 Requests</a>
+<a href="?tab=listeners" class="<?php echo $tab==='listeners'?'active':'';?>">👥 Listeners</a>
+<a href="?tab=stats" class="<?php echo $tab==='stats'?'active':'';?>">📊 Stats</a>
+<a href="?tab=widgets" class="<?php echo $tab==='widgets'?'active':'';?>">🧩 Widgets</a>
+<a href="?tab=player" class="<?php echo $tab==='player'?'active':'';?>">▶ Player</a>
+<a href="?tab=settings" class="<?php echo $tab==='settings'?'active':'';?>">⚙️ Settings</a>
 </div>
 
-<div class="tab-bar">
-<div class="tab active" onclick="showTab('overview',this)">📊 Overview</div>
-<div class="tab" onclick="showTab('autodj',this)">🤖 AutoDJ</div>
-<div class="tab" onclick="showTab('playlists',this)">📂 Playlists</div>
-<div class="tab" onclick="showTab('djs',this)">🎧 DJs</div>
-<div class="tab" onclick="showTab('listeners',this)">👥 Listeners</div>
-<div class="tab" onclick="showTab('widgets',this)">🧩 Widgets</div>
-<div class="tab" onclick="showTab('player',this)">▶ Player</div>
-</div>
-
-<div id="tab-overview" class="tab-content active">
+<!-- Overview -->
+<div class="tab <?php echo $tab==='overview'?'active':'';?>">
 <div class="r-card"><h3>Station Info</h3>
-<table class="tbl"><tbody>
-<tr><td style="color:#64748b">Name</td><td><?php echo htmlspecialchars($s->server_name ?? 'N/A'); ?></td></tr>
-<tr><td style="color:#64748b">Genre</td><td><?php echo htmlspecialchars($s->genre ?? 'N/A'); ?></td></tr>
-<tr><td style="color:#64748b">Stream URL</td><td><code style="font-size:11px">http://<?php echo htmlspecialchars($_SERVER['HTTP_HOST'] ?? ''); ?>:<?php echo $s->port ?? 8000; ?>/stream</code></td></tr>
-<tr><td style="color:#64748b">Mount Point</td><td><code style="font-size:11px">/stream</code></td></tr>
-<tr><td style="color:#64748b">Bitrate</td><td><?php echo $s->bitrate ?? 128; ?> kbps</td></tr>
-<tr><td style="color:#64748b">Status</td><td><span style="color:<?php echo $s->status === 'running' ? '#4ade80' : '#f87171'; ?>">● <?php echo $s->status ?? 'stopped'; ?></span></td></tr>
-</tbody></table></div>
-<div class="r-card"><h3>Quick Links</h3>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<a href="/user/dj-manager" style="color:#0A84FF;font-size:12px">🎤 DJ Panel</a>
-<a href="/user/stats" style="color:#0A84FF;font-size:12px">📈 Statistics</a>
-<a href="/user/tickets" style="color:#0A84FF;font-size:12px">🎫 Support</a>
+<div style="display:grid;grid-template-columns:140px 1fr;gap:5px;font-size:12px">
+<span style="color:#64748b">Name</span><span><?php echo htmlspecialchars($s->server_name ?? '-'); ?></span>
+<span style="color:#64748b">Genre</span><span><?php echo htmlspecialchars($s->genre ?? '-'); ?></span>
+<span style="color:#64748b">Status</span><span><span style="color:<?php echo $s->status==='running'?'#4ade80':'#64748b';?>">● <?php echo $s->status??'stopped'; ?></span></span>
+<span style="color:#64748b">Current Song</span><span><?php echo htmlspecialchars($s->current_song ?? 'N/A'); ?></span>
+<span style="color:#64748b">Current DJ</span><span><?php echo htmlspecialchars($s->current_dj ?? 'N/A'); ?></span>
+<span style="color:#64748b">Stream URL</span><span><code style="font-size:10px">http://<?php echo htmlspecialchars($_SERVER['HTTP_HOST']??'');?>:<?php echo $s->port??8000;?>/stream</code></span>
+<span style="color:#64748b">Mount Point</span><span><code style="font-size:10px">/stream</code></span>
+<span style="color:#64748b">Bitrate</span><span><?php echo $s->bitrate??128;?> kbps</span>
 </div></div>
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<a href="/user/radio/start/<?php echo $s->id;?>" class="btn btn-sm" style="background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2);padding:6px 14px;border-radius:6px;text-decoration:none">▶ Start</a>
+<a href="/user/radio/stop/<?php echo $s->id;?>" class="btn btn-sm" style="background:rgba(248,113,113,.1);color:#f87171;border:1px solid rgba(248,113,113,.2);padding:6px 14px;border-radius:6px;text-decoration:none">⏹ Stop</a>
+<a href="/user/radio/restart/<?php echo $s->id;?>" class="btn btn-sm" style="background:rgba(250,204,21,.1);color:#facc15;border:1px solid rgba(250,204,21,.2);padding:6px 14px;border-radius:6px;text-decoration:none">🔄 Restart</a>
+<a href="http://<?php echo htmlspecialchars($_SERVER['HTTP_HOST']??'');?>:<?php echo $s->port??8000;?>/stream" target="_blank" class="btn btn-sm" style="background:rgba(0,140,255,.1);color:#0A84FF;border:1px solid rgba(0,140,255,.2);padding:6px 14px;border-radius:6px;text-decoration:none">🔗 Listen Live</a>
+</div></div>
+
+<!-- AutoDJ -->
+<div class="tab <?php echo $tab==='autodj'?'active':'';?>">
+<div class="r-card"><h3>🎵 AutoDJ <span><?php echo $s->autodj_enabled ? '● Enabled' : '○ Disabled'; ?></span></h3>
+<p style="font-size:12px;color:#64748b;margin-bottom:8px">AutoDJ plays music automatically when no live DJ is connected.</p>
+<form method="POST" action="/user/radio/autodj/toggle/<?php echo $s->id;?>">
+<button type="submit" class="btn btn-sm" style="background:<?php echo $s->autodj_enabled?'rgba(248,113,113,.1);color:#f87171;border:1px solid rgba(248,113,113,.2)':'rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2)';?>;padding:6px 14px;border-radius:6px;cursor:pointer">
+<?php echo $s->autodj_enabled ? '⏹ Disable AutoDJ' : '▶ Enable AutoDJ'; ?></button></form></div>
+<div class="r-card"><h3>Now Playing</h3><p style="color:#64748b;font-size:12px">Current: <strong><?php echo htmlspecialchars($s->current_song ?? 'N/A');?></strong></p></div>
 </div>
 
-<div id="tab-autodj" class="tab-content">
-<div class="r-card"><h3>🤖 AutoDJ <span><?php echo $s->autodj_enabled ? '● Enabled' : '○ Disabled'; ?></span></h3>
-<?php if ($s->autodj_enabled): ?>
-<p style="font-size:12px;color:#4ade80">AutoDJ is running — playing from playlist: <strong><?php echo htmlspecialchars($s->autodj_playlist ?? 'Default'); ?></strong></p>
-<?php else: ?>
-<p style="font-size:12px;color:#64748b">AutoDJ is disabled. Enable it to play music automatically when no DJ is connected.</p>
-<?php endif; ?>
-<form method="POST" action="/user/radio/autodj/toggle/<?php echo $s->id; ?>" style="margin-top:8px">
-<button type="submit" class="btn btn-sm" style="background:<?php echo $s->autodj_enabled ? 'rgba(248,113,113,.1);color:#f87171;border:1px solid rgba(248,113,113,.2)' : 'rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2)'; ?>;padding:6px 14px;border-radius:6px;cursor:pointer">
-<?php echo $s->autodj_enabled ? '⏹ Disable AutoDJ' : '▶ Enable AutoDJ'; ?>
-</button></form>
-</div>
-<div class="r-card"><h3>Upcoming</h3>
-<p style="color:#64748b;font-size:12px">No upcoming songs scheduled.</p></div>
-</div>
-
-<div id="tab-playlists" class="tab-content">
+<!-- Playlists -->
+<div class="tab <?php echo $tab==='playlists'?'active':'';?>">
 <div class="r-card"><h3>📂 Playlists</h3>
-<p style="color:#64748b;font-size:12px">Playlist management coming soon.</p></div>
-</div>
+<p style="color:#64748b;font-size:12px"><a href="/user/dj-manager" style="color:#0A84FF">Manage playlists in DJ Panel →</a></p></div></div>
 
-<div id="tab-djs" class="tab-content">
+<!-- Library -->
+<div class="tab <?php echo $tab==='library'?'active':'';?>">
+<div class="r-card"><h3>🎶 Music Library</h3>
+<p style="color:#64748b;font-size:12px">Upload and manage your music files. Supported: MP3, AAC, OGG, FLAC, WAV</p>
+<form style="display:flex;gap:6px;margin-top:8px"><input type="file" multiple style="flex:1;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px">
+<button class="btn btn-sm btn-primary">📤 Upload</button></form></div></div>
+
+<!-- DJs -->
+<div class="tab <?php echo $tab==='djs'?'active':'';?>">
 <div class="r-card"><h3>🎧 DJ Accounts</h3>
-<p style="color:#64748b;font-size:12px"><a href="/user/dj-manager" style="color:#0A84FF">Go to DJ Manager →</a></p></div>
-</div>
+<p style="font-size:12px;color:#64748b"><a href="/user/dj-manager" style="color:#0A84FF">Go to DJ Manager →</a></p></div></div>
 
-<div id="tab-listeners" class="tab-content">
-<div class="r-card"><h3>👥 Current Listeners</h3>
-<p style="color:#64748b;font-size:12px"><?php echo (int)($s->listeners_current ?? 0); ?> connected.</p>
-<table class="tbl"><thead><tr><th>IP</th><th>Agent</th><th>Connected</th></tr></thead>
-<tbody><tr><td colspan="3" style="text-align:center;color:#64748b;padding:20px">Listener details available when stream is active.</td></tr></tbody></table></div>
-</div>
+<!-- Schedule -->
+<div class="tab <?php echo $tab==='schedule'?'active':'';?>">
+<div class="r-card"><h3>📅 Schedule</h3>
+<p style="color:#64748b;font-size:12px">Schedule programming coming soon.</p></div></div>
 
-<div id="tab-widgets" class="tab-content">
-<div class="r-card"><h3>🧩 Stream Widgets</h3>
-<div style="margin-bottom:10px"><h4 style="font-size:12px;margin:0 0 4px">Now Playing Widget</h4>
-<textarea rows="2" style="width:100%;font-size:11px;font-family:monospace" readonly><script src="http://<?php echo htmlspecialchars($_SERVER['HTTP_HOST'] ?? ''); ?>/radio/widgets/nowplaying.php?stream=<?php echo $s->id; ?>"></script></textarea>
-<button class="btn btn-sm btn-primary" style="margin-top:4px" onclick="copy(this)">📋 Copy</button></div>
-<div style="margin-bottom:10px"><h4 style="font-size:12px;margin:0 0 4px">Listener Count Widget</h4>
-<textarea rows="2" style="width:100%;font-size:11px;font-family:monospace" readonly><script src="http://<?php echo htmlspecialchars($_SERVER['HTTP_HOST'] ?? ''); ?>/radio/widgets/listeners.php?stream=<?php echo $s->id; ?>"></script></textarea>
-<button class="btn btn-sm btn-primary" onclick="copy(this)">📋 Copy</button></div>
-<div style="margin-bottom:10px"><h4 style="font-size:12px;margin:0 0 4px">HTML5 Player</h4>
-<textarea rows="3" style="width:100%;font-size:11px;font-family:monospace" readonly><audio controls><source src="http://<?php echo htmlspecialchars($_SERVER['HTTP_HOST'] ?? ''); ?>:<?php echo $s->port ?? 8000; ?>/stream" type="audio/mpeg"></audio></textarea>
-<button class="btn btn-sm btn-primary" onclick="copy(this)">📋 Copy</button></div>
-</div>
-</div>
+<!-- Requests -->
+<div class="tab <?php echo $tab==='requests'?'active':'';?>">
+<div class="r-card"><h3>🙋 Song Requests</h3>
+<p style="color:#64748b;font-size:12px">No pending requests.</p></div></div>
 
-<div id="tab-player" class="tab-content">
-<div class="r-card" style="text-align:center">
-<h3>▶ Stream Player</h3>
-<audio controls style="width:100%;margin:12px 0"><source src="http://<?php echo htmlspecialchars($_SERVER['HTTP_HOST'] ?? ''); ?>:<?php echo $s->port ?? 8000; ?>/stream" type="audio/mpeg"></audio>
-<p style="font-size:12px;color:#64748b">Listening at <code><?php echo $s->bitrate ?? 128; ?> kbps</code></p>
+<!-- Listeners -->
+<div class="tab <?php echo $tab==='listeners'?'active':'';?>">
+<div class="r-card"><h3>👥 Listeners <span><?php echo (int)($s->listeners_current??0);?> connected</span></h3>
+<p style="color:#64748b;font-size:12px">Listener details appear when stream is active.</p></div></div>
+
+<!-- Stats -->
+<div class="tab <?php echo $tab==='stats'?'active':'';?>">
+<div class="r-card"><h3>📊 Statistics</h3>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">
+<div style="text-align:center"><div style="font-size:20px;font-weight:700;color:#0A84FF">--</div><div style="font-size:10px;color:#64748b">Today</div></div>
+<div style="text-align:center"><div style="font-size:20px;font-weight:700;color:#38bdf8">--</div><div style="font-size:10px;color:#64748b">Week</div></div>
+<div style="text-align:center"><div style="font-size:20px;font-weight:700;color:#a78bfa">--</div><div style="font-size:10px;color:#64748b">Month</div></div>
 </div>
-</div>
+<p style="color:#64748b;font-size:12px"><a href="/user/stats" style="color:#0A84FF">Detailed Statistics →</a></p></div></div>
+
+<!-- Widgets -->
+<div class="tab <?php echo $tab==='widgets'?'active':'';?>">
+<div class="r-card"><h3>🧩 Widgets</h3>
+<?php $host = $_SERVER['HTTP_HOST']??'localhost'; $streamId = $s->id; $port = $s->port??8000; ?>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#64748b;margin-bottom:2px">Now Playing</div>
+<textarea rows="2" style="width:100%;font-size:10px;font-family:monospace;padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#4ade80;outline:none" readonly>&lt;script src="http://<?php echo $host;?>/radio/widgets/nowplaying.php?stream=<?php echo $streamId;?>"&gt;&lt;/script&gt;</textarea></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#64748b;margin-bottom:2px">Listener Count</div>
+<textarea rows="2" style="width:100%;font-size:10px;font-family:monospace;padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#4ade80;outline:none" readonly>&lt;script src="http://<?php echo $host;?>/radio/widgets/listeners.php?stream=<?php echo $streamId;?>"&gt;&lt;/script&gt;</textarea></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#64748b;margin-bottom:2px">HTML5 Player Embed</div>
+<textarea rows="2" style="width:100%;font-size:10px;font-family:monospace;padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#4ade80;outline:none" readonly>&lt;audio controls&gt;&lt;source src="http://<?php echo $host;?>:<?php echo $port;?>/stream" type="audio/mpeg"&gt;&lt;/audio&gt;</textarea></div>
+</div></div>
+
+<!-- Player -->
+<div class="tab <?php echo $tab==='player'?'active':'';?>">
+<div class="r-card" style="text-align:center"><h3>▶ Stream Player</h3>
+<audio controls style="width:100%;margin:10px 0"><source src="http://<?php echo $host;?>:<?php echo $port;?>/stream" type="audio/mpeg"></audio>
+<p style="font-size:12px;color:#64748b"><code><?php echo $s->bitrate??128;?> kbps</code> stream</p></div></div>
+
+<!-- Settings -->
+<div class="tab <?php echo $tab==='settings'?'active':'';?>">
+<div class="r-card"><h3>⚙️ Stream Settings</h3>
+<div style="display:grid;grid-template-columns:140px 1fr;gap:5px;font-size:12px">
+<span style="color:#64748b">Name</span><span><?php echo htmlspecialchars($s->server_name??'-');?></span>
+<span style="color:#64748b">Description</span><span><?php echo htmlspecialchars($s->description??'-');?></span>
+<span style="color:#64748b">Genre</span><span><?php echo htmlspecialchars($s->genre??'-');?></span>
+<span style="color:#64748b">Bitrate</span><span><?php echo $s->bitrate??128;?> kbps</span>
+<span style="color:#64748b">Port</span><span><?php echo $s->port??8000;?></span>
+</div></div></div>
 
 <?php endif; ?>
-
-<script>
-function showTab(name, el) {
-    document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
-    document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active')});
-    if (el) el.classList.add('active'); else document.querySelector('.tab[onclick*="'+name+'"]')?.classList.add('active');
-    document.getElementById('tab-'+name).classList.add('active');
-}
-function copy(el) {
-    var t = el.previousElementSibling;
-    navigator.clipboard.writeText(t.value);
-    el.textContent = '✅ Copied!';
-    setTimeout(function(){el.textContent = '📋 Copy';},2000);
-}
-</script>
