@@ -87,6 +87,7 @@ class View
                     $title = $this->data['title'] ?? 'Dashboard';
                     $user = $this->data['user'] ?? null;
                     $hosting = $this->data['hosting'] ?? null;
+                    $package = $this->data['package'] ?? null;
                     $theme_settings = $this->data['theme_settings'] ?? [];
                     ob_start();
                     require $layoutFile;
@@ -104,6 +105,7 @@ class View
                 if (is_file($layoutFile)) {
                     $title = $this->data['title'] ?? 'Dashboard';
                     $user = $this->data['user'] ?? null;
+                    $package = $this->data['package'] ?? null;
                     ob_start();
                     require $layoutFile;
                     return ob_get_clean();
@@ -118,6 +120,7 @@ class View
             if (is_file($layoutFile)) {
                 $title = $this->data['title'] ?? 'Dashboard';
                 $user = $this->data['user'] ?? null;
+                $package = $this->data['package'] ?? null;
                 ob_start();
                 require $layoutFile;
                 return ob_get_clean();
@@ -131,6 +134,7 @@ class View
                 $title = $this->data['title'] ?? 'Dashboard';
                 $user = $this->data['user'] ?? null;
                 $hosting = $this->data['hosting'] ?? null;
+                $package = $this->data['package'] ?? null;
                 ob_start();
                 require $layoutFile;
                 return ob_get_clean();
