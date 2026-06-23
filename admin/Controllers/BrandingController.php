@@ -30,6 +30,7 @@ class BrandingController extends Controller
             'company_name' => $settings['company_name'] ?? 'Planet-Hosts',
             'company_email' => $settings['company_email'] ?? 'admin@planet-hosts.com',
             'company_website' => $settings['company_website'] ?? 'https://planet-hosts.com',
+            'company_logo' => $settings['company_logo'] ?? '/theme/assets/img/logo.png',
             'theme_settings' => $theme_settings,
         ]);
     }
@@ -43,7 +44,29 @@ class BrandingController extends Controller
             if ($r) $this->db->table('automation_settings')->where('setting_key', $k)->update(['setting_value' => $v]);
             else $this->db->table('automation_settings')->insertGetId(['setting_key' => $k, 'setting_value' => $v]);
         }
+        // Handle logo upload
+        if (!empty($_FILES['logo']['tmp_name']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
+            $ext = strtolower(pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['png','jpg','jpeg','gif','svg','webp'])) {
+                $filename = 'logo.' . $ext;
+                move_uploaded_file($_FILES['logo']['tmp_name'], BASE_PATH . '/theme/assets/img/' . $filename);
+                $r = $this->db->table('automation_settings')->where('setting_key', 'company_logo')->first();
+                $v = '/theme/assets/img/' . $filename;
+                if ($r) $this->db->table('automation_settings')->where('setting_key', 'company_logo')->update(['setting_value' => $v]);
+                else $this->db->table('automation_settings')->insertGetId(['setting_key' => 'company_logo', 'setting_value' => $v]);
+            }
+        }
         $_SESSION['success_message'] = 'Branding saved.';
         $this->response->redirect('/admin/branding');
+    }
+
+    public function logo()
+    {
+        header('Content-Type: application/json');
+        $r = $this->db->table('automation_settings')->where('setting_key', 'company_logo')->first();
+        $logo = $r ? $r->setting_value : '/theme/assets/img/logo.png';
+        if (!is_file(BASE_PATH . '/' . ltrim($logo, '/'))) $logo = '/theme/assets/img/logo.png';
+        echo json_encode(['logo' => $logo]);
+        exit;
     }
 }
