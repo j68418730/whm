@@ -94,7 +94,7 @@ if (!function_exists('user_menu_items')) {
         // Support - always shown
         $items[] = ['label' => 'Tickets', 'href' => '/user/tickets', 'icon' => '🎫', 'section' => 'support'];
         $items[] = ['label' => 'K. Base', 'href' => '/user/support', 'icon' => '📚', 'section' => 'support'];
-        $items[] = ['label' => 'Live Chat', 'href' => '/livechat', 'icon' => '💬', 'section' => 'support', 'external' => true];
+        $items[] = ['label' => 'Live Chat', 'href' => '/user/chat', 'icon' => '💬', 'section' => 'support'];
 
         // Account - always shown
         $items[] = ['label' => 'Profile', 'href' => '/user/profile', 'icon' => '👤', 'section' => 'account'];
