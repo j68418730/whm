@@ -22,7 +22,7 @@
 </style>
 
 <h2 style="font-size:22px;font-weight:700;margin-bottom:4px">Dashboard</h2>
-<p class="subtitle" style="color:#64748b;font-size:13px;margin-bottom:24px">Welcome back, <?php echo htmlspecialchars(($hosting->first_name ?? '') ?: ($hosting->username ?? 'User')); ?></p>
+<p class="subtitle" style="color:#64748b;font-size:13px;margin-bottom:24px">Welcome back, <?php echo htmlspecialchars(($hosting->first_name ?? $hosting->username) ?: $user->name ?? 'User'); ?></p>
 
 <!-- Quick Actions -->
 <div class="quick-grid">
