@@ -20,9 +20,12 @@ class SectionController extends Controller
     {
         if (!$this->auth->check()) return null;
         $user = $this->auth->user();
-        $hosting = $this->db->table('hosting_users')->where('email', $user->email)->first();
-        if (!$hosting && !empty($user->id)) $hosting = $this->db->table('hosting_users')->where('id', $user->id)->first();
-        if (!$hosting && !empty($user->name)) $hosting = $this->db->table('hosting_users')->where('username', $user->name)->first();
+        $email = is_object($user) ? ($user->email ?? '') : ($user['email'] ?? '');
+        $uid = is_object($user) ? ($user->id ?? 0) : ($user['id'] ?? 0);
+        $name = is_object($user) ? ($user->name ?? '') : ($user['name'] ?? '');
+        $hosting = $this->db->table('hosting_users')->where('email', $email)->first();
+        if (!$hosting && $uid) $hosting = $this->db->table('hosting_users')->where('id', $uid)->first();
+        if (!$hosting && $name) $hosting = $this->db->table('hosting_users')->where('username', $name)->first();
         if (!$hosting) $hosting = $this->db->table('hosting_users')->orderBy('id', 'ASC')->first();
         return $hosting;
     }

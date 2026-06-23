@@ -82,6 +82,7 @@ $router->get('/user/radio/backup/download', 'User\Controllers\RadioController@ba
 $router->get('/user/radio/backup/delete', 'User\Controllers\RadioController@backupDelete');
 $router->post('/user/radio/setup', 'User\Controllers\RadioController@setup');
 $router->get('/user/public-djs', 'User\Controllers\UserController@publicDjs');
+$router->get('/public/djs', 'User\Controllers\UserController@publicDjsEmbed');
 $router->get('/user/dj/apply', 'User\Controllers\UserController@djApply');
 $router->post('/user/dj/apply', 'User\Controllers\UserController@djApplySubmit');
 $router->post('/user/dj-manager', 'User\Controllers\UserController@djManager');
