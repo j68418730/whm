@@ -81,7 +81,9 @@ $features = [];
 if ($package && !empty($package->feature_list_id)) {
     try { $db = \Core\Application::getInstance()->get('db'); $fl = $db->table('feature_lists')->where('id', $package->feature_list_id)->first(); if($fl) $features = (array)$fl; } catch(\Exception $e) {}
 }
-if ($isRadio) $features['radio'] = 1;
+if ($isRadio || ($package->icecast_enabled ?? 0)) $features['radio'] = 1;
+if ($package->dj_panel_enabled ?? 0) $features['dj_panel'] = 1;
+if ($package->live_chat_enabled ?? 0) $features['livechat'] = 1;
 $features['web'] = $isWeb;
 require_once BASE_PATH . '/core/UserMenu.php';
 $items = user_menu_items($features);
