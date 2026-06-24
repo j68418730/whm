@@ -73,9 +73,9 @@ class RadioController extends Controller
         ]);
     }
 
-    public function start($id) { if($this->auth->check()) { @exec("sudo systemctl start icecast@{$id} 2>/dev/null >/dev/null &"); $this->db->table('radio_stations')->where('id', $id)->update(['status'=>'starting']); $this->log($id, 'start', 'Stream started'); } $this->response->redirect('/radio'); }
+    public function start($id) { if($this->auth->check()) { @exec("sudo /usr/local/bin/gen-icecast-config.php {$id} 2>/dev/null"); @exec("sudo systemctl start icecast@{$id} 2>/dev/null >/dev/null &"); $this->db->table('radio_stations')->where('id', $id)->update(['status'=>'starting']); $this->log($id, 'start', 'Stream started'); } $this->response->redirect('/radio'); }
     public function stop($id) { if($this->auth->check()) { @exec("sudo systemctl stop icecast@{$id} 2>/dev/null >/dev/null &"); $this->db->table('radio_stations')->where('id', $id)->update(['status'=>'stopped']); $this->log($id, 'stop', 'Stream stopped'); } $this->response->redirect('/radio'); }
-    public function restart($id) { if($this->auth->check()) { @exec("sudo systemctl restart icecast@{$id} 2>/dev/null >/dev/null &"); $this->db->table('radio_stations')->where('id', $id)->update(['status'=>'starting']); $this->log($id, 'restart', 'Stream restarted'); } $this->response->redirect('/radio'); }
+    public function restart($id) { if($this->auth->check()) { @exec("sudo /usr/local/bin/gen-icecast-config.php {$id} 2>/dev/null"); @exec("sudo systemctl restart icecast@{$id} 2>/dev/null >/dev/null &"); $this->db->table('radio_stations')->where('id', $id)->update(['status'=>'starting']); $this->log($id, 'restart', 'Stream restarted'); } $this->response->redirect('/radio'); }
 
     public function toggleAutodj($id)
     {
