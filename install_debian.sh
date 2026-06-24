@@ -88,6 +88,9 @@ if [ ! -d "$PANEL_DIR/public/snappymail" ]; then
     "whiteList": ""
 }
 SMCFG
+    # Create wildcard domain config for any domain (shortLogin=true needed for IMAP)
+    cp "$PANEL_DIR/public/snappymail/data/_data_/_default_/domains/default.json" \
+       "$PANEL_DIR/public/snappymail/data/_data_/_default_/domains/_wildcard_.json" 2>/dev/null
     chown -R www-data:www-data "$PANEL_DIR/public/snappymail"
 fi
 
