@@ -958,6 +958,53 @@ class RadioController extends Controller
         $this->response->redirect("/radio?tab=playlists");
     }
 
+    
+    public function updatePlaylist($id)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $pl = $this->db->table("radio_playlists")->where("id", $id)->where("stream_id", $station->id)->first();
+        if ($pl) {
+            $data = [];
+            $folder = $_POST["folder_path"] ?? "";
+            $data["folder_path"] = $folder ? "/" . trim($folder, "/") : null;
+            $scheduleType = $_POST["schedule_type"] ?? "none";
+            if ($scheduleType === "none") {
+                $data["schedule_start"] = null;
+                $data["schedule_end"] = null;
+                $data["schedule_months"] = null;
+            } else {
+                $data["schedule_start"] = !empty($_POST["schedule_start"]) ? $_POST["schedule_start"] : null;
+                $data["schedule_end"] = !empty($_POST["schedule_end"]) ? $_POST["schedule_end"] : null;
+                $data["schedule_months"] = !empty($_POST["schedule_months"]) ? $_POST["schedule_months"] : null;
+            }
+            $this->db->table("radio_playlists")->where("id", $id)->update($data);
+            if ($folder) {
+                $base = "/home/radio/" . $station->id . "/music/" . trim($folder, "/");
+                $this->db->table("radio_playlist_items")->where("playlist_id", $id)->delete();
+                $pos = 0;
+                if (is_dir($base)) {
+                    $files = scandir($base);
+                    foreach ($files as $f) {
+                        if ($f === "." || $f === "..") continue;
+                        $ext = strtolower(pathinfo($f, PATHINFO_EXTENSION));
+                        if (in_array($ext, ["mp3","aac","ogg","flac","wav"])) {
+                            $this->db->table("radio_playlist_items")->insertGetId([
+                                "playlist_id" => $id, "file_path" => trim($folder, "/") . "/" . $f, "position" => $pos++,
+                            ]);
+                        }
+                    }
+                }
+                $_SESSION["success"] = "Playlist updated with $pos tracks from folder.";
+            } else {
+                $_SESSION["success"] = "Playlist settings saved.";
+            }
+        }
+        $this->response->redirect("/radio?tab=playlists");
+    }
+
+
     public function exportPlaylist($id)
     {
         if (!$this->auth->check()) exit;
