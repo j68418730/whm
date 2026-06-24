@@ -52,7 +52,7 @@ class RadioController extends Controller
         } catch(\Exception $e) {}
     }
 
-    // ─── DASHBOARD ───
+    // ΓöÇΓöÇΓöÇ DASHBOARD ΓöÇΓöÇΓöÇ
     public function index()
     {
         if (!$this->auth->check()) { $this->response->redirect('/?login'); exit; }
@@ -89,7 +89,7 @@ class RadioController extends Controller
         $this->response->redirect('/radio');
     }
 
-    // ─── DJ MANAGEMENT ───
+    // ΓöÇΓöÇΓöÇ DJ MANAGEMENT ΓöÇΓöÇΓöÇ
     public function createDj()
     {
         if (!$this->auth->check()) exit;
@@ -166,7 +166,7 @@ class RadioController extends Controller
         $this->response->redirect('/radio?tab=djs');
     }
 
-    // ─── MODERATORS ───
+    // ΓöÇΓöÇΓöÇ MODERATORS ΓöÇΓöÇΓöÇ
     public function createMod()
     {
         if (!$this->auth->check()) exit;
@@ -209,7 +209,7 @@ class RadioController extends Controller
         $this->response->redirect('/radio?tab=mods');
     }
 
-    // ─── SCHEDULE ───
+    // ΓöÇΓöÇΓöÇ SCHEDULE ΓöÇΓöÇΓöÇ
     public function addSchedule()
     {
         if (!$this->auth->check()) exit;
@@ -242,7 +242,7 @@ class RadioController extends Controller
         $this->response->redirect('/radio?tab=schedule');
     }
 
-    // ─── REQUESTS ───
+    // ΓöÇΓöÇΓöÇ REQUESTS ΓöÇΓöÇΓöÇ
     public function approveRequest($id)
     {
         if (!$this->auth->check()) exit;
@@ -258,7 +258,7 @@ class RadioController extends Controller
         $this->response->redirect('/radio?tab=requests');
     }
 
-    // ─── MEDIA MANAGER ───
+    // ΓöÇΓöÇΓöÇ MEDIA MANAGER ΓöÇΓöÇΓöÇ
     public function mediaUpload()
     {
         if (!$this->auth->check()) exit;
@@ -292,7 +292,7 @@ class RadioController extends Controller
         $this->response->redirect('/radio?tab=media');
     }
 
-    // ─── MOUNT POINTS ───
+    // ΓöÇΓöÇΓöÇ MOUNT POINTS ΓöÇΓöÇΓöÇ
     public function addMount()
     {
         if (!$this->auth->check()) exit;
@@ -325,7 +325,7 @@ class RadioController extends Controller
         $this->response->redirect('/radio?tab=mounts');
     }
 
-    // ─── BACKUPS ───
+    // ΓöÇΓöÇΓöÇ BACKUPS ΓöÇΓöÇΓöÇ
     public function backupCreate()
     {
         if (!$this->auth->check()) exit;
@@ -368,7 +368,7 @@ class RadioController extends Controller
         $this->response->redirect('/radio?tab=backups');
     }
 
-    // ─── IP BANS ───
+    // ΓöÇΓöÇΓöÇ IP BANS ΓöÇΓöÇΓöÇ
     public function addIpBan()
     {
         if (!$this->auth->check()) exit;
@@ -403,7 +403,7 @@ class RadioController extends Controller
         $this->response->redirect('/radio?tab=bans');
     }
 
-    // ─── WIDGETS ───
+    // ΓöÇΓöÇΓöÇ WIDGETS ΓöÇΓöÇΓöÇ
     public function widgets()
     {
         if (!$this->auth->check()) { $this->response->redirect('/?login'); exit; }
@@ -447,7 +447,7 @@ class RadioController extends Controller
         $this->response->redirect('/radio?tab=widgets');
     }
 
-    // ─── STATION HOMEPAGE ───
+    // ΓöÇΓöÇΓöÇ STATION HOMEPAGE ΓöÇΓöÇΓöÇ
     public function pages()
     {
         if (!$this->auth->check()) { $this->response->redirect('/?login'); exit; }
@@ -492,7 +492,7 @@ class RadioController extends Controller
         $this->response->redirect('/radio?tab=pages');
     }
 
-    // ─── CHAT ───
+    // ΓöÇΓöÇΓöÇ CHAT ΓöÇΓöÇΓöÇ
     public function chatPoll()
     {
         header('Content-Type: application/json');
@@ -528,7 +528,7 @@ class RadioController extends Controller
         exit;
     }
 
-    // ─── KICK SOURCE ───
+    // ΓöÇΓöÇΓöÇ KICK SOURCE ΓöÇΓöÇΓöÇ
     public function kickSource()
     {
         header('Content-Type: application/json');
@@ -544,7 +544,7 @@ class RadioController extends Controller
         exit;
     }
 
-    // ─── SETUP ───
+    // ΓöÇΓöÇΓöÇ SETUP ΓöÇΓöÇΓöÇ
     public function setup()
     {
         if (!$this->auth->check()) exit;
@@ -564,7 +564,7 @@ class RadioController extends Controller
         $this->response->redirect('/radio');
     }
 
-    // ─── PUBLIC ENDPOINTS ───
+    // ΓöÇΓöÇΓöÇ PUBLIC ENDPOINTS ΓöÇΓöÇΓöÇ
     public function publicDjs()
     {
         $stationId = (int)($_GET['station_id'] ?? 0);
@@ -621,7 +621,7 @@ class RadioController extends Controller
         exit;
     }
 
-    // ─── PLAYLISTS ───
+    // ΓöÇΓöÇΓöÇ PLAYLISTS ΓöÇΓöÇΓöÇ
     public function createPlaylist()
     {
         if (!$this->auth->check()) exit;
@@ -681,7 +681,7 @@ class RadioController extends Controller
         $this->response->redirect('/radio?tab=playlists');
     }
 
-    // ─── AUTODJ SETUP ───
+    // ΓöÇΓöÇΓöÇ AUTODJ SETUP ΓöÇΓöÇΓöÇ
     public function autodjSetup()
     {
         if (!$this->auth->check()) { $this->response->redirect('/?login'); exit; }
@@ -711,7 +711,7 @@ class RadioController extends Controller
         $this->response->redirect('/radio?tab=autodj');
     }
 
-    // ─── SETUP WIZARD ───
+    // ΓöÇΓöÇΓöÇ SETUP WIZARD ΓöÇΓöÇΓöÇ
     public function setupWizard()
     {
         if (!$this->auth->check()) { $this->response->redirect('/?login'); exit; }
@@ -757,11 +757,11 @@ class RadioController extends Controller
             }
         }
         $this->log($station->id, 'wizard_complete', 'Setup wizard completed');
-        $_SESSION['success'] = '✅ Setup complete! Your station is configured.';
+        $_SESSION['success'] = 'Γ£à Setup complete! Your station is configured.';
         $this->response->redirect('/radio');
     }
 
-    // ─── DJ PORTAL AUTH ───
+    // ΓöÇΓöÇΓöÇ DJ PORTAL AUTH ΓöÇΓöÇΓöÇ
     public function djLogin()
     {
         $error = '';
@@ -806,7 +806,7 @@ class RadioController extends Controller
         $this->response->redirect($_SERVER['HTTP_REFERER'] ?? '/radio');
     }
 
-    // ─── PUBLIC WIDGET ENDPOINTS ───
+    // ΓöÇΓöÇΓöÇ PUBLIC WIDGET ENDPOINTS ΓöÇΓöÇΓöÇ
     public function widgetNowPlaying()
     {
         $id = (int)($_GET['id'] ?? 0);
@@ -818,7 +818,7 @@ class RadioController extends Controller
         echo '<div style="display:flex;align-items:center;gap:10px;padding:10px">';
         if ($s->logo_url) echo '<img src="' . htmlspecialchars($s->logo_url) . '" style="width:48px;height:48px;border-radius:8px">';
         echo '<div><strong>' . htmlspecialchars($s->current_song ?? 'Not Playing') . '</strong>';
-        echo '<br><small>' . htmlspecialchars($s->current_dj ?? 'AutoDJ') . ' • ' . ($s->status === 'running' ? '🔴 Live' : '⏹ Offline') . '</small></div></div>';
+        echo '<br><small>' . htmlspecialchars($s->current_dj ?? 'AutoDJ') . ' ΓÇó ' . ($s->status === 'running' ? '≡ƒö┤ Live' : 'ΓÅ╣ Offline') . '</small></div></div>';
         echo '<script>setTimeout(function(){location.reload()},15000)</script></body></html>';
         exit;
     }
@@ -830,7 +830,7 @@ class RadioController extends Controller
         header('Content-Type: text/html');
         echo '<!DOCTYPE html><html><body style="margin:0;font-family:sans-serif;background:transparent;color:#333;padding:8px;text-align:center">';
         echo '<div style="font-size:24px;font-weight:800">' . (int)($s->listener_count ?? 0) . '</div>';
-        echo '<small>Current • Peak: ' . (int)($s->listener_peak ?? 0) . '</small>';
+        echo '<small>Current ΓÇó Peak: ' . (int)($s->listener_peak ?? 0) . '</small>';
         echo '<script>setTimeout(function(){location.reload()},10000)</script></body></html>';
         exit;
     }
@@ -841,8 +841,8 @@ class RadioController extends Controller
         $s = $this->db->table('radio_stations')->where('id', $id)->first();
         header('Content-Type: text/html');
         echo '<!DOCTYPE html><html><body style="margin:0;font-family:sans-serif;background:transparent;color:#333;padding:10px">';
-        echo '<div style="text-align:center"><strong>🎤 ' . htmlspecialchars($s->current_dj ?? 'AutoDJ') . '</strong>';
-        echo '<br><span style="color:' . ($s->status === 'running' ? '#00aa00' : '#999') . '">● ' . ($s->status === 'running' ? 'Live' : 'Offline') . '</span></div>';
+        echo '<div style="text-align:center"><strong>≡ƒÄñ ' . htmlspecialchars($s->current_dj ?? 'AutoDJ') . '</strong>';
+        echo '<br><span style="color:' . ($s->status === 'running' ? '#00aa00' : '#999') . '">ΓùÅ ' . ($s->status === 'running' ? 'Live' : 'Offline') . '</span></div>';
         echo '<script>setTimeout(function(){location.reload()},10000)</script></body></html>';
         exit;
     }
@@ -852,7 +852,7 @@ class RadioController extends Controller
         $id = (int)($_GET['id'] ?? 0);
         header('Content-Type: text/html');
         echo '<!DOCTYPE html><html><body style="margin:0;font-family:sans-serif;background:transparent;color:#333;padding:10px">';
-        echo '<form id="wf" onsubmit="event.preventDefault();var f=new FormData(this);fetch(\'/radio/public/request\',{method:\'POST\',body:f}).then(r=>r.json()).then(d=>document.getElementById(\'wr\').textContent=d.success?\'✅ Sent!\':\'❌ Error\')">';
+        echo '<form id="wf" onsubmit="event.preventDefault();var f=new FormData(this);fetch(\'/radio/public/request\',{method:\'POST\',body:f}).then(r=>r.json()).then(d=>document.getElementById(\'wr\').textContent=d.success?\'Γ£à Sent!\':\'Γ¥î Error\')">';
         echo '<input name="name" placeholder="Your Name" style="width:100%;margin-bottom:4px;padding:4px;box-sizing:border-box">';
         echo '<input name="artist" placeholder="Artist" style="width:100%;margin-bottom:4px;padding:4px;box-sizing:border-box">';
         echo '<input name="title" placeholder="Song Title" style="width:100%;margin-bottom:4px;padding:4px;box-sizing:border-box">';
@@ -894,4 +894,95 @@ class RadioController extends Controller
         echo json_encode($recent);
         exit;
     }
+    // ΓöÇΓöÇΓöÇ MEDIA LIBRARY ΓöÇΓöÇΓöÇ
+    public function mediaCreateFolder()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $base = "/home/radio/" . $station->id . "/music";
+        $parent = trim($_POST["folder"] ?? "", "/");
+        $name = preg_replace("/[^a-zA-Z0-9_\- ]/", "", $_POST["name"] ?? "");
+        if ($name) {
+            $path = $base . ($parent ? "/" . $parent : "") . "/" . $name;
+            if (!is_dir($path)) @mkdir($path, 0755, true);
+            $_SESSION["success"] = "Folder '$name' created.";
+        }
+        $this->response->redirect("/radio?tab=media" . ($parent ? "&folder=" . urlencode($parent) : ""));
+    }
+
+    public function mediaScan()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $base = "/home/radio/" . $station->id . "/music";
+        $folder = trim($_POST["folder"] ?? "", "/");
+        $scanPath = $base . ($folder ? "/" . $folder : "");
+        $count = 0;
+        if (is_dir($scanPath)) {
+            $rdi = new \RecursiveDirectoryIterator($scanPath);
+            $rit = new \RecursiveIteratorIterator($rdi);
+            foreach ($rit as $spl) {
+                if ($spl->isFile()) {
+                    $ext = strtolower($spl->getExtension());
+                    if (in_array($ext, ["mp3","aac","ogg","flac","wav"])) {
+                        $rel = substr($spl->getPathname(), strlen($base) + 1);
+                        $existing = $this->db->table("radio_tracks")->where("station_id", $station->id)->where("filepath", $rel)->first();
+                        if (!$existing) {
+                            $this->db->table("radio_tracks")->insertGetId(["station_id" => $station->id, "filename" => $spl->getFilename(), "filepath" => $rel, "folder" => dirname($rel), "filesize" => $spl->getSize(), "format" => $ext]);
+                            $count++;
+                        }
+                    }
+                }
+            }
+        }
+        $_SESSION["success"] = "Scan complete. $count new tracks found.";
+        $this->response->redirect("/radio?tab=media" . ($folder ? "&folder=" . urlencode($folder) : ""));
+    }
+
+    public function duplicatePlaylist($id)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $orig = $this->db->table("radio_playlists")->where("id", $id)->where("stream_id", $station->id)->first();
+        if ($orig) {
+            $newId = $this->db->table("radio_playlists")->insertGetId(["stream_id" => $station->id, "name" => $orig->name . " (Copy)", "playlist_type" => $orig->playlist_type]);
+            $items = $this->db->table("radio_playlist_items")->where("playlist_id", $id)->get() ?: [];
+            foreach ($items as $item) {
+                $this->db->table("radio_playlist_items")->insertGetId(["playlist_id" => $newId, "track_id" => $item->track_id, "file_path" => $item->file_path, "position" => $item->position]);
+            }
+            $_SESSION["success"] = "Playlist duplicated.";
+        }
+        $this->response->redirect("/radio?tab=playlists");
+    }
+
+    public function exportPlaylist($id)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $pl = $this->db->table("radio_playlists")->where("id", $id)->where("stream_id", $station->id)->first();
+        if (!$pl) { $this->response->redirect("/radio?tab=playlists"); exit; }
+        $items = $this->db->table("radio_playlist_items")->where("playlist_id", $id)->orderBy("position")->get() ?: [];
+        $base = "/home/radio/" . $station->id . "/music/";
+        $m3u = "#EXTM3U
+#PLAYLIST: " . $pl->name . "
+";
+        foreach ($items as $item) {
+            $path = $base . ($item->file_path ?? "");
+            if (is_file($path)) {
+                $m3u .= "#EXTINF:-1," . ($item->artist ?? "Unknown") . " - " . ($item->title ?? basename($item->file_path)) . "
+";
+                $m3u .= $item->file_path . "
+";
+            }
+        }
+        header("Content-Type: audio/x-mpegurl");
+        header("Content-Disposition: attachment; filename=\"" . preg_replace("/[^a-z0-9]/", "_", strtolower($pl->name)) . ".m3u\"");
+        echo $m3u;
+        exit;
+    }
 }
+
