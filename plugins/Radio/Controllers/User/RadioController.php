@@ -27,7 +27,7 @@ class RadioController extends Controller
         if (!$hosting) $hosting = $this->db->table('hosting_users')->orderBy('id', 'ASC')->first();
         if (!$hosting) return null;
         $station = $this->db->table('radio_stations')->where('hosting_user_id', $hosting->id)->first();
-        if (!$station) {
+        if ($station) { $station->hosting_username = $hosting->username ?? "planethosts"; } if (!$station) {
             $pkg = $this->db->table('hosting_packages')->where('id', $hosting->package_id)->first();
             if ($pkg && ($pkg->icecast_enabled ?? 0)) {
                 $pw = substr(md5(time().rand()), 0, 8);
@@ -40,6 +40,19 @@ class RadioController extends Controller
         }
         return $station;
     }
+
+    
+    protected function getMusicBase($station = null)
+    {
+        if ($station && !empty($station->hosting_username)) {
+            return "/home/" . $station->hosting_username . "/music";
+        }
+        $user = $this->auth->user();
+        $hosting = $this->db->table("hosting_users")->where("email", $user->email)->first();
+        if ($hosting) return "/home/" . $hosting->username . "/music";
+        return "/home/planethosts/music";
+    }
+
 
     protected function log($stationId, $action, $details = '')
     {
@@ -94,7 +107,7 @@ class RadioController extends Controller
     {
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
-        if (!$station) { $this->response->redirect('/radio'); exit; }
+        if ($station) { $station->hosting_username = $hosting->username ?? "planethosts"; } if (!$station) { $this->response->redirect('/radio'); exit; }
         $username = strtolower(preg_replace('/[^a-z0-9]/', '', $_POST['username'] ?? ''));
         $password = $_POST['password'] ?? '';
         $name = $_POST['name'] ?? $username;
@@ -118,7 +131,7 @@ class RadioController extends Controller
     {
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
-        if (!$station) { $this->response->redirect('/radio'); exit; }
+        if ($station) { $station->hosting_username = $hosting->username ?? "planethosts"; } if (!$station) { $this->response->redirect('/radio'); exit; }
         $dj = $this->db->table('radio_djs')->where('id', $id)->where('station_id', $station->id)->first();
         if ($dj) {
             $data = [];
@@ -171,7 +184,7 @@ class RadioController extends Controller
     {
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
-        if (!$station) { $this->response->redirect('/radio'); exit; }
+        if ($station) { $station->hosting_username = $hosting->username ?? "planethosts"; } if (!$station) { $this->response->redirect('/radio'); exit; }
         $username = strtolower(preg_replace('/[^a-z0-9]/', '', $_POST['username'] ?? ''));
         $password = $_POST['password'] ?? '';
         if ($username && $password) {
@@ -214,7 +227,7 @@ class RadioController extends Controller
     {
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
-        if (!$station) { $this->response->redirect('/radio'); exit; }
+        if ($station) { $station->hosting_username = $hosting->username ?? "planethosts"; } if (!$station) { $this->response->redirect('/radio'); exit; }
         try {
             $this->db->table('radio_schedule')->insertGetId([
                 'station_id' => $station->id, 'dj_id' => (int)($_POST['dj_id'] ?? 0) ?: null,
@@ -497,7 +510,7 @@ class RadioController extends Controller
     {
         header('Content-Type: application/json');
         $station = $this->getStation();
-        if (!$station) { echo json_encode([]); exit; }
+        if ($station) { $station->hosting_username = $hosting->username ?? "planethosts"; } if (!$station) { echo json_encode([]); exit; }
         $since = (int)($_GET['since'] ?? 0);
         try {
             $msgs = $this->db->table('radio_chat_messages')
@@ -512,7 +525,7 @@ class RadioController extends Controller
     {
         header('Content-Type: application/json');
         $station = $this->getStation();
-        if (!$station) { echo json_encode(['error'=>'No station']); exit; }
+        if ($station) { $station->hosting_username = $hosting->username ?? "planethosts"; } if (!$station) { echo json_encode(['error'=>'No station']); exit; }
         $message = trim($_POST['message'] ?? '');
         if ($message) {
             try {
@@ -686,7 +699,7 @@ class RadioController extends Controller
     {
         if (!$this->auth->check()) { $this->response->redirect('/?login'); exit; }
         $station = $this->getStation();
-        if (!$station) { $this->response->redirect('/radio'); exit; }
+        if ($station) { $station->hosting_username = $hosting->username ?? "planethosts"; } if (!$station) { $this->response->redirect('/radio'); exit; }
         $playlists = [];
         try { $playlists = $this->db->table('radio_playlists')->where('station_id', $station->id)->get() ?: []; } catch(\Exception $e) {}
         return $this->view('Plugins.Radio.Views.user.radio.autodj_setup', [
@@ -698,7 +711,7 @@ class RadioController extends Controller
     {
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
-        if (!$station) { $this->response->redirect('/radio'); exit; }
+        if ($station) { $station->hosting_username = $hosting->username ?? "planethosts"; } if (!$station) { $this->response->redirect('/radio'); exit; }
         $data = [
             'autodj_enabled' => (int)($_POST['enabled'] ?? 0),
             'autodj_playlist_id' => (int)($_POST['playlist_id'] ?? 0) ?: null,
@@ -716,7 +729,7 @@ class RadioController extends Controller
     {
         if (!$this->auth->check()) { $this->response->redirect('/?login'); exit; }
         $station = $this->getStation();
-        if (!$station) { $this->response->redirect('/radio'); exit; }
+        if ($station) { $station->hosting_username = $hosting->username ?? "planethosts"; } if (!$station) { $this->response->redirect('/radio'); exit; }
         return $this->view('Plugins.Radio.Views.user.radio.wizard', [
             'station' => $station, 'title' => 'AutoDJ Setup Wizard'
         ]);
@@ -726,7 +739,7 @@ class RadioController extends Controller
     {
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
-        if (!$station) { $this->response->redirect('/radio'); exit; }
+        if ($station) { $station->hosting_username = $hosting->username ?? "planethosts"; } if (!$station) { $this->response->redirect('/radio'); exit; }
         $data = [];
         if (!empty($_POST['name'])) $data['name'] = $_POST['name'];
         if (!empty($_POST['description'])) $data['description'] = $_POST['description'];
@@ -900,7 +913,7 @@ class RadioController extends Controller
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
         if (!$station) exit;
-        $base = "/home/radio/" . $station->id . "/music";
+        $base = $this->getMusicBase($station);
         $parent = trim($_POST["folder"] ?? "", "/");
         $name = preg_replace("/[^a-zA-Z0-9_\- ]/", "", $_POST["name"] ?? "");
         if ($name) {
@@ -916,7 +929,7 @@ class RadioController extends Controller
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
         if (!$station) exit;
-        $base = "/home/radio/" . $station->id . "/music";
+        $base = $this->getMusicBase($station);
         $folder = trim($_POST["folder"] ?? "", "/");
         $scanPath = $base . ($folder ? "/" . $folder : "");
         $count = 0;
