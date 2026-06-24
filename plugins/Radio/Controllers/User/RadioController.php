@@ -334,8 +334,15 @@ class RadioController extends Controller
         $dir = '/home/radio/' . $station->id;
         $file = $dir . '/backup_' . date('Y-m-d_H-i-s') . '.tar.gz';
         @exec("tar czf '{$file}' -C '{$dir}/music' . 2>/dev/null");
-        $this->log($station->id, 'backup_create', "Backup created");
-        $_SESSION['success'] = 'Backup created.';
+        // Remove old backups, keep only 1 most recent
+        $existing = glob($dir . '/backup_*.tar.gz');
+        if (count($existing) > 1) {
+            sort($existing);
+            array_pop($existing); // keep newest
+            foreach ($existing as $old) @unlink($old);
+        }
+        $this->log($station->id, 'backup_create', "Backup created (old pruned)");
+        $_SESSION['success'] = 'Backup created. Older backups removed to save space.';
         $this->response->redirect('/radio?tab=backups');
     }
 
