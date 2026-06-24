@@ -1,34 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Filesystem - Radio Hosting Panel</title>
-    <link rel="stylesheet" href="/css/admin.css">
-</head>
-<body class="whm-body">
-    <main class="whm-shell">
-        <aside class="whm-sidebar">
-            <div class="brand"><span class="brand-mark">S</span><div><strong>Spectre WHM</strong><small>Hosting + Radio</small></div></div>
-            <a href="/admin/dashboard">Dashboard</a>
-            <a href="/admin/account">Account Functions</a>
-            <a href="/admin/reseller">Reseller Center</a>
-            <a href="/admin/packages">Packages</a>
-            <a href="/admin/streams">Radio Streams</a>
-            <a href="/admin/radio_dashboard">Radio Dashboard</a>
-            <a href="/admin/server">Server Overview</a>
-        </aside>
-        <section class="whm-content">
-            <div class="module-header">
-                <span class="eyebrow">WHM Module</span>
-                <h1>Filesystem</h1>
-                <p>Manage filesystem configuration and settings from this panel.</p>
-            </div>
-            <div class="card-grid">
-                <article class="module-card"><h3>Overview</h3><p>This module provides full filesystem management capabilities.</p></article>
-                <article class="module-card"><h3>Configuration</h3><p>Configure and customize filesystem settings for your hosting environment.</p></article>
-            </div>
-        </section>
-    </main>
-</body>
-</html>
+<h2>≡ƒôü File Manager</h2>
+<p style="color:#64748b;font-size:12px;margin-bottom:14px">Browse and manage files across all hosting accounts.</p>
+
+<?php if (isset($users)): ?>
+<div style="margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap">
+<?php foreach ($users as $u): ?>
+<a href="/admin/files?user=<?php echo urlencode($u->username); ?>" class="btn btn-sm btn-secondary">≡ƒæñ <?php echo htmlspecialchars($u->username); ?></a>
+<?php endforeach; ?>
+</div>
+<?php endif; ?>
+
+<div style="background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.08);border-radius:8px;padding:20px;text-align:center;color:#64748b;font-size:13px">
+Select a user above to browse their files.
+</div>
