@@ -85,7 +85,7 @@ if ($pkg && !empty($pkg->feature_list_id)) {
 if (($pkg->icecast_enabled ?? 0)) $features['radio'] = 1;
 if (($pkg->dj_panel_enabled ?? 0)) $features['dj_panel'] = 1;
 if (($pkg->live_chat_enabled ?? 0)) $features['livechat'] = 1;
-if (($pkg->game ?? 0)) $features['game'] = 1;
+if (($pkg->game_enabled ?? 0) || ($pkg->game ?? 0)) $features['game'] = 1;
 if (class_exists('\\Plugins\\WebsiteBuilder\\WebsiteBuilderPlugin')) $features['builder'] = 1;
 $features['web'] = $isWeb;
 require_once BASE_PATH . '/core/UserMenu.php';
