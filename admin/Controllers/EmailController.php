@@ -52,8 +52,13 @@ class EmailController extends Controller
             $this->db->table('mail_accounts')->insertGetId([
                 'email' => $full, 'domain' => $domain,
                 'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+                'password_plain' => $password,
                 'quota_mb' => (int)$this->request->post('quota', 1000),
             ]);
+            // Create system user for IMAP auth
+            $safe = escapeshellarg($email);
+            exec("useradd -m -d /home/{$safe} -s /sbin/nologin {$safe} 2>/dev/null");
+            exec("echo {$safe}:" . escapeshellarg($password) . " | chpasswd 2>/dev/null");
             $_SESSION['success_message'] = "Account {$full} created.";
         }
         $this->response->redirect('/admin/email?tab=accounts');
