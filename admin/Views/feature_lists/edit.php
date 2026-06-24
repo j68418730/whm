@@ -33,6 +33,9 @@
 <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="chatbox_voice" value="1" <?php echo $list->chatbox_voice ? 'checked' : ''; ?>> Chatbox (Voice)</label>
 <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="chatbox_video" value="1" <?php echo $list->chatbox_video ? 'checked' : ''; ?>> Chatbox (Voice + Video)</label>
 <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="game" value="1" <?php echo ($list->game ?? 0) ? 'checked' : ''; ?>> Game Servers</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="radio" value="1" <?php echo ($list->radio ?? 0) ? 'checked' : ''; ?>> Radio (Icecast)</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="dj_panel" value="1" <?php echo ($list->dj_panel ?? 0) ? 'checked' : ''; ?>> DJ Panel</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="builder" value="1" <?php echo ($list->builder ?? 0) ? 'checked' : ''; ?>> Website Builder</label>
 <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="is_active" value="1" <?php echo $list->is_active ? 'checked' : ''; ?>> Active</label>
 </div>
 

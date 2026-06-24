@@ -33,6 +33,9 @@
 <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="chatbox_voice" value="1"> Chatbox (Voice)</label>
 <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="chatbox_video" value="1"> Chatbox (Voice + Video)</label>
 <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="game" value="1"> Game Servers</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="radio" value="1"> Radio (Icecast)</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="dj_panel" value="1"> DJ Panel</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="builder" value="1"> Website Builder</label>
 </div>
 
 <div style="margin-top:24px;display:flex;gap:12px">
