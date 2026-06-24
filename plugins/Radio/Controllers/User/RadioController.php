@@ -798,4 +798,93 @@ class RadioController extends Controller
         }
         $this->response->redirect($_SERVER['HTTP_REFERER'] ?? '/radio');
     }
+
+    // ─── PUBLIC WIDGET ENDPOINTS ───
+    public function widgetNowPlaying()
+    {
+        $id = (int)($_GET['id'] ?? 0);
+        $s = $this->db->table('radio_stations')->where('id', $id)->first();
+        if (!$s) { echo 'Station offline'; exit; }
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        header('Content-Type: text/html');
+        echo '<!DOCTYPE html><html><body style="margin:0;font-family:sans-serif;background:transparent;color:#333">';
+        echo '<div style="display:flex;align-items:center;gap:10px;padding:10px">';
+        if ($s->logo_url) echo '<img src="' . htmlspecialchars($s->logo_url) . '" style="width:48px;height:48px;border-radius:8px">';
+        echo '<div><strong>' . htmlspecialchars($s->current_song ?? 'Not Playing') . '</strong>';
+        echo '<br><small>' . htmlspecialchars($s->current_dj ?? 'AutoDJ') . ' • ' . ($s->status === 'running' ? '🔴 Live' : '⏹ Offline') . '</small></div></div>';
+        echo '<script>setTimeout(function(){location.reload()},15000)</script></body></html>';
+        exit;
+    }
+
+    public function widgetListeners()
+    {
+        $id = (int)($_GET['id'] ?? 0);
+        $s = $this->db->table('radio_stations')->where('id', $id)->first();
+        header('Content-Type: text/html');
+        echo '<!DOCTYPE html><html><body style="margin:0;font-family:sans-serif;background:transparent;color:#333;padding:8px;text-align:center">';
+        echo '<div style="font-size:24px;font-weight:800">' . (int)($s->listener_count ?? 0) . '</div>';
+        echo '<small>Current • Peak: ' . (int)($s->listener_peak ?? 0) . '</small>';
+        echo '<script>setTimeout(function(){location.reload()},10000)</script></body></html>';
+        exit;
+    }
+
+    public function widgetDjStatus()
+    {
+        $id = (int)($_GET['id'] ?? 0);
+        $s = $this->db->table('radio_stations')->where('id', $id)->first();
+        header('Content-Type: text/html');
+        echo '<!DOCTYPE html><html><body style="margin:0;font-family:sans-serif;background:transparent;color:#333;padding:10px">';
+        echo '<div style="text-align:center"><strong>🎤 ' . htmlspecialchars($s->current_dj ?? 'AutoDJ') . '</strong>';
+        echo '<br><span style="color:' . ($s->status === 'running' ? '#00aa00' : '#999') . '">● ' . ($s->status === 'running' ? 'Live' : 'Offline') . '</span></div>';
+        echo '<script>setTimeout(function(){location.reload()},10000)</script></body></html>';
+        exit;
+    }
+
+    public function widgetRequest()
+    {
+        $id = (int)($_GET['id'] ?? 0);
+        header('Content-Type: text/html');
+        echo '<!DOCTYPE html><html><body style="margin:0;font-family:sans-serif;background:transparent;color:#333;padding:10px">';
+        echo '<form id="wf" onsubmit="event.preventDefault();var f=new FormData(this);fetch(\'/radio/public/request\',{method:\'POST\',body:f}).then(r=>r.json()).then(d=>document.getElementById(\'wr\').textContent=d.success?\'✅ Sent!\':\'❌ Error\')">';
+        echo '<input name="name" placeholder="Your Name" style="width:100%;margin-bottom:4px;padding:4px;box-sizing:border-box">';
+        echo '<input name="artist" placeholder="Artist" style="width:100%;margin-bottom:4px;padding:4px;box-sizing:border-box">';
+        echo '<input name="title" placeholder="Song Title" style="width:100%;margin-bottom:4px;padding:4px;box-sizing:border-box">';
+        echo '<input type="hidden" name="station_id" value="' . $id . '">';
+        echo '<button type="submit" style="padding:4px 12px">Request</button> <span id="wr"></span></form></body></html>';
+        exit;
+    }
+
+    public function widgetSchedule()
+    {
+        $id = (int)($_GET['id'] ?? 0);
+        $sched = $this->db->table('radio_schedule')->where('station_id', $id)->where('is_active', 1)->orderBy('day_of_week')->orderBy('start_time')->get() ?: [];
+        $days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        header('Content-Type: text/html');
+        echo '<!DOCTYPE html><html><body style="margin:0;font-family:sans-serif;background:transparent;color:#333;padding:10px">';
+        if (empty($sched)) { echo '<small style="color:#999">No shows scheduled</small>'; }
+        else { foreach ($sched as $s) { echo '<div style="font-size:12px;padding:2px 0"><strong>' . htmlspecialchars($s->show_name) . '</strong> ' . $days[$s->day_of_week] . ' ' . htmlspecialchars($s->start_time) . '-' . htmlspecialchars($s->end_time) . '</div>'; } }
+        echo '</body></html>';
+        exit;
+    }
+
+    public function widgetRecent()
+    {
+        $id = (int)($_GET['id'] ?? 0);
+        $recent = $this->db->table('radio_song_history')->where('station_id', $id)->orderBy('id', 'DESC')->limit(10)->get() ?: [];
+        header('Content-Type: text/html');
+        echo '<!DOCTYPE html><html><body style="margin:0;font-family:sans-serif;background:transparent;color:#333;padding:10px">';
+        if (empty($recent)) { echo '<small style="color:#999">No songs played yet</small>'; }
+        else { foreach ($recent as $r) { echo '<div style="font-size:11px;padding:3px 0;border-bottom:1px solid #eee">' . htmlspecialchars($r->artist ?? '') . ' - ' . htmlspecialchars($r->title ?? $r->song) . ' <small style="color:#999">' . htmlspecialchars($r->played_at ?? '') . '</small></div>'; } }
+        echo '</body></html>';
+        exit;
+    }
+
+    public function recentlyPlayed()
+    {
+        $id = (int)($_GET['station_id'] ?? 0);
+        header('Content-Type: application/json');
+        $recent = $this->db->table('radio_song_history')->where('station_id', $id)->orderBy('id', 'DESC')->limit(10)->get() ?: [];
+        echo json_encode($recent);
+        exit;
+    }
 }
