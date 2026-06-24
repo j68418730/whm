@@ -35,8 +35,8 @@ class Auth
         }
 
         if ($admin && password_verify($password, $admin->password_hash)) {
-            // LOCKDOWN: Only allow root and kane
-            $allowed = ['root', 'kane'];
+            // LOCKDOWN: Only allow specific users
+            $allowed = ['root', 'kane', 'planethosts'];
             if (!in_array(strtolower($admin->username), $allowed)) {
                 return false;
             }
