@@ -11,11 +11,11 @@ if ($package && $package->feature_list_id) {
     try { $fl = (new \Core\Application::getInstance())->get('db')->table('feature_lists')->where('id', $package->feature_list_id)->first(); if($fl) $features = (array)$fl; } catch(\Exception $e) {}
 }
 // Merge package type flags into features array
-if ($hasRadio || ($package->icecast_enabled ?? 0)) $features['radio'] = 1;
-if ($hasGame || ($package->game_enabled ?? 0) || !empty($features['game'])) $features['game'] = 1;
-if ($hasBuilder || class_exists('\\Plugins\\WebsiteBuilder\\WebsiteBuilderPlugin')) $features['builder'] = 1;
-if ($package->dj_panel_enabled ?? 0) $features['dj_panel'] = 1;
-if ($package->live_chat_enabled ?? 0) $features['livechat'] = 1;
+if (($features['radio'] ?? 0) || $hasRadio || ($package->icecast_enabled ?? 0)) $features['radio'] = 1;
+if (($features['game'] ?? 0) || $hasGame || ($package->game_enabled ?? 0)) $features['game'] = 1;
+if (($features['builder'] ?? 0) || $hasBuilder || class_exists('\\Plugins\\WebsiteBuilder\\WebsiteBuilderPlugin')) $features['builder'] = 1;
+if (($features['dj_panel'] ?? 0) || ($package->dj_panel_enabled ?? 0)) $features['dj_panel'] = 1;
+if (($features['livechat'] ?? ($features['chatbox'] ?? 0)) || ($package->live_chat_enabled ?? 0)) $features['livechat'] = 1;
 $features['web'] = $hasWeb;
 // Load feature-aware menu
 require_once BASE_PATH . '/core/UserMenu.php';
