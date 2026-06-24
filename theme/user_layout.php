@@ -10,6 +10,10 @@ $features = [];
 if ($package && $package->feature_list_id) {
     try { $fl = (new \Core\Application::getInstance())->get('db')->table('feature_lists')->where('id', $package->feature_list_id)->first(); if($fl) $features = (array)$fl; } catch(\Exception $e) {}
 }
+$hasWeb = stripos($pkgType, 'web') !== false || stripos($pkgType, 'hosting') !== false || !$pkgType;
+$hasRadio = stripos($pkgType, 'icecast') !== false || stripos($pkgType, 'radio') !== false;
+$hasGame = stripos($pkgType, 'game') !== false;
+$hasBuilder = stripos($pkgType, 'builder') !== false || stripos($pkgType, 'website') !== false;
 // Merge package type flags into features array
 if (($features['radio'] ?? 0) || $hasRadio || ($package->icecast_enabled ?? 0)) $features['radio'] = 1;
 if (($features['game'] ?? 0) || $hasGame || ($package->game_enabled ?? 0)) $features['game'] = 1;
@@ -20,11 +24,6 @@ $features['web'] = $hasWeb;
 // Load feature-aware menu
 require_once BASE_PATH . '/core/UserMenu.php';
 $currentUrl = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/user';
-
-$hasWeb = stripos($pkgType, 'web') !== false || stripos($pkgType, 'hosting') !== false || !$pkgType;
-$hasRadio = stripos($pkgType, 'icecast') !== false || stripos($pkgType, 'radio') !== false;
-$hasGame = stripos($pkgType, 'game') !== false;
-$hasBuilder = stripos($pkgType, 'builder') !== false || stripos($pkgType, 'website') !== false;
 $hasEmail = $features['email_accounts'] ?? -1;
 $hasDB = $features['databases'] ?? -1;
 $hasFTP = $features['ftp_accounts'] ?? -1;
