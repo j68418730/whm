@@ -27,9 +27,10 @@
 </div>
 <?php endforeach; else: ?>
 <div class="card" style="text-align:center;padding:40px">
-<div style="font-size:48px;margin-bottom:8px">📻</div>
+<div style="font-size:48px;margin-bottom:8px">≡ƒô╗</div>
 <h4 style="margin:0 0 4px">No Radio Streams</h4>
 <p style="color:var(--text_muted);font-size:13px;margin:0 0 14px">You haven't created any radio streams yet.</p>
 <a href="/radio/create" class="btn btn-primary">Create Your First Stream</a>
 </div>
 <?php endif; ?>
+
