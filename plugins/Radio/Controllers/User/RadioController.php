@@ -3,179 +3,674 @@
 namespace Plugins\Radio\Controllers\User;
 
 use Core\Controller;
-use Plugins\Radio\Services\StreamManager;
-use Plugins\Radio\Services\AutoDJManager;
-use Plugins\Radio\Services\TranscodingManager;
 
 class RadioController extends Controller
 {
-    protected $streamManager;
-    protected $autodjManager;
-    protected $transcodingManager;
-    protected $auth;
-    protected $request;
-    protected $response;
+    protected $auth, $request, $response, $db;
 
     public function __construct()
     {
         $app = \Core\Application::getInstance();
-        $this->streamManager = $app->get('radio.stream');
-        $this->autodjManager = $app->get('radio.autodj');
-        $this->transcodingManager = $app->get('radio.transcoding');
         $this->auth = $app->get('auth');
         $this->request = $app->get('request');
         $this->response = $app->get('response');
+        $this->db = $app->get('db');
     }
 
+    protected function getStation()
+    {
+        if (!$this->auth->check()) return null;
+        $user = $this->auth->user();
+        $hosting = $this->db->table('hosting_users')->where('email', $user->email)->first();
+        if (!$hosting && !empty($user->id)) $hosting = $this->db->table('hosting_users')->where('id', $user->id)->first();
+        if (!$hosting && !empty($user->name)) $hosting = $this->db->table('hosting_users')->where('username', $user->name)->first();
+        if (!$hosting) $hosting = $this->db->table('hosting_users')->orderBy('id', 'ASC')->first();
+        if (!$hosting) return null;
+        $station = $this->db->table('radio_stations')->where('hosting_user_id', $hosting->id)->first();
+        if (!$station) {
+            $pkg = $this->db->table('hosting_packages')->where('id', $hosting->package_id)->first();
+            if ($pkg && ($pkg->icecast_enabled ?? 0)) {
+                $pw = substr(md5(time().rand()), 0, 8);
+                $sid = $this->db->table('radio_stations')->insertGetId([
+                    'hosting_user_id' => $hosting->id, 'name' => $hosting->username."'s Station",
+                    'port' => 8000, 'password' => $pw, 'status' => 'stopped'
+                ]);
+                $station = $this->db->table('radio_stations')->where('id', $sid)->first();
+            }
+        }
+        return $station;
+    }
+
+    protected function log($stationId, $action, $details = '')
+    {
+        try {
+            $this->db->table('radio_logs')->insertGetId([
+                'station_id' => $stationId, 'action' => $action,
+                'details' => $details, 'username' => $_SESSION['dj_user']->username ?? $this->auth->user()->name ?? 'system',
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
+            ]);
+        } catch(\Exception $e) {}
+    }
+
+    // ─── DASHBOARD ───
     public function index()
     {
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
+        if (!$this->auth->check()) { $this->response->redirect('/?login'); exit; }
+        $station = $this->getStation();
+        $djs = []; $requests = []; $schedule = []; $mods = []; $recentLogs = []; $mounts = [];
+        if ($station) {
+            try { $djs = $this->db->table('radio_djs')->where('station_id', $station->id)->get() ?: []; } catch(\Exception $e) {}
+            try { $requests = $this->db->table('radio_requests')->where('station_id', $station->id)->where('status', 'pending')->limit(10)->get() ?: []; } catch(\Exception $e) {}
+            try { $schedule = $this->db->table('radio_schedule')->where('station_id', $station->id)->where('is_active', 1)->orderBy('day_of_week')->orderBy('start_time')->get() ?: []; } catch(\Exception $e) {}
+            try { $mods = $this->db->table('radio_moderators')->where('station_id', $station->id)->get() ?: []; } catch(\Exception $e) {}
+            try { $recentLogs = $this->db->table('radio_logs')->where('station_id', $station->id)->orderBy('id', 'DESC')->limit(10)->get() ?: []; } catch(\Exception $e) {}
+            try { $mounts = $this->db->table('radio_mounts')->where('station_id', $station->id)->get() ?: []; } catch(\Exception $e) {}
         }
-        $userId = $this->auth->user()->id;
-        $streams = $this->streamManager->getUserStreams($userId);
-        return $this->view('Plugins.Radio.Views.user.radio.index', ['streams' => $streams]);
-    }
-
-    public function create()
-    {
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
-        }
-        return $this->view('Plugins.Radio.Views.user.radio.create');
-    }
-
-    public function store()
-    {
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
-        }
-        $serverType = $this->request->post('server_type') ?? 'icecast';
-        $port = $this->request->post('port') ?? null;
-        $password = $this->request->post('password') ?? null;
-        $userId = $this->auth->user()->id;
-        try {
-            $stream = $this->streamManager->createStream($userId, $serverType, $port, $password);
-            $this->response->redirect('/radio/stream/' . $stream['id']);
-            exit;
-        } catch (\Exception $e) {
-            return $this->view('Plugins.Radio.Views.user.radio.create', [
-                'error' => $e->getMessage()
-            ]);
-        }
-    }
-
-    public function show($streamId)
-    {
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
-        }
-        $userId = $this->auth->user()->id;
-        $stream = $this->streamManager->getStream($streamId, $userId);
-        if (!$stream) {
-            $this->response->setStatusCode(404);
-            $this->response->setContent('404 - Stream not found');
-            $this->response->send();
-            exit;
-        }
-        $autodj = null;
-        try {
-            $autodj = $this->autodjManager->getByStreamId($streamId);
-        } catch (\Exception $e) {
-        }
-        $transcodingOptions = $this->transcodingManager->getOptions();
-        return $this->view('Plugins.Radio.Views.user.radio.show', [
-            'stream' => $stream,
-            'autodj' => $autodj,
-            'transcodingOptions' => $transcodingOptions
+        return $this->view('Plugins.Radio.Views.user.radio.index', [
+            'station' => $station, 'djs' => $djs, 'requests' => $requests,
+            'schedule' => $schedule, 'mods' => $mods, 'logs' => $recentLogs, 'mounts' => $mounts,
+            'title' => 'Radio Dashboard'
         ]);
     }
 
-    public function start($streamId)
+    public function start($id) { if($this->auth->check()) { @exec("sudo systemctl start icecast@{$id} 2>/dev/null >/dev/null &"); $this->db->table('radio_stations')->where('id', $id)->update(['status'=>'starting']); $this->log($id, 'start', 'Stream started'); } $this->response->redirect('/radio'); }
+    public function stop($id) { if($this->auth->check()) { @exec("sudo systemctl stop icecast@{$id} 2>/dev/null >/dev/null &"); $this->db->table('radio_stations')->where('id', $id)->update(['status'=>'stopped']); $this->log($id, 'stop', 'Stream stopped'); } $this->response->redirect('/radio'); }
+    public function restart($id) { if($this->auth->check()) { @exec("sudo systemctl restart icecast@{$id} 2>/dev/null >/dev/null &"); $this->db->table('radio_stations')->where('id', $id)->update(['status'=>'starting']); $this->log($id, 'restart', 'Stream restarted'); } $this->response->redirect('/radio'); }
+
+    public function toggleAutodj($id)
     {
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
+        if (!$this->auth->check()) exit;
+        $s = $this->db->table('radio_stations')->where('id', $id)->first();
+        if ($s) {
+            $new = $s->autodj_enabled ? 0 : 1;
+            $this->db->table('radio_stations')->where('id', $id)->update(['autodj_enabled' => $new, 'autodj_status' => $new ? 'running' : 'stopped']);
+            $this->log($id, 'autodj_'.($new?'enable':'disable'));
         }
-        $userId = $this->auth->user()->id;
-        $this->streamManager->startStream($streamId, $userId);
-        $this->response->redirect('/radio/stream/' . $streamId);
-        exit;
+        $this->response->redirect('/radio');
     }
 
-    public function stop($streamId)
+    // ─── DJ MANAGEMENT ───
+    public function createDj()
     {
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) { $this->response->redirect('/radio'); exit; }
+        $username = strtolower(preg_replace('/[^a-z0-9]/', '', $_POST['username'] ?? ''));
+        $password = $_POST['password'] ?? '';
+        $name = $_POST['name'] ?? $username;
+        if ($username && $password) {
+            try {
+                $this->db->table('radio_djs')->insertGetId([
+                    'station_id' => $station->id, 'username' => $username,
+                    'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+                    'display_name' => $name, 'email' => $_POST['email'] ?? '',
+                    'bio' => $_POST['bio'] ?? '', 'genres' => $_POST['genres'] ?? '',
+                    'status' => 'active'
+                ]);
+                $this->log($station->id, 'dj_create', "DJ '{$name}' created");
+                $_SESSION['success'] = "DJ '{$name}' created.";
+            } catch(\Exception $e) { $_SESSION['error'] = 'Username already exists.'; }
         }
-        $userId = $this->auth->user()->id;
-        $this->streamManager->stopStream($streamId, $userId);
-        $this->response->redirect('/radio/stream/' . $streamId);
-        exit;
+        $this->response->redirect('/radio?tab=djs');
     }
 
-    public function enableAutodj($streamId)
+    public function updateDj($id)
     {
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) { $this->response->redirect('/radio'); exit; }
+        $dj = $this->db->table('radio_djs')->where('id', $id)->where('station_id', $station->id)->first();
+        if ($dj) {
+            $data = [];
+            if (!empty($_POST['name'])) $data['display_name'] = $_POST['name'];
+            if (!empty($_POST['email'])) $data['email'] = $_POST['email'];
+            if (!empty($_POST['bio'])) $data['bio'] = $_POST['bio'];
+            if (!empty($_POST['genres'])) $data['genres'] = $_POST['genres'];
+            if (!empty($_POST['password'])) $data['password_hash'] = password_hash($_POST['password'], PASSWORD_DEFAULT);
+            $this->db->table('radio_djs')->where('id', $id)->update($data);
+            $this->log($station->id, 'dj_update', "DJ '{$dj->username}' updated");
+            $_SESSION['success'] = 'DJ updated.';
         }
-        $userId = $this->auth->user()->id;
-        $this->autodjManager->enableAutodj($streamId, $userId);
-        $this->response->redirect('/radio/stream/' . $streamId);
-        exit;
+        $this->response->redirect('/radio?tab=djs');
     }
 
-    public function disableAutodj($streamId)
+    public function deleteDj($id)
     {
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) {
+            $dj = $this->db->table('radio_djs')->where('id', $id)->where('station_id', $station->id)->first();
+            if ($dj) {
+                $this->db->table('radio_djs')->where('id', $id)->delete();
+                $this->db->table('radio_schedule')->where('dj_id', $id)->update(['dj_id' => null]);
+                $this->log($station->id, 'dj_delete', "DJ '{$dj->username}' deleted");
+                $_SESSION['success'] = 'DJ deleted.';
+            }
         }
-        $userId = $this->auth->user()->id;
-        $this->autodjManager->disableAutodj($streamId, $userId);
-        $this->response->redirect('/radio/stream/' . $streamId);
-        exit;
+        $this->response->redirect('/radio?tab=djs');
     }
 
-    public function startAutodj($autodjId)
+    public function toggleDj($id)
     {
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) {
+            $dj = $this->db->table('radio_djs')->where('id', $id)->where('station_id', $station->id)->first();
+            if ($dj) {
+                $new = $dj->status === 'active' ? 'suspended' : 'active';
+                $this->db->table('radio_djs')->where('id', $id)->update(['status' => $new]);
+                $this->log($station->id, 'dj_'.$new, "DJ '{$dj->username}' {$new}");
+                $_SESSION['success'] = "DJ {$new}.";
+            }
         }
-        $this->autodjManager->startAutodj($autodjId);
-        $autodj = $this->autodjManager->getById($autodjId);
-        $streamId = $autodj ? $autodj->stream_id : 0;
-        $this->response->redirect('/radio/stream/' . $streamId);
-        exit;
+        $this->response->redirect('/radio?tab=djs');
     }
 
-    public function stopAutodj($autodjId)
+    // ─── MODERATORS ───
+    public function createMod()
     {
-        if (!$this->auth->check()) {
-            $this->response->redirect('/login');
-            exit;
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) { $this->response->redirect('/radio'); exit; }
+        $username = strtolower(preg_replace('/[^a-z0-9]/', '', $_POST['username'] ?? ''));
+        $password = $_POST['password'] ?? '';
+        if ($username && $password) {
+            try {
+                $this->db->table('radio_moderators')->insertGetId([
+                    'station_id' => $station->id, 'username' => $username,
+                    'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+                    'display_name' => $_POST['display_name'] ?? $username,
+                    'email' => $_POST['email'] ?? '',
+                    'can_create_djs' => (int)($_POST['can_create_djs'] ?? 1),
+                    'can_edit_djs' => (int)($_POST['can_edit_djs'] ?? 1),
+                    'can_manage_requests' => (int)($_POST['can_manage_requests'] ?? 1),
+                    'can_manage_schedule' => (int)($_POST['can_manage_schedule'] ?? 1),
+                    'can_moderate_chat' => (int)($_POST['can_moderate_chat'] ?? 1),
+                ]);
+                $this->log($station->id, 'mod_create', "Mod '{$username}' created");
+                $_SESSION['success'] = "Moderator '{$username}' created.";
+            } catch(\Exception $e) { $_SESSION['error'] = 'Username already exists.'; }
         }
-        $this->autodjManager->stopAutodj($autodjId);
-        $autodj = $this->autodjManager->getById($autodjId);
-        $streamId = $autodj ? $autodj->stream_id : 0;
-        $this->response->redirect('/radio/stream/' . $streamId);
-        exit;
+        $this->response->redirect('/radio?tab=mods');
     }
 
+    public function deleteMod($id)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) {
+            $mod = $this->db->table('radio_moderators')->where('id', $id)->where('station_id', $station->id)->first();
+            if ($mod) {
+                $this->db->table('radio_moderators')->where('id', $id)->delete();
+                $this->log($station->id, 'mod_delete', "Mod '{$mod->username}' deleted");
+                $_SESSION['success'] = 'Moderator deleted.';
+            }
+        }
+        $this->response->redirect('/radio?tab=mods');
+    }
+
+    // ─── SCHEDULE ───
+    public function addSchedule()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) { $this->response->redirect('/radio'); exit; }
+        try {
+            $this->db->table('radio_schedule')->insertGetId([
+                'station_id' => $station->id, 'dj_id' => (int)($_POST['dj_id'] ?? 0) ?: null,
+                'dj_name' => $_POST['dj_name'] ?? '',
+                'show_name' => $_POST['show_name'] ?? 'Untitled',
+                'day_of_week' => (int)($_POST['day_of_week'] ?? 0),
+                'start_time' => $_POST['start_time'] ?? '00:00',
+                'end_time' => $_POST['end_time'] ?? '01:00',
+                'color' => $_POST['color'] ?? '#0A84FF',
+            ]);
+            $this->log($station->id, 'schedule_add', 'Show added: '.($_POST['show_name']??''));
+            $_SESSION['success'] = 'Show added.';
+        } catch(\Exception $e) { $_SESSION['error'] = 'Failed to add show.'; }
+        $this->response->redirect('/radio?tab=schedule');
+    }
+
+    public function deleteSchedule($id)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) {
+            $this->db->table('radio_schedule')->where('id', $id)->where('station_id', $station->id)->delete();
+            $this->log($station->id, 'schedule_delete');
+        }
+        $this->response->redirect('/radio?tab=schedule');
+    }
+
+    // ─── REQUESTS ───
+    public function approveRequest($id)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) { $this->db->table('radio_requests')->where('id', $id)->where('station_id', $station->id)->update(['status' => 'approved']); $this->log($station->id, 'request_approve', "Request #{$id} approved"); }
+        $this->response->redirect('/radio?tab=requests');
+    }
+    public function rejectRequest($id)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) { $this->db->table('radio_requests')->where('id', $id)->where('station_id', $station->id)->update(['status' => 'rejected']); $this->log($station->id, 'request_reject', "Request #{$id} rejected"); }
+        $this->response->redirect('/radio?tab=requests');
+    }
+
+    // ─── MEDIA MANAGER ───
+    public function mediaUpload()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $dir = '/home/radio/' . $station->id . '/music';
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        if (!empty($_FILES['file']['name'][0])) {
+            $count = 0;
+            foreach ((array)$_FILES['file']['name'] as $i => $name) {
+                $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                if (in_array($ext, ['mp3','aac','ogg','flac','wav'])) {
+                    move_uploaded_file($_FILES['file']['tmp_name'][$i], $dir . '/' . basename($name));
+                    $count++;
+                }
+            }
+            $this->log($station->id, 'media_upload', "{$count} files uploaded");
+            $_SESSION['success'] = "{$count} files uploaded.";
+        }
+        $this->response->redirect('/radio?tab=media');
+    }
+
+    public function mediaDelete()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $file = basename($_GET['file'] ?? '');
+        $path = '/home/radio/' . $station->id . '/music/' . $file;
+        if ($file && is_file($path)) { unlink($path); $this->log($station->id, 'media_delete', "File '{$file}' deleted"); }
+        $this->response->redirect('/radio?tab=media');
+    }
+
+    // ─── MOUNT POINTS ───
+    public function addMount()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $mount = '/' . ltrim($_POST['mount'] ?? 'stream2', '/');
+        try {
+            $this->db->table('radio_mounts')->insertGetId([
+                'station_id' => $station->id, 'mount' => $mount,
+                'bitrate' => (int)($_POST['bitrate'] ?? 128),
+                'description' => $_POST['description'] ?? '',
+            ]);
+            $this->log($station->id, 'mount_add', "Mount {$mount} created");
+            $_SESSION['success'] = "Mount {$mount} created.";
+        } catch(\Exception $e) { $_SESSION['error'] = 'Mount already exists.'; }
+        $this->response->redirect('/radio?tab=mounts');
+    }
+
+    public function deleteMount($id)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) {
+            $mount = $this->db->table('radio_mounts')->where('id', $id)->where('station_id', $station->id)->first();
+            if ($mount) {
+                $this->db->table('radio_mounts')->where('id', $id)->delete();
+                $this->log($station->id, 'mount_delete', "Mount {$mount->mount} deleted");
+            }
+        }
+        $this->response->redirect('/radio?tab=mounts');
+    }
+
+    // ─── BACKUPS ───
+    public function backupCreate()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $dir = '/home/radio/' . $station->id;
+        $file = $dir . '/backup_' . date('Y-m-d_H-i-s') . '.tar.gz';
+        @exec("tar czf '{$file}' -C '{$dir}/music' . 2>/dev/null");
+        $this->log($station->id, 'backup_create', "Backup created");
+        $_SESSION['success'] = 'Backup created.';
+        $this->response->redirect('/radio?tab=backups');
+    }
+
+    public function backupDownload()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $file = basename($_GET['file'] ?? '');
+        $path = '/home/radio/' . $station->id . '/' . $file;
+        if (is_file($path)) { header('Content-Type: application/octet-stream'); header('Content-Disposition: attachment; filename="'.$file.'"'); readfile($path); exit; }
+        $this->response->redirect('/radio?tab=backups');
+    }
+
+    public function backupDelete()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $file = basename($_GET['file'] ?? '');
+        $path = '/home/radio/' . $station->id . '/' . $file;
+        if ($file && is_file($path)) { unlink($path); $this->log($station->id, 'backup_delete'); }
+        $this->response->redirect('/radio?tab=backups');
+    }
+
+    // ─── IP BANS ───
+    public function addIpBan()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $ip = $_POST['ip_address'] ?? '';
+        if (filter_var($ip, FILTER_VALIDATE_IP)) {
+            try {
+                $this->db->table('radio_ip_bans')->insertGetId([
+                    'station_id' => $station->id, 'ip_address' => $ip,
+                    'reason' => $_POST['reason'] ?? '',
+                ]);
+                $this->log($station->id, 'ip_ban', "IP {$ip} banned");
+                $_SESSION['success'] = "IP {$ip} banned.";
+            } catch(\Exception $e) { $_SESSION['error'] = 'IP already banned.'; }
+        }
+        $this->response->redirect('/radio?tab=bans');
+    }
+
+    public function deleteIpBan($id)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) {
+            $ban = $this->db->table('radio_ip_bans')->where('id', $id)->where('station_id', $station->id)->first();
+            if ($ban) {
+                $this->db->table('radio_ip_bans')->where('id', $id)->delete();
+                $this->log($station->id, 'ip_unban', "IP {$ban->ip_address} unbanned");
+                $_SESSION['success'] = 'IP unbanned.';
+            }
+        }
+        $this->response->redirect('/radio?tab=bans');
+    }
+
+    // ─── WIDGETS ───
     public function widgets()
     {
         if (!$this->auth->check()) { $this->response->redirect('/?login'); exit; }
-        $userId = $this->auth->user()->id;
-        $streams = $this->streamManager->getUserStreams($userId);
+        $station = $this->getStation();
+        $widgets = [];
+        if ($station) {
+            try { $widgets = $this->db->table('radio_widgets')->where('station_id', $station->id)->get() ?: []; } catch(\Exception $e) {}
+        }
         return $this->view('Plugins.Radio.Views.user.radio.widgets', [
-            'user' => $this->auth->user(), 'streams' => $streams, 'title' => 'Radio Widgets'
+            'station' => $station, 'widgets' => $widgets, 'title' => 'Widgets'
         ]);
+    }
+
+    public function createWidget()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $type = $_POST['type'] ?? 'now_playing';
+        $title = $_POST['title'] ?? ucfirst(str_replace('_', ' ', $type));
+        $settings = $_POST['settings'] ?? '{}';
+        try {
+            $this->db->table('radio_widgets')->insertGetId([
+                'station_id' => $station->id, 'type' => $type,
+                'title' => $title, 'settings' => is_array($settings) ? json_encode($settings) : $settings,
+            ]);
+            $this->log($station->id, 'widget_create', "Widget '{$type}' created");
+            $_SESSION['success'] = 'Widget created.';
+        } catch(\Exception $e) { $_SESSION['error'] = 'Failed to create widget.'; }
+        $this->response->redirect('/radio?tab=widgets');
+    }
+
+    public function deleteWidget($id)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) {
+            $this->db->table('radio_widgets')->where('id', $id)->where('station_id', $station->id)->delete();
+            $this->log($station->id, 'widget_delete');
+        }
+        $this->response->redirect('/radio?tab=widgets');
+    }
+
+    // ─── STATION HOMEPAGE ───
+    public function pages()
+    {
+        if (!$this->auth->check()) { $this->response->redirect('/?login'); exit; }
+        $station = $this->getStation();
+        $pages = [];
+        if ($station) {
+            try { $pages = $this->db->table('radio_station_pages')->where('station_id', $station->id)->orderBy('sort_order')->get() ?: []; } catch(\Exception $e) {}
+        }
+        return $this->view('Plugins.Radio.Views.user.radio.pages', [
+            'station' => $station, 'pages' => $pages, 'title' => 'Station Pages'
+        ]);
+    }
+
+    public function createPage()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $title = $_POST['title'] ?? 'Untitled';
+        $slug = strtolower(preg_replace('/[^a-z0-9-]/', '', str_replace(' ', '-', $title)));
+        try {
+            $this->db->table('radio_station_pages')->insertGetId([
+                'station_id' => $station->id, 'title' => $title,
+                'slug' => $slug, 'content' => $_POST['content'] ?? '',
+                'layout' => $_POST['layout'] ?? 'default',
+                'is_published' => (int)($_POST['is_published'] ?? 0),
+            ]);
+            $this->log($station->id, 'page_create', "Page '{$title}' created");
+            $_SESSION['success'] = 'Page created.';
+        } catch(\Exception $e) { $_SESSION['error'] = 'Failed to create page.'; }
+        $this->response->redirect('/radio?tab=pages');
+    }
+
+    public function deletePage($id)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) {
+            $this->db->table('radio_station_pages')->where('id', $id)->where('station_id', $station->id)->delete();
+            $this->log($station->id, 'page_delete');
+        }
+        $this->response->redirect('/radio?tab=pages');
+    }
+
+    // ─── CHAT ───
+    public function chatPoll()
+    {
+        header('Content-Type: application/json');
+        $station = $this->getStation();
+        if (!$station) { echo json_encode([]); exit; }
+        $since = (int)($_GET['since'] ?? 0);
+        try {
+            $msgs = $this->db->table('radio_chat_messages')
+                ->where('station_id', $station->id)->where('id', '>', $since)
+                ->orderBy('id', 'ASC')->get() ?: [];
+            echo json_encode($msgs);
+        } catch(\Exception $e) { echo json_encode([]); }
+        exit;
+    }
+
+    public function chatSend()
+    {
+        header('Content-Type: application/json');
+        $station = $this->getStation();
+        if (!$station) { echo json_encode(['error'=>'No station']); exit; }
+        $message = trim($_POST['message'] ?? '');
+        if ($message) {
+            try {
+                $this->db->table('radio_chat_messages')->insertGetId([
+                    'station_id' => $station->id,
+                    'sender_type' => $_POST['sender_type'] ?? 'listener',
+                    'sender_name' => $_POST['sender_name'] ?? 'Anonymous',
+                    'message' => $message,
+                ]);
+                echo json_encode(['success'=>true]);
+            } catch(\Exception $e) { echo json_encode(['error'=>$e->getMessage()]); }
+        } else { echo json_encode(['error'=>'Empty message']); }
+        exit;
+    }
+
+    // ─── KICK SOURCE ───
+    public function kickSource()
+    {
+        header('Content-Type: application/json');
+        if (!$this->auth->check()) { echo json_encode(['error'=>'Unauthorized']); exit; }
+        $id = (int)($_POST['station_id'] ?? 0);
+        $s = $this->db->table('radio_stations')->where('id', $id)->first();
+        if (!$s) { echo json_encode(['error'=>'Not found']); exit; }
+        $ch = curl_init("http://localhost:{$s->port}/admin/killsource?mount={$s->mount}");
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_USERPWD=>"admin:{$s->admin_password}", CURLOPT_TIMEOUT=>5]);
+        curl_exec($ch); $code = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+        $this->log($id, 'kick_source');
+        echo json_encode($code===200 ? ['success'=>true] : ['error'=>"HTTP $code"]);
+        exit;
+    }
+
+    // ─── SETUP ───
+    public function setup()
+    {
+        if (!$this->auth->check()) exit;
+        $user = $this->auth->user();
+        $hosting = $this->db->table('hosting_users')->where('email', $user->email)->first();
+        if (!$hosting) $hosting = $this->db->table('hosting_users')->orderBy('id', 'ASC')->first();
+        if (!$hosting) { $this->response->redirect('/radio'); exit; }
+        $existing = $this->db->table('radio_stations')->where('hosting_user_id', $hosting->id)->first();
+        if (!$existing) {
+            $pw = substr(md5(time().rand()), 0, 8);
+            $this->db->table('radio_stations')->insertGetId([
+                'hosting_user_id' => $hosting->id, 'name' => $hosting->username."'s Station",
+                'port' => 8000, 'password' => $pw, 'status' => 'stopped'
+            ]);
+            $_SESSION['success'] = 'Station created!';
+        }
+        $this->response->redirect('/radio');
+    }
+
+    // ─── PUBLIC ENDPOINTS ───
+    public function publicDjs()
+    {
+        $stationId = (int)($_GET['station_id'] ?? 0);
+        if (!$stationId) exit;
+        header('Content-Type: application/json');
+        try {
+            $djs = $this->db->table('radio_djs')->where('station_id', $stationId)->where('status', 'active')->get() ?: [];
+            echo json_encode($djs);
+        } catch(\Exception $e) { echo json_encode([]); }
+        exit;
+    }
+
+    public function publicSchedule()
+    {
+        $stationId = (int)($_GET['station_id'] ?? 0);
+        if (!$stationId) exit;
+        header('Content-Type: application/json');
+        try {
+            $sched = $this->db->table('radio_schedule')->where('station_id', $stationId)->where('is_active', 1)->orderBy('day_of_week')->orderBy('start_time')->get() ?: [];
+            echo json_encode($sched);
+        } catch(\Exception $e) { echo json_encode([]); }
+        exit;
+    }
+
+    public function publicNowPlaying()
+    {
+        $stationId = (int)($_GET['station_id'] ?? 0);
+        if (!$stationId) exit;
+        header('Content-Type: application/json');
+        try {
+            $station = $this->db->table('radio_stations')->where('id', $stationId)->first(['current_song','current_dj','listener_count','status']);
+            echo json_encode($station ?: []);
+        } catch(\Exception $e) { echo json_encode([]); }
+        exit;
+    }
+
+    public function publicRequest()
+    {
+        $stationId = (int)($_POST['station_id'] ?? 0);
+        if (!$stationId) exit;
+        header('Content-Type: application/json');
+        $artist = $_POST['artist'] ?? '';
+        $title = $_POST['title'] ?? '';
+        $name = $_POST['name'] ?? 'Anonymous';
+        if ($artist && $title) {
+            try {
+                $this->db->table('radio_requests')->insertGetId([
+                    'station_id' => $stationId, 'guest_name' => $name,
+                    'artist' => $artist, 'title' => $title, 'status' => 'pending'
+                ]);
+                echo json_encode(['success'=>true]);
+            } catch(\Exception $e) { echo json_encode(['error'=>$e->getMessage()]); }
+        } else { echo json_encode(['error'=>'Artist and title required']); }
+        exit;
+    }
+
+    // ─── PLAYLISTS ───
+    public function createPlaylist()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $name = $_POST['name'] ?? 'New Playlist';
+        try {
+            $id = $this->db->table('radio_playlists')->insertGetId([
+                'station_id' => $station->id, 'name' => $name,
+                'description' => $_POST['description'] ?? '',
+            ]);
+            $this->log($station->id, 'playlist_create', "Playlist '{$name}' created");
+            $_SESSION['success'] = 'Playlist created.';
+        } catch(\Exception $e) { $_SESSION['error'] = 'Failed.'; }
+        $this->response->redirect('/radio?tab=playlists');
+    }
+
+    public function deletePlaylist($id)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) {
+            $this->db->table('radio_playlists')->where('id', $id)->where('station_id', $station->id)->delete();
+            $this->db->table('radio_playlist_items')->where('playlist_id', $id)->delete();
+        }
+        $this->response->redirect('/radio?tab=playlists');
+    }
+
+    public function addPlaylistItem()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $playlistId = (int)($_POST['playlist_id'] ?? 0);
+        $file = $_POST['file'] ?? '';
+        $artist = $_POST['artist'] ?? '';
+        $title = $_POST['title'] ?? '';
+        if ($playlistId && $file) {
+            try {
+                $this->db->table('radio_playlist_items')->insertGetId([
+                    'playlist_id' => $playlistId, 'file' => $file,
+                    'artist' => $artist, 'title' => $title,
+                ]);
+                $_SESSION['success'] = 'Track added.';
+            } catch(\Exception $e) { $_SESSION['error'] = 'Failed.'; }
+        }
+        $this->response->redirect('/radio?tab=playlists');
+    }
+
+    public function deletePlaylistItem($id)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if ($station) {
+            $this->db->table('radio_playlist_items')->where('id', $id)->delete();
+        }
+        $this->response->redirect('/radio?tab=playlists');
     }
 }
