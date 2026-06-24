@@ -623,12 +623,12 @@ class RadioController extends Controller
         $name = $_POST['name'] ?? 'New Playlist';
         try {
             $id = $this->db->table('radio_playlists')->insertGetId([
-                'station_id' => $station->id, 'name' => $name,
+                'stream_id' => $station->id, 'name' => $name,
                 'description' => $_POST['description'] ?? '',
             ]);
             $this->log($station->id, 'playlist_create', "Playlist '{$name}' created");
             $_SESSION['success'] = 'Playlist created.';
-        } catch(\Exception $e) { $_SESSION['error'] = 'Failed.'; }
+        } catch(\Exception $e) { $_SESSION['error'] = 'Failed: ' . $e->getMessage(); }
         $this->response->redirect('/radio?tab=playlists');
     }
 
@@ -637,8 +637,11 @@ class RadioController extends Controller
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
         if ($station) {
-            $this->db->table('radio_playlists')->where('id', $id)->where('station_id', $station->id)->delete();
-            $this->db->table('radio_playlist_items')->where('playlist_id', $id)->delete();
+            $pl = $this->db->table('radio_playlists')->where('id', $id)->where('stream_id', $station->id)->first();
+            if ($pl) {
+                $this->db->table('radio_playlists')->where('id', $id)->delete();
+                $this->db->table('radio_playlist_items')->where('playlist_id', $id)->delete();
+            }
         }
         $this->response->redirect('/radio?tab=playlists');
     }
@@ -655,11 +658,11 @@ class RadioController extends Controller
         if ($playlistId && $file) {
             try {
                 $this->db->table('radio_playlist_items')->insertGetId([
-                    'playlist_id' => $playlistId, 'file' => $file,
+                    'playlist_id' => $playlistId, 'file_path' => $file,
                     'artist' => $artist, 'title' => $title,
                 ]);
                 $_SESSION['success'] = 'Track added.';
-            } catch(\Exception $e) { $_SESSION['error'] = 'Failed.'; }
+            } catch(\Exception $e) { $_SESSION['error'] = 'Failed: ' . $e->getMessage(); }
         }
         $this->response->redirect('/radio?tab=playlists');
     }
@@ -667,10 +670,7 @@ class RadioController extends Controller
     public function deletePlaylistItem($id)
     {
         if (!$this->auth->check()) exit;
-        $station = $this->getStation();
-        if ($station) {
-            $this->db->table('radio_playlist_items')->where('id', $id)->delete();
-        }
+        $this->db->table('radio_playlist_items')->where('id', $id)->delete();
         $this->response->redirect('/radio?tab=playlists');
     }
 
