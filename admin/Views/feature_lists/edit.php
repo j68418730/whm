@@ -28,6 +28,11 @@
 <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="ruby" value="1" <?php echo $list->ruby ? 'checked' : ''; ?>> Ruby</label>
 <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="terminal" value="1" <?php echo $list->terminal ? 'checked' : ''; ?>> Terminal</label>
 <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="backups" value="1" <?php echo $list->backups ? 'checked' : ''; ?>> Backups</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="installer" value="1" <?php echo ($list->installer ?? 1) ? 'checked' : ''; ?>> One-Click Installer</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="chatbox" value="1" <?php echo $list->chatbox ? 'checked' : ''; ?>> Chatbox (Text)</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="chatbox_voice" value="1" <?php echo $list->chatbox_voice ? 'checked' : ''; ?>> Chatbox (Voice)</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="chatbox_video" value="1" <?php echo $list->chatbox_video ? 'checked' : ''; ?>> Chatbox (Voice + Video)</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="game" value="1" <?php echo ($list->game ?? 0) ? 'checked' : ''; ?>> Game Servers</label>
 <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" name="is_active" value="1" <?php echo $list->is_active ? 'checked' : ''; ?>> Active</label>
 </div>
 
