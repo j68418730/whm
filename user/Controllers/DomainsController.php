@@ -78,7 +78,28 @@ class DomainsController extends Controller
     public function subdomains()
     {
         $u = $this->requireUser();
-        return $this->view('user.subdomains', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Subdomains']);
+        $zones = $this->hostingUser ? ($this->db->table('dns_zones')->where('domain', 'LIKE', '%' . ($this->hostingUser->domain ?? '') . '%')->get() ?: []) : [];
+        return $this->view('user.subdomains', ['user' => $u, 'hosting' => $this->hostingUser, 'zones' => $zones, 'title' => 'Subdomains']);
+    }
+
+    public function createSubdomain()
+    {
+        $u = $this->requireUser();
+        $subdomain = $this->request->post('subdomain', '');
+        $domain = $this->request->post('domain', '');
+        if ($subdomain && $domain) {
+            $full = $subdomain . '.' . $domain;
+            $ip = $_SERVER['SERVER_ADDR'] ?? '45.61.59.55';
+            // Add A record for subdomain
+            $zone = $this->db->table('dns_zones')->where('domain', $domain)->first();
+            if ($zone) {
+                $this->dns->addRecord($zone->id, $subdomain, 'A', $ip, 300);
+                $_SESSION['success'] = "Subdomain {$full} created pointing to {$ip}.";
+            } else {
+                $_SESSION['error'] = "Domain {$domain} not found in DNS zones.";
+            }
+        }
+        $this->response->redirect('/user/subdomains');
     }
 
     public function redirects()
