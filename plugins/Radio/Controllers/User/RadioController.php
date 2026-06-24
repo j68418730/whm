@@ -673,4 +673,129 @@ class RadioController extends Controller
         }
         $this->response->redirect('/radio?tab=playlists');
     }
+
+    // ─── AUTODJ SETUP ───
+    public function autodjSetup()
+    {
+        if (!$this->auth->check()) { $this->response->redirect('/?login'); exit; }
+        $station = $this->getStation();
+        if (!$station) { $this->response->redirect('/radio'); exit; }
+        $playlists = [];
+        try { $playlists = $this->db->table('radio_playlists')->where('station_id', $station->id)->get() ?: []; } catch(\Exception $e) {}
+        return $this->view('Plugins.Radio.Views.user.radio.autodj_setup', [
+            'station' => $station, 'playlists' => $playlists, 'title' => 'AutoDJ Setup'
+        ]);
+    }
+
+    public function autodjSave()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) { $this->response->redirect('/radio'); exit; }
+        $data = [
+            'autodj_enabled' => (int)($_POST['enabled'] ?? 0),
+            'autodj_playlist_id' => (int)($_POST['playlist_id'] ?? 0) ?: null,
+            'autodj_crossfade' => (int)($_POST['crossfade'] ?? 0),
+            'autodj_status' => ($_POST['enabled'] ?? 0) ? 'running' : 'stopped',
+        ];
+        $this->db->table('radio_stations')->where('id', $station->id)->update($data);
+        $this->log($station->id, 'autodj_save', 'AutoDJ configured');
+        $_SESSION['success'] = 'AutoDJ settings saved.';
+        $this->response->redirect('/radio?tab=autodj');
+    }
+
+    // ─── SETUP WIZARD ───
+    public function setupWizard()
+    {
+        if (!$this->auth->check()) { $this->response->redirect('/?login'); exit; }
+        $station = $this->getStation();
+        if (!$station) { $this->response->redirect('/radio'); exit; }
+        return $this->view('Plugins.Radio.Views.user.radio.wizard', [
+            'station' => $station, 'title' => 'AutoDJ Setup Wizard'
+        ]);
+    }
+
+    public function saveWizard()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) { $this->response->redirect('/radio'); exit; }
+        $data = [];
+        if (!empty($_POST['name'])) $data['name'] = $_POST['name'];
+        if (!empty($_POST['description'])) $data['description'] = $_POST['description'];
+        if (!empty($_POST['genre'])) $data['genre'] = $_POST['genre'];
+        if (!empty($_POST['website_url'])) $data['website_url'] = $_POST['website_url'];
+        if (!empty($_POST['timezone'])) $data['timezone'] = $_POST['timezone'];
+        if (!empty($_POST['server_type'])) $data['server_type'] = $_POST['server_type'];
+        if (!empty($_POST['bitrate'])) $data['bitrate'] = (int)$_POST['bitrate'];
+        if (!empty($_POST['channels'])) $data['channels'] = $_POST['channels'];
+        if (!empty($_POST['autodj_schedule'])) $data['autodj_schedule'] = $_POST['autodj_schedule'];
+        if (!empty($_POST['autodj_dj_handoff'])) $data['autodj_dj_handoff'] = $_POST['autodj_dj_handoff'];
+        $data['autodj_auto_resume'] = (int)($_POST['autodj_auto_resume'] ?? 0);
+        $data['requests_enabled'] = (int)($_POST['requests_enabled'] ?? 0);
+        if (!empty($_FILES['logo']['name'])) {
+            $ext = strtolower(pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg','jpeg','png','gif','webp'])) {
+                $logoDir = '/home/radio/' . $station->id . '/branding';
+                if (!is_dir($logoDir)) @mkdir($logoDir, 0755, true);
+                $logoFile = $logoDir . '/logo.' . $ext;
+                move_uploaded_file($_FILES['logo']['tmp_name'], $logoFile);
+                $data['logo_url'] = '/radio/branding/' . $station->id . '/logo.' . $ext;
+            }
+        }
+        $this->db->table('radio_stations')->where('id', $station->id)->update($data);
+        if (!empty($_POST['playlists'])) {
+            foreach ($_POST['playlists'] as $pl) {
+                try { $this->db->table('radio_playlists')->insertGetId(['station_id' => $station->id, 'name' => $pl]); } catch(\Exception $e) {}
+            }
+        }
+        $this->log($station->id, 'wizard_complete', 'Setup wizard completed');
+        $_SESSION['success'] = '✅ Setup complete! Your station is configured.';
+        $this->response->redirect('/radio');
+    }
+
+    // ─── DJ PORTAL AUTH ───
+    public function djLogin()
+    {
+        $error = '';
+        if ($_POST) {
+            $username = $_POST['username'] ?? '';
+            $password = $_POST['password'] ?? '';
+            $dj = $this->db->table('radio_djs')->where('username', $username)->where('status', 'active')->first();
+            if ($dj && password_verify($password, $dj->password_hash)) {
+                $_SESSION['dj_user'] = $dj;
+                $this->db->table('radio_djs')->where('id', $dj->id)->update(['last_login' => date('Y-m-d H:i:s')]);
+                $this->response->redirect('/dj/portal'); exit;
+            }
+            $error = 'Invalid credentials';
+        }
+        return $this->view('Plugins.Radio.Views.user.radio.dj_login', ['error' => $error, 'title' => 'DJ Login']);
+    }
+
+    public function djPortal()
+    {
+        $dj = $_SESSION['dj_user'] ?? null;
+        if (!$dj) { $this->response->redirect('/dj/login'); exit; }
+        $station = $this->db->table('radio_stations')->where('id', $dj->station_id)->first();
+        $requests = $this->db->table('radio_requests')->where('station_id', $dj->station_id)->where('status', 'pending')->get() ?: [];
+        $schedule = $this->db->table('radio_schedule')->where('station_id', $dj->station_id)->where('dj_id', $dj->id)->get() ?: [];
+        $this->db->table('radio_djs')->where('id', $dj->id)->update(['last_active' => date('Y-m-d H:i:s')]);
+        return $this->view('Plugins.Radio.Views.user.radio.dj_portal', [
+            'dj' => $dj, 'station' => $station, 'requests' => $requests,
+            'schedule' => $schedule, 'title' => 'DJ Portal'
+        ]);
+    }
+
+    public function djLogout() { unset($_SESSION['dj_user']); $this->response->redirect('/dj/login'); }
+
+    public function toggleRequests($id)
+    {
+        $s = $this->db->table('radio_stations')->where('id', $id)->first();
+        if ($s) {
+            $new = $s->requests_enabled ? 0 : 1;
+            $this->db->table('radio_stations')->where('id', $id)->update(['requests_enabled' => $new]);
+            $this->log($id, 'requests_toggle', 'Requests ' . ($new ? 'enabled' : 'disabled'));
+        }
+        $this->response->redirect($_SERVER['HTTP_REFERER'] ?? '/radio');
+    }
 }
