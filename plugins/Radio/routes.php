@@ -1,8 +1,5 @@
 <?php
 
-use Core\Request;
-use Core\Response;
-
 if (!isset($router)) {
     $router = \Core\Application::getInstance()->get('router');
 }
@@ -21,14 +18,6 @@ $router->get('/admin/streams/restart/{id}', 'Plugins\Radio\Controllers\Admin\Str
 $router->get('/admin/streams/suspend/{id}', 'Plugins\Radio\Controllers\Admin\StreamsController@suspend');
 $router->get('/admin/streams/unsuspend/{id}', 'Plugins\Radio\Controllers\Admin\StreamsController@unsuspend');
 $router->get('/admin/streams/clone/{id}', 'Plugins\Radio\Controllers\Admin\StreamsController@clone');
-// Nav link routes (redirect to index — these pages need a stream ID)
-$router->get('/admin/streams/list', 'Plugins\Radio\Controllers\Admin\StreamsController@index');
-$router->get('/admin/streams/edit', 'Plugins\Radio\Controllers\Admin\StreamsController@index');
-$router->get('/admin/streams/delete', 'Plugins\Radio\Controllers\Admin\StreamsController@index');
-$router->get('/admin/streams/restart', 'Plugins\Radio\Controllers\Admin\StreamsController@index');
-$router->get('/admin/streams/suspend', 'Plugins\Radio\Controllers\Admin\StreamsController@index');
-$router->get('/admin/streams/unsuspend', 'Plugins\Radio\Controllers\Admin\StreamsController@index');
-$router->get('/admin/streams/clone', 'Plugins\Radio\Controllers\Admin\StreamsController@index');
 $router->get('/admin/autodj', 'Plugins\Radio\Controllers\Admin\AutodjController@index');
 $router->post('/admin/autodj/upload', 'Plugins\Radio\Controllers\Admin\AutodjController@upload');
 $router->get('/admin/autodj/library', 'Plugins\Radio\Controllers\Admin\AutodjController@library');
@@ -42,22 +31,59 @@ $router->get('/admin/djs/edit/{id}', 'Plugins\Radio\Controllers\Admin\DjControll
 $router->post('/admin/djs/update/{id}', 'Plugins\Radio\Controllers\Admin\DjController@update');
 $router->get('/admin/djs/remove/{id}', 'Plugins\Radio\Controllers\Admin\DjController@remove');
 $router->get('/admin/radio/analytics', 'Plugins\Radio\Controllers\Admin\RadioDashboardController@index');
-$router->get('/radio/widgets', 'Plugins\Radio\Controllers\User\RadioController@widgets');
 
 // User Radio Routes
 $router->get('/radio', 'Plugins\Radio\Controllers\User\RadioController@index');
-$router->get('/radio/create', 'Plugins\Radio\Controllers\User\RadioController@create');
-$router->post('/radio/store', 'Plugins\Radio\Controllers\User\RadioController@store');
-$router->get('/radio/stream/{id}', 'Plugins\Radio\Controllers\User\RadioController@show');
+$router->post('/radio/setup', 'Plugins\Radio\Controllers\User\RadioController@setup');
 $router->get('/radio/start/{id}', 'Plugins\Radio\Controllers\User\RadioController@start');
 $router->get('/radio/stop/{id}', 'Plugins\Radio\Controllers\User\RadioController@stop');
-$router->get('/radio/autodj/enable/{id}', 'Plugins\Radio\Controllers\User\RadioController@enableAutodj');
-$router->get('/radio/autodj/disable/{id}', 'Plugins\Radio\Controllers\User\RadioController@disableAutodj');
-$router->get('/radio/autodj/start/{id}', 'Plugins\Radio\Controllers\User\RadioController@startAutodj');
-$router->get('/radio/autodj/stop/{id}', 'Plugins\Radio\Controllers\User\RadioController@stopAutodj');
-$router->get('/radio/autodj/reset/{id}', 'Plugins\Radio\Controllers\User\RadioController@stopAutodj');
-$router->get('/radio/stream/{id}/manage-djs', 'Plugins\Radio\Controllers\User\RadioController@show');
-$router->get('/radio/stream/{id}/manage-playlists', 'Plugins\Radio\Controllers\User\RadioController@show');
-$router->get('/radio/playlist/{id}/edit', 'Plugins\Radio\Controllers\User\RadioController@index');
-$router->get('/radio/playlist/{id}/delete', 'Plugins\Radio\Controllers\User\RadioController@index');
-$router->get('/radio/playlist/{id}/songs', 'Plugins\Radio\Controllers\User\RadioController@index');
+$router->get('/radio/restart/{id}', 'Plugins\Radio\Controllers\User\RadioController@restart');
+$router->get('/radio/autodj/toggle/{id}', 'Plugins\Radio\Controllers\User\RadioController@toggleAutodj');
+// DJs
+$router->post('/radio/dj/create', 'Plugins\Radio\Controllers\User\RadioController@createDj');
+$router->post('/radio/dj/update/{id}', 'Plugins\Radio\Controllers\User\RadioController@updateDj');
+$router->get('/radio/dj/delete/{id}', 'Plugins\Radio\Controllers\User\RadioController@deleteDj');
+$router->get('/radio/dj/toggle/{id}', 'Plugins\Radio\Controllers\User\RadioController@toggleDj');
+// Moderators
+$router->post('/radio/mod/create', 'Plugins\Radio\Controllers\User\RadioController@createMod');
+$router->get('/radio/mod/delete/{id}', 'Plugins\Radio\Controllers\User\RadioController@deleteMod');
+// Schedule
+$router->post('/radio/schedule/add', 'Plugins\Radio\Controllers\User\RadioController@addSchedule');
+$router->get('/radio/schedule/delete/{id}', 'Plugins\Radio\Controllers\User\RadioController@deleteSchedule');
+// Requests
+$router->get('/radio/request/approve/{id}', 'Plugins\Radio\Controllers\User\RadioController@approveRequest');
+$router->get('/radio/request/reject/{id}', 'Plugins\Radio\Controllers\User\RadioController@rejectRequest');
+// Media
+$router->post('/radio/media/upload', 'Plugins\Radio\Controllers\User\RadioController@mediaUpload');
+$router->get('/radio/media/delete', 'Plugins\Radio\Controllers\User\RadioController@mediaDelete');
+// Mounts
+$router->post('/radio/mount/add', 'Plugins\Radio\Controllers\User\RadioController@addMount');
+$router->get('/radio/mount/delete/{id}', 'Plugins\Radio\Controllers\User\RadioController@deleteMount');
+// Backups
+$router->get('/radio/backup/create', 'Plugins\Radio\Controllers\User\RadioController@backupCreate');
+$router->get('/radio/backup/download', 'Plugins\Radio\Controllers\User\RadioController@backupDownload');
+$router->get('/radio/backup/delete', 'Plugins\Radio\Controllers\User\RadioController@backupDelete');
+// IP Bans
+$router->post('/radio/ban/ip', 'Plugins\Radio\Controllers\User\RadioController@addIpBan');
+$router->get('/radio/ban/ip/delete/{id}', 'Plugins\Radio\Controllers\User\RadioController@deleteIpBan');
+// Widgets
+$router->post('/radio/widget/create', 'Plugins\Radio\Controllers\User\RadioController@createWidget');
+$router->get('/radio/widget/delete/{id}', 'Plugins\Radio\Controllers\User\RadioController@deleteWidget');
+// Station Pages
+$router->post('/radio/page/create', 'Plugins\Radio\Controllers\User\RadioController@createPage');
+$router->get('/radio/page/delete/{id}', 'Plugins\Radio\Controllers\User\RadioController@deletePage');
+// Playlists
+$router->post('/radio/playlist/create', 'Plugins\Radio\Controllers\User\RadioController@createPlaylist');
+$router->get('/radio/playlist/delete/{id}', 'Plugins\Radio\Controllers\User\RadioController@deletePlaylist');
+$router->post('/radio/playlist/item/add', 'Plugins\Radio\Controllers\User\RadioController@addPlaylistItem');
+$router->get('/radio/playlist/item/delete/{id}', 'Plugins\Radio\Controllers\User\RadioController@deletePlaylistItem');
+// Chat
+$router->get('/radio/chat/poll', 'Plugins\Radio\Controllers\User\RadioController@chatPoll');
+$router->post('/radio/chat/send', 'Plugins\Radio\Controllers\User\RadioController@chatSend');
+// Kick Source
+$router->post('/radio/kick-source', 'Plugins\Radio\Controllers\User\RadioController@kickSource');
+// Public endpoints (no auth)
+$router->get('/radio/public/djs', 'Plugins\Radio\Controllers\User\RadioController@publicDjs');
+$router->get('/radio/public/schedule', 'Plugins\Radio\Controllers\User\RadioController@publicSchedule');
+$router->get('/radio/public/now-playing', 'Plugins\Radio\Controllers\User\RadioController@publicNowPlaying');
+$router->post('/radio/public/request', 'Plugins\Radio\Controllers\User\RadioController@publicRequest');
