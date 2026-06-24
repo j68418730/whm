@@ -174,12 +174,6 @@ class UserController extends Controller
     {
         $username = $_POST['email'] ?? $_POST['username'] ?? '';
         $password = $_POST['password'] ?? '';
-        // LOCKDOWN: Only allow specific hosting accounts
-        $allowed = ['planethosts'];
-        if (!in_array(strtolower($username), $allowed)) {
-            header('Location: /?login=error');
-            exit;
-        }
         $user = $this->db->table('hosting_users')->where('username', $username)->first();
         if (!$user) $user = $this->db->table('hosting_users')->where('email', $username)->first();
         if ($user && password_verify($password, $user->password_hash)) {
