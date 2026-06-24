@@ -7,24 +7,15 @@ $stmt = $pdo->prepare("SELECT password_plain FROM mail_accounts WHERE email = ? 
 $stmt->execute([$email]);
 $row = $stmt->fetch(PDO::FETCH_OBJ);
 $password = $row ? $row->password_plain : '';
-if (!$password) { echo "No password"; exit; }
+if (!$password) { header('Location: /webmail_autologin.php?email=' . urlencode($email)); exit; }
 
 $localPart = explode('@', $email)[0];
 exec("id " . escapeshellarg($localPart) . " 2>/dev/null || (useradd -m -d /home/" . escapeshellarg($localPart) . " -s /sbin/nologin " . escapeshellarg($localPart) . " 2>/dev/null && echo " . escapeshellarg($localPart) . ":" . escapeshellarg($password) . " | chpasswd 2>/dev/null)");
 
-// Get logo before SnappyMail
-$q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='company_logo'");
-$lr = $q->fetch(PDO::FETCH_OBJ);
-$logo = $lr ? $lr->setting_value : '/theme/assets/img/logo.png';
-$lf = __DIR__ . '/../' . ltrim($logo, '/');
-if (!file_exists($lf)) $logo = '/theme/assets/img/logo.png';
-
-// Suppress all output buffers
 while (ob_get_level()) ob_end_clean();
 
 require_once '/var/www/radiohosting/public/snappymail/snappymail/v/2.38.2/include.php';
 
-// Configure SnappyMail for this request
 $_SERVER['SERVER_NAME'] = 'server.planet-hosts.com';
 $_SERVER['HTTP_HOST'] = 'server.planet-hosts.com';
 
@@ -36,15 +27,18 @@ try {
         $email,
         new SnappyMail\SensitiveString($password)
     );
-    $success = true;
+    while (ob_get_level()) ob_end_clean();
+    header('Location: /snappymail/');
+    exit;
 } catch (\Throwable $e) {
-    $success = false;
-    $error = $e->getMessage();
+    while (ob_get_level()) ob_end_clean();
 }
 
-// Clean output from SnappyMail
-while (ob_get_level()) ob_end_clean();
-
+$q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='company_logo'");
+$lr = $q->fetch(PDO::FETCH_OBJ);
+$logo = $lr ? $lr->setting_value : '/theme/assets/img/logo.png';
+$lf = __DIR__ . '/../' . ltrim($logo, '/');
+if (!file_exists($lf)) $logo = '/theme/assets/img/logo.png';
 ?><!DOCTYPE html>
 <html><head><title>Opening Webmail...</title>
 <style>
@@ -59,16 +53,6 @@ body{background:#02050e;color:#fff;font-family:'Inter',sans-serif;display:flex;j
 <body>
 <div class="card">
 <img src="<?php echo htmlspecialchars($logo); ?>" alt="" onerror="this.style.display='none'">
-<?php if ($success): ?>
-<p>Signing in to webmail...</p>
-<div class="sp"></div>
-<?php else: ?>
-<p style="color:#ef4444">Login failed: <?php echo htmlspecialchars($error ?: 'Unknown'); ?></p>
-<?php endif; ?>
+<p style="color:#ef4444">Login failed: <?php echo htmlspecialchars($e->getMessage() ?? 'Unknown'); ?></p>
 </div>
-<script>
-<?php if ($success): ?>
-setTimeout(function(){window.location.href='/snappymail/';}, 500);
-<?php endif; ?>
-</script>
 </body></html>
