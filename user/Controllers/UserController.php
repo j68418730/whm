@@ -172,8 +172,26 @@ class UserController extends Controller
     public function tools() { $u = $this->loadUser(); return $this->view('user.tools', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Tools']); }
     public function login()
     {
-        // LOCKDOWN: User portal login disabled — only admins (root/kane) can access
-        header('Location: /admin/login');
+        $username = $_POST['email'] ?? $_POST['username'] ?? '';
+        $password = $_POST['password'] ?? '';
+        // LOCKDOWN: Only allow specific hosting accounts
+        $allowed = ['planethosts'];
+        if (!in_array(strtolower($username), $allowed)) {
+            header('Location: /?login=error');
+            exit;
+        }
+        $user = $this->db->table('hosting_users')->where('username', $username)->first();
+        if (!$user) $user = $this->db->table('hosting_users')->where('email', $username)->first();
+        if ($user && password_verify($password, $user->password_hash)) {
+            $_SESSION['user'] = (object)[
+                'id' => $user->id, 'email' => $user->email,
+                'name' => $user->username, 'is_admin' => false,
+            ];
+            $_SESSION['is_admin'] = false;
+            header('Location: /user');
+        } else {
+            header('Location: /?login=error');
+        }
         exit;
     }
 
