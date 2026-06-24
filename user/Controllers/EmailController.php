@@ -58,9 +58,10 @@ class EmailController extends Controller
             $this->db->table('mail_accounts')->insertGetId([
                 'email' => $fullEmail, 'domain' => $this->domain,
                 'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+                'password_plain' => $password,
                 'quota_mb' => (int)$this->request->post('quota', 1000),
             ]);
-            // Create Linux user for mail if possible
+            // Create Linux user for IMAP auth
             $safeEmail = escapeshellarg($email);
             exec("useradd -m -d /home/{$safeEmail} -s /sbin/nologin {$safeEmail} 2>/dev/null");
             exec("echo {$safeEmail}:" . escapeshellarg($password) . " | chpasswd 2>/dev/null");
@@ -146,7 +147,15 @@ class EmailController extends Controller
         $pw = $_POST['password'] ?? '';
         if (strlen($pw) >= 6) {
             try {
-                $this->db->table('mail_accounts')->where('id', $id)->where('domain', $this->domain)->update(['password_hash' => password_hash($pw, PASSWORD_DEFAULT)]);
+                $acct = $this->db->table('mail_accounts')->where('id', $id)->where('domain', $this->domain)->first();
+                if ($acct) {
+                    $this->db->table('mail_accounts')->where('id', $id)->update([
+                        'password_hash' => password_hash($pw, PASSWORD_DEFAULT),
+                        'password_plain' => $pw,
+                    ]);
+                    $local = explode('@', $acct->email)[0];
+                    exec("echo " . escapeshellarg($local) . ":" . escapeshellarg($pw) . " | chpasswd 2>/dev/null");
+                }
                 $_SESSION['success'] = 'Email password changed.';
             } catch (\Exception $e) { $_SESSION['error'] = 'Failed to change password.'; }
         } else { $_SESSION['error'] = 'Password too short.'; }
