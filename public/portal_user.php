@@ -1,4 +1,10 @@
-<!DOCTYPE html>
+<?php
+$host = $_SERVER["HTTP_HOST"] ?? "planet-hosts.com";
+$pdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", "radiouser", "Skylinehosting171");
+$packages = $pdo->query("SELECT * FROM hosting_packages WHERE is_active = 1 ORDER BY type, monthly_price LIMIT 50")->fetchAll(PDO::FETCH_OBJ) ?: [];
+$categories = [];
+foreach ($packages as $p) $categories[$p->type ?? "web_hosting"][] = $p;
+?><!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -176,7 +182,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 <a href="#services">Website Builder</a>
 <a href="#support">Support</a>
 <a href="?contact">Contact</a>
-<a href="http://45.61.59.55:2082/" class="btn-secondary" style="padding:8px 16px;font-size:13px"><i class="fa-solid fa-user"></i> Client Login</a>
+<a href="http://<?php echo $host; ?>:2082/" class="btn-secondary" style="padding:8px 16px;font-size:13px"><i class="fa-solid fa-user"></i> Client Login</a>
 <a href="/cart.php" class="btn-primary btn-order" style="padding:8px 20px;font-size:13px"><i class="fa-solid fa-cart-plus"></i> Cart</a>
 </nav>
 </div>
@@ -190,7 +196,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 <div class="hero-buttons">
 <a href="#packages" class="btn btn-primary btn-lg"><i class="fa-solid fa-layer-group"></i> View Packages</a>
 <a href="?login" class="btn btn-secondary btn-lg"><i class="fa-solid fa-cart-plus"></i> Order Hosting</a>
-<a href="http://45.61.59.55:2082/" class="btn btn-secondary btn-lg"><i class="fa-solid fa-gauge-high"></i> Client Area</a>
+<a href="http://<?php echo $host; ?>:2082/" class="btn btn-secondary btn-lg"><i class="fa-solid fa-gauge-high"></i> Client Area</a>
 </div>
 <div class="hero-stats">
 <div class="hero-stat"><h3>99.9%</h3><p>Uptime Guarantee</p></div>
@@ -1017,7 +1023,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 </div>
 <div class="footer-col">
 <h4>Support</h4>
-<a href="http://45.61.59.55:2082/">Client Login</a>
+<a href="http://<?php echo $host; ?>:2082/">Client Login</a>
 <a href="/game-servers.php">Game Servers</a>
 <a href="/admin/support/tickets">Submit Ticket</a>
 <a href="/admin/support/kb">Knowledgebase</a>
