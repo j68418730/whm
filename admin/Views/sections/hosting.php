@@ -15,7 +15,8 @@
 <a href="/admin/email" class="section-card"><div class="icon">✉️</div><div class="name">Email</div><div class="desc">Email accounts & routing</div></a>
 <a href="/admin/mysql" class="section-card"><div class="icon">🗄️</div><div class="name">Databases</div><div class="desc">MySQL & database management</div></a>
 <a href="/admin/ftp" class="section-card"><div class="icon">📁</div><div class="name">FTP</div><div class="desc">FTP accounts & access</div></a>
-<a href="/admin/ssl" class="section-card"><div class="icon">🔒</div><div class="name">SSL</div><div class="desc">SSL certificates & HTTPS</div></a>
+<a href="/admin/ssl/universal" class="section-card"><div class="icon">🔒</div><div class="name">Universal SSL</div><div class="desc">Multi-service SSL manager</div></a>
+<a href="/admin/ssl" class="section-card"><div class="icon">📜</div><div class="name">SSL Certs</div><div class="desc">Certificate list & AutoSSL</div></a>
 <a href="/admin/backup" class="section-card"><div class="icon">💾</div><div class="name">Backups</div><div class="desc">Backup & restore</div></a>
 <a href="/admin/cron" class="section-card"><div class="icon">⏰</div><div class="name">Cron Jobs</div><div class="desc">Scheduled tasks</div></a>
 <a href="/admin/server" class="section-card"><div class="icon">📊</div><div class="name">Resource Usage</div><div class="desc">Server resource statistics</div></a>

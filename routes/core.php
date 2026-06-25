@@ -424,6 +424,16 @@ $router->get('/admin/games/packages/delete/{id}', 'Admin\Controllers\GameServers
 $router->get('/admin/games/settings', 'Admin\Controllers\GameServersController@settings');
 $router->post('/admin/games/settings/save', 'Admin\Controllers\GameServersController@settingsSave');
 
+// Universal SSL Manager Routes
+$router->get('/admin/ssl/universal', 'Admin\Controllers\UniversalSslController@index');
+$router->post('/admin/ssl/universal/configure', 'Admin\Controllers\UniversalSslController@configure');
+$router->get('/admin/ssl/universal/renew', 'Admin\Controllers\UniversalSslController@renew');
+$router->get('/admin/ssl/universal/repair', 'Admin\Controllers\UniversalSslController@repair');
+$router->get('/admin/ssl/universal/health', 'Admin\Controllers\UniversalSslController@health');
+$router->get('/admin/ssl/universal/scan', 'Admin\Controllers\UniversalSslController@scanPorts');
+$router->get('/admin/ssl/universal/delete', 'Admin\Controllers\UniversalSslController@deleteService');
+$router->get('/admin/ssl/cron', 'Admin\Controllers\UniversalSslController@cron');
+
 // Admin Hostname Configuration Routes
 $router->get('/admin/hostname', 'Admin\Controllers\HostnameController@index');
 $router->post('/admin/hostname/save', 'Admin\Controllers\HostnameController@save');

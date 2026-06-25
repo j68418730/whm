@@ -22,7 +22,7 @@ if (!function_exists('admin_menu_sections')) {
         return [
             ['label' => 'Dashboard', 'href' => '/admin/dashboard', 'icon' => '📊', 'match' => ['/admin', '/admin/dashboard', '/admin/activity-log', '/admin/monitoring', '/admin/notifications']],
             ['label' => 'Accounts', 'href' => '/admin/section/accounts', 'icon' => '👥', 'match' => ['/admin/account', '/admin/package', '/admin/reseller', '/admin/feature-lists', '/admin/admins', '/admin/roles']],
-            ['label' => 'Hosting', 'href' => '/admin/section/hosting', 'icon' => '🌐', 'match' => ['/admin/email', '/admin/mysql', '/admin/ftp', '/admin/ssl', '/admin/backup', '/admin/cron', '/admin/server']],
+            ['label' => 'Hosting', 'href' => '/admin/section/hosting', 'icon' => '🌐', 'match' => ['/admin/email', '/admin/mysql', '/admin/ftp', '/admin/ssl', '/admin/backup', '/admin/cron', '/admin/server', '/admin/ssl/universal']],
             ['label' => 'Billing', 'href' => '/admin/section/billing', 'icon' => '💳', 'match' => ['/admin/billing', '/admin/gateways', '/admin/paypal']],
             ['label' => 'Support', 'href' => '/admin/section/support', 'icon' => '🎫', 'match' => ['/admin/support', '/admin/livechat', '/admin/reviews']],
             ['label' => 'Radio', 'href' => '/admin/section/radio', 'icon' => '📻', 'match' => ['/admin/radio_dashboard', '/admin/streams', '/admin/djs', '/admin/autodj', '/admin/radiosettings']],
