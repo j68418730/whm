@@ -61,9 +61,9 @@ function autoProvision($userId, $packageId) {
         $zoneContent = "\$TTL 86400\n@ IN SOA ns1.planet-hosts.com. admin.planet-hosts.com. (" . time() . " 3600 900 604800 86400)\n"
             . "@ IN NS ns1.planet-hosts.com.\n"
             . "@ IN NS ns2.planet-hosts.com.\n"
-            . "@ IN A " . ($_SERVER['SERVER_ADDR'] ?? '45.61.59.55') . "\n"
-            . "www IN A " . ($_SERVER['SERVER_ADDR'] ?? '45.61.59.55') . "\n"
-            . "mail IN A " . ($_SERVER['SERVER_ADDR'] ?? '45.61.59.55') . "\n"
+            . "@ IN A " . ($_SERVER['SERVER_ADDR'] ?? 'planet-hosts.com') . "\n"
+            . "www IN A " . ($_SERVER['SERVER_ADDR'] ?? 'planet-hosts.com') . "\n"
+            . "mail IN A " . ($_SERVER['SERVER_ADDR'] ?? 'planet-hosts.com') . "\n"
             . "@ IN MX 10 mail.{$domain}.\n";
         file_put_contents($zoneFile, $zoneContent);
         file_put_contents($namedConf, "\nzone \"{$domain}\" { type master; file \"{$zoneFile}\"; };\n", FILE_APPEND);
@@ -98,10 +98,11 @@ function autoProvision($userId, $packageId) {
         . "Username: {$username}\n"
         . "Password: {$password}\n"
         . "Domain: {$domain}\n"
-        . "Panel: http://{$_SERVER['SERVER_NAME'] ?? '45.61.59.55'}:2082/\n\n"
-        . "Webmail: http://{$_SERVER['SERVER_NAME'] ?? '45.61.59.55'}:2096/\n\n"
+        . "Panel: http://{$_SERVER['SERVER_NAME'] ?? 'planet-hosts.com'}:2082/\n\n"
+        . "Webmail: http://{$_SERVER['SERVER_NAME'] ?? 'planet-hosts.com'}:2096/\n\n"
         . "Thank you for choosing Planet Hosts!\n";
     @mail($user->email, $subject, $message, "From: support@planet-hosts.com\r\nReply-To: support@planet-hosts.com");
 
     return true;
 }
+

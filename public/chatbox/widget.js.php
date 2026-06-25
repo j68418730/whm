@@ -25,7 +25,7 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
     var logoUrl = <?php echo json_encode($tenant->logo_url ?? ''); ?>;
     var guestEnabled = <?php echo $tenant->guest_enabled ? 'true' : 'false'; ?>;
     var regEnabled = <?php echo $tenant->registration_enabled ? 'true' : 'false'; ?>;
-    var signalrUrl = 'http://45.61.59.55/hub/chatbox';
+    var signalrUrl = 'http://planet-hosts.com/hub/chatbox';
     var rooms = <?php echo json_encode($roomsList); ?>;
     var playerHtml = <?php echo json_encode($tenant->player_html ?? ''); ?>;
     var currentTheme = <?php echo json_encode($tenant->theme ?? 'default'); ?>;
@@ -531,3 +531,4 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
         x.send('tenant_id=' + tenantId + '&username=' + encodeURIComponent(user) + '&password=' + encodeURIComponent(pass) + '&email=' + encodeURIComponent(email));
     };
 })();
+

@@ -13,7 +13,7 @@ $name = htmlspecialchars($stream->server_name ?? 'Radio');
 $port = (int)($stream->port ?? 8000);
 $mount = htmlspecialchars($stream->mount_point ?? '/live');
 $status = $stream->status === 'running';
-$sUrl = "http://45.61.59.55:{$port}{$mount}";
+$sUrl = "http://planet-hosts.com:{$port}{$mount}";
 ?>
 (function() {
 var p='<div style="background:rgba(8,16,28,.95);border:1px solid rgba(0,191,255,.12);border-radius:12px;padding:14px;font-family:Inter,sans-serif;color:#e0e0e0;max-width:320px">';
@@ -30,3 +30,4 @@ p+='<span><?php echo (int)($stream->bitrate??128); ?>kbps</span>';
 p+='</div></div>';
 document.currentScript.parentNode.insertBefore(document.createRange().createContextualFragment(p), document.currentScript);
 })();
+

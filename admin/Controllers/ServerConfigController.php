@@ -93,7 +93,7 @@ class ServerConfigController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $domain = $this->request->post('domain', 'planet-hosts.com');
-        $serverIp = $_SERVER['SERVER_ADDR'] ?? '45.61.59.55';
+        $serverIp = $_SERVER['SERVER_ADDR'] ?? 'planet-hosts.com';
         $adminPort = $this->request->post('admin_port', '2087');
         $resellerPort = $this->request->post('reseller_port', '2086');
         $userPort = $this->request->post('user_port', '2082');
@@ -188,3 +188,4 @@ class ServerConfigController extends Controller
         ];
     }
 }
+
