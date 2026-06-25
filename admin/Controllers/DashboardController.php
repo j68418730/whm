@@ -31,42 +31,42 @@ class DashboardController extends Controller
 
         $user = $this->auth->user();
 
-        // ΓöÇΓöÇΓöÇ Server Stats ΓöÇΓöÇΓöÇ
+        // ─── Server Stats ───
         $server = $this->getServerStats();
 
-        // ΓöÇΓöÇΓöÇ Service Status ΓöÇΓöÇΓöÇ
+        // ─── Service Status ───
         $services = $this->getServiceStatus();
 
-        // ΓöÇΓöÇΓöÇ Accounts ΓöÇΓöÇΓöÇ
+        // ─── Accounts ───
         $accounts = $this->db->table('hosting_users')->get() ?: [];
         $activeAccounts = count(array_filter($accounts, fn($a) => $a->status === 'active'));
         $suspendedCount = count(array_filter($accounts, fn($a) => $a->status === 'suspended'));
         $recentAccounts = array_slice(array_reverse($accounts), 0, 5);
 
-        // ΓöÇΓöÇΓöÇ Packages ΓöÇΓöÇΓöÇ
+        // ─── Packages ───
         $packages = $this->db->table('hosting_packages')->get() ?: [];
 
-        // ΓöÇΓöÇΓöÇ Resellers ΓöÇΓöÇΓöÇ
+        // ─── Resellers ───
         $resellers = $this->db->table('resellers')->get() ?: [];
 
-        // ΓöÇΓöÇΓöÇ Billing / Revenue ΓöÇΓöÇΓöÇ
+        // ─── Billing / Revenue ───
         $monthStart = date('Y-m-01 00:00:00');
         $paymentsThisMonth = $this->db->table('billing_payments')->where('created_at', '>=', $monthStart)->get() ?: [];
         $revenueMonth = array_sum(array_map(fn($p) => (float)$p->amount, $paymentsThisMonth));
         $pendingInvoices = $this->db->table('invoices')->where('status', 'unpaid')->get() ?: [];
         $pendingInvoiceTotal = array_sum(array_map(fn($i) => (float)$i->total, $pendingInvoices));
 
-        // ΓöÇΓöÇΓöÇ Tickets ΓöÇΓöÇΓöÇ
+        // ─── Tickets ───
         $openTickets = $this->db->table('tickets')->where('status', 'open')->get() ?: [];
         $recentTickets = array_slice(array_reverse($openTickets), 0, 5);
 
-        // ΓöÇΓöÇΓöÇ Orders ΓöÇΓöÇΓöÇ
+        // ─── Orders ───
         $recentOrders = $this->db->table('billing_orders')->orderBy('id', 'DESC')->limit(5)->get() ?: [];
 
-        // ΓöÇΓöÇΓöÇ PayPal Balance ΓöÇΓöÇΓöÇ
+        // ─── PayPal Balance ───
         $paypalBalance = $this->getPayPalBalance();
 
-        // ΓöÇΓöÇΓöÇ Plugin Manager ΓöÇΓöÇΓöÇ
+        // ─── Plugin Manager ───
         $pluginManager = \Core\Application::getInstance()->getPluginManager();
         $addons = $pluginManager ? $pluginManager->loadedMetadata() : [];
 
@@ -250,4 +250,3 @@ class DashboardController extends Controller
         return $total > 0 ? $total : null;
     }
 }
-
