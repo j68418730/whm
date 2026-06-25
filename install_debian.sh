@@ -33,7 +33,7 @@ apt install -y -qq apache2 mariadb-server jailkit quota quotatool \
   php-xmlreader php-xsl php-apcu php-imagick php-soap \
   postfix dovecot-imapd dovecot-pop3d vsftpd bind9 \
   unzip wget curl git openssl \
-  firewalld fail2ban
+   firewalld fail2ban clamav-daemon rspamd aide rkhunter chkrootkit lynis
 
 systemctl enable --now apache2 mariadb postfix dovecot vsftpd named
 
@@ -53,7 +53,53 @@ apt update -qq && apt install -y -qq steamcmd 2>/dev/null || {
 mkdir -p /home/gameservers
 echo "SteamCMD installed at /usr/games/steamcmd"
 
-# 4b. phpMyAdmin + SnappyMail (replaces Roundcube)
+# 4b. Security Tools: ModSecurity + OWASP CRS + DDoS Protection
+echo "[4b/12] Installing ModSecurity, OWASP CRS, and DDoS protection..."
+apt install -y -qq libapache2-mod-security2 2>/dev/null || true
+a2enmod security2 2>/dev/null || true
+# OWASP CRS
+mkdir -p /usr/share/modsecurity-crs
+cd /tmp
+curl -sL -o crs.tar.gz "https://github.com/coreruleset/coreruleset/archive/refs/tags/v4.0.0.tar.gz" 2>/dev/null || true
+if [ -f crs.tar.gz ] && [ -s crs.tar.gz ]; then
+    tar xzf crs.tar.gz -C /usr/share/modsecurity-crs --strip-components=1 2>/dev/null || true
+    cp /usr/share/modsecurity-crs/crs-setup.conf.example /usr/share/modsecurity-crs/crs-setup.conf 2>/dev/null || true
+    rm -f crs.tar.gz
+fi
+# DDoS iptables rules
+iptables -A INPUT -p icmp --icmp-type echo-request -m limit --limit 10/second -j ACCEPT 2>/dev/null
+iptables -A INPUT -p icmp --icmp-type echo-request -j DROP 2>/dev/null
+iptables -A INPUT -p tcp --syn -m limit --limit 100/second --limit-burst 200 -j ACCEPT 2>/dev/null
+iptables -A INPUT -p tcp --syn -j DROP 2>/dev/null
+iptables -A INPUT -p tcp --dport 80 -m connlimit --connlimit-above 50 -j DROP 2>/dev/null
+iptables -A INPUT -p tcp --dport 443 -m connlimit --connlimit-above 50 -j DROP 2>/dev/null
+iptables-save > /etc/iptables.rules 2>/dev/null
+# Fail2Ban radio jails
+cat > /etc/fail2ban/jail.local << "JAIL"
+[DEFAULT]
+bantime = 3600
+findtime = 600
+maxretry = 5
+[sshd]
+enabled = true
+port = 22
+maxretry = 3
+[radio-auth]
+enabled = true
+logpath = /var/log/radiohosting/radio_auth.log
+port = 8000:8100
+maxretry = 5
+[radio-icecast]
+enabled = true
+logpath = /var/log/icecast2/error.log
+port = 8000:8100
+maxretry = 10
+findtime = 120
+bantime = 600
+JAIL
+systemctl restart fail2ban 2>/dev/null || true
+
+# 4c. phpMyAdmin + SnappyMail (replaces Roundcube)
 echo "[4/9] Installing phpMyAdmin, SnappyMail..."
 apt install -y -qq phpmyadmin
 SM_VER="2.38.2"
