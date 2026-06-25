@@ -51,8 +51,9 @@ p{color:#64748b;font-size:13px;margin:0 0 20px}
 <div class="form-group"><label>Password</label><input name="password" type="password" required></div>
 <button type="submit" class="btn">Sign In</button>
 </form>
-<div class="links"><a href="http://45.61.59.55:2082/">User Portal</a> &middot; <a href="http://45.61.59.55:2087/">Admin Login</a></div>
+<div class="links"><a href="http://planet-hosts.com:2082/">User Portal</a> &middot; <a href="http://planet-hosts.com:2087/">Admin Login</a></div>
 </div>
 </div>
 </body>
 </html>
+

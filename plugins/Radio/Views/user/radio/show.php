@@ -34,6 +34,7 @@
 
 <div class="card"><h4>Embed Player</h4>
 <p style="font-size:12px;color:var(--text_muted);margin-bottom:8px">Add this player to your website:</p>
-<code style="display:block;background:rgba(0,0,0,.4);padding:10px;border-radius:6px;font-size:11px;color:#4ade80;word-break:break-all">&lt;iframe src="http://45.61.59.55/radio/embed.php?stream=<?php echo $stream->id; ?>" width="360" height="340" frameborder="0"&gt;&lt;/iframe&gt;</code>
-<button class="btn btn-sm btn-secondary mt-2" onclick="navigator.clipboard.writeText('&lt;iframe src=&quot;http://45.61.59.55/radio/embed.php?stream=<?php echo $stream->id; ?>&quot; width=&quot;360&quot; height=&quot;340&quot; frameborder=&quot;0&quot;&gt;&lt;/iframe&gt;')">Copy Embed</button>
+<code style="display:block;background:rgba(0,0,0,.4);padding:10px;border-radius:6px;font-size:11px;color:#4ade80;word-break:break-all">&lt;iframe src="http://planet-hosts.com/radio/embed.php?stream=<?php echo $stream->id; ?>" width="360" height="340" frameborder="0"&gt;&lt;/iframe&gt;</code>
+<button class="btn btn-sm btn-secondary mt-2" onclick="navigator.clipboard.writeText('&lt;iframe src=&quot;http://planet-hosts.com/radio/embed.php?stream=<?php echo $stream->id; ?>&quot; width=&quot;360&quot; height=&quot;340&quot; frameborder=&quot;0&quot;&gt;&lt;/iframe&gt;')">Copy Embed</button>
 </div>
+

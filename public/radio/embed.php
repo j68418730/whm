@@ -16,7 +16,7 @@ if (!$stream) exit;
 $name = htmlspecialchars($stream->server_name ?? 'Radio');
 $port = (int)($stream->port ?? 8000);
 $mount = htmlspecialchars($stream->mount_point ?? '/live');
-$sUrl = "http://45.61.59.55:{$port}{$mount}";
+$sUrl = "http://planet-hosts.com:{$port}{$mount}";
 $status = $stream->status === 'running';
 $listeners = (int)($stream->listener_count ?? 0);
 $bitrate = (int)($stream->bitrate ?? 128);
@@ -61,3 +61,4 @@ audio.addEventListener('timeupdate', function() {
 });
 </script>
 </body></html>
+

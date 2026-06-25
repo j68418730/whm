@@ -38,7 +38,7 @@ class DomainsController extends Controller
         $u = $this->requireUser();
         if ($_POST) {
             $domain = $this->request->post('domain', '');
-            $serverIp = $_SERVER['SERVER_ADDR'] ?? '45.61.59.55';
+            $serverIp = $_SERVER['SERVER_ADDR'] ?? 'planet-hosts.com';
             if ($domain && $this->hostingUser) {
                 $zoneId = $this->dns->provisionDomain($domain, $serverIp);
                 $_SESSION['success'] = "Domain {$domain} added with full DNS provisioning (SOA, NS, A, MX, SPF, DKIM, DMARC).";
@@ -89,7 +89,7 @@ class DomainsController extends Controller
         $domain = $this->request->post('domain', '');
         if ($subdomain && $domain) {
             $full = $subdomain . '.' . $domain;
-            $ip = $_SERVER['SERVER_ADDR'] ?? '45.61.59.55';
+            $ip = $_SERVER['SERVER_ADDR'] ?? 'planet-hosts.com';
             // Add A record for subdomain
             $zone = $this->db->table('dns_zones')->where('domain', $domain)->first();
             if ($zone) {
@@ -131,3 +131,4 @@ class DomainsController extends Controller
         $this->response->redirect('/user/redirects');
     }
 }
+

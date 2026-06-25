@@ -9,7 +9,7 @@ class License
     protected $data = null;
     protected $valid = false;
     protected $basePath;
-    protected $verifyUrl = 'https://45.61.59.55/license-verify.php';
+    protected $verifyUrl = 'https://planet-hosts.com/license-verify.php';
     protected static $cache = null;
     protected static $integrityHash = 'LICENSE_INTEGRITY_HASH_PLACEHOLDER';
 
@@ -238,3 +238,4 @@ class License
     public function getLicensee() { $this->verify(); return $this->data['licensee'] ?? null; }
     public function getExpiry() { $this->verify(); return $this->data['expiry'] ?? null; }
 }
+
