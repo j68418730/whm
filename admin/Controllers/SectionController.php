@@ -83,7 +83,9 @@ class SectionController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { header('Location: /admin/login'); exit; }
         $user = $this->auth->user();
-        return $this->view('admin.sections.security', ['user' => $user, 'title' => 'Security']);
+        // Load Security Center dashboard
+        $secCtrl = new \Admin\Controllers\SecurityController();
+        return $secCtrl->index();
     }
 
     public function system()
