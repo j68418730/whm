@@ -25,7 +25,7 @@ if (!function_exists('admin_menu_sections')) {
             ['label' => 'Hosting', 'href' => '/admin/section/hosting', 'icon' => '🌐', 'match' => ['/admin/email', '/admin/mysql', '/admin/ftp', '/admin/ssl', '/admin/backup', '/admin/cron', '/admin/server', '/admin/ssl/universal']],
             ['label' => 'Billing', 'href' => '/admin/section/billing', 'icon' => '💳', 'match' => ['/admin/billing', '/admin/gateways', '/admin/paypal']],
             ['label' => 'Support', 'href' => '/admin/section/support', 'icon' => '🎫', 'match' => ['/admin/support', '/admin/livechat', '/admin/reviews']],
-            ['label' => 'Radio', 'href' => '/admin/section/radio', 'icon' => '📻', 'match' => ['/admin/radio_dashboard', '/admin/streams', '/admin/djs', '/admin/autodj', '/admin/radiosettings']],
+            ['label' => 'Radio', 'href' => '/admin/section/radio', 'icon' => '📻', 'match' => ['/admin/radio_dashboard', '/admin/streams', '/admin/djs', '/admin/autodj', '/admin/radiosettings', '/admin/streaming']],
             ['label' => 'Games', 'href' => '/admin/section/games', 'icon' => '🎮', 'match' => ['/admin/games']],
             ['label' => 'Builder', 'href' => '/admin/section/builder', 'icon' => '🏗️', 'match' => ['/admin/websitebuilder']],
             ['label' => 'Domains', 'href' => '/admin/section/domains', 'icon' => '🌍', 'match' => ['/admin/domains', '/admin/dns', '/admin/ip']],
