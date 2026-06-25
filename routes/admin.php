@@ -83,6 +83,13 @@ $router->get('/admin/security', 'Admin\Controllers\SecurityController@index');
 // Admin Backup System Routes
 $router->get('/admin/backup', 'Admin\Controllers\BackupController@index');
 
+// Admin Hostname Configuration Routes
+$router->get('/admin/hostname', 'Admin\Controllers\HostnameController@index');
+$router->post('/admin/hostname/save', 'Admin\Controllers\HostnameController@save');
+$router->post('/admin/hostname/rebuild', 'Admin\Controllers\HostnameController@rebuild');
+$router->post('/admin/hostname/autossl', 'Admin\Controllers\HostnameController@autossl');
+$router->get('/admin/hostname/health', 'Admin\Controllers\HostnameController@health');
+
 // Admin Server Configuration Routes
 $router->get('/admin/serverconfig', 'Admin\Controllers\ServerConfigController@index');
 

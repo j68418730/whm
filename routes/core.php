@@ -424,5 +424,12 @@ $router->get('/admin/games/packages/delete/{id}', 'Admin\Controllers\GameServers
 $router->get('/admin/games/settings', 'Admin\Controllers\GameServersController@settings');
 $router->post('/admin/games/settings/save', 'Admin\Controllers\GameServersController@settingsSave');
 
+// Admin Hostname Configuration Routes
+$router->get('/admin/hostname', 'Admin\Controllers\HostnameController@index');
+$router->post('/admin/hostname/save', 'Admin\Controllers\HostnameController@save');
+$router->post('/admin/hostname/rebuild', 'Admin\Controllers\HostnameController@rebuild');
+$router->post('/admin/hostname/autossl', 'Admin\Controllers\HostnameController@autossl');
+$router->get('/admin/hostname/health', 'Admin\Controllers\HostnameController@health');
+
 // -- Catch-all for unknown /admin/* routes (redirects to dashboard) --
 $router->get('/admin/{any}', 'Admin\Controllers\DashboardController@index');

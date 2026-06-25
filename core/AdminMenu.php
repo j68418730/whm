@@ -30,7 +30,7 @@ if (!function_exists('admin_menu_sections')) {
             ['label' => 'Builder', 'href' => '/admin/section/builder', 'icon' => '🏗️', 'match' => ['/admin/websitebuilder']],
             ['label' => 'Domains', 'href' => '/admin/section/domains', 'icon' => '🌍', 'match' => ['/admin/domains', '/admin/dns', '/admin/ip']],
             ['label' => 'Security', 'href' => '/admin/section/security', 'icon' => '🔒', 'match' => ['/admin/security', '/admin/firewall', '/admin/ipblocker', '/admin/twofactor']],
-            ['label' => 'System', 'href' => '/admin/section/system', 'icon' => '⚙️', 'match' => ['/admin/settings', '/admin/serverconfig', '/admin/licensing', '/admin/plugins', '/admin/installers', '/admin/todo', '/admin/process-manager', '/admin/automation', '/admin/filesystem', '/admin/themes', '/admin/theme']],
+            ['label' => 'System', 'href' => '/admin/section/system', 'icon' => '⚙️', 'match' => ['/admin/settings', '/admin/serverconfig', '/admin/hostname', '/admin/licensing', '/admin/plugins', '/admin/installers', '/admin/todo', '/admin/process-manager', '/admin/automation', '/admin/filesystem', '/admin/themes', '/admin/theme']],
         ];
     }
 }

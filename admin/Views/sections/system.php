@@ -19,6 +19,7 @@
 <a href="/admin/settings/security" class="section-card"><div class="icon">🔒</div><div class="name">Security</div><div class="desc">Security settings</div></a>
 <a href="/admin/settings/api" class="section-card"><div class="icon">🔌</div><div class="name">API</div><div class="desc">API configuration</div></a>
 <a href="/admin/settings/localization" class="section-card"><div class="icon">🌍</div><div class="name">Localization</div><div class="desc">Language & region</div></a>
+<a href="/admin/hostname" class="section-card"><div class="icon">🏷️</div><div class="name">Hostname</div><div class="desc">Server hostname &amp; SSL</div></a>
 <a href="/admin/serverconfig" class="section-card"><div class="icon">🖥️</div><div class="name">Server Config</div><div class="desc">Server configuration</div></a>
 <a href="/admin/ip" class="section-card"><div class="icon">📶</div><div class="name">IP Management</div><div class="desc">IP address pools</div></a>
 <a href="/admin/licensing" class="section-card"><div class="icon">📜</div><div class="name">Licensing</div><div class="desc">License management</div></a>
