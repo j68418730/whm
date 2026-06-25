@@ -2,7 +2,7 @@
 $title = $title ?? 'Dashboard';
 $hosting = $hosting ?? null;
 $package = $package ?? null;
-$username = $hosting->username ?? ($user->name ?? 'User');
+$username = $hosting->username ?? $user->username ?? $user->name ?? $user->email ?? explode('@', $userEmail)[0] ?? 'User';
 $userEmail = $hosting->email ?? ($user->email ?? '');
 $pkgType = $package->type ?? ($hosting->plan_type ?? '');
 
