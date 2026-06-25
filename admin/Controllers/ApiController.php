@@ -135,7 +135,7 @@ class ApiController extends Controller {
 
     private function getEndpoints()
     {
-        $base = 'https://45.61.59.55';
+        $base = 'https://planet-hosts.com';
         return [
             ['method' => 'GET', 'path' => '/api/packages', 'desc' => 'List all hosting packages', 'auth' => 'Key'],
             ['method' => 'GET', 'path' => '/api/icon', 'desc' => 'Generate AI package icon', 'auth' => 'Admin'],
@@ -161,3 +161,4 @@ class ApiController extends Controller {
         return $this->view('admin.api.rate_limits', ['user' => $user, 'keys' => $keys, 'theme_settings' => $this->theme(), 'title' => 'Rate Limiting']);
     }
 }
+

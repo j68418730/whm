@@ -74,7 +74,7 @@ if ($action === 'listen') {
     <h1>Listen <span>Live</span></h1>
     <div class="status"><?php if (isset($currentDj)): ?>🎤 Live with <?php echo htmlspecialchars($currentDj->name ?: $currentDj->username); ?><?php else: ?>🤖 AutoDJ Playing<?php endif; ?></div>
     <?php if ($s && $s->status === 'running'): ?>
-    <audio controls autoplay><source src="http://<?php echo $_SERVER['SERVER_NAME'] ?? '45.61.59.55'; ?>:<?php echo $s->port; ?>/stream.ogg" type="audio/ogg">
+    <audio controls autoplay><source src="http://<?php echo $_SERVER['SERVER_NAME'] ?? 'planet-hosts.com'; ?>:<?php echo $s->port; ?>/stream.ogg" type="audio/ogg">
     Your browser does not support audio. Use port <?php echo $s->port; ?> in your media player.</audio>
     <?php else: ?><p style="color:#f87171">Stream is offline</p><?php endif; ?>
     <br><br><a href="/radio/nowplaying.php?stream=<?php echo $streamId; ?>" target="_blank" style="color:#38bdf8;font-size:12px">🎵 Now Playing</a>
@@ -83,3 +83,4 @@ if ($action === 'listen') {
 }
 
 echo 'DJ Hub loaded. Use ?action=public, ?action=public_schedule, or ?action=listen';
+

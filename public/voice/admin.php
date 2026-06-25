@@ -1,6 +1,6 @@
 <?php
 $room = bin2hex(random_bytes(4));
-$signalrUrl = "http://45.61.59.55/hub/chat";
+$signalrUrl = "http://planet-hosts.com/hub/chat";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -141,3 +141,4 @@ connection.start().then(function() {
 </script>
 </body>
 </html>
+

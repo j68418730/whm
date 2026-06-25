@@ -17,7 +17,7 @@
   <div class="summary-title">✅ Account Created Successfully</div>
   <div class="summary-grid">
     <div class="summary-line"><span class="summary-key">Domain:</span><span class="summary-val"><?php echo htmlspecialchars($account->domain); ?></span></div>
-    <div class="summary-line"><span class="summary-key">Ip:</span><span class="summary-val"><?php echo htmlspecialchars($account->ip ?? '45.61.59.55'); ?></span></div>
+    <div class="summary-line"><span class="summary-key">Ip:</span><span class="summary-val"><?php echo htmlspecialchars($account->ip ?? ($_SERVER['SERVER_ADDR'] ?? 'planet-hosts.com')); ?></span></div>
     <div class="summary-line"><span class="summary-key">HasCgi:</span><span class="summary-val">y</span></div>
     <div class="summary-line"><span class="summary-key">UserName:</span><span class="summary-val"><?php echo htmlspecialchars($account->username); ?></span></div>
     <div class="summary-line"><span class="summary-key">PassWord:</span><span class="summary-val"><code style="user-select:all;background:rgba(0,0,0,.4);padding:2px 6px;border-radius:4px"><?php echo htmlspecialchars($plainPassword); ?></code> <button class="login-btn" style="background:rgba(0,191,255,.1);color:#0A84FF;padding:2px 8px;font-size:11px" onclick="navigator.clipboard.writeText('<?php echo htmlspecialchars($plainPassword, ENT_QUOTES); ?>')">Copy</button></span></div>
@@ -27,11 +27,12 @@
 <?php
 $nsDisplay = $nameservers ?: [];
 if (empty($nsDisplay)) {
-    $nsDisplay = [ (object)['nameserver'=>'ns1.planet-hosts.com','ip_address'=>'45.61.59.55'], (object)['nameserver'=>'ns2.planet-hosts.com','ip_address'=>'45.61.59.55'] ];
+    $serverIp = $_SERVER['SERVER_ADDR'] ?? 'planet-hosts.com';
+    $nsDisplay = [ (object)['nameserver'=>'ns1.planet-hosts.com','ip_address'=>$serverIp], (object)['nameserver'=>'ns2.planet-hosts.com','ip_address'=>$serverIp] ];
 }
 $nsIdx = 1;
 foreach ($nsDisplay as $ns): ?>
-<div class="summary-line"><span class="summary-key">NameServer<?php echo $nsIdx++; ?>:</span><span class="summary-val"><?php echo htmlspecialchars($ns->nameserver ?? 'ns'.$nsIdx.'.planet-hosts.com'); ?> (<?php echo htmlspecialchars($ns->ip_address ?? '45.61.59.55'); ?>)</span></div>
+<div class="summary-line"><span class="summary-key">NameServer<?php echo $nsIdx++; ?>:</span><span class="summary-val"><?php echo htmlspecialchars($ns->nameserver ?? 'ns'.$nsIdx.'.planet-hosts.com'); ?> (<?php echo htmlspecialchars($ns->ip_address ?? $serverIp); ?>)</span></div>
 <?php endforeach; ?>
     <div class="summary-line"><span class="summary-key">Contact Email:</span><span class="summary-val"><?php echo htmlspecialchars($account->email); ?></span></div>
     <div class="summary-line"><span class="summary-key">Package:</span><span class="summary-val"><?php echo $package ? htmlspecialchars($package->name) : 'default'; ?></span></div>

@@ -337,7 +337,7 @@ $requests = $reqs->fetchAll(PDO::FETCH_OBJ);
 <div class="card">
 <h3><i class="fas fa-code"></i> Embed Now Playing Widget</h3>
 <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:6px;font-family:monospace;font-size:11px;color:#4ade80;word-break:break-all;margin-bottom:8px">
-&lt;iframe src="http://45.61.59.55/radio/nowplaying.php?stream=<?php echo $_SESSION['dj_user']['stream_id']; ?>&scroll=yes" width="100%" height="400"&gt;&lt;/iframe&gt;
+&lt;iframe src="http://planet-hosts.com/radio/nowplaying.php?stream=<?php echo $_SESSION['dj_user']['stream_id']; ?>&scroll=yes" width="100%" height="400"&gt;&lt;/iframe&gt;
 </div>
 <p style="font-size:11px;color:#64748b">Add <code>?scroll=no</code> to disable scrolling.</p>
 </div>
@@ -346,7 +346,7 @@ $requests = $reqs->fetchAll(PDO::FETCH_OBJ);
 <div class="card">
 <h3><i class="fas fa-plug"></i> Stream Connection</h3>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
-<div><span style="color:#64748b">Server</span><br><strong><?php echo $_SERVER['SERVER_NAME'] ?? '45.61.59.55'; ?></strong></div>
+<div><span style="color:#64748b">Server</span><br><strong><?php echo $_SERVER['SERVER_NAME'] ?? 'planet-hosts.com'; ?></strong></div>
 <div><span style="color:#64748b">Port</span><br><strong><?php echo $djData->port ?? 'N/A'; ?></strong></div>
 <div><span style="color:#64748b">Mount</span><br><strong>/stream.ogg</strong></div>
 <div><span style="color:#64748b">Username</span><br><strong><?php echo htmlspecialchars($djData->username); ?></strong></div>
@@ -358,3 +358,4 @@ $requests = $reqs->fetchAll(PDO::FETCH_OBJ);
 
 </div>
 </body></html>
+

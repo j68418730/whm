@@ -113,7 +113,7 @@ function filterSidebar(val) {
 <div class="nav-label">Services</div>
 <a href="/admin/dns" class="<?php echo str_contains($currentUrl,'/admin/dns')?'active':''; ?>">DNS Zones</a>
 <a href="/admin/email" class="<?php echo str_contains($currentUrl,'/admin/email')?'active':''; ?>">Email</a>
-<a href="http://45.61.59.55:2096/" target="_blank" style="font-size:12px;padding-left:20px;color:#fb923c" class="<?php echo 0?'active':''; ?>">📧 Webmail (2096)</a>
+<a href="https://planet-hosts.com:2097/" target="_blank" style="font-size:12px;padding-left:20px;color:#fb923c" class="<?php echo 0?'active':''; ?>">📧 Webmail (2097)</a>
 <a href="/admin/mysql" class="<?php echo str_contains($currentUrl,'/admin/mysql')?'active':''; ?>">Databases</a>
 <a href="/admin/ftp" class="<?php echo str_contains($currentUrl,'/admin/ftp')?'active':''; ?>">FTP</a>
 <a href="/admin/ip" class="<?php echo str_contains($currentUrl,'/admin/ip')?'active':''; ?>">IP Management</a>
@@ -373,3 +373,4 @@ setTimeout(pollVisitors, 500);
 </body>
 </body>
 </html>
+

@@ -7,7 +7,7 @@ class DnsManager
     protected $db;
     protected $ns1 = 'ns1.planet-hosts.com';
     protected $ns2 = 'ns2.planet-hosts.com';
-    protected $serverIp = '45.61.59.55';
+    protected $serverIp = 'planet-hosts.com';
 
     public function __construct()
     {
@@ -111,3 +111,4 @@ class DnsManager
         }
     }
 }
+

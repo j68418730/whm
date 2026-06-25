@@ -87,7 +87,7 @@ class AccountController extends Controller
             header('Location: /admin/account/create'); exit;
         }
 
-        $serverIp = '45.61.59.55';
+        $serverIp = 'planet-hosts.com';
         $homeDir = "/home/{$username}";
 
         $userId = $this->db->table('hosting_users')->insertGetId([
@@ -200,7 +200,7 @@ class AccountController extends Controller
 
     private function getServerIp()
     {
-        return '45.61.59.55';
+        return 'planet-hosts.com';
     }
 
     public function show($id)
@@ -448,3 +448,4 @@ class AccountController extends Controller
     }
 
 }
+

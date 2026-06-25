@@ -151,11 +151,11 @@ iframe{width:100%;height:400px;border:1px solid rgba(255,255,255,.1);border-radi
 
 <div class="card">
 <h2>🪪 Embed Code</h2>
-<div class="embed-box">&lt;script src="http://45.61.59.55/chatbox/widget.js.php?tenant_id=<?php echo $tenantId; ?>"&gt;&lt;/script&gt;</div>
-<button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('&lt;script src=&quot;http://45.61.59.55/chatbox/widget.js.php?tenant_id=<?php echo $tenantId; ?>&quot;&gt;&lt;/script&gt;')">📋 Copy Embed</button>
+<div class="embed-box">&lt;script src="http://planet-hosts.com/chatbox/widget.js.php?tenant_id=<?php echo $tenantId; ?>"&gt;&lt;/script&gt;</div>
+<button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('&lt;script src=&quot;http://planet-hosts.com/chatbox/widget.js.php?tenant_id=<?php echo $tenantId; ?>&quot;&gt;&lt;/script&gt;')">📋 Copy Embed</button>
 <div style="margin-top:12px;font-size:12px;color:#64748b">Or use iframe:</div>
-<div class="embed-box">&lt;iframe src="http://45.61.59.55/chatbox/embed.php?tenant_id=<?php echo $tenantId; ?>" width="360" height="500"&gt;&lt;/iframe&gt;</div>
-<button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('&lt;iframe src=&quot;http://45.61.59.55/chatbox/embed.php?tenant_id=<?php echo $tenantId; ?>&quot; width=&quot;360&quot; height=&quot;500&quot;&gt;&lt;/iframe&gt;')">📋 Copy Iframe</button>
+<div class="embed-box">&lt;iframe src="http://planet-hosts.com/chatbox/embed.php?tenant_id=<?php echo $tenantId; ?>" width="360" height="500"&gt;&lt;/iframe&gt;</div>
+<button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('&lt;iframe src=&quot;http://planet-hosts.com/chatbox/embed.php?tenant_id=<?php echo $tenantId; ?>&quot; width=&quot;360&quot; height=&quot;500&quot;&gt;&lt;/iframe&gt;')">📋 Copy Iframe</button>
 </div>
 
 <div class="card">
@@ -248,3 +248,4 @@ fetch('/chatbox/api.php?action=mod_log', {credentials:'include'}).then(r=>r.json
 </div>
 
 </body></html>
+

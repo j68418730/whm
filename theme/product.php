@@ -76,7 +76,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')"><i class="fa-solid fa-bars"></i></button>
 <nav class="nav-links">
 <a href="/">Home</a><a href="/hosting">Store</a><a href="?contact">Contact</a>
-<a href="http://45.61.59.55:2082/" class="btn-secondary" style="padding:8px 16px;font-size:13px"><i class="fa-solid fa-user"></i> Client Login</a>
+<a href="http://planet-hosts.com:2082/" class="btn-secondary" style="padding:8px 16px;font-size:13px"><i class="fa-solid fa-user"></i> Client Login</a>
 <a href="/cart.php" class="btn-primary btn-order" style="padding:8px 20px;font-size:13px"><i class="fa-solid fa-cart-shopping"></i> Cart</a>
 </nav>
 </div>
@@ -128,3 +128,4 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 <footer class="footer"><div class="container"><p>&copy; 2026 Planet-Hosts. All rights reserved.</p></div></footer>
 </body>
 </html>
+

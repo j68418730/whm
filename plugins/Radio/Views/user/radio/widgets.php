@@ -37,7 +37,7 @@ foreach ($widgets as $key => $w): ?>
 </div>
 
 <script>
-var BASE_URL = 'http://45.61.59.55';
+var BASE_URL = 'http://planet-hosts.com';
 function genWidget(type) {
     var sid = document.getElementById('ws-stream').value;
     var fmt = document.getElementById('ws-format').value;
@@ -63,3 +63,4 @@ function copyCode(id) {
     });
 }
 </script>
+
