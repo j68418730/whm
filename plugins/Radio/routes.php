@@ -82,6 +82,18 @@ $router->get('/radio/chat/poll', 'Plugins\Radio\Controllers\User\RadioController
 $router->post('/radio/chat/send', 'Plugins\Radio\Controllers\User\RadioController@chatSend');
 // Kick Source
 $router->post('/radio/kick-source', 'Plugins\Radio\Controllers\User\RadioController@kickSource');
+// Streaming Engine API Routes
+$router->get('/admin/streaming', 'Plugins\Radio\Controllers\Admin\StreamingApiController@dashboard');
+$router->get('/admin/api/streaming/engines', 'Plugins\Radio\Controllers\Admin\StreamingApiController@engines');
+$router->post('/admin/api/streaming/install', 'Plugins\Radio\Controllers\Admin\StreamingApiController@installEngine');
+$router->get('/admin/api/streaming/engine-status', 'Plugins\Radio\Controllers\Admin\StreamingApiController@engineStatus');
+$router->get('/admin/api/streaming/stations', 'Plugins\Radio\Controllers\Admin\StreamingApiController@stations');
+$router->post('/admin/api/streaming/stations/create', 'Plugins\Radio\Controllers\Admin\StreamingApiController@createStation');
+$router->post('/admin/api/streaming/stations/action', 'Plugins\Radio\Controllers\Admin\StreamingApiController@stationAction');
+$router->get('/admin/api/streaming/stats', 'Plugins\Radio\Controllers\Admin\StreamingApiController@stationStats');
+$router->get('/admin/api/streaming/health', 'Plugins\Radio\Controllers\Admin\StreamingApiController@stationHealth');
+$router->get('/admin/api/streaming/logs', 'Plugins\Radio\Controllers\Admin\StreamingApiController@stationLogs');
+
 // Public endpoints (no auth)
 $router->get('/radio/public/djs', 'Plugins\Radio\Controllers\User\RadioController@publicDjs');
 $router->get('/radio/public/schedule', 'Plugins\Radio\Controllers\User\RadioController@publicSchedule');
