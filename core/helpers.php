@@ -50,7 +50,9 @@ if (!function_exists('server_hw_id')) {
         $parts = [];
         $parts[] = @file_get_contents('/etc/machine-id') ?: '';
         $parts[] = trim(shell_exec('hostname 2>/dev/null') ?: '');
-        $parts[] = trim(shell_exec("cat /sys/class/net/$(ip route show default | awk '{print $5}' 2>/dev/null)/address 2>/dev/null") ?: '');
+        // Get MAC safely without spawning ip route processes
+        $mac = @file_get_contents('/sys/class/net/eth0/address') ?: @file_get_contents('/sys/class/net/ens0/address') ?: '';
+        $parts[] = trim($mac);
         $parts[] = $_SERVER['SERVER_ADDR'] ?? '127.0.0.1';
         return sha1(implode('|', array_filter($parts)));
     }
