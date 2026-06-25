@@ -20,6 +20,15 @@ echo "icecast2 icecast2/relaypassword password $(hostname)" | debconf-set-select
 echo "icecast2 icecast2/adminpassword password $(hostname)" | debconf-set-selections
 export DEBIAN_FRONTEND=noninteractive
 
+# 0. Swap file (2GB for low-memory servers)
+if [ ! -f /swapfile ]; then
+    dd if=/dev/zero of=/swapfile bs=1M count=2048 2>/dev/null
+    chmod 600 /swapfile
+    mkswap /swapfile 2>/dev/null
+    swapon /swapfile 2>/dev/null
+    echo "/swapfile none swap sw 0 0" >> /etc/fstab
+fi
+
 # 1. System update
 echo "[1/11] Updating system..."
 apt update -qq && apt upgrade -y -qq
