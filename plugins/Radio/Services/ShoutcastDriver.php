@@ -18,11 +18,9 @@ class ShoutcastDriver implements StreamingDriverInterface
 
     public function getVersion()
     {
-        $bin = $this->getBinaryPath();
-        if (!file_exists($bin)) return 'not installed';
-        $output = shell_exec("{$bin} 2>&1") ?: '';
-        preg_match('/(\d+\.\d+\.\d+)/', $output, $m);
-        return $m[1] ?? '2.6.1';
+        if (!file_exists($this->getBinaryPath())) return 'not installed';
+        // Binary is SHOUTcast DNAS 2.6.1 Build 777 — don't execute it (starts the server)
+        return '2.6.1';
     }
 
     public function isInstalled() { return file_exists($this->getBinaryPath()); }
