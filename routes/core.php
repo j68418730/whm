@@ -40,6 +40,9 @@ $router->post('/admin/theme/update', 'Admin\Controllers\ThemeController@update')
 $router->post('/admin/theme', 'Admin\Controllers\ThemeController@update');
 $router->get('/admin/account', 'Admin\Controllers\AccountController@index');
 $router->get('/admin/packages', 'Admin\Controllers\PackageController@index');
+$router->post('/admin/packages/clone/{id}', 'Admin\Controllers\PackageController@clone');
+$router->post('/admin/packages/toggle/{id}', 'Admin\Controllers\PackageController@toggle');
+$router->post('/admin/packages/bulk', 'Admin\Controllers\PackageController@bulk');
 $router->get('/admin/reseller', 'Admin\Controllers\ResellerController@index');
 $router->get('/admin/dns', 'Admin\Controllers\DnsController@index');
 $router->get('/admin/email', 'Admin\Controllers\EmailController@index');
