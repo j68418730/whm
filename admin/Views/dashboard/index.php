@@ -77,7 +77,7 @@ $services = $services ?? [];
 <h3 style="color:var(--accent);font-size:14px;margin-bottom:12px"><i class="fas fa-globe"></i> Hostname &amp; SSL Status</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px" id="hostnameStatus">
 <div><span style="color:#64748b;font-size:12px">Hostname</span><div style="font-size:14px;font-weight:600"><?php echo htmlspecialchars($server['hostname'] ?? 'N/A'); ?></div></div>
-<div><span style="color:#64748b;font-size:12px">Public IP</span><div style="font-size:14px"><?php echo htmlspecialchars($server['ip'] ?? $server['public_ip'] ?? 'N/A'); ?></div></div>
+<div><span style="color:#64748b;font-size:12px">Public IP</span><div style="font-size:14px" id="publicIpDisplay"><?php echo htmlspecialchars($server['public_ip'] ?? 'N/A'); ?></div></div>
 <div><span style="color:#64748b;font-size:12px">SSL</span><div style="font-size:14px" id="sslStatusDisplay"><span style="color:#64748b">Checking...</span></div></div>
 <div><span style="color:#64748b;font-size:12px">DNS</span><div style="font-size:14px" id="dnsStatusDisplay"><span style="color:#64748b">Checking...</span></div></div>
 <div><span style="color:#64748b;font-size:12px">Panel URL</span><div style="font-size:14px"><a href="https://<?php echo htmlspecialchars($server['hostname'] ?? ''); ?>" style="color:var(--accent);text-decoration:none" target="_blank">https://<?php echo htmlspecialchars($server['hostname'] ?? ''); ?> <i class="fas fa-external-link-alt" style="font-size:10px"></i></a></div></div>
@@ -93,6 +93,8 @@ fetch('/admin/hostname/health').then(function(r){return r.json()}).then(function
         var label = d.ssl_status === 'valid' ? 'Valid (' + d.ssl_days_left + ' days)' : 'Missing';
         sslEl.innerHTML = '<span style="color:' + color + '">' + label + '</span>';
     }
+    var ipEl = document.getElementById('publicIpDisplay');
+    if (ipEl && d.public_ip) ipEl.textContent = d.public_ip;
     var dnsEl = document.getElementById('dnsStatusDisplay');
     if (dnsEl && d.dns_resolves !== undefined) {
         var color = d.dns_resolves ? '#4ade80' : '#f87171';
