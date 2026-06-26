@@ -231,6 +231,7 @@ $router->post('/admin/package/upgrade/{accountId}', 'Admin\Controllers\PackageCo
 $router->post('/admin/package/assign-reseller/{packageId}', 'Admin\Controllers\PackageController@assignReseller');
 $router->get('/admin/packages/categories', 'Admin\Controllers\PackageController@categories');
 $router->post('/admin/packages/categories', 'Admin\Controllers\PackageController@storeCategory');
+$router->post('/admin/packages/categories/update/{id}', 'Admin\Controllers\PackageController@updateCategory');
 $router->get('/admin/packages/categories/delete/{id}', 'Admin\Controllers\PackageController@deleteCategory');
 // JSON endpoint for landing page
 $router->get('/admin/admins', 'Admin\Controllers\AdminsController@index');
