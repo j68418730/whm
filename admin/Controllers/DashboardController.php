@@ -60,13 +60,16 @@ class DashboardController extends Controller
         $diskUsed = shell_exec('df / 2>/dev/null | tail -1 | awk "{print \$3}"') ?: 0;
         if ($diskTotal > 0) $server['disk_pct'] = round(($diskUsed / $diskTotal) * 100);
 
-        // Services
-        $serviceNames = ['apache2' => 'Apache', 'mariadb' => 'MariaDB', 'icecast2' => 'Icecast', 'postfix' => 'Postfix', 'dovecot' => 'Dovecot', 'firewalld' => 'Firewall', 'crond' => 'Cron', 'nginx' => 'Nginx'];
+        // Services (try both crond and cron for Debian/RHEL)
+        $cronActive = trim(shell_exec('systemctl is-active cron 2>/dev/null') ?: '') === 'active';
+        if (!$cronActive) $cronActive = trim(shell_exec('systemctl is-active crond 2>/dev/null') ?: '') === 'active';
+        $serviceNames = ['apache2' => 'Apache', 'mariadb' => 'MariaDB', 'icecast2' => 'Icecast', 'postfix' => 'Postfix', 'dovecot' => 'Dovecot', 'firewalld' => 'Firewall', 'nginx' => 'Nginx'];
         $services = [];
         foreach ($serviceNames as $sName => $sLabel) {
             $active = trim(shell_exec("systemctl is-active {$sName} 2>/dev/null") ?: '') === 'active';
             $services[] = ['name' => $sLabel, 'active' => $active, 'status' => $active ? 'active' : ''];
         }
+        $services[] = ['name' => 'Cron', 'active' => $cronActive, 'status' => $cronActive ? 'active' : ''];
 
         $pluginManager = \Core\Application::getInstance()->getPluginManager();
         $addons = $pluginManager ? $pluginManager->loadedMetadata() : [];
@@ -76,6 +79,16 @@ class DashboardController extends Controller
         $all_widgets = [];
         $widgets_main = '';
         $widgets_side = '';
+        try {
+            $wm = new \Core\WidgetManager($this->db);
+            $all_widgets = $wm->getAllWidgets();
+            $widgets_main = $wm->renderZone('main');
+            $widgets_side = $wm->renderZone('side');
+        } catch (\Exception $e) {
+            $all_widgets = [];
+            $widgets_main = '';
+            $widgets_side = '';
+        }
 
         return $this->view('admin.dashboard.index', [
             'user' => $user,
@@ -108,10 +121,13 @@ class DashboardController extends Controller
     public function health()
     {
         $services = [];
-        foreach (['apache2', 'mariadb', 'icecast2', 'postfix', 'dovecot', 'firewalld', 'crond', 'nginx'] as $s) {
+        foreach (['apache2', 'mariadb', 'icecast2', 'postfix', 'dovecot', 'firewalld', 'nginx'] as $s) {
             $active = trim(shell_exec("systemctl is-active {$s} 2>/dev/null") ?: '') === 'active';
             $services[$s] = $active;
         }
+        $cronActive = trim(shell_exec('systemctl is-active cron 2>/dev/null') ?: '') === 'active';
+        if (!$cronActive) $cronActive = trim(shell_exec('systemctl is-active crond 2>/dev/null') ?: '') === 'active';
+        $services['cron'] = $cronActive;
         $this->response->json([
             'hostname' => trim(shell_exec('hostname 2>/dev/null') ?: ''),
             'uptime' => trim(shell_exec('uptime -p 2>/dev/null') ?: ''),
