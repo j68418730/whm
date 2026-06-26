@@ -1,7 +1,32 @@
 <?php
+session_start();
 $host = $_SERVER["HTTP_HOST"] ?? "planet-hosts.com";
 $error = $_GET['error'] ?? '';
 $loggedOut = $_GET['loggedout'] ?? '';
+
+// Handle login
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email = $_POST['email'] ?? '';
+    $password = $_POST['password'] ?? '';
+    try {
+        $pdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", "radiouser", "Skylinehosting171");
+        $stmt = $pdo->prepare("SELECT * FROM hosting_users WHERE (email = ? OR username = ?) AND status = 'active' LIMIT 1");
+        $stmt->execute([$email, $email]);
+        $user = $stmt->fetch(PDO::FETCH_OBJ);
+        if ($user && password_verify($password, $user->password_hash)) {
+            $_SESSION['user'] = $user;
+            $_SESSION['user_id'] = $user->id;
+            $_SESSION['username'] = $user->username;
+            header('Location: /user/');
+            exit;
+        }
+        header('Location: /user_login.php?error=1');
+        exit;
+    } catch (Exception $e) {
+        header('Location: /user_login.php?error=1');
+        exit;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -61,7 +86,7 @@ h2{text-align:center;font-size:18px;font-weight:600;margin-bottom:6px;color:#e0e
 <div class="success show">You have been logged out successfully.</div>
 <?php endif; ?>
 <form method="POST" action="/user_login.php">
-<div class="form-group"><label>Email</label><input type="email" name="email" placeholder="your@email.com" required autofocus></div>
+<div class="form-group"><label>Email or Username</label><input type="text" name="email" placeholder="email@example.com or username" required autofocus></div>
 <div class="form-group"><label>Password</label><input type="password" name="password" placeholder="Enter your password" required></div>
 <button type="submit" class="btn btn-primary">Sign In</button>
 </form>
@@ -70,28 +95,3 @@ h2{text-align:center;font-size:18px;font-weight:600;margin-bottom:6px;color:#e0e
 </div>
 </body>
 </html>
-<?php
-// Handle login
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
-    try {
-        $pdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", "radiouser", "Skylinehosting171");
-        $user = $pdo->prepare("SELECT * FROM hosting_users WHERE email = ? AND status = 'active' LIMIT 1");
-        $user->execute([$email]);
-        $user = $user->fetch(PDO::FETCH_OBJ);
-        if ($user && password_verify($password, $user->password_hash)) {
-            session_start();
-            $_SESSION['user_id'] = $user->id;
-            $_SESSION['username'] = $user->username;
-            header('Location: /user/');
-            exit;
-        }
-        header('Location: /user_login.php?error=1');
-        exit;
-    } catch (Exception $e) {
-        header('Location: /user_login.php?error=1');
-        exit;
-    }
-}
-?>
