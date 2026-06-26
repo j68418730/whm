@@ -99,6 +99,92 @@ WHM/cPanel-style hosting panel with client area, admin dashboards, modular plugi
 - Visitor tracking (excludes admin pages)
 - Dynamic host links (no hardcoded IPs)
 
+## Packages & Billing
+
+All packages rebuilt from scratch. 51 active packages across 10 categories (5 each) + testinglive:
+
+| Category | Type | Count | Features |
+|----------|------|-------|----------|
+| Web Hosting | `web_hosting` | 6 | disk, bandwidth, email, ftp, databases, live_chat |
+| Web Reseller | `web_reseller` | 5 | disk, bandwidth, email, ftp, databases, live_chat |
+| SHOUTcast | `shoutcast` | 5 | listener_limit, bitrate, storage, dj, shoutcast_enabled |
+| SHOUTcast Reseller | `shoutcast_reseller` | 5 | listener_limit, bitrate, storage, dj, shoutcast_enabled |
+| Icecast | `icecast` | 5 | listener_limit, bitrate, storage, dj, icecast_enabled |
+| Icecast Reseller | `icecast_reseller` | 5 | listener_limit, bitrate, storage, dj, icecast_enabled |
+| Chat Room | `chat_room` | 5 | chatroom_enabled |
+| Chat Room Voice | `chat_room_voice` | 5 | chatroom_enabled, chatroom_voice_enabled |
+| Game Server | `game_server` | 5 | game_enabled |
+| DJ Panel | `dj_panel` | 5 | listener_limit, bitrate, dj, dj_panel_enabled |
+
+testinglive has ALL features enabled (shoutcast, icecast, chat room, voice, games, dj panel, live chat).
+
+Billing products (51) auto-created from packages in `billing_products` table with `package_id` FK linking back.
+
+## Streaming System
+
+### Streaming Engine (`plugins/Radio/Services/StreamingEngine.php`)
+- Engine-agnostic API: same interface for SHOUTcast and Icecast
+- `StreamingDriverInterface` — contract for all drivers
+- Station CRUD via `streaming_stations` table
+
+### SHOUTcast v2
+- Binary: `/opt/planethosts/shoutcast/sc_serv` (DNAS 2.6.1 Build 777)
+- Installed once, shared by all stations
+- Per-user station dirs: `/home/{username}/stations/{port}/`
+- systemd services: `ph-stream-{port}.service`
+- Port range: 9000–10000
+
+### SHOUTcast v1
+- Binary: `/opt/planethosts/shoutcast1/sc_serv` (v1.9.8, 2004)
+- Separate install from v2
+- Per-user station dirs: `/home/{username}/v1stations/{port}/`
+- systemd services: `ph-v1-stream-{port}.service`
+- Port range: 11000–12000
+- Auto-registers when binary is present
+
+### Icecast
+- System service: `icecast2`
+- Managed by `IcecastDriver`
+- Port range: 8000–9000
+
+### Streaming API
+- `GET /admin/streaming` — dashboard
+- `GET/POST /admin/api/streaming/*` — full admin API
+- `GET/POST /api/v1/*` — public API (engine-independent, API key auth)
+
+## Hosting Portal Page
+
+Full marketing portal at `https://planet-hosts.com/` restored from backup with:
+- Hero section with stats
+- Features grid (8 feature cards)
+- Rotating pricing cards from billing_products (10 categories, auto-slide every 7s)
+- Why Choose section
+- Testimonials with auto-scroll
+- Floating live chat panel
+- Footer with links
+
+## Login Pages
+
+| Portal | URL | Type |
+|--------|-----|------|
+| User login | `https://planet-hosts.com:2083/` | Clean login form (email or username) |
+| Admin login | `https://planet-hosts.com:2087/` | Full admin panel login |
+
+## Fixes Applied
+
+- **License system**: Removed online CURL to nonexistent endpoint (was 10s hang). Now uses local RSA verification only. keygen.sh and license_private.pem moved to MasterInstall (out of public repo).
+- **Dashboard**: Fixed 0-byte rendering (license check hang). Added cron service detection (Debian uses `cron`, RHEL uses `crond`). Added streaming engines widget. Fixed SSL status display (cert dir permissions were 700).
+- **File manager**: Added 15 missing routes (list, read, save, create, rename, copy, move, extract, chmod, properties, search).
+- **public/index.php**: Was deleted during git clean (0 bytes). Restored from backup. Removed license check for dev mode.
+- **AuthController, DashboardController**: Were deleted during git clean. Restored from backup.
+- **Firewall ports**: 2083 and 2097 were missing from public zone (added to docker zone by mistake). Fixed.
+- **SSL certs**: `/etc/letsencrypt/live/` had 700 permissions blocking Apache. Changed to 755.
+- **Hostname DB**: Stored as `server1.planet-hosts.com` but system was `server.planet-hosts.com`. Fixed.
+- **`provision.sh`**: Created for account creation (creates system user, public_html, default index).
+- **`vsftpd.conf`**: Fixed to enable write, chroot users to home dir.
+- **Package categories**: Cleaned duplicates, added missing categories (shoutcast, icecast_reseller, etc.).
+- **Portal pricing**: Replaced hardcoded packages with dynamic billing_products.
+
 ## Recent Changes
 
 - **2026-06-25**: Port mapping fixed to cPanel-style (2082→2083, 2096→2097, 2087 SSL-only)
@@ -109,6 +195,12 @@ WHM/cPanel-style hosting panel with client area, admin dashboards, modular plugi
 - **2026-06-25**: Radio "User" display name bug fixed (better fallback chain)
 - **2026-06-25**: Live chat badge image path fixed
 - **2026-06-25**: Installer refactored to modular structure at `K:\site_del\install.sh-update.sh\`
+- **2026-06-26**: SHOUTcast v1 (1.9.8) installed. Streaming Engine with 3 drivers.
+- **2026-06-26**: Packages rebuilt: 51 active across 10 categories. Billing products auto-created.
+- **2026-06-26**: Portal restored from backup with dynamic billing products pricing.
+- **2026-06-26**: All admin panel pages fixed (license check removed, 0-byte rendering fixed).
+- **2026-06-26**: File manager routes fixed (15 missing routes added).
+- **2026-06-26**: SSL cert permissions fixed, hostname DB updated, provision.sh created.
 
 ## Installer
 
