@@ -165,7 +165,7 @@ class PackageController extends Controller
         $user = $this->auth->user();
         $categories = $this->getCategories();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-        return $this->view('admin.package.categories', ['user' => $user, 'categories' => $categories, 'theme_settings' => $theme_settings]);
+        return $this->view('admin.package.categories', ['user' => $user, 'categories' => $categories, 'theme_settings' => $theme_settings, 'title' => 'Package Categories']);
     }
 
     public function storeCategory()
@@ -177,6 +177,23 @@ class PackageController extends Controller
             'sort_order' => (int)$this->request->post('sort_order', 0),
         ]);
         $_SESSION['success_message'] = 'Category created.';
+        $this->response->redirect('/admin/packages/categories');
+        exit;
+    }
+
+    public function updateCategory($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $name = $this->request->post('name', '');
+        $icon = $this->request->post('icon', '');
+        $sort = (int)$this->request->post('sort_order', 0);
+        if ($name) {
+            $data = ['name' => $name];
+            if ($icon) $data['icon'] = $icon;
+            if ($sort) $data['sort_order'] = $sort;
+            $this->db->table('package_categories')->where('id', $id)->update($data);
+            $_SESSION['success_message'] = 'Category updated.';
+        }
         $this->response->redirect('/admin/packages/categories');
         exit;
     }
