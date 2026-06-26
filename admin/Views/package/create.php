@@ -64,3 +64,8 @@ document.querySelector('[name="icecast_enabled"]').addEventListener('change', fu
     document.getElementById('radioFields').style.display = this.checked ? 'grid' : 'none';
 });
 </script>
+<div style="display:flex;gap:8px;margin-top:16px">
+<button type="submit" class="btn primary">Create Package</button>
+</div>
+</form>
+</div>
