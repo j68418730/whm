@@ -82,6 +82,32 @@ $services = $services ?? [];
 <div><span style="color:#64748b;font-size:12px">DNS</span><div style="font-size:14px" id="dnsStatusDisplay"><span style="color:#64748b">Checking...</span></div></div>
 <div><span style="color:#64748b;font-size:12px">Panel URL</span><div style="font-size:14px"><a href="https://<?php echo htmlspecialchars($server['hostname'] ?? ''); ?>" style="color:var(--accent);text-decoration:none" target="_blank">https://<?php echo htmlspecialchars($server['hostname'] ?? ''); ?> <i class="fas fa-external-link-alt" style="font-size:10px"></i></a></div></div>
 </div>
+
+<!-- ─── Primary Domain ─── -->
+<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)">
+<div style="font-weight:600;font-size:13px;margin-bottom:8px">Primary Domain</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+<div><span style="color:#64748b;font-size:11px">Domain</span><div style="font-size:14px"><?php echo htmlspecialchars($primaryDomain ?? 'planet-hosts.com'); ?></div></div>
+<div><span style="color:#64748b;font-size:11px">Nameserver 1</span><div style="font-size:13px"><?php echo htmlspecialchars($ns1); ?></div></div>
+<div><span style="color:#64748b;font-size:11px">Nameserver 2</span><div style="font-size:13px"><?php echo htmlspecialchars($ns2); ?></div></div>
+</div>
+</div>
+
+<!-- ─── Server IPs ─── -->
+<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)">
+<div style="font-weight:600;font-size:13px;margin-bottom:8px">Server IPs</div>
+<?php foreach ($serverIps as $sip): ?>
+<div style="background:rgba(8,16,28,.4);border-radius:6px;padding:10px;margin-bottom:6px">
+<div style="font-weight:600;font-size:13px;color:#0A84FF;margin-bottom:4px"><?php echo htmlspecialchars($sip['ip']); ?></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;font-size:11px">
+<div><span style="color:#64748b">NS1</span><br><?php echo htmlspecialchars($sip['ns1']); ?></div>
+<div><span style="color:#64748b">NS2</span><br><?php echo htmlspecialchars($sip['ns2']); ?></div>
+<div><span style="color:#64748b">Panel URL</span><br><a href="https://planet-hosts.com:2087/" style="color:#0A84FF;text-decoration:none">planet-hosts.com:2087</a></div>
+</div>
+</div>
+<?php endforeach; ?>
+</div>
+
 </div>
 
 <script>

@@ -43,7 +43,7 @@ class DashboardController extends Controller
         // Server stats
         $server = [
             'hostname' => trim(shell_exec('hostname 2>/dev/null') ?: 'localhost'),
-            'public_ip' => trim(shell_exec('curl -s --max-time 3 https://ifconfig.me/ip 2>/dev/null') ?: '45.61.59.55'),
+            'public_ip' => trim(shell_exec('timeout 3 curl -s https://ifconfig.me/ip 2>/dev/null') ?: '45.61.59.55'),
             'uptime' => trim(shell_exec('uptime -p 2>/dev/null') ?: ''),
             'cpu' => trim(shell_exec('cat /proc/cpuinfo 2>/dev/null | grep "model name" | head -1 | cut -d: -f2') ?: ''),
             'load' => trim(shell_exec('cat /proc/loadavg 2>/dev/null | awk "{print \$1\" / \"\$2\" / \"\$3}"') ?: ''),
@@ -80,6 +80,39 @@ class DashboardController extends Controller
         $streamEngines[] = ['name' => 'SHOUTcast v2', 'installed' => $sc2Installed, 'running' => $sc2Installed && !empty(trim(shell_exec('pgrep -x sc_serv 2>/dev/null') ?: ''))];
         $streamEngines[] = ['name' => 'SHOUTcast v1', 'installed' => $sc1Installed, 'running' => $sc1Installed && !empty(trim(shell_exec('pgrep -x sc_serv 2>/dev/null') ?: ''))];
         $streamEngines[] = ['name' => 'Icecast', 'installed' => $iceInstalled, 'running' => trim(shell_exec('systemctl is-active icecast2 2>/dev/null') ?: '') === 'active'];
+
+        // Nameservers and primary domain
+        $ns1 = '';
+        $ns2 = '';
+        $primaryDomain = 'planet-hosts.com';
+        try {
+            $ns1r = $this->db->table('automation_settings')->where('setting_key', 'ns1')->first();
+            $ns2r = $this->db->table('automation_settings')->where('setting_key', 'ns2')->first();
+            if ($ns1r) $ns1 = $ns1r->setting_value;
+            if ($ns2r) $ns2 = $ns2r->setting_value;
+            $hostR = $this->db->table('automation_settings')->where('setting_key', 'hostname')->first();
+            if ($hostR) $primaryDomain = $hostR->setting_value;
+        } catch (\Exception $e) {}
+        if (empty($ns1)) $ns1 = 'ns1.planet-hosts.com';
+        if (empty($ns2)) $ns2 = 'ns2.planet-hosts.com';
+
+        // Server IPs
+        $serverIps = [];
+        try {
+            $ips = $this->db->table('server_ips')->where('is_active', 1)->get() ?: [];
+            foreach ($ips as $ipRow) {
+                $ip = $ipRow->ip_address ?? $ipRow->ip ?? '';
+                if (empty($ip)) continue;
+                $serverIps[] = [
+                    'ip' => $ip,
+                    'ns1' => $ipRow->ns1 ?? $ns1,
+                    'ns2' => $ipRow->ns2 ?? $ns2,
+                ];
+            }
+        } catch (\Exception $e) {}
+        if (empty($serverIps)) {
+            $serverIps[] = ['ip' => $server['public_ip'] ?? '45.61.59.55', 'ns1' => $ns1, 'ns2' => $ns2];
+        }
 
         // Station counts
         $stationCounts = [];
@@ -128,6 +161,10 @@ class DashboardController extends Controller
             'services' => $services,
             'streamEngines' => $streamEngines,
             'stationCounts' => $stationCounts,
+            'ns1' => $ns1,
+            'ns2' => $ns2,
+            'primaryDomain' => $primaryDomain,
+            'serverIps' => $serverIps,
             'addons' => $addons,
             'theme_settings' => $theme_settings,
             'all_widgets' => $all_widgets,
