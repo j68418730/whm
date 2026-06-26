@@ -43,6 +43,7 @@ class DashboardController extends Controller
         // Server stats
         $server = [
             'hostname' => trim(shell_exec('hostname 2>/dev/null') ?: 'localhost'),
+            'public_ip' => trim(shell_exec('curl -s --max-time 3 https://ifconfig.me/ip 2>/dev/null') ?: '45.61.59.55'),
             'uptime' => trim(shell_exec('uptime -p 2>/dev/null') ?: ''),
             'cpu' => trim(shell_exec('cat /proc/cpuinfo 2>/dev/null | grep "model name" | head -1 | cut -d: -f2') ?: ''),
             'load' => trim(shell_exec('cat /proc/loadavg 2>/dev/null | awk "{print \$1\" / \"\$2\" / \"\$3}"') ?: ''),
