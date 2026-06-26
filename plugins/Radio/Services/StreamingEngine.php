@@ -27,6 +27,10 @@ class StreamingEngine
     {
         $this->registerDriver('icecast', new IcecastDriver($this->db));
         $this->registerDriver('shoutcast', new ShoutcastDriver($this->db));
+        // SHOUTcast v1 — only registers if binary is placed at /opt/planethosts/shoutcast1/sc_serv
+        if (file_exists('/opt/planethosts/shoutcast1/sc_serv')) {
+            $this->registerDriver('shoutcast1', new ShoutcastV1Driver($this->db));
+        }
     }
 
     public function registerDriver($name, $driver)
