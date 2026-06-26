@@ -53,7 +53,11 @@ class BillingController extends Controller
         $this->guard();
         $user = $this->auth->user();
         $products = $this->db->table('billing_products')->get() ?: [];
-        return $this->view('admin.billing.products', ['user' => $user, 'title' => 'Billing Products', 'theme_settings' => $this->theme(), 'products' => $products]);
+        $packages = $this->db->table('hosting_packages')->where('is_active', 1)->get() ?: [];
+        return $this->view('admin.billing.products', [
+            'user' => $user, 'title' => 'Billing Products', 'theme_settings' => $this->theme(),
+            'products' => $products, 'packages' => $packages
+        ]);
     }
 
     public function productStore()
