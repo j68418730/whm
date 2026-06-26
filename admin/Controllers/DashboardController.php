@@ -71,6 +71,21 @@ class DashboardController extends Controller
         }
         $services[] = ['name' => 'Cron', 'active' => $cronActive, 'status' => $cronActive ? 'active' : ''];
 
+        // Streaming engines status
+        $streamEngines = [];
+        $sc2Installed = file_exists('/opt/planethosts/shoutcast/sc_serv');
+        $sc1Installed = file_exists('/opt/planethosts/shoutcast1/sc_serv');
+        $iceInstalled = trim(shell_exec('which icecast 2>/dev/null') ?: '') !== '' || trim(shell_exec('systemctl is-active icecast2 2>/dev/null') ?: '') === 'active';
+        $streamEngines[] = ['name' => 'SHOUTcast v2', 'installed' => $sc2Installed, 'running' => $sc2Installed && !empty(trim(shell_exec('pgrep -x sc_serv 2>/dev/null') ?: ''))];
+        $streamEngines[] = ['name' => 'SHOUTcast v1', 'installed' => $sc1Installed, 'running' => $sc1Installed && !empty(trim(shell_exec('pgrep -x sc_serv 2>/dev/null') ?: ''))];
+        $streamEngines[] = ['name' => 'Icecast', 'installed' => $iceInstalled, 'running' => trim(shell_exec('systemctl is-active icecast2 2>/dev/null') ?: '') === 'active'];
+
+        // Station counts
+        $stationCounts = [];
+        try { $allStations = $this->db->table('streaming_stations')->get() ?: []; } catch (\Exception $e) { $allStations = []; }
+        $stationCounts['total'] = count($allStations);
+        $stationCounts['running'] = count(array_filter($allStations, fn($s) => $s->status === 'running'));
+
         $pluginManager = \Core\Application::getInstance()->getPluginManager();
         $addons = $pluginManager ? $pluginManager->loadedMetadata() : [];
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
@@ -110,6 +125,8 @@ class DashboardController extends Controller
             'recentOrders' => $recentOrders,
             'server' => $server,
             'services' => $services,
+            'streamEngines' => $streamEngines,
+            'stationCounts' => $stationCounts,
             'addons' => $addons,
             'theme_settings' => $theme_settings,
             'all_widgets' => $all_widgets,
