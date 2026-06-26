@@ -8,7 +8,7 @@ $pkgType = $package->type ?? ($hosting->plan_type ?? '');
 
 $features = [];
 if ($package && $package->feature_list_id) {
-    try { $fl = (new \Core\Application::getInstance())->get('db')->table('feature_lists')->where('id', $package->feature_list_id)->first(); if($fl) $features = (array)$fl; } catch(\Exception $e) {}
+    try { $fl = \Core\Application::getInstance()->get('db')->table('feature_lists')->where('id', $package->feature_list_id)->first(); if($fl) $features = (array)$fl; } catch(\Exception $e) {}
 }
 $hasWeb = stripos($pkgType, 'web') !== false || stripos($pkgType, 'hosting') !== false || !$pkgType;
 $hasRadio = stripos($pkgType, 'icecast') !== false || stripos($pkgType, 'radio') !== false;
@@ -104,7 +104,6 @@ body{font-family:Inter,sans-serif;background:#070b14;color:#e0e0e0;display:flex;
 <div class="search-box"><input type="text" id="menuSearch" placeholder="Search..." oninput="var q=this.value.toLowerCase();document.querySelectorAll('.sidebar-nav .nav-link').forEach(function(a){a.style.display=q?a.textContent.toLowerCase().indexOf(q)>-1?'':'none':''})"></div>
 <div id="sidebarMenu"><?php echo render_user_sidebar($currentUrl, $features); ?></div>
 </div>
-<?php endif; ?>
 
 <?php if ($hasGame): ?>
 <div class="sidebar-section">
@@ -118,6 +117,7 @@ body{font-family:Inter,sans-serif;background:#070b14;color:#e0e0e0;display:flex;
 <div class="label">Website Builder</div>
 <a href="/user/websitebuilder"><span class="icon">🏗️</span><span>My Websites</span></a>
 </div>
+<?php endif; ?>
 </nav>
 </div>
 
