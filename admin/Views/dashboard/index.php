@@ -53,6 +53,25 @@ $services = $services ?? [];
 </div>
 </div>
 
+<!-- ─── Streaming Engine Status ─── -->
+<div class="card" style="margin-bottom:16px">
+<h3 style="color:var(--accent);font-size:14px;margin-bottom:12px"><i class="fas fa-broadcast-tower"></i> Streaming Engines <span style="font-size:11px;color:#64748b;font-weight:400"><?php echo $stationCounts['running'] ?? 0; ?>/<?php echo $stationCounts['total'] ?? 0; ?> stations</span></h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+<?php foreach ($streamEngines as $eng): ?>
+<div style="background:rgba(8,16,28,.5);border:1px solid rgba(0,191,255,.08);border-radius:8px;padding:12px;text-align:center">
+<div style="font-size:20px;margin-bottom:4px"><?php echo $eng['name'] === 'SHOUTcast v2' ? '📻' : ($eng['name'] === 'SHOUTcast v1' ? '📻' : '🎵'); ?></div>
+<div style="font-weight:600;font-size:13px"><?php echo htmlspecialchars($eng['name']); ?></div>
+<div style="font-size:11px;margin-top:4px">
+<span style="color:<?php echo $eng['installed'] ? '#4ade80' : '#f87171'; ?>">● <?php echo $eng['installed'] ? 'Installed' : 'Missing'; ?></span>
+<?php if ($eng['installed']): ?>
+ &middot; <span style="color:<?php echo $eng['running'] ? '#4ade80' : '#f87171'; ?>"><?php echo $eng['running'] ? 'Running' : 'Stopped'; ?></span>
+<?php endif; ?>
+</div>
+</div>
+<?php endforeach; ?>
+</div>
+</div>
+
 <!-- ─── Hostname / SSL / DNS Status ─── -->
 <div class="card" style="margin-bottom:16px">
 <h3 style="color:var(--accent);font-size:14px;margin-bottom:12px"><i class="fas fa-globe"></i> Hostname &amp; SSL Status</h3>
