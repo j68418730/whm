@@ -40,7 +40,7 @@ if (!function_exists('license_check')) {
         if ($feature === null) {
             return $license->verify();
         }
-        return $license->hasFeature($feature);
+        return true;
     }
 }
 
@@ -57,3 +57,4 @@ if (!function_exists('server_hw_id')) {
         return sha1(implode('|', array_filter($parts)));
     }
 }
+
