@@ -247,6 +247,7 @@ class HostnameManager
 
         $currentHostname = $this->getCurrentHostname();
         $health['system_hostname'] = $currentHostname;
+        $health['public_ip'] = $this->getPublicIp();
         $health['hostname_match'] = ($currentHostname === $hostname);
 
         $resolved = gethostbyname($hostname);
