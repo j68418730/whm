@@ -7,7 +7,7 @@ UPDATE hosting_packages SET is_active = 0 WHERE 1;
 -- testinglive (all features)
 -- ========================
 INSERT IGNORE INTO hosting_packages (type, name, description, monthly_price, disk_space, bandwidth, email_accounts, ftp_accounts, databases, subdomains, parked_domains, addon_domains, listener_limit, bitrate, storage_limit, dj_accounts, live_chat_enabled, shoutcast_enabled, icecast_enabled, chatroom_enabled, chatroom_voice_enabled, game_enabled, dj_panel_enabled, is_active, sort_order)
-VALUES ('testinglive', 'testinglive', 'Full access development package with all features enabled.', 0.00, 50, 500, 50, 25, 25, 50, 25, 15, 500, 320, 50, 100, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+VALUES ('web_hosting', 'testinglive', 'Full access development package with all features enabled.', 0.00, 50, 500, 50, 25, 25, 50, 25, 15, 500, 320, 50, 100, 1, 1, 1, 1, 1, 1, 1, 1, 1);
 
 -- ========================
 -- SHOUTcast (5 packages)
