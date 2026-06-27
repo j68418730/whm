@@ -5,11 +5,13 @@ namespace Admin\Services;
 class BackupManager
 {
     protected $backupDir;
+    protected $db;
 
     public function __construct()
     {
         $app = \Core\Application::getInstance();
         $config = $app->get('config');
+        $this->db = $app->get('db');
         $this->backupDir = $config->get('app.backup_path') ?: '/var/backups/planet_hosts';
         if (!is_dir($this->backupDir)) @mkdir($this->backupDir, 0755, true);
     }
@@ -31,7 +33,27 @@ class BackupManager
         return $backups;
     }
 
-    public function createBackup($username = null)
+    public function getProfiles()
+    {
+        try {
+            $rows = $this->db->table('backup_profiles')->get() ?: [];
+            $profiles = [];
+            foreach ($rows as $r) $profiles[] = (array)$r;
+            return $profiles;
+        } catch (\Exception $e) { return []; }
+    }
+
+    public function getHistory(int $limit = 50)
+    {
+        try {
+            $rows = $this->db->table('backup_history')->orderBy('id', 'DESC')->limit($limit)->get() ?: [];
+            $history = [];
+            foreach ($rows as $r) $history[] = (array)$r;
+            return $history;
+        } catch (\Exception $e) { return []; }
+    }
+
+    public function createBackup($username = null, $profileId = null)
     {
         $suffix = $username ?: 'full';
         $date = date('Ymd_His');
@@ -42,12 +64,13 @@ class BackupManager
             $home = "/home/{$username}";
             if (is_dir($home)) {
                 exec("tar -czf '{$path}' -C /home '{$username}' 2>/dev/null", $out, $code);
-                return $code === 0 ? $filename : null;
+                $success = $code === 0;
+                $this->logHistory($username, $filename, $success);
+                return $success ? $filename : null;
             }
             return null;
         }
 
-        // Full backup: radio panel + DB dump
         $dbHost = getenv('DB_HOST') ?: 'localhost';
         $dbName = getenv('DB_DATABASE') ?: 'radiohosting';
         $dbUser = getenv('DB_USERNAME') ?: 'radiouser';
@@ -58,7 +81,9 @@ class BackupManager
         exec("mysqldump -h {$dbHost} -u {$dbUser} -p'{$dbPass}' {$dbName} > '{$base}/storage/db_dump.sql' 2>/dev/null");
         exec("tar -czf '{$path}' -C / 'home' 'var/www/radiohosting' 2>/dev/null", $out, $code);
         @unlink("{$base}/storage/db_dump.sql");
-        return $code === 0 ? $filename : null;
+        $success = $code === 0;
+        $this->logHistory($username ?? 'full', $filename, $success);
+        return $success ? $filename : null;
     }
 
     public function restoreBackup($filename)
@@ -66,7 +91,9 @@ class BackupManager
         $path = $this->backupDir . '/' . basename($filename);
         if (!is_file($path)) return false;
         exec("tar -xzf '{$path}' -C / 2>/dev/null", $out, $code);
-        return $code === 0;
+        $success = $code === 0;
+        $this->logHistory('restore', $filename, $success);
+        return $success;
     }
 
     public function deleteBackup($filename)
@@ -78,7 +105,19 @@ class BackupManager
     public function getStorageStats()
     {
         $total = 0;
-        foreach (glob($this->backupDir . '/*.tar.gz') as $f) $total += filesize($f);
-        return ['count' => count(glob($this->backupDir . '/*.tar.gz')), 'total_size' => $total];
+        $files = glob($this->backupDir . '/*.tar.gz');
+        foreach ($files as $f) $total += filesize($f);
+        return ['count' => count($files), 'total_size' => $total];
+    }
+
+    protected function logHistory($action, $filename, $success)
+    {
+        try {
+            $this->db->table('backup_history')->insert([
+                'action' => $action, 'filename' => $filename,
+                'status' => $success ? 'completed' : 'failed',
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        } catch (\Exception $e) {}
     }
 }
