@@ -13,7 +13,32 @@ Web Hosting Manager panel with integrated billing, streaming engine management, 
 ## Deployment
 - Server: `root@45.61.59.55` (Apache/2.4.67, MariaDB, PHP 8.4)
 - Path: `/var/www/radiohosting/`
-- Local: `D:\New_WOw\whm\` (primary), `K:\site_del\Masterinstall\` (deployment mirror)
+- Local: `K:\site_del\Masterinstall\` (project root — primary workspace)
+
+### SSH Workflow (Windows)
+Use `SSH_ASKPASS` to authenticate without interactive prompt (password in `K:\site_del\donotupload\sshpass.bat`):
+```powershell
+$env:SSH_ASKPASS = "K:\site_del\donotupload\sshpass.bat"
+$env:SSH_ASKPASS_REQUIRE = "force"
+
+# Run remote commands
+ssh -o StrictHostKeyChecking=no -o BatchMode=no root@45.61.59.55 'command'
+
+# Copy files
+scp -o StrictHostKeyChecking=no -o BatchMode=no local/file.php root@45.61.59.55:/var/www/radiohosting/dst/file.php
+```
+
+### Deploy Workflow
+1. Backup server files to local `K:\site_del\backups\` (never on server)
+2. Deploy changed files via SCP
+3. Run `php -l` syntax check on server
+4. Run database migration (`database/fix_*.sql`)
+5. Verify, then commit to git
+
+### Backup Workflow
+- **Local backup dir**: `K:\site_del\backups\` (NOT on server — server space is limited)
+- **Server files**: tar.gz via SSH, download to local with SCP, then `rm -rf` on server
+- **Workspace backup**: copy entire `K:\site_del\Masterinstall\` to `K:\site_del\backups\` before major changes
 
 ## Critical Development Rules
 
