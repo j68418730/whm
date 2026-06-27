@@ -82,10 +82,15 @@
 <label><input type="checkbox" name="custom_features[]" value="marketplace"> Plugin Marketplace</label>
 <label><input type="checkbox" name="custom_features[]" value="api"> API Access</label>
 <label><input type="checkbox" name="custom_features[]" value="webhooks"> Webhooks</label>
-<label><input type="checkbox" name="custom_features[]" value="chat"> Chatbox</label>
+<label><input type="checkbox" name="custom_features[]" value="chat" onchange="toggleCustomChat(this)"> Chatbox</label>
+<label id="chat-voice-label" style="display:none;padding-left:16px;font-size:11px"><input type="checkbox" name="custom_features[]" value="chat_voice"> Voice</label>
+<label id="chat-video-label" style="display:none;padding-left:16px;font-size:11px"><input type="checkbox" name="custom_features[]" value="chat_video"> Voice + Video</label>
 <label><input type="checkbox" name="custom_features[]" value="dj_panel"> DJ Panel</label>
 <label><input type="checkbox" name="custom_features[]" value="streaming"> Streaming</label>
-<label><input type="checkbox" name="custom_features[]" value="game"> Game Servers</label>
+<label><input type="checkbox" name="custom_features[]" value="game" onchange="toggleCustomGame(this)"> Game Servers</label>
+<div id="game-slots" style="display:none;grid-column:1/-1;padding-left:16px;margin-top:2px">
+<label style="font-size:11px">Slots: <input name="custom_game_slots" type="number" value="0" style="width:60px;padding:2px 4px;font-size:11px"></label>
+</div>
 <label><input type="checkbox" name="custom_features[]" value="vps"> VPS</label>
 </div>
 </div>
@@ -156,6 +161,13 @@ try {
 </form>
 
 <script>
+function toggleCustomChat(cb) {
+    document.getElementById('chat-voice-label').style.display = cb.checked ? 'inline' : 'none';
+    document.getElementById('chat-video-label').style.display = cb.checked ? 'inline' : 'none';
+}
+function toggleCustomGame(cb) {
+    document.getElementById('game-slots').style.display = cb.checked ? 'block' : 'none';
+}
 function updatePkgDetails(sel) {
     var opt = sel.options[sel.selectedIndex];
     var div = document.getElementById('pkgDetails');
