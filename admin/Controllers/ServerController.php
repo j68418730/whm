@@ -53,7 +53,7 @@ class ServerController extends Controller
 
         $cdCmd = $cwd ? "cd " . escapeshellarg($cwd) . " 2>/dev/null && " : "";
         // Append pwd to track CWD in same shell session
-        $fullCmd = $cdCmd . $cmd . ' 2>&1; echo "[CWD:"; pwd; echo ":CWD]"';
+        $fullCmd = 'sudo bash -c ' . escapeshellarg($cdCmd . $cmd . ' 2>&1; echo "[CWD:"; pwd; echo ":CWD]"');
         $output = [];
         $returnVar = 0;
         exec($fullCmd, $output, $returnVar);

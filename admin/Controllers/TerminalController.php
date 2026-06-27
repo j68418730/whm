@@ -24,7 +24,7 @@ class TerminalController extends Controller
         $user = $this->auth->user();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         $hostname = trim(shell_exec('hostname') ?: 'localhost');
-        $cwd = trim(shell_exec('pwd 2>/dev/null') ?: '/root');
+        $cwd = '/root';
         return $this->view('admin.terminal.index', [
             'user' => $user,
             'theme_settings' => $theme_settings,
@@ -43,7 +43,7 @@ class TerminalController extends Controller
         $output = [];
         $returnVar = 0;
         $cdCmd = $cwd ? "cd " . escapeshellarg($cwd) . " 2>/dev/null && " : "";
-        $fullCmd = $cdCmd . $cmd . ' 2>&1; echo "[CWD:"; pwd; echo ":CWD]"';
+        $fullCmd = 'sudo bash -c ' . escapeshellarg($cdCmd . $cmd . ' 2>&1; echo "[CWD:"; pwd; echo ":CWD]"');
         exec($fullCmd, $output, $returnVar);
         $newCwd = $cwd ?: '/root';
         $cmdOutput = [];
