@@ -130,6 +130,34 @@ Packages are stored in `hosting_packages` table. Types: shoutcast, icecast, shou
 
 Packages are the source of truth for pricing, features, limits, and billing.
 
+## Feature Lists
+`feature_lists` table defines feature sets applied to accounts. Columns organized in groups:
+
+**Resource Limits**: email_accounts, ftp_accounts, databases, database_users, subdomains, parked_domains, addon_domains
+
+**General Features**: cron_jobs, ssh_access, ssl_allowed, git_access, nodejs, python, ruby, terminal, backups
+
+**Website Builder**: builder, ai_website_builder, ai_assistant, installer
+
+**Developer Tools**: plugin_marketplace, api_access, webhooks
+
+**Chat**: chatbox, chatbox_voice, chatbox_video, dj_panel
+
+**Streaming** (collapsible section, master toggle: streaming_enabled):
+- Engines: shoutcast_v1, shoutcast_v2, icecast_enabled
+- Limits: max_stations, max_djs, max_listeners, max_bitrate, playlist_storage
+- Toggles: autodj, ssl_streaming, statistics, recording, song_requests
+
+**Game Servers** (collapsible section, master toggle: game_servers_enabled):
+- Toggles: steamcmd, workshop, mod_support, scheduled_restarts, automatic_updates, game_backups
+- Limits: max_game_servers
+
+**VPS** (collapsible section, master toggle: vps_enabled):
+- Limits: vcpu, ram, vps_storage, vps_bandwidth, snapshots, vps_backups, ipv4, ipv6
+- Toggles: iso_mount
+
+Manual Custom on account create form shows all feature checkboxes. Legacy `radio`, `shoutcast`, `game` columns preserved (hidden) for backward compatibility.
+
 ---
 
 ## Key Decisions
