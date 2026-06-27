@@ -5,7 +5,7 @@ Web Hosting Manager with streaming engine management, billing, and modular widge
 ## Quick Start
 - **Server**: `ssh root@45.61.59.55`
 - **Web root**: `/var/www/radiohosting/`
-- **Local**: `D:\New_WOw\whm\` (primary), `K:\site_del\Masterinstall\` (deployment mirror)
+- **Local**: `K:\site_del\Masterinstall\` (project root — primary workspace)
 
 ## Architecture
 ```
@@ -33,8 +33,21 @@ scp path/to/file.php root@45.61.59.55:/var/www/radiohosting/path/to/file.php
 ssh root@45.61.59.55 "php -l /var/www/radiohosting/path/to/file.php"
 ```
 
+## SSH to Server (Windows — password auth)
+Uses SSH_ASKPASS to avoid interactive password prompt (password stored in `K:\site_del\donotupload\sshpass.bat` — NOT tracked by git):
+```powershell
+$env:SSH_ASKPASS = "K:\site_del\donotupload\sshpass.bat"
+$env:SSH_ASKPASS_REQUIRE = "force"
+
+# Run command
+ssh -o StrictHostKeyChecking=no -o BatchMode=no root@45.61.59.55 'command'
+
+# Copy file
+scp -o StrictHostKeyChecking=no -o BatchMode=no file.php root@45.61.59.55:/var/www/radiohosting/
+```
+
 ## Rules
 1. **No duplication** — search existing code before creating anything new
 2. **Update docs** — update Project.md and README.md before each session ends
 3. **Preserve widgets** — extend existing, never recreate
-4. **Backup first** — backup files to `backups/` before making changes
+4. **Backup first** — backup files to `K:\site_del\backups\` before making changes (never store backups on server)
