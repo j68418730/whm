@@ -14,3 +14,22 @@ public/theme
 # Keygen script - developer only, never shipped
 keygen.php
 scripts/keys
+
+# Dev scripts & test files - never deploy
+test_*.php
+check_*.php
+fix_*.php
+setup_*.php
+create_*.php
+add_*.php
+complete_*.php
+debug_*.php
+download_*.php
+force_*.php
+list_*.php
+restore_*.php
+verify_*.php
+*.md
+*.sh
+cron_autodj.php
+update_dj_table.php
