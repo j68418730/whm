@@ -119,21 +119,4 @@ class ResellerController extends Controller
         $this->response->redirect('/admin/reseller');
     }
 
-    public function show($id)
-    {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $user = $this->auth->user();
-        $reseller = $this->db->table('resellers')->where('id', $id)->first();
-        $accounts = $this->db->table('hosting_users')->where('reseller_id', $id)->get() ?: [];
-        $pkgNames = [];
-        foreach ($accounts as $a) {
-            $pkg = $this->db->table('hosting_packages')->where('id', $a->package_id)->first();
-            $pkgNames[$a->id] = $pkg ? $pkg->name : '-';
-        }
-        return $this->view('admin.reseller.show', [
-            'user' => $user, 'title' => 'Reseller Details', 'reseller' => $reseller, 'accounts' => $accounts,
-            'pkgNames' => $pkgNames,
-            'theme_settings' => json_decode($user->theme_settings ?? '{}', true),
-        ]);
-    }
 }
