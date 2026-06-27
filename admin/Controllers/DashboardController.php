@@ -124,24 +124,18 @@ class DashboardController extends Controller
         $addons = $pluginManager ? $pluginManager->loadedMetadata() : [];
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
 
-        // Widget system
+        // Widget system — load from /widgets/ folder
         $all_widgets = [];
         $widgets_main = '';
         $widgets_side = '';
         try {
-            $wm = new \Core\WidgetManager($this->db);
-            $all_widgets = $wm->getAllWidgets();
-            $widgets_main = $wm->renderZone('main');
-            $widgets_side = $wm->renderZone('side');
-        } catch (\Exception $e) {
-            $all_widgets = [];
-            $widgets_main = '';
-            $widgets_side = '';
-        }
+            $wm = \Core\WidgetManager::getInstance();
+            $wm->setDb($this->db)->setUserId($user->id);
+            $basePath = \Core\Application::getInstance()->getBasePath();
+            $wm->loadFromFolder($basePath . '/widgets');
+            $wm->loadCustomWidgets($user->id);
 
-        return $this->view('admin.dashboard.index', [
-            'user' => $user,
-            'stats' => [
+            $statsData = [
                 'total_accounts' => count($accounts),
                 'active_accounts' => $activeAccounts,
                 'suspended_accounts' => $suspendedAccounts,
@@ -153,20 +147,35 @@ class DashboardController extends Controller
                 'pending_invoices' => 0,
                 'pending_invoice_total' => 0,
                 'paypal_balance' => null,
-            ],
-            'recentAccounts' => $recentAccounts,
-            'recentTickets' => $recentTickets,
-            'recentOrders' => $recentOrders,
-            'server' => $server,
-            'services' => $services,
-            'streamEngines' => $streamEngines,
-            'stationCounts' => $stationCounts,
-            'ns1' => $ns1,
-            'ns2' => $ns2,
-            'primaryDomain' => $primaryDomain,
-            'serverIps' => $serverIps,
-            'addons' => $addons,
-            'theme_settings' => $theme_settings,
+            ];
+
+            // Share dashboard data with widgets via WidgetManager
+            $wm->setData('stats', $statsData);
+            $wm->setData('server', $server);
+            $wm->setData('services', $services);
+            $wm->setData('streamEngines', $streamEngines);
+            $wm->setData('stationCounts', $stationCounts);
+            $wm->setData('ns1', $ns1);
+            $wm->setData('ns2', $ns2);
+            $wm->setData('primaryDomain', $primaryDomain);
+            $wm->setData('serverIps', $serverIps);
+            $wm->setData('recentAccounts', $recentAccounts);
+            $wm->setData('recentTickets', $recentTickets);
+            $wm->setData('recentOrders', $recentOrders);
+
+            $wm->ensureDefaults($user->id);
+            $all_widgets = $wm->getAllWidgets();
+            $widgets_main = $wm->renderZone('main');
+            $widgets_side = $wm->renderZone('side');
+        } catch (\Exception $e) {
+            $all_widgets = [];
+            $widgets_main = '';
+            $widgets_side = '';
+        }
+
+        return $this->view('admin.dashboard.index', [
+            'user' => $user,
+            'theme_settings' => json_decode($user->theme_settings ?? '{}', true),
             'all_widgets' => $all_widgets,
             'widgets_main' => $widgets_main,
             'widgets_side' => $widgets_side,

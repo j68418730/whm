@@ -44,8 +44,11 @@ class ResellerController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
+        $accounts = $this->db->table('hosting_users')->where('reseller_id', 0)->orWhereNull('reseller_id')->get() ?: [];
+        $featureLists = $this->db->table('feature_lists')->where('is_active', 1)->orderBy('name', 'ASC')->get() ?: [];
         return $this->view('admin.reseller.create', [
             'user' => $user, 'title' => 'Create Reseller',
+            'accounts' => $accounts, 'featureLists' => $featureLists,
             'theme_settings' => json_decode($user->theme_settings ?? '{}', true),
         ]);
     }
@@ -55,12 +58,21 @@ class ResellerController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $adminId = $this->auth->user()->id;
         $email = $this->request->post('email', '');
-        $this->db->table('resellers')->insertGetId([
+        $featureListId = (int)$this->request->post('feature_list_id', 0) ?: null;
+        $assignedAccounts = $this->request->post('assigned_accounts', []);
+        $rId = $this->db->table('resellers')->insertGetId([
             'admin_id' => $adminId, 'company_name' => $this->request->post('company_name', ''),
             'contact_name' => $this->request->post('contact_name', ''), 'email' => $email,
             'phone' => $this->request->post('phone', ''), 'website' => $this->request->post('website', ''),
+            'feature_list_id' => $featureListId,
             'is_active' => $this->request->post('is_active', 1),
         ]);
+        // Assign selected accounts to this reseller
+        if (!empty($assignedAccounts)) {
+            foreach ($assignedAccounts as $acctId) {
+                $this->db->table('hosting_users')->where('id', (int)$acctId)->update(['reseller_id' => $rId]);
+            }
+        }
         $_SESSION['success_message'] = "Reseller {$email} created.";
         $this->response->redirect('/admin/reseller');
     }
@@ -70,8 +82,12 @@ class ResellerController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
         $reseller = $this->db->table('resellers')->where('id', $id)->first();
+        $accounts = $this->db->table('hosting_users')->where('reseller_id', $id)->get() ?: [];
+        $unassigned = $this->db->table('hosting_users')->where('reseller_id', 0)->orWhereNull('reseller_id')->get() ?: [];
+        $featureLists = $this->db->table('feature_lists')->where('is_active', 1)->orderBy('name', 'ASC')->get() ?: [];
         return $this->view('admin.reseller.edit', [
             'user' => $user, 'title' => 'Edit Reseller', 'reseller' => $reseller,
+            'accounts' => $accounts, 'unassigned' => $unassigned, 'featureLists' => $featureLists,
             'theme_settings' => json_decode($user->theme_settings ?? '{}', true),
         ]);
     }
@@ -79,14 +95,24 @@ class ResellerController extends Controller
     public function update($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $featureListId = (int)$this->request->post('feature_list_id', 0) ?: null;
         $this->db->table('resellers')->where('id', $id)->update([
             'company_name' => $this->request->post('company_name', ''),
             'contact_name' => $this->request->post('contact_name', ''),
             'email' => $this->request->post('email', ''),
             'phone' => $this->request->post('phone', ''),
             'website' => $this->request->post('website', ''),
+            'feature_list_id' => $featureListId,
             'is_active' => $this->request->post('is_active', 1),
         ]);
+        // Re-assign accounts: first unassign all, then assign selected
+        $this->db->table('hosting_users')->where('reseller_id', $id)->update(['reseller_id' => 0]);
+        $assignedAccounts = $this->request->post('assigned_accounts', []);
+        if (!empty($assignedAccounts)) {
+            foreach ($assignedAccounts as $acctId) {
+                $this->db->table('hosting_users')->where('id', (int)$acctId)->update(['reseller_id' => $id]);
+            }
+        }
         $_SESSION['success_message'] = 'Reseller updated.';
         $this->response->redirect('/admin/reseller');
     }

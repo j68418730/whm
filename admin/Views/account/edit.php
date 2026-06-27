@@ -1,7 +1,7 @@
 <?php if (isset($_SESSION['error_message'])): ?>
-<div class="alert alert-error"><?php echo htmlspecialchars($_SESSION['error_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['error_message']); ?></div>
+<div class="alert alert-danger"><?php echo htmlspecialchars($_SESSION['error_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['error_message']); ?></div>
 <?php endif; ?>
-<form method="POST" action="/admin/account/store">
+<form method="POST" action="/admin/account/update/<?php echo $account->id; ?>">
 <div class="stats-grid" style="grid-template-columns:1fr 1fr">
 <div class="form-group"><label>Username</label><input name="username" value="<?php echo htmlspecialchars($account->username, ENT_QUOTES, 'UTF-8'); ?>" required></div>
 <div class="form-group"><label>Domain</label><input name="domain" value="<?php echo htmlspecialchars($account->domain ?? '', ENT_QUOTES, 'UTF-8'); ?>"></div>

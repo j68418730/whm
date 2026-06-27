@@ -285,6 +285,25 @@ class AccountController extends Controller
         ]);
     }
 
+    public function update($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $account = $this->db->table('hosting_users')->where('id', $id)->first();
+        if (!$account) { $this->response->redirect('/admin/account'); exit; }
+        $this->db->table('hosting_users')->where('id', $id)->update([
+            'username' => strtolower(preg_replace('/[^a-z0-9]/', '', $_POST['username'] ?? $account->username)),
+            'domain' => strtolower(trim($_POST['domain'] ?? $account->domain)),
+            'email' => trim($_POST['email'] ?? $account->email),
+            'package_id' => (int)($_POST['package_id'] ?? $account->package_id) ?: null,
+            'php_version' => $_POST['php_version'] ?? $account->php_version,
+            'first_name' => $_POST['first_name'] ?? $account->first_name,
+            'last_name' => $_POST['last_name'] ?? $account->last_name,
+        ]);
+        $_SESSION['success_message'] = 'Account updated.';
+        $this->response->redirect('/admin/account/show/' . $id);
+        exit;
+    }
+
     public function terminate($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }

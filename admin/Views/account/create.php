@@ -45,13 +45,23 @@
 <div class="form-group"><label>Package</label>
 <select name="package_id" style="width:100%" onchange="updatePkgDetails(this)">
 <option value="">-- No Package --</option>
+<option value="custom">-- Manual Custom --</option>
 <?php if (isset($packages)): foreach ($packages as $p): ?>
 <option value="<?php echo $p->id; ?>" data-disk="<?php echo $p->disk_space ?? 0; ?>" data-bw="<?php echo $p->bandwidth ?? 0; ?>" data-email="<?php echo $p->email_accounts ?? 0; ?>" data-db="<?php echo $p->databases ?? 0; ?>" data-price="<?php echo $p->monthly_price ?? 0; ?>">
 <?php echo htmlspecialchars($p->name, ENT_QUOTES, 'UTF-8'); ?> ($<?php echo number_format($p->monthly_price ?? 0, 2); ?>/mo)
 </option>
 <?php endforeach; endif; ?>
 </select>
-<div id="pkgDetails" style="display:none;margin-top:8px;background:rgba(0,140,255,.06);border-radius:8px;padding:10px;font-size:12px;color:#94a3b8"></div>
+<div id="pkgDetails" style="display:none;margin-top:8px"></div>
+</div>
+<div id="customPkgFields" style="display:none">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;padding:12px;background:rgba(0,140,255,.04);border-radius:8px;border:1px solid rgba(0,140,255,.1)">
+<div class="form-group" style="margin:0"><label style="font-size:11px">Disk Space (GB)</label><input name="custom_disk" type="number" value="10" style="width:100%;padding:5px 8px;font-size:12px"></div>
+<div class="form-group" style="margin:0"><label style="font-size:11px">Bandwidth (GB)</label><input name="custom_bw" type="number" value="100" style="width:100%;padding:5px 8px;font-size:12px"></div>
+<div class="form-group" style="margin:0"><label style="font-size:11px">Max Email Accounts</label><input name="custom_email" type="number" value="-1" style="width:100%;padding:5px 8px;font-size:12px"></div>
+<div class="form-group" style="margin:0"><label style="font-size:11px">Max Databases</label><input name="custom_dbs" type="number" value="-1" style="width:100%;padding:5px 8px;font-size:12px"></div>
+<div class="form-group" style="margin:0"><label style="font-size:11px">Price ($/mo)</label><input name="custom_price" type="number" step="0.01" value="0" style="width:100%;padding:5px 8px;font-size:12px"></div>
+</div>
 </div>
 <div class="form-group"><label>PHP Version</label>
 <select name="php_version" style="width:100%">
@@ -122,15 +132,23 @@ try {
 function updatePkgDetails(sel) {
     var opt = sel.options[sel.selectedIndex];
     var div = document.getElementById('pkgDetails');
+    var customDiv = document.getElementById('customPkgFields');
+    if (opt.value === 'custom') {
+        div.style.display = 'none';
+        customDiv.style.display = 'block';
+        return;
+    }
+    customDiv.style.display = 'none';
     if (!opt.value || !opt.dataset) { div.style.display = 'none'; return; }
     var disk = opt.dataset.disk || 0;
     var bw = opt.dataset.bw || 0;
     var email = opt.dataset.email || 0;
     var db = opt.dataset.db || 0;
     var price = opt.dataset.price || 0;
-    div.innerHTML = '<strong>' + opt.text + '</strong><br>' +
+    div.innerHTML = '<div style="background:rgba(0,140,255,.06);border-radius:8px;padding:10px;font-size:12px;color:#94a3b8">' +
+        '<strong>' + opt.text + '</strong><br>' +
         '💾 ' + disk + ' GB Disk · 📶 ' + bw + ' GB Bandwidth · 📧 ' + email + ' Emails · 🗄 ' + db + ' Databases<br>' +
-        '<span style="color:#0A84FF;font-weight:700">$' + parseFloat(price).toFixed(2) + '/month</span>';
+        '<span style="color:#0A84FF;font-weight:700">$' + parseFloat(price).toFixed(2) + '/month</span></div>';
     div.style.display = 'block';
 }
 </script>
