@@ -63,6 +63,14 @@ th{color:#0A84FF;font-weight:600}td{color:#cbd5e1}
 </form>
 </div>
 
+<div class="card" style="background:linear-gradient(135deg,rgba(0,132,255,.08),rgba(0,191,255,.04));border-color:rgba(0,132,255,.25);text-align:center;padding:20px">
+<div style="font-size:32px;margin-bottom:8px">🔄</div>
+<h2 style="font-size:18px;margin:0 0 4px;color:#0A84FF">Restore Center</h2>
+<p style="color:#94a3b8;font-size:13px;margin:0 0 12px">Restore accounts, packages, websites, databases, email, streaming stations, game servers, and more from backups or migrate from other panels.</p>
+<a href="/admin/restore-center" class="btn primary">Open Restore Center</a>
+<a href="/admin/restore-center/history" class="btn secondary" style="margin-left:8px">View History</a>
+</div>
+
 <div class="card">
 <table>
 <tr><th>Filename</th><th>Date</th><th>Size</th><th>Status</th><th>Actions</th></tr>
