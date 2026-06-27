@@ -16,12 +16,20 @@ class AdminsController extends Controller
         $this->request = $app->get('request');
     }
 
+    protected function requireSuper()
+    {
+        $current = $this->db->table('admins')->where('id', $this->auth->user()->id)->first();
+        if (!$current || $current->role !== 'super') {
+            $this->response->redirect('/admin/dashboard');
+            exit;
+        }
+    }
+
     public function index()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $this->requireSuper();
         $user = $this->auth->user();
-        $current = $this->db->table('admins')->where('id', $user->id)->first();
-        if ($current->role !== 'super') { $this->response->redirect('/admin/dashboard'); exit; }
         $admins = $this->db->table('admins')->get() ?: [];
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         return $this->view('admin.admins.index', [
@@ -32,8 +40,7 @@ class AdminsController extends Controller
     public function create()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $current = $this->db->table('admins')->where('id', $this->auth->user()->id)->first();
-        if ($current->role !== 'super') { $this->response->redirect('/admin/dashboard'); exit; }
+        $this->requireSuper();
 
         $username = trim($this->request->post('username', ''));
         $password = $this->request->post('password', '');
@@ -51,12 +58,15 @@ class AdminsController extends Controller
             $this->response->redirect('/admin/admins'); exit;
         }
 
+        $permissions = $this->request->post('permissions', []);
         $this->db->table('admins')->insertGetId([
             'username' => $username,
             'email' => $email ?: $username . '@planet-hosts.com',
             'password_hash' => password_hash($password, PASSWORD_DEFAULT),
             'name' => $username,
             'role' => $role,
+            'permissions' => json_encode($permissions),
+            'is_active' => 1,
             'must_change_password' => 1,
         ]);
 
@@ -65,15 +75,44 @@ class AdminsController extends Controller
         exit;
     }
 
+    public function toggleStatus($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $this->requireSuper();
+        $target = $this->db->table('admins')->where('id', (int)$id)->first();
+        if (!$target) { $this->response->redirect('/admin/admins'); exit; }
+        if (in_array($target->username, ['root', 'kane'])) {
+            $_SESSION['error_message'] = 'Cannot suspend root or kane.';
+            $this->response->redirect('/admin/admins'); exit;
+        }
+        $new = $target->is_active ? 0 : 1;
+        $this->db->table('admins')->where('id', (int)$id)->update(['is_active' => $new]);
+        $_SESSION['success_message'] = $new ? 'Admin unsuspended.' : 'Admin suspended.';
+        $this->response->redirect('/admin/admins');
+        exit;
+    }
+
+    public function updatePermissions($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $this->requireSuper();
+        $target = $this->db->table('admins')->where('id', (int)$id)->first();
+        if (!$target) { $this->response->redirect('/admin/admins'); exit; }
+        $permissions = $this->request->post('permissions', []);
+        $this->db->table('admins')->where('id', (int)$id)->update(['permissions' => json_encode($permissions)]);
+        $_SESSION['success_message'] = 'Permissions updated.';
+        $this->response->redirect('/admin/admins');
+        exit;
+    }
+
     public function delete($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $current = $this->db->table('admins')->where('id', $this->auth->user()->id)->first();
-        if ($current->role !== 'super') { $this->response->redirect('/admin/dashboard'); exit; }
+        $this->requireSuper();
         $target = $this->db->table('admins')->where('id', (int)$id)->first();
         if (!$target) { $this->response->redirect('/admin/admins'); exit; }
-        if ($target->role === 'super' && $target->id !== $current->id) {
-            $_SESSION['error_message'] = 'Cannot delete another super admin.';
+        if (in_array($target->username, ['root', 'kane'])) {
+            $_SESSION['error_message'] = 'Cannot delete root or kane.';
             $this->response->redirect('/admin/admins'); exit;
         }
         $this->db->table('admins')->where('id', (int)$id)->delete();
@@ -82,21 +121,17 @@ class AdminsController extends Controller
         exit;
     }
 
-    // Permission check helper
     public static function hasAccess($permission)
     {
         if (!isset($_SESSION['user'])) return false;
         $u = $_SESSION['user'];
-        // Super admins have full access
         if (in_array($u->name ?? '', ['root', 'kane', 'spectre'])) return true;
-        // Check stored permissions
         $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
-        $stmt = $pdo->prepare("SELECT role, permissions FROM admins WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT role, permissions, is_active FROM admins WHERE id = ?");
         $stmt->execute([$u->id]);
         $admin = $stmt->fetch(\PDO::FETCH_OBJ);
-        if (!$admin) return false;
+        if (!$admin || !$admin->is_active) return false;
         if ($admin->role === 'super') return true;
-        if ($admin->role === 'support' && in_array($permission, ['tickets', 'livechat', 'kb'])) return true;
         if ($admin->permissions) {
             $perms = json_decode($admin->permissions, true) ?: [];
             return in_array($permission, $perms);

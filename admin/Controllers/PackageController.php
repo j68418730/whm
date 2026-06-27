@@ -248,37 +248,24 @@ class PackageController extends Controller
         $this->response->redirect('/admin/packages');
     }
 
-    public function clone($id)
-    {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { return $this->response->json(['error' => 'Unauthorized'], 401); }
-        $original = $this->db->table('hosting_packages')->where('id', $id)->first();
-        if (!$original) { return $this->response->json(['error' => 'Not found'], 404); }
-        $data = (array)$original;
-        unset($data['id'], $data['created_at'], $data['updated_at']);
-        $data['name'] = $original->name . ' (Clone)';
-        $data['is_active'] = 0;
-        $data['sort_order'] = ((int)$original->sort_order) + 1;
-        $this->db->table('hosting_packages')->insertGetId($data);
-        return $this->response->json(['success' => true]);
-    }
-
     public function toggle($id)
     {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { return $this->response->json(['error' => 'Unauthorized'], 401); }
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->json(['error' => 'Unauthorized'])->send(); exit; }
         $pkg = $this->db->table('hosting_packages')->where('id', $id)->first();
-        if (!$pkg) { return $this->response->json(['error' => 'Not found'], 404); }
+        if (!$pkg) { $this->response->json(['error' => 'Not found'])->send(); exit; }
         $new = ($pkg->is_active ?? 0) ? 0 : 1;
         $this->db->table('hosting_packages')->where('id', $id)->update(['is_active' => $new]);
-        return $this->response->json(['success' => true, 'is_active' => $new]);
+        $this->response->json(['success' => true, 'is_active' => $new])->send();
+        exit;
     }
 
     public function bulk()
     {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { return $this->response->json(['error' => 'Unauthorized'], 401); }
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->json(['error' => 'Unauthorized'])->send(); exit; }
         $input = json_decode(file_get_contents('php://input'), true);
         $action = $input['action'] ?? '';
         $ids = $input['ids'] ?? [];
-        if (empty($ids)) { return $this->response->json(['error' => 'No IDs'], 400); }
+        if (empty($ids)) { $this->response->json(['error' => 'No IDs'])->send(); exit; }
         foreach ($ids as $id) {
             $id = (int)$id;
             if ($action === 'delete') $this->db->table('hosting_packages')->where('id', $id)->update(['is_active' => 0]);
@@ -294,7 +281,23 @@ class PackageController extends Controller
                 }
             }
         }
-        return $this->response->json(['success' => true]);
+        $this->response->json(['success' => true])->send();
+        exit;
+    }
+
+    public function clone($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->json(['error' => 'Unauthorized'])->send(); exit; }
+        $original = $this->db->table('hosting_packages')->where('id', $id)->first();
+        if (!$original) { $this->response->json(['error' => 'Not found'])->send(); exit; }
+        $data = (array)$original;
+        unset($data['id'], $data['created_at'], $data['updated_at']);
+        $data['name'] = $original->name . ' (Clone)';
+        $data['is_active'] = 0;
+        $data['sort_order'] = ((int)$original->sort_order) + 1;
+        $this->db->table('hosting_packages')->insertGetId($data);
+        $this->response->json(['success' => true])->send();
+        exit;
     }
 
     public function apiList()
@@ -306,6 +309,8 @@ class PackageController extends Controller
             $items = array_filter($packages, function($p) use ($cat) { return $p->type === $cat->name; });
             if ($items) $grouped[$cat->name] = array_values($items);
         }
-        return json_encode($grouped);
+        header('Content-Type: application/json');
+        echo json_encode($grouped);
+        exit;
     }
 }

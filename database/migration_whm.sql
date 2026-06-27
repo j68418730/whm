@@ -19,6 +19,15 @@ CREATE TABLE IF NOT EXISTS `feature_lists` (
     `ruby` TINYINT(1) DEFAULT 0,
     `terminal` TINYINT(1) DEFAULT 0,
     `backups` TINYINT(1) DEFAULT 1,
+    `installer` TINYINT(1) DEFAULT 1,
+    `chatbox` TINYINT(1) DEFAULT 0,
+    `chatbox_voice` TINYINT(1) DEFAULT 0,
+    `chatbox_video` TINYINT(1) DEFAULT 0,
+    `game` TINYINT(1) DEFAULT 0,
+    `radio` TINYINT(1) DEFAULT 0,
+    `shoutcast` TINYINT(1) DEFAULT 0,
+    `dj_panel` TINYINT(1) DEFAULT 0,
+    `builder` TINYINT(1) DEFAULT 0,
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
