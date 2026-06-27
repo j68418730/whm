@@ -27,7 +27,7 @@ $acctCount = $acctCounts[$r->id] ?? 0;
 </div>
 <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px"><?php echo $acctCount; ?> account<?php echo $acctCount !== 1 ? 's' : ''; ?></div>
 <div style="display:flex;gap:6px">
-<a href="/admin/reseller/<?php echo $r->id; ?>" class="btn btn-sm primary" style="font-size:11px;padding:5px 12px"><i class="bi bi-eye"></i> View</a>
+<a href="/admin/account?reseller_id=<?php echo $r->id; ?>" class="btn btn-sm primary" style="font-size:11px;padding:5px 12px"><i class="bi bi-eye"></i> View Accounts</a>
 <a href="/admin/reseller/edit/<?php echo $r->id; ?>" class="btn btn-sm secondary" style="font-size:11px;padding:5px 12px"><i class="bi bi-pencil"></i> Edit</a>
 </div>
 </div>

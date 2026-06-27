@@ -28,7 +28,16 @@ class AccountController extends Controller
         }
         license_check('accounts');
         $user = $this->auth->user();
-        $accounts = $this->db->table('hosting_users')->get();
+
+        $resellerId = (int)$this->request->get('reseller_id', 0);
+        if ($resellerId) {
+            $stmt = $this->db->pdo()->prepare("SELECT * FROM hosting_users WHERE reseller_id = ?");
+            $stmt->execute([$resellerId]);
+            $accounts = $stmt->fetchAll(\PDO::FETCH_OBJ);
+        } else {
+            $accounts = $this->db->table('hosting_users')->get();
+        }
+
         $packages = $this->db->table('hosting_packages')->get();
         $accountsStats = [
             'total_accounts' => count($accounts),
@@ -42,6 +51,7 @@ class AccountController extends Controller
             'accounts' => $accounts,
             'packages' => $packages,
             'accountsStats' => $accountsStats,
+            'reseller_id' => $resellerId,
             'theme_settings' => $theme_settings
         ]);
     }

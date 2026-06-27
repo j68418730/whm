@@ -278,7 +278,6 @@ $router->get('/admin/exit-sudo', 'Admin\Controllers\AccountController@exitSudo')
 // -- Reseller sub-routes --
 $router->get('/admin/reseller/create', 'Admin\Controllers\ResellerController@create');
 $router->post('/admin/reseller/store', 'Admin\Controllers\ResellerController@store');
-$router->get('/admin/reseller/{id}', 'Admin\Controllers\ResellerController@show');
 $router->get('/admin/reseller/edit/{id}', 'Admin\Controllers\ResellerController@edit');
 $router->post('/admin/reseller/update/{id}', 'Admin\Controllers\ResellerController@update');
 
