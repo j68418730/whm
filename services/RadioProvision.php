@@ -23,7 +23,10 @@ function radioProvision($userId, $packageId) {
     $q = $pdo->query("SELECT port FROM radio_streams");
     foreach ($q as $r) $usedPorts[(int)$r['port']] = true;
 
-    $port = (int)$pkg->listener_limit > 0 ? 6000 : 6000;
+    $pkgFeats = is_string($pkg->features ?? null) ? json_decode($pkg->features, true) ?? [] : ($pkg->features ?? []);
+    $sp = $pkgFeats['streaming_package'] ?? [];
+    $maxList = (int)($sp['max_listeners'] ?? 0);
+    $port = $maxList > 0 ? 6000 : 6000;
     for ($i = 0; $i < 1000; $i++) {
         if (!isset($usedPorts[$port + $i])) { $port = $port + $i; break; }
     }
