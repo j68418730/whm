@@ -43,7 +43,7 @@ class DashboardController extends Controller
         // Server stats
         $server = [
             'hostname' => trim(shell_exec('hostname 2>/dev/null') ?: 'localhost'),
-            'public_ip' => trim(shell_exec('timeout 3 curl -s https://ifconfig.me/ip 2>/dev/null') ?: '45.61.59.55'),
+            'public_ip' => trim(shell_exec('timeout 3 curl -s https://ifconfig.me/ip 2>/dev/null') ?: '127.0.0.1'),
             'uptime' => trim(shell_exec('uptime -p 2>/dev/null') ?: ''),
             'cpu' => trim(shell_exec('cat /proc/cpuinfo 2>/dev/null | grep "model name" | head -1 | cut -d: -f2') ?: ''),
             'load' => trim(shell_exec('cat /proc/loadavg 2>/dev/null | awk "{print \$1\" / \"\$2\" / \"\$3}"') ?: ''),
@@ -111,7 +111,7 @@ class DashboardController extends Controller
             }
         } catch (\Exception $e) {}
         if (empty($serverIps)) {
-            $serverIps[] = ['ip' => $server['public_ip'] ?? '45.61.59.55', 'ns1' => $ns1, 'ns2' => $ns2];
+            $serverIps[] = ['ip' => $server['public_ip'] ?? '127.0.0.1', 'ns1' => $ns1, 'ns2' => $ns2];
         }
 
         // Station counts

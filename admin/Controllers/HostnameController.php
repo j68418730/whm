@@ -172,9 +172,9 @@ class HostnameController extends Controller
         if ($this->auth->check() && $this->auth->isAdmin()) {
             $hostname = $this->getSetting('hostname', $this->hostnameManager->getCurrentHostname());
             $health = $this->hostnameManager->healthCheck($hostname);
-            return $this->response->json($health);
+            $this->response->json($health);
         } else {
-            return $this->response->json(['error' => 'Unauthorized'], 401);
+            $this->response->json(['error' => 'Unauthorized'], 401);
         }
     }
 
