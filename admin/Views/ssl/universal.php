@@ -129,16 +129,35 @@ echo $icons[$type] ?? '🔌';
 <table>
 <thead><tr><th>Domain</th><th>Issuer</th><th>Expires</th><th>Days Left</th><th>Auto Renew</th><th>Last Renewal</th><th>Actions</th></tr></thead>
 <tbody>
-<?php foreach ($certs as $c): ?>
-<?php $daysLeft = $c->expires_at ? max(0, floor((strtotime($c->expires_at) - time()) / 86400)) : 0; ?>
+<?php foreach ($certs as $c):
+$daysLeft = $c->expires_at ? max(0, floor((strtotime($c->expires_at) - time()) / 86400)) : 0;
+$certPath = "/etc/letsencrypt/live/{$c->domain}/fullchain.pem";
+$certExists = file_exists($certPath);
+if (!$certExists) { $daysLeft = 0; }
+?>
 <tr>
 <td><?php echo htmlspecialchars($c->domain); ?></td>
 <td><?php echo htmlspecialchars($c->issuer ?: 'Let\'s Encrypt'); ?></td>
-<td><?php echo htmlspecialchars($c->expires_at ?? 'N/A'); ?></td>
-<td style="color:<?php echo $daysLeft < 7 ? '#f87171' : ($daysLeft < 30 ? '#fbbf24' : '#4ade80'); ?>"><?php echo $daysLeft; ?> days</td>
-<td><?php echo $c->auto_renew ? '<span style="color:#4ade80">Yes</span>' : '<span style="color:#64748b">No</span>'; ?></td>
+<td><?php echo $certExists ? htmlspecialchars($c->expires_at ?? 'N/A') : '<span style="color:#f87171">Missing</span>'; ?></td>
+<td style="color:<?php echo !$certExists ? '#f87171' : ($daysLeft < 7 ? '#f87171' : ($daysLeft < 30 ? '#fbbf24' : '#4ade80')); ?>"><?php echo !$certExists ? 'No file' : $daysLeft . ' days'; ?></td>
+<td>
+<form method="POST" action="/admin/ssl/universal/toggle-auto-renew" style="display:flex;align-items:center;gap:4px">
+<input type="hidden" name="domain" value="<?php echo htmlspecialchars($c->domain); ?>">
+<input type="hidden" name="enabled" value="<?php echo $c->auto_renew ? 0 : 1; ?>">
+<label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer">
+<input type="checkbox" onchange="this.form.submit()" <?php echo $c->auto_renew ? 'checked' : ''; ?> style="opacity:0;width:0;height:0">
+<span style="position:absolute;inset:0;background:<?php echo $c->auto_renew ? '#4ade80' : '#374151'; ?>;border-radius:10px;transition:.3s"></span>
+<span style="position:absolute;top:2px;left:<?php echo $c->auto_renew ? '18px' : '2px'; ?>;width:16px;height:16px;background:#fff;border-radius:50%;transition:.3s"></span>
+</label>
+</form>
+</td>
 <td><?php echo $c->last_renewal ? htmlspecialchars(date('Y-m-d', strtotime($c->last_renewal))) : '-'; ?></td>
-<td><a href="/admin/ssl/universal/renew?domain=<?php echo urlencode($c->domain); ?>" class="btn btn-sm secondary" onclick="return confirm('Renew certificate for <?php echo htmlspecialchars($c->domain); ?>?')">Renew</a></td>
+<td style="display:flex;gap:4px">
+<a href="/admin/ssl/universal/renew?domain=<?php echo urlencode($c->domain); ?>" class="btn btn-sm secondary" onclick="return confirm('Renew cert for <?php echo htmlspecialchars($c->domain); ?>?')">Renew</a>
+<?php if (!$certExists): ?>
+<a href="/admin/ssl/universal/renew?domain=<?php echo urlencode($c->domain); ?>" class="btn btn-sm primary" style="background:rgba(248,113,113,.2);color:#f87171">Issue</a>
+<?php endif; ?>
+</td>
 </tr>
 <?php endforeach; ?>
 </tbody>
