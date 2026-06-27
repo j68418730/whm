@@ -486,6 +486,7 @@ $router->get('/admin/ssl/universal/renew', 'Admin\Controllers\UniversalSslContro
 $router->get('/admin/ssl/universal/repair', 'Admin\Controllers\UniversalSslController@repair');
 $router->get('/admin/ssl/universal/health', 'Admin\Controllers\UniversalSslController@health');
 $router->get('/admin/ssl/universal/scan', 'Admin\Controllers\UniversalSslController@scanPorts');
+$router->post('/admin/ssl/universal/toggle-auto-renew', 'Admin\Controllers\UniversalSslController@toggleAutoRenew');
 $router->get('/admin/ssl/universal/delete', 'Admin\Controllers\UniversalSslController@deleteService');
 $router->get('/admin/ssl/cron', 'Admin\Controllers\UniversalSslController@cron');
 

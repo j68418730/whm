@@ -33,9 +33,64 @@ class UniversalSslController extends Controller
     {
         $this->guard();
 
+        // Ensure auto_renew column exists
+        try { $this->db->pdo()->exec("ALTER TABLE ssl_certs ADD COLUMN auto_renew TINYINT(1) DEFAULT 1 AFTER status"); } catch (\Exception $e) {}
+
+        // Auto-populate cert expiry from filesystem for any missing
         $certs = $this->sslManager->getAllCertificates();
+        foreach ($certs as $c) {
+            $needsUpdate = false;
+            if (!$c->expires_at || $c->expires_at === 'N/A') {
+                $certPath = "/etc/letsencrypt/live/{$c->domain}/fullchain.pem";
+                if (file_exists($certPath)) {
+                    $expires = shell_exec("openssl x509 -enddate -noout -in {$certPath} 2>/dev/null | cut -d= -f2");
+                    if ($expires) {
+                        $c->expires_at = date('Y-m-d H:i:s', strtotime(trim($expires)));
+                        $needsUpdate = true;
+                    }
+                }
+            }
+            if ($c->auto_renew === null) { $c->auto_renew = 1; $needsUpdate = true; }
+            if ($needsUpdate) {
+                try {
+                    $this->db->table('ssl_certs')->where('id', $c->id)->update([
+                        'expires_at' => $c->expires_at,
+                        'auto_renew' => $c->auto_renew,
+                    ]);
+                } catch (\Exception $e) {}
+            }
+        }
+
+        // Auto-detect services from running services + existing certs
         $services = $this->db->table('ssl_services')->get() ?: [];
         $profiles = $this->sslManager->detectServices();
+        $detectedDomains = [];
+        foreach ($certs as $c) $detectedDomains[] = $c->domain;
+
+        // Auto-create services for detected services that have certs but no service record
+        foreach ($profiles as $type => $p) {
+            if (!($p['running'] ?? false)) continue;
+            foreach ($detectedDomains as $domain) {
+                $exists = false;
+                foreach ($services as $s) { if ($s->service_type === $type && $s->domain === $domain) { $exists = true; break; } }
+                if (!$exists) {
+                    $port = $p['default_ports'][1] ?? 443;
+                    try {
+                        $this->db->table('ssl_services')->insertGetId([
+                            'service_name' => $p['name'],
+                            'service_type' => $type,
+                            'domain' => $domain,
+                            'port' => $port,
+                            'ssl_enabled' => 1,
+                            'status' => 'active',
+                            'last_verified' => date('Y-m-d H:i:s'),
+                        ]);
+                    } catch (\Exception $e) {}
+                }
+            }
+        }
+        $services = $this->db->table('ssl_services')->get() ?: [];
+
         $logs = $this->sslManager->getLogs(20);
         $health = $this->sslManager->scanAllServices();
         $ports = $this->sslManager->scanListeningPorts();
@@ -113,13 +168,38 @@ class UniversalSslController extends Controller
             if ($result['success']) {
                 $_SESSION['success_message'] = "Certificate renewed for {$domain}";
             } else {
-                $_SESSION['error_message'] = 'Renewal failed: ' . substr($result['output'] ?? '', 0, 300);
+                $msg = substr($result['output'] ?? '', 0, 300);
+                if (strpos($msg, 'certbot') === false && strpos($msg, 'command not found') !== false) {
+                    $msg = 'certbot not installed. Run: apt install certbot python3-certbot-apache';
+                }
+                $_SESSION['error_message'] = 'Renewal failed: ' . $msg;
             }
         } else {
             $renewed = $this->sslManager->renewAll();
-            $_SESSION['success_message'] = 'Renewal complete: ' . implode(', ', $renewed) ?: 'No certs needed renewal.';
+            if (!empty($renewed)) {
+                $_SESSION['success_message'] = 'Renewed: ' . implode(', ', $renewed);
+            } else {
+                $_SESSION['success_message'] = 'No certificates needed renewal.';
+            }
         }
 
+        $this->response->redirect('/admin/ssl/universal');
+    }
+
+    public function toggleAutoRenew()
+    {
+        $this->guard();
+        $domain = $this->request->post('domain', '');
+        $enabled = (int)$this->request->post('enabled', 0);
+        if ($domain) {
+            try {
+                $this->db->table('ssl_certs')->where('domain', $domain)->update(['auto_renew' => $enabled]);
+                $this->sslManager->log('auto_renew_toggle', $domain, $enabled ? 'enabled' : 'disabled', '');
+                $_SESSION['success_message'] = "Auto-renew " . ($enabled ? 'enabled' : 'disabled') . " for {$domain}";
+            } catch (\Exception $e) {
+                $_SESSION['error_message'] = 'Failed to update auto-renew setting.';
+            }
+        }
         $this->response->redirect('/admin/ssl/universal');
     }
 
