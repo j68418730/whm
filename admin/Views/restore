@@ -1,0 +1,121 @@
+<?php if (isset($_SESSION['success_message'])): ?>
+<div class="alert alert-success"><?php echo htmlspecialchars($_SESSION['success_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['success_message']); ?></div>
+<?php endif; ?>
+<?php if (isset($_SESSION['error_message'])): ?>
+<div class="alert alert-danger"><?php echo htmlspecialchars($_SESSION['error_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['error_message']); ?></div>
+<?php endif; ?>
+
+<div style="margin-bottom:12px"><a href="/admin/restore" class="btn secondary">← Back to Customers</a></div>
+
+<div class="card" style="margin-bottom:16px;padding:16px">
+<div style="display:flex;justify-content:space-between;align-items:start">
+<div>
+<h4 style="color:var(--accent);margin-bottom:4px"><?php echo htmlspecialchars($hostingUser->username); ?></h4>
+<div style="font-size:12px;color:#64748b">
+Domain: <?php echo htmlspecialchars($hostingUser->domain ?: '-'); ?> · 
+Email: <?php echo htmlspecialchars($hostingUser->email ?: '-'); ?> · 
+Package: <?php echo htmlspecialchars($hostingUser->package ?: '-'); ?>
+</div>
+<div style="font-size:12px;color:#64748b;margin-top:2px">
+Disk: <?php echo round($hostingUser->disk_used ?? 0, 1); ?>M / <?php echo round($hostingUser->disk_limit ?? 0, 1); ?>M
+</div>
+</div>
+<span class="status-badge status-<?php echo $hostingUser->status === 'active' ? 'active' : 'terminated'; ?>"><?php echo $hostingUser->status; ?></span>
+</div>
+</div>
+
+<?php if (!empty($userBackups)): ?>
+<h4 style="color:var(--accent);margin-bottom:10px">Available Backups (<?php echo count($userBackups); ?>)</h4>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px;margin-bottom:20px">
+<?php foreach ($userBackups as $b): ?>
+<div class="card" style="margin-bottom:0;padding:14px">
+<div style="font-weight:600;font-size:13px"><?php echo htmlspecialchars($b['name']); ?></div>
+<div style="font-size:11px;color:#64748b;margin-top:4px">
+Size: <?php echo $b['size']; ?> · Date: <?php echo $b['date']; ?>
+</div>
+<form method="POST" action="/admin/restore/execute" style="margin-top:8px">
+<input type="hidden" name="user_id" value="<?php echo $hostingUser->id; ?>">
+<input type="hidden" name="backup_file" value="<?php echo htmlspecialchars($b['name']); ?>">
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+<label style="font-size:11px;display:flex;align-items:center;gap:2px;background:rgba(255,255,255,.05);padding:3px 6px;border-radius:4px;cursor:pointer">
+<input type="checkbox" name="restore_items[]" value="files" checked> Files</label>
+<label style="font-size:11px;display:flex;align-items:center;gap:2px;background:rgba(255,255,255,.05);padding:3px 6px;border-radius:4px;cursor:pointer">
+<input type="checkbox" name="restore_items[]" value="database"> Database</label>
+<label style="font-size:11px;display:flex;align-items:center;gap:2px;background:rgba(255,255,255,.05);padding:3px 6px;border-radius:4px;cursor:pointer">
+<input type="checkbox" name="restore_items[]" value="email"> Email</label>
+<label style="font-size:11px;display:flex;align-items:center;gap:2px;background:rgba(255,255,255,.05);padding:3px 6px;border-radius:4px;cursor:pointer">
+<input type="checkbox" name="restore_items[]" value="stream"> Stream</label>
+</div>
+<div style="display:flex;gap:4px">
+<button type="submit" class="btn btn-sm primary" onclick="return confirm('Restore selected items from this backup?')">Restore Selected</button>
+<a class="btn btn-sm secondary" onclick="previewBackup('<?php echo htmlspecialchars($b['name']); ?>', this)">Preview</a>
+</div>
+</form>
+<div class="preview-content" style="display:none;margin-top:8px;font-size:10px">
+<pre style="background:rgba(0,0,0,.3);padding:6px;border-radius:4px;max-height:120px;overflow-y:auto;color:#8b949e">Loading...</pre>
+</div>
+</div>
+<?php endforeach; ?>
+</div>
+<?php else: ?>
+<div class="card" style="margin-bottom:20px;text-align:center;padding:20px;color:#64748b">No backups found for this user. Create a backup first.</div>
+<?php endif; ?>
+
+<?php if (!empty($allBackups)): ?>
+<h4 style="color:var(--accent);margin-bottom:10px">All System Backups</h4>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;margin-bottom:20px">
+<?php foreach ($allBackups as $b): $isUser = strpos($b['name'], $hostingUser->username) !== false; ?>
+<div class="card" style="margin-bottom:0;padding:12px;opacity:<?php echo $isUser ? '1' : '0.5'; ?>">
+<div style="font-weight:600;font-size:12px"><?php echo htmlspecialchars($b['name']); ?></div>
+<div style="font-size:10px;color:#64748b"><?php echo $b['size']; ?> · <?php echo $b['date']; ?></div>
+</div>
+<?php endforeach; ?>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($history)): ?>
+<h4 style="color:var(--accent);margin-bottom:10px">Restore History for <?php echo htmlspecialchars($hostingUser->username); ?></h4>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px">
+<?php foreach ($history as $r): ?>
+<div class="card" style="margin-bottom:0;padding:12px">
+<div style="display:flex;justify-content:space-between">
+<span style="font-weight:600;font-size:13px">#<?php echo $r->id; ?></span>
+<span class="status-badge status-<?php echo $r->status === 'completed' ? 'active' : ($r->status === 'failed' ? 'terminated' : ''); ?>"><?php echo $r->status; ?></span>
+</div>
+<div style="font-size:11px;color:#64748b;margin-top:4px">Backup: <?php echo htmlspecialchars($r->backup_filename); ?></div>
+<div style="font-size:10px;color:#64748b"><?php echo $r->created_at; ?> <?php echo $r->completed_at ? '→ ' . $r->completed_at : ''; ?></div>
+<?php if ($r->log): ?>
+<details style="margin-top:4px"><summary style="font-size:10px;color:var(--accent);cursor:pointer">Log</summary>
+<pre style="font-size:9px;background:rgba(0,0,0,.3);padding:6px;border-radius:4px;max-height:100px;overflow-y:auto;margin-top:2px;color:#8b949e"><?php echo htmlspecialchars($r->log); ?></pre>
+</details>
+<?php endif; ?>
+<?php if ($r->error_message): ?><div style="font-size:10px;color:#f87171;margin-top:4px"><?php echo htmlspecialchars($r->error_message); ?></div><?php endif; ?>
+</div>
+<?php endforeach; ?>
+</div>
+<?php endif; ?>
+
+<script>
+function previewBackup(filename, btn) {
+    var el = btn.parentElement.parentElement.querySelector('.preview-content');
+    if (el.style.display !== 'none') { el.style.display = 'none'; return; }
+    el.style.display = 'block';
+    var pre = el.querySelector('pre');
+    fetch('/admin/restore/preview?file=' + encodeURIComponent(filename))
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.error) { pre.textContent = 'Error: ' + d.error; return; }
+        var html = 'Total files: ' + (d.total_files || 0) + '\n';
+        html += 'Total size: ' + (d.total_size || 'N/A') + '\n\n';
+        if (d.dirs && d.dirs.length) {
+            html += 'Directories:\n' + d.dirs.slice(0, 30).join('\n');
+            if (d.dirs.length > 30) html += '\n... and ' + (d.dirs.length - 30) + ' more';
+        }
+        if (d.files && d.files.length) {
+            html += '\n\nFiles (first 50):\n' + d.files.slice(0, 50).join('\n');
+            if (d.files.length > 50) html += '\n... and ' + (d.files.length - 50) + ' more';
+        }
+        pre.textContent = html;
+    }).catch(function(e) { pre.textContent = 'Error fetching preview: ' + e.message; });
+}
+</script>

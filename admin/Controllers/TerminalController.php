@@ -23,8 +23,14 @@ class TerminalController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        $hostname = trim(shell_exec('hostname') ?: 'localhost');
+        $cwd = trim(shell_exec('pwd 2>/dev/null') ?: '/root');
         return $this->view('admin.terminal.index', [
-            'user' => $user, 'theme_settings' => $theme_settings, 'title' => 'Terminal'
+            'user' => $user,
+            'theme_settings' => $theme_settings,
+            'title' => 'Terminal',
+            'hostname' => $hostname,
+            'cwd' => $cwd,
         ]);
     }
 
@@ -32,11 +38,23 @@ class TerminalController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->json(['error' => 'Unauthorized']); $this->response->send(); exit; }
         $cmd = $this->request->post('command', '');
-        if (empty($cmd)) { $this->response->json(['output' => '']); $this->response->send(); exit; }
-        $output = '';
+        $cwd = $this->request->post('cwd', '');
+        if (empty($cmd)) { $this->response->json(['output' => '', 'cwd' => $cwd ?: '/root']); $this->response->send(); exit; }
+        $output = [];
         $returnVar = 0;
-        exec(escapeshellcmd($cmd) . ' 2>&1', $output, $returnVar);
-        $this->response->json(['output' => implode("\n", $output), 'code' => $returnVar]);
+        $cdCmd = $cwd ? "cd " . escapeshellarg($cwd) . " 2>/dev/null && " : "";
+        $fullCmd = $cdCmd . $cmd . ' 2>&1; echo "[CWD:"; pwd; echo ":CWD]"';
+        exec($fullCmd, $output, $returnVar);
+        $newCwd = $cwd ?: '/root';
+        $cmdOutput = [];
+        foreach ($output as $line) {
+            if (preg_match('/^\[CWD:(.+):CWD\]$/', $line, $m)) {
+                $newCwd = trim($m[1]);
+            } else {
+                $cmdOutput[] = $line;
+            }
+        }
+        $this->response->json(['output' => implode("\n", $cmdOutput), 'code' => $returnVar, 'cwd' => $newCwd]);
         $this->response->send();
         exit;
     }
