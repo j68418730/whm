@@ -30,6 +30,8 @@ list_*.php
 restore_*.php
 verify_*.php
 *.md
+!README.md
+!PROJECT.md
 *.sh
 cron_autodj.php
 update_dj_table.php
