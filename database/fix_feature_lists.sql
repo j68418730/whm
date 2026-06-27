@@ -1,4 +1,5 @@
--- Migration: Add missing feature_lists columns
+-- Migration: Add all feature_lists columns
+-- General features
 ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `installer` TINYINT(1) DEFAULT 1 AFTER `backups`;
 ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `chatbox` TINYINT(1) DEFAULT 0 AFTER `installer`;
 ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `chatbox_voice` TINYINT(1) DEFAULT 0 AFTER `chatbox`;
@@ -8,6 +9,53 @@ ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `radio` TINYINT(1) DEFAULT 0 
 ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `shoutcast` TINYINT(1) DEFAULT 0 AFTER `radio`;
 ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `dj_panel` TINYINT(1) DEFAULT 0 AFTER `shoutcast`;
 ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `builder` TINYINT(1) DEFAULT 0 AFTER `dj_panel`;
+
+-- Website Builder group
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `ai_website_builder` TINYINT(1) DEFAULT 0 AFTER `builder`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `ai_assistant` TINYINT(1) DEFAULT 0 AFTER `ai_website_builder`;
+
+-- Developer features
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `plugin_marketplace` TINYINT(1) DEFAULT 0 AFTER `ai_assistant`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `api_access` TINYINT(1) DEFAULT 0 AFTER `plugin_marketplace`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `webhooks` TINYINT(1) DEFAULT 0 AFTER `api_access`;
+
+-- Streaming group
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `streaming_enabled` TINYINT(1) DEFAULT 0 AFTER `webhooks`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `shoutcast_v1` TINYINT(1) DEFAULT 0 AFTER `streaming_enabled`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `shoutcast_v2` TINYINT(1) DEFAULT 0 AFTER `shoutcast_v1`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `icecast_enabled` TINYINT(1) DEFAULT 0 AFTER `shoutcast_v2`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `max_stations` INT DEFAULT 0 AFTER `icecast_enabled`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `max_djs` INT DEFAULT 0 AFTER `max_stations`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `max_listeners` INT DEFAULT 0 AFTER `max_djs`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `max_bitrate` INT DEFAULT 0 AFTER `max_listeners`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `autodj` TINYINT(1) DEFAULT 0 AFTER `max_bitrate`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `ssl_streaming` TINYINT(1) DEFAULT 0 AFTER `autodj`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `playlist_storage` INT DEFAULT 0 AFTER `ssl_streaming`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `statistics` TINYINT(1) DEFAULT 0 AFTER `playlist_storage`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `recording` TINYINT(1) DEFAULT 0 AFTER `statistics`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `song_requests` TINYINT(1) DEFAULT 0 AFTER `recording`;
+
+-- Game Server group
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `game_servers_enabled` TINYINT(1) DEFAULT 0 AFTER `song_requests`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `max_game_servers` INT DEFAULT 0 AFTER `game_servers_enabled`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `steamcmd` TINYINT(1) DEFAULT 0 AFTER `max_game_servers`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `workshop` TINYINT(1) DEFAULT 0 AFTER `steamcmd`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `mod_support` TINYINT(1) DEFAULT 0 AFTER `workshop`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `scheduled_restarts` TINYINT(1) DEFAULT 0 AFTER `mod_support`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `automatic_updates` TINYINT(1) DEFAULT 0 AFTER `scheduled_restarts`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `game_backups` TINYINT(1) DEFAULT 0 AFTER `automatic_updates`;
+
+-- VPS group
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `vps_enabled` TINYINT(1) DEFAULT 0 AFTER `game_backups`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `vcpu` INT DEFAULT 0 AFTER `vps_enabled`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `ram` INT DEFAULT 0 AFTER `vcpu`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `vps_storage` INT DEFAULT 0 AFTER `ram`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `vps_bandwidth` INT DEFAULT 0 AFTER `vps_storage`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `snapshots` INT DEFAULT 0 AFTER `vps_bandwidth`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `iso_mount` TINYINT(1) DEFAULT 0 AFTER `snapshots`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `vps_backups` INT DEFAULT 0 AFTER `iso_mount`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `ipv4` INT DEFAULT 0 AFTER `vps_backups`;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `ipv6` INT DEFAULT 0 AFTER `ipv4`;
 
 -- Reseller feature list support
 ALTER TABLE resellers ADD COLUMN IF NOT EXISTS `feature_list_id` INT DEFAULT NULL AFTER `website`;

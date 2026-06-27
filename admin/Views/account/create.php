@@ -55,12 +55,39 @@
 <div id="pkgDetails" style="display:none;margin-top:8px"></div>
 </div>
 <div id="customPkgFields" style="display:none">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;padding:12px;background:rgba(0,140,255,.04);border-radius:8px;border:1px solid rgba(0,140,255,.1)">
+<div style="margin-top:10px;padding:12px;background:rgba(0,140,255,.04);border-radius:8px;border:1px solid rgba(0,140,255,.1)">
+<h5 style="margin:0 0 8px;font-size:13px;color:var(--accent)">Resource Limits</h5>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
 <div class="form-group" style="margin:0"><label style="font-size:11px">Disk Space (GB)</label><input name="custom_disk" type="number" value="10" style="width:100%;padding:5px 8px;font-size:12px"></div>
 <div class="form-group" style="margin:0"><label style="font-size:11px">Bandwidth (GB)</label><input name="custom_bw" type="number" value="100" style="width:100%;padding:5px 8px;font-size:12px"></div>
 <div class="form-group" style="margin:0"><label style="font-size:11px">Max Email Accounts</label><input name="custom_email" type="number" value="-1" style="width:100%;padding:5px 8px;font-size:12px"></div>
 <div class="form-group" style="margin:0"><label style="font-size:11px">Max Databases</label><input name="custom_dbs" type="number" value="-1" style="width:100%;padding:5px 8px;font-size:12px"></div>
 <div class="form-group" style="margin:0"><label style="font-size:11px">Price ($/mo)</label><input name="custom_price" type="number" step="0.01" value="0" style="width:100%;padding:5px 8px;font-size:12px"></div>
+</div>
+<h5 style="margin:12px 0 8px;font-size:13px;color:var(--accent)">Features</h5>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px">
+<label><input type="checkbox" name="custom_features[]" value="cron" checked> Cron Jobs</label>
+<label><input type="checkbox" name="custom_features[]" value="ssh"> SSH Access</label>
+<label><input type="checkbox" name="custom_features[]" value="ssl" checked> SSL</label>
+<label><input type="checkbox" name="custom_features[]" value="git" checked> Git</label>
+<label><input type="checkbox" name="custom_features[]" value="nodejs"> Node.js</label>
+<label><input type="checkbox" name="custom_features[]" value="python"> Python</label>
+<label><input type="checkbox" name="custom_features[]" value="ruby"> Ruby</label>
+<label><input type="checkbox" name="custom_features[]" value="terminal"> Terminal</label>
+<label><input type="checkbox" name="custom_features[]" value="backups" checked> Backups</label>
+<label><input type="checkbox" name="custom_features[]" value="installer" checked> One Click Installer</label>
+<label><input type="checkbox" name="custom_features[]" value="builder"> Website Builder</label>
+<label><input type="checkbox" name="custom_features[]" value="ai_builder"> AI Website Builder</label>
+<label><input type="checkbox" name="custom_features[]" value="ai_assistant"> AI Assistant</label>
+<label><input type="checkbox" name="custom_features[]" value="marketplace"> Plugin Marketplace</label>
+<label><input type="checkbox" name="custom_features[]" value="api"> API Access</label>
+<label><input type="checkbox" name="custom_features[]" value="webhooks"> Webhooks</label>
+<label><input type="checkbox" name="custom_features[]" value="chat"> Chatbox</label>
+<label><input type="checkbox" name="custom_features[]" value="dj_panel"> DJ Panel</label>
+<label><input type="checkbox" name="custom_features[]" value="streaming"> Streaming</label>
+<label><input type="checkbox" name="custom_features[]" value="game"> Game Servers</label>
+<label><input type="checkbox" name="custom_features[]" value="vps"> VPS</label>
+</div>
 </div>
 </div>
 <div class="form-group"><label>PHP Version</label>
