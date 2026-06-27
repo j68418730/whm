@@ -71,8 +71,7 @@ $router->get('/admin/php', 'Admin\Controllers\PhpController@index');
 // Admin MySQL / Database Management Routes
 $router->get('/admin/mysql', 'Admin\Controllers\MysqlController@index');
 
-// Admin FTP Management Routes
-$router->get('/admin/ftp', 'Admin\Controllers\FtpController@index');
+// Admin FTP Management Routes — defined in core.php
 
 // Admin SSL/TLS Management Routes
 $router->get('/admin/ssl', 'Admin\Controllers\SslController@index');

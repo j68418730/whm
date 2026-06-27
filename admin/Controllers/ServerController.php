@@ -46,22 +46,30 @@ class ServerController extends Controller
         $cwd = $this->request->post('cwd', '');
 
         if (empty($cmd)) {
-            $this->response->json(['output' => '', 'cwd' => $cwd ?: trim(shell_exec('pwd 2>/dev/null') ?: '/')]);
+            $this->response->json(['output' => '', 'cwd' => $cwd ?: '/root']);
             $this->response->send();
             exit;
         }
 
-        $safeCmd = $cmd;
         $cdCmd = $cwd ? "cd " . escapeshellarg($cwd) . " 2>/dev/null && " : "";
-        $fullCmd = $cdCmd . $safeCmd . ' 2>&1';
+        // Append pwd to track CWD in same shell session
+        $fullCmd = $cdCmd . $cmd . ' 2>&1; echo "[CWD:"; pwd; echo ":CWD]"';
         $output = [];
         $returnVar = 0;
         exec($fullCmd, $output, $returnVar);
 
-        $newCwd = trim(shell_exec('pwd 2>/dev/null') ?: ($cwd ?: '/'));
+        $newCwd = $cwd ?: '/root';
+        $cmdOutput = [];
+        foreach ($output as $line) {
+            if (preg_match('/^\[CWD:(.+):CWD\]$/', $line, $m)) {
+                $newCwd = trim($m[1]);
+            } else {
+                $cmdOutput[] = $line;
+            }
+        }
 
         $this->response->json([
-            'output' => implode("\n", $output),
+            'output' => implode("\n", $cmdOutput),
             'code' => $returnVar,
             'cwd' => $newCwd
         ]);

@@ -1,9 +1,17 @@
-<h3 style="color:var(--accent);margin-bottom:16px">Refunds</h3>
-<table><tr><th>#</th><th>User ID</th><th>Payment</th><th>Invoice</th><th>Amount</th><th>Reason</th><th>Date</th></tr>
+<h3 style="color:var(--accent);margin-bottom:12px">Refunds</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px">
 <?php if (!empty($refunds)): foreach ($refunds as $r): ?>
-<tr><td><?php echo $r->id; ?></td><td><?php echo $r->user_id; ?></td>
-<td><?php echo $r->payment_id ?? '-'; ?></td><td><?php echo $r->invoice_id ?? '-'; ?></td>
-<td>$<?php echo number_format($r->amount, 2); ?></td>
-<td><?php echo htmlspecialchars($r->reason ?: '-'); ?></td><td><?php echo $r->created_at; ?></td></tr>
-<?php endforeach; else: ?><tr><td colspan="7" style="text-align:center;padding:20px;color:#64748b">No refunds processed.</td></tr>
-<?php endif; ?></table>
+<div class="card" style="margin-bottom:0;padding:14px">
+<div style="display:flex;justify-content:space-between">
+<div><span style="font-weight:600;font-size:14px">#<?php echo $r->id; ?> · <?php echo htmlspecialchars($r->username ?? "User #{$r->user_id}"); ?></span></div>
+<span style="font-size:16px;font-weight:700;color:#f87171">-$<?php echo number_format($r->amount, 2); ?></span>
+</div>
+<div style="font-size:11px;color:#64748b;margin-top:4px">Reason: <?php echo htmlspecialchars($r->reason ?: '-'); ?></div>
+<div style="font-size:11px;color:#64748b">Payment: <?php echo $r->payment_id ?? '-'; ?> · Invoice: <?php echo $r->invoice_id ?? '-'; ?></div>
+<div style="font-size:10px;color:#64748b;margin-top:2px"><?php echo $r->created_at; ?></div>
+<div style="margin-top:6px"><a href="/admin/billing/refunds/delete/<?php echo $r->id; ?>" class="btn btn-sm danger" onclick="return confirm('Delete refund record?')">Delete</a></div>
+</div>
+<?php endforeach; else: ?>
+<div class="card" style="text-align:center;padding:20px;grid-column:1/-1;color:#64748b">No refunds processed.</div>
+<?php endif; ?>
+</div>
