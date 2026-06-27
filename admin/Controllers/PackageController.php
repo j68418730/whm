@@ -65,8 +65,17 @@ class PackageController extends Controller
             }
         } catch (\Exception $e) {}
 
+        // Group by type for display
+        $grouped = [];
+        foreach ($packages as $p) {
+            $t = $p->type ?? 'other';
+            $grouped[$t][] = $p;
+        }
+
         return $this->view('admin.package.index', [
             'user' => $user, 'packages' => $packages, 'categories' => $categories,
+            'grouped' => $grouped,
+            'packagesStats' => ['total_packages' => $total, 'active_packages' => $active],
             'totalPackages' => $total, 'activePackages' => $active,
             'statsByType' => $statsByType, 'usageCounts' => $usageCounts,
             'theme_settings' => $theme_settings
@@ -83,15 +92,47 @@ class PackageController extends Controller
         return $this->view('admin.package.create', ['user' => $user, 'categories' => $categories, 'featureLists' => $featureLists, 'theme_settings' => $theme_settings]);
     }
 
+    protected function mergePkgFeatures()
+    {
+        $features = $this->request->post('features', []);
+        $featMap = [];
+        foreach ((array)$features as $f) {
+            $featMap[$f] = true;
+        }
+        $customPkg = $this->request->post('custom_pkg', []);
+        $streaming = [];
+        if ($this->request->post('custom_streaming_enabled')) {
+            $streaming['enabled'] = true;
+            foreach ($customPkg as $k => $v) {
+                if (strpos($k, 'str_') === 0) {
+                    $streaming[substr($k, 4)] = $v;
+                }
+            }
+        }
+        $game = [];
+        if ($this->request->post('custom_game_enabled')) {
+            $game['enabled'] = true;
+            foreach ($customPkg as $k => $v) {
+                if (strpos($k, 'game_') === 0) {
+                    $game[substr($k, 5)] = $v;
+                }
+            }
+        }
+        $merged = array_merge($featMap, [
+            'streaming_package' => $streaming,
+            'game_package' => $game,
+        ]);
+        return json_encode($merged);
+    }
+
     public function store()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $features = $this->request->post('features', []);
         $data = [
             'name' => $this->request->post('name', ''),
             'type' => $this->request->post('type', 'Web Hosting'),
             'description' => $this->request->post('description', ''),
-            'features' => json_encode($features),
+            'features' => $this->mergePkgFeatures(),
             'feature_list_id' => (int)$this->request->post('feature_list_id', 0) ?: null,
             'max_domains' => (int)$this->request->post('max_domains', 1),
             'max_subdomains' => (int)$this->request->post('max_subdomains', 0),
@@ -102,17 +143,8 @@ class PackageController extends Controller
             'setup_fee' => (float)$this->request->post('setup_fee', 0),
             'disk_space' => (int)$this->request->post('disk_space', 0),
             'bandwidth' => (int)$this->request->post('bandwidth', 0),
-            'listener_limit' => (int)$this->request->post('listener_limit', 0),
-            'bitrate' => (int)$this->request->post('bitrate', 0),
-            'storage_limit' => (int)$this->request->post('storage_limit', 0),
-            'dj_accounts' => (int)$this->request->post('dj_accounts', 0),
             'sort_order' => (int)$this->request->post('sort_order', 0),
             'is_active' => 1,
-            'icecast_enabled' => $this->request->post('icecast_enabled') ? 1 : 0,
-            'dj_panel_enabled' => $this->request->post('dj_panel_enabled') ? 1 : 0,
-            'live_chat_enabled' => $this->request->post('live_chat_enabled') ? 1 : 0,
-            'chatroom_enabled' => $this->request->post('chatroom_enabled') ? 1 : 0,
-            'chatroom_voice_enabled' => $this->request->post('chatroom_voice_enabled') ? 1 : 0,
         ];
         $this->db->table('hosting_packages')->insertGetId($data);
         $_SESSION['success_message'] = 'Package created.';
@@ -136,12 +168,11 @@ class PackageController extends Controller
     public function update($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $features = $this->request->post('features', []);
         $data = [
             'name' => $this->request->post('name', ''),
             'type' => $this->request->post('type', 'Web Hosting'),
             'description' => $this->request->post('description', ''),
-            'features' => json_encode($features),
+            'features' => $this->mergePkgFeatures(),
             'feature_list_id' => (int)$this->request->post('feature_list_id', 0) ?: null,
             'max_domains' => (int)$this->request->post('max_domains', 1),
             'max_subdomains' => (int)$this->request->post('max_subdomains', 0),
@@ -152,17 +183,8 @@ class PackageController extends Controller
             'setup_fee' => (float)$this->request->post('setup_fee', 0),
             'disk_space' => (int)$this->request->post('disk_space', 0),
             'bandwidth' => (int)$this->request->post('bandwidth', 0),
-            'listener_limit' => (int)$this->request->post('listener_limit', 0),
-            'bitrate' => (int)$this->request->post('bitrate', 0),
-            'storage_limit' => (int)$this->request->post('storage_limit', 0),
-            'dj_accounts' => (int)$this->request->post('dj_accounts', 0),
             'sort_order' => (int)$this->request->post('sort_order', 0),
             'is_active' => $this->request->post('is_active') === 'on' ? 1 : 0,
-            'icecast_enabled' => $this->request->post('icecast_enabled') ? 1 : 0,
-            'dj_panel_enabled' => $this->request->post('dj_panel_enabled') ? 1 : 0,
-            'live_chat_enabled' => $this->request->post('live_chat_enabled') ? 1 : 0,
-            'chatroom_enabled' => $this->request->post('chatroom_enabled') ? 1 : 0,
-            'chatroom_voice_enabled' => $this->request->post('chatroom_voice_enabled') ? 1 : 0,
         ];
         $this->db->table('hosting_packages')->where('id', $id)->update($data);
         $_SESSION['success_message'] = 'Package updated.';
