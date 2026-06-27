@@ -76,7 +76,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')"><i class="fa-solid fa-bars"></i></button>
 <nav class="nav-links">
 <a href="/">Home</a><a href="/hosting">Store</a><a href="?contact">Contact</a>
-<a href="http://planet-hosts.com:2082/" class="btn-secondary" style="padding:8px 16px;font-size:13px"><i class="fa-solid fa-user"></i> Client Login</a>
+<a href="http://45.61.59.55:2082/" class="btn-secondary" style="padding:8px 16px;font-size:13px"><i class="fa-solid fa-user"></i> Client Login</a>
 <a href="/cart.php" class="btn-primary btn-order" style="padding:8px 20px;font-size:13px"><i class="fa-solid fa-cart-shopping"></i> Cart</a>
 </nav>
 </div>
@@ -104,16 +104,17 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 </select>
 </div>
 <ul class="feature-list">
+<?php $pf = is_string($product->features ?? null) ? json_decode($product->features, true) ?? [] : ($product->features ?? []); $sp = $pf['streaming_package'] ?? []; $gp = $pf['game_package'] ?? []; ?>
 <?php if (!empty($product->disk_space) && $product->disk_space > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $product->disk_space; ?> GB Disk</li><?php endif; ?>
 <?php if (!empty($product->bandwidth) && $product->bandwidth > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $product->bandwidth; ?> GB Bandwidth</li><?php endif; ?>
-<?php if (!empty($product->listener_limit) && $product->listener_limit > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $product->listener_limit; ?> Listeners</li><?php endif; ?>
-<?php if (!empty($product->bitrate) && $product->bitrate > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $product->bitrate; ?> kbps</li><?php endif; ?>
-<?php if (!empty($product->storage_limit) && $product->storage_limit > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $product->storage_limit; ?> GB Storage</li><?php endif; ?>
+<?php if (!empty($sp['max_listeners'])): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $sp['max_listeners']; ?> Listeners</li><?php endif; ?>
+<?php if (!empty($sp['max_bitrate'])): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $sp['max_bitrate']; ?> kbps</li><?php endif; ?>
+<?php if (!empty($sp['upload_limit'])): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $sp['upload_limit']; ?> MB Upload</li><?php endif; ?>
 <?php if (!empty($product->email_accounts) && $product->email_accounts > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $product->email_accounts; ?> Emails</li><?php endif; ?>
 <?php if (!empty($product->databases) && $product->databases > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $product->databases; ?> Databases</li><?php endif; ?>
 <?php if (!empty($product->addon_domains) && $product->addon_domains > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $product->addon_domains; ?> Addon Domains</li><?php endif; ?>
 <?php if (!empty($product->subdomains) && $product->subdomains > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $product->subdomains; ?> Subdomains</li><?php endif; ?>
-<?php if (!empty($product->dj_accounts) && $product->dj_accounts > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $product->dj_accounts; ?> DJ Accounts</li><?php endif; ?>
+<?php if (!empty($sp['max_djs'])): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $sp['max_djs']; ?> DJ Accounts</li><?php endif; ?>
 <li><i class="fa-solid fa-circle-check"></i> Free SSL</li>
 <li><i class="fa-solid fa-circle-check"></i> 24/7 Support</li>
 </ul>
@@ -128,4 +129,3 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 <footer class="footer"><div class="container"><p>&copy; 2026 Planet-Hosts. All rights reserved.</p></div></footer>
 </body>
 </html>
-

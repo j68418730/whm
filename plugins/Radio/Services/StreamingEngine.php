@@ -249,7 +249,10 @@ class StreamingEngine
         if (!$user || !$user->package_id) return 0;
         $package = $this->db->table('hosting_packages')->where('id', $user->package_id)->first();
         if (!$package) return 0;
-        return $package->listener_limit > 0 ? $package->listener_limit : 1;
+        $pf = is_string($package->features ?? null) ? json_decode($package->features, true) ?? [] : ($package->features ?? []);
+        $sp = $pf['streaming_package'] ?? [];
+        $limit = (int)($sp['max_listeners'] ?? 0);
+        return $limit > 0 ? $limit : 1;
     }
 
     public function userCanCreateStation($userId, $engine = null)
@@ -266,7 +269,12 @@ class StreamingEngine
         $maxStations = 999;
         if ($user->package_id) {
             $pkg = $this->db->table('hosting_packages')->where('id', $user->package_id)->first();
-            if ($pkg) $maxStations = $pkg->listener_limit > 0 ? $pkg->listener_limit : 999;
+            if ($pkg) {
+                $pf2 = is_string($pkg->features ?? null) ? json_decode($pkg->features, true) ?? [] : ($pkg->features ?? []);
+                $sp2 = $pf2['streaming_package'] ?? [];
+                $sl = (int)($sp2['max_listeners'] ?? 0);
+                $maxStations = $sl > 0 ? $sl : 999;
+            }
         }
         return $existing < $maxStations;
     }

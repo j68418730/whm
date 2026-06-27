@@ -191,11 +191,12 @@ $minPrice = ($gt->min_slots ?? 10) * ($gt->price_per_slot ?? 0.50) + ($gt->setup
 <div class="price">$<?php echo number_format((float)($pkg->monthly_price ?? $pkg->price ?? 0), 2); ?><small>/mo</small></div>
 <p><?php echo htmlspecialchars($pkg->description ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
 <ul class="features-list">
+<?php $pf = is_string($pkg->features ?? null) ? json_decode($pkg->features, true) ?? [] : ($pkg->features ?? []); $sp = $pf['streaming_package'] ?? []; $gp = $pf['game_package'] ?? []; ?>
 <?php if (!empty($pkg->disk_space) && $pkg->disk_space > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $pkg->disk_space; ?> GB Disk</li><?php endif; ?>
 <?php if (!empty($pkg->bandwidth) && $pkg->bandwidth > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $pkg->bandwidth; ?> GB Bandwidth</li><?php endif; ?>
-<?php if (!empty($pkg->listener_limit) && $pkg->listener_limit > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $pkg->listener_limit; ?> Listeners</li><?php endif; ?>
-<?php if (!empty($pkg->bitrate) && $pkg->bitrate > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $pkg->bitrate; ?> kbps Bitrate</li><?php endif; ?>
-<?php if (!empty($pkg->storage_limit) && $pkg->storage_limit > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $pkg->storage_limit; ?> GB Storage</li><?php endif; ?>
+<?php if (!empty($sp['max_listeners'])): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $sp['max_listeners']; ?> Listeners</li><?php endif; ?>
+<?php if (!empty($sp['max_bitrate'])): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $sp['max_bitrate']; ?> kbps Bitrate</li><?php endif; ?>
+<?php if (!empty($sp['upload_limit'])): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $sp['upload_limit']; ?> MB Upload</li><?php endif; ?>
 <?php if (!empty($pkg->email_accounts) && $pkg->email_accounts > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $pkg->email_accounts; ?> Emails</li><?php endif; ?>
 <?php if (!empty($pkg->databases) && $pkg->databases > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $pkg->databases; ?> Databases</li><?php endif; ?>
 <li><i class="fa-solid fa-circle-check"></i> Free SSL</li>
