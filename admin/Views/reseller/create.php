@@ -7,7 +7,14 @@
 <div class="form-group"><label>Contact Name</label><input name="contact_name" style="width:100%"></div>
 <div class="form-group"><label>Email *</label><input name="email" type="email" required style="width:100%"></div>
 <div class="form-group"><label>Phone</label><input name="phone" style="width:100%"></div>
-<div class="form-group"><label>Website</label><input name="website" placeholder="https://" style="width:100%"></div>
+<div class="form-group"><label>Account</label>
+<select name="website" style="width:100%">
+<option value="">— Select account —</option>
+<?php if (!empty($allAccounts)): foreach ($allAccounts as $a): ?>
+<option value="<?php echo htmlspecialchars($a->domain ?: $a->username); ?>"><?php echo htmlspecialchars($a->username); ?> (<?php echo htmlspecialchars($a->domain ?: 'no domain'); ?>)</option>
+<?php endforeach; endif; ?>
+</select>
+</div>
 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-top:8px"><input name="is_active" type="checkbox" value="1" checked> Active</label>
 </div>
 
@@ -22,6 +29,21 @@
 <p style="font-size:11px;color:#64748b;margin-top:6px">Feature lists control reseller limits (email, DBs, SSH, etc.)</p>
 </div>
 
+</div>
+
+<div class="card" style="max-width:900px;margin-top:16px">
+<h4 style="color:var(--accent);margin-bottom:12px">Permissions</h4>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:12px">
+<?php
+$permFeatures = ['cron'=>'Cron','ssh'=>'SSH','ssl'=>'SSL','git'=>'Git','nodejs'=>'Node.js','python'=>'Python','ruby'=>'Ruby','terminal'=>'Terminal','backups'=>'Backups','installer'=>'Installer','builder'=>'Website Builder','ai_builder'=>'AI Builder','ai_assistant'=>'AI Assistant','marketplace'=>'Marketplace','api'=>'API','webhooks'=>'Webhooks','chat'=>'Chatbox','chat_voice'=>'+ Voice','chat_video'=>'+ Video','dj_panel'=>'DJ Panel','streaming'=>'Streaming','game_servers'=>'Game Servers','vps'=>'VPS'];
+foreach ($permFeatures as $k=>$l):
+$isSub = in_array($k, ['chat_voice','chat_video']);
+?>
+<label class="feature-check" style="<?php echo $isSub ? 'padding-left:16px;font-size:11px' : ''; ?>">
+<input type="checkbox" name="features[]" value="<?php echo $k; ?>" checked> <?php echo $l; ?>
+</label>
+<?php endforeach; ?>
+</div>
 </div>
 
 <div class="card" style="max-width:900px;margin-top:16px">

@@ -7,7 +7,14 @@
 <div class="form-group"><label>Contact Name</label><input name="contact_name" value="<?php echo htmlspecialchars($reseller->contact_name ?? ''); ?>" style="width:100%"></div>
 <div class="form-group"><label>Email *</label><input name="email" type="email" value="<?php echo htmlspecialchars($reseller->email); ?>" required style="width:100%"></div>
 <div class="form-group"><label>Phone</label><input name="phone" value="<?php echo htmlspecialchars($reseller->phone ?? ''); ?>" style="width:100%"></div>
-<div class="form-group"><label>Website</label><input name="website" value="<?php echo htmlspecialchars($reseller->website ?? ''); ?>" style="width:100%"></div>
+<div class="form-group"><label>Account</label>
+<select name="website" style="width:100%">
+<option value="">— Select account —</option>
+<?php if (!empty($allAccounts)): foreach ($allAccounts as $a): ?>
+<option value="<?php echo htmlspecialchars($a->domain ?: $a->username); ?>" <?php echo ($reseller->website == $a->domain || $reseller->website == $a->username) ? 'selected' : ''; ?>><?php echo htmlspecialchars($a->username); ?> (<?php echo htmlspecialchars($a->domain ?: 'no domain'); ?>)</option>
+<?php endforeach; endif; ?>
+</select>
+</div>
 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-top:8px"><input name="is_active" type="checkbox" value="1" <?php echo $reseller->is_active ? 'checked' : ''; ?>> Active</label>
 </div>
 
@@ -24,16 +31,33 @@
 </div>
 
 <div class="card" style="max-width:900px;margin-top:16px">
+<h4 style="color:var(--accent);margin-bottom:12px">Permissions</h4>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:12px">
+<?php
+$resFeats = is_string($reseller->features ?? null) ? json_decode($reseller->features, true) ?? [] : ($reseller->features ?? []);
+$permFeatures = ['cron'=>'Cron','ssh'=>'SSH','ssl'=>'SSL','git'=>'Git','nodejs'=>'Node.js','python'=>'Python','ruby'=>'Ruby','terminal'=>'Terminal','backups'=>'Backups','installer'=>'Installer','builder'=>'Website Builder','ai_builder'=>'AI Builder','ai_assistant'=>'AI Assistant','marketplace'=>'Marketplace','api'=>'API','webhooks'=>'Webhooks','chat'=>'Chatbox','chat_voice'=>'+ Voice','chat_video'=>'+ Video','dj_panel'=>'DJ Panel','streaming'=>'Streaming','game_servers'=>'Game Servers','vps'=>'VPS'];
+foreach ($permFeatures as $k=>$l):
+$isSub = in_array($k, ['chat_voice','chat_video']);
+$checked = in_array($k, (array)$resFeats) || empty($resFeats) ? 'checked' : '';
+?>
+<label class="feature-check" style="<?php echo $isSub ? 'padding-left:16px;font-size:11px' : ''; ?>">
+<input type="checkbox" name="features[]" value="<?php echo $k; ?>" <?php echo $checked; ?>> <?php echo $l; ?>
+</label>
+<?php endforeach; ?>
+</div>
+</div>
+
+<div class="card" style="max-width:900px;margin-top:16px">
 <h4 style="color:var(--accent);margin-bottom:12px">Assigned Accounts</h4>
 <p style="font-size:12px;color:#64748b;margin-bottom:10px">Select which accounts belong to this reseller:</p>
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;max-height:300px;overflow-y:auto">
 <?php
 $owned = [];
 if (!empty($accounts)) foreach ($accounts as $a) $owned[$a->id] = true;
-$allAccounts = array_merge($accounts ?? [], $unassigned ?? []);
+$allAccs = array_merge($accounts ?? [], $unassigned ?? []);
 $seen = [];
 ?>
-<?php if (!empty($allAccounts)): foreach ($allAccounts as $a):
+<?php if (!empty($allAccs)): foreach ($allAccs as $a):
 if (isset($seen[$a->id])) continue; $seen[$a->id] = true;
 $isOwned = isset($owned[$a->id]);
 ?>
