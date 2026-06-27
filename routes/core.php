@@ -193,10 +193,27 @@ $router->post('/admin/installers/quick-install', 'Admin\Controllers\InstallersCo
 $router->post('/admin/widgets/save-layout', 'Admin\Controllers\WidgetController@saveLayout');
 $router->post('/admin/widgets/remove', 'Admin\Controllers\WidgetController@remove');
 $router->post('/admin/widgets/add', 'Admin\Controllers\WidgetController@add');
+$router->post('/admin/widgets/collapse', 'Admin\Controllers\WidgetController@toggleCollapse');
+$router->post('/admin/widgets/pin', 'Admin\Controllers\WidgetController@togglePin');
+$router->post('/admin/widgets/hide', 'Admin\Controllers\WidgetController@toggleHide');
+$router->post('/admin/widgets/width', 'Admin\Controllers\WidgetController@setWidth');
+$router->get('/admin/widgets/layouts', 'Admin\Controllers\WidgetController@listLayouts');
+$router->post('/admin/widgets/layouts/save', 'Admin\Controllers\WidgetController@saveLayoutSnapshot');
+$router->post('/admin/widgets/layouts/apply', 'Admin\Controllers\WidgetController@applyLayout');
+$router->post('/admin/widgets/layouts/rename', 'Admin\Controllers\WidgetController@renameLayout');
+$router->post('/admin/widgets/layouts/delete', 'Admin\Controllers\WidgetController@deleteLayout');
+$router->get('/admin/widgets/layouts/export', 'Admin\Controllers\WidgetController@exportLayout');
+$router->post('/admin/widgets/layouts/import', 'Admin\Controllers\WidgetController@importLayout');
+$router->post('/admin/widgets/layouts/reset', 'Admin\Controllers\WidgetController@resetLayout');
+$router->get('/admin/widgets/builder', 'Admin\Controllers\WidgetController@builder');
+$router->post('/admin/widgets/builder/create', 'Admin\Controllers\WidgetController@createCustom');
+$router->post('/admin/widgets/builder/update', 'Admin\Controllers\WidgetController@updateCustom');
+$router->post('/admin/widgets/builder/delete', 'Admin\Controllers\WidgetController@deleteCustom');
 
 $router->get('/admin/account/create', 'Admin\Controllers\AccountController@create');
 $router->get('/admin/account/list', 'Admin\Controllers\AccountController@index');
 $router->get('/admin/account/edit/{id}', 'Admin\Controllers\AccountController@edit');
+$router->post('/admin/account/update/{id}', 'Admin\Controllers\AccountController@update');
 $router->get('/admin/account/delete/{id}', 'Admin\Controllers\AccountController@delete');
 $router->get('/admin/account/summary/{id}', 'Admin\Controllers\AccountController@summary');
 $router->post('/admin/account/email-summary/{id}', 'Admin\Controllers\AccountController@emailSummary');
@@ -239,6 +256,8 @@ $router->get('/admin/packages/categories/delete/{id}', 'Admin\Controllers\Packag
 // JSON endpoint for landing page
 $router->get('/admin/admins', 'Admin\Controllers\AdminsController@index');
 $router->post('/admin/admins/create', 'Admin\Controllers\AdminsController@create');
+$router->get('/admin/admins/toggle-status/{id}', 'Admin\Controllers\AdminsController@toggleStatus');
+$router->post('/admin/admins/permissions/{id}', 'Admin\Controllers\AdminsController@updatePermissions');
 $router->get('/admin/admins/delete/{id}', 'Admin\Controllers\AdminsController@delete');
 $router->get('/admin/todo', 'Admin\Controllers\TodoController@index');
 $router->post('/admin/todo', 'Admin\Controllers\TodoController@store');
