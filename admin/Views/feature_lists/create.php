@@ -62,10 +62,14 @@
 <div style="margin-top:20px">
 <h4 style="color:var(--accent);margin-bottom:8px;font-size:14px">Chat Features</h4>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-<label class="fl-toggle"><input type="checkbox" name="chatbox" value="1"> Chatbox (Text)</label>
-<label class="fl-toggle"><input type="checkbox" name="chatbox_voice" value="1"> Chatbox (Voice)</label>
-<label class="fl-toggle"><input type="checkbox" name="chatbox_video" value="1"> Chatbox (Voice + Video)</label>
+<label class="fl-toggle"><input type="checkbox" name="chatbox" value="1" onchange="toggleGroup(this, 'chat-sub')"> Chatbox</label>
 <label class="fl-toggle"><input type="checkbox" name="dj_panel" value="1"> DJ Panel</label>
+</div>
+<div id="chat-sub" style="display:none;margin-top:4px;padding-left:20px;border-left:2px solid rgba(255,255,255,.1)">
+<div style="display:flex;gap:16px;font-size:12px">
+<label class="fl-toggle"><input type="checkbox" name="chatbox_voice" value="1"> Voice</label>
+<label class="fl-toggle"><input type="checkbox" name="chatbox_video" value="1"> Voice + Video</label>
+</div>
 </div>
 </div>
 
@@ -110,7 +114,7 @@
 <label class="fl-toggle"><input type="checkbox" name="game_backups" value="1"> Backups</label>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
-<div class="form-group"><label>Max Game Servers</label><input name="max_game_servers" type="number" value="0" style="width:100%"></div>
+<div class="form-group"><label>Slots</label><input name="max_game_servers" type="number" value="0" style="width:100%"></div>
 </div>
 </div>
 </div>
