@@ -204,4 +204,14 @@ class DashboardController extends Controller
             'services' => $services,
         ]);
     }
+
+    public function version()
+    {
+        $this->response->json([
+            'version' => '1.0.0',
+            'name' => 'Planet Hosts Panel',
+            'php' => phpversion(),
+        ])->send();
+        exit;
+    }
 }
