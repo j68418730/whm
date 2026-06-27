@@ -44,7 +44,8 @@ class ResellerController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-        $accounts = $this->db->table('hosting_users')->where('reseller_id', 0)->orWhereNull('reseller_id')->get() ?: [];
+        $stmt = $this->db->pdo()->query("SELECT * FROM hosting_users WHERE reseller_id IS NULL OR reseller_id = 0");
+        $accounts = $stmt ? $stmt->fetchAll(\PDO::FETCH_OBJ) : [];
         $featureLists = $this->db->table('feature_lists')->where('is_active', 1)->orderBy('name', 'ASC')->get() ?: [];
         return $this->view('admin.reseller.create', [
             'user' => $user, 'title' => 'Create Reseller',
@@ -83,7 +84,8 @@ class ResellerController extends Controller
         $user = $this->auth->user();
         $reseller = $this->db->table('resellers')->where('id', $id)->first();
         $accounts = $this->db->table('hosting_users')->where('reseller_id', $id)->get() ?: [];
-        $unassigned = $this->db->table('hosting_users')->where('reseller_id', 0)->orWhereNull('reseller_id')->get() ?: [];
+        $stmt = $this->db->pdo()->query("SELECT * FROM hosting_users WHERE reseller_id IS NULL OR reseller_id = 0");
+        $unassigned = $stmt ? $stmt->fetchAll(\PDO::FETCH_OBJ) : [];
         $featureLists = $this->db->table('feature_lists')->where('is_active', 1)->orderBy('name', 'ASC')->get() ?: [];
         return $this->view('admin.reseller.edit', [
             'user' => $user, 'title' => 'Edit Reseller', 'reseller' => $reseller,
