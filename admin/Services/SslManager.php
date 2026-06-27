@@ -10,6 +10,10 @@ class SslManager
     {
         $app = \Core\Application::getInstance();
         $this->db = $app->get('db');
+        try { $this->db->pdo()->exec("CREATE TABLE IF NOT EXISTS ssl_log (id INT AUTO_INCREMENT PRIMARY KEY, action VARCHAR(100), domain VARCHAR(255), status VARCHAR(50), message TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"); } catch (\Exception $e) {}
+        try { $this->db->pdo()->exec("CREATE TABLE IF NOT EXISTS ssl_certs (id INT AUTO_INCREMENT PRIMARY KEY, domain VARCHAR(255), certificate LONGTEXT, private_key LONGTEXT, ca_chain LONGTEXT, issuer VARCHAR(255), expires_at DATETIME NULL, status VARCHAR(50) DEFAULT 'active', auto_renew TINYINT(1) DEFAULT 1, last_renewal DATETIME NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"); } catch (\Exception $e) {}
+        try { $this->db->pdo()->exec("CREATE TABLE IF NOT EXISTS ssl_services (id INT AUTO_INCREMENT PRIMARY KEY, service_name VARCHAR(255), service_type VARCHAR(100), domain VARCHAR(255), port INT, protocol VARCHAR(20), cert_id INT, ssl_enabled TINYINT(1) DEFAULT 1, ssl_mode VARCHAR(50) DEFAULT 'native', status VARCHAR(50) DEFAULT 'active', last_verified DATETIME NULL, last_error TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"); } catch (\Exception $e) {}
+        try { $this->db->pdo()->exec("ALTER TABLE ssl_certs ADD COLUMN auto_renew TINYINT(1) DEFAULT 1 AFTER status"); } catch (\Exception $e) {}
     }
 
     // ─── Service Profiles ──────────────────────────────────
@@ -207,7 +211,7 @@ class SslManager
 
     public function renewAll()
     {
-        $output = shell_exec("certbot renew --apache --non-interactive 2>&1");
+        $output = shell_exec("certbot renew --non-interactive 2>&1");
         $renewed = [];
 
         // Check which certs were renewed
