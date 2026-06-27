@@ -75,3 +75,6 @@ ALTER TABLE hosting_packages ADD COLUMN IF NOT EXISTS `live_chat_enabled` TINYIN
 ALTER TABLE hosting_packages ADD COLUMN IF NOT EXISTS `chatroom_enabled` TINYINT(1) DEFAULT 0 AFTER `live_chat_enabled`;
 ALTER TABLE hosting_packages ADD COLUMN IF NOT EXISTS `chatroom_voice_enabled` TINYINT(1) DEFAULT 0 AFTER `chatroom_enabled`;
 ALTER TABLE hosting_packages ADD COLUMN IF NOT EXISTS `shoutcast_enabled` TINYINT(1) DEFAULT 0 AFTER `chatroom_voice_enabled`;
+
+-- JSON column for detailed streaming/game feature definitions
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `features_json` TEXT DEFAULT NULL AFTER `is_active`;
