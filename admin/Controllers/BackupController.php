@@ -200,7 +200,19 @@ class BackupController extends Controller
     public function saveSettings()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $keys = ['backup_enabled','backup_restore_enabled','backup_type','backup_compression','backup_encryption','backup_schedule','backup_retention_daily','backup_retention_weekly','backup_retention_monthly','backup_retention_yearly','backup_max_backups','backup_auto_cleanup','backup_storage_type','backup_storage_path','backup_notify_started','backup_notify_completed','backup_notify_failed','backup_verify','backup_checksum','backup_integrity_check','backup_auto_restore_test','backup_encryption_password','backup_compress_level','backup_contents_hosting','backup_contents_streaming','backup_contents_games','backup_contents_vps','backup_timezone','backup_window_start','backup_window_end','backup_s3_bucket','backup_s3_region','backup_s3_key','backup_s3_secret','backup_s3_endpoint','backup_notify_email','backup_notify_webhook'];
+        $keys = ['backup_enabled','backup_restore_enabled','backup_type','backup_compression','backup_encryption','backup_schedule','backup_retention_daily','backup_retention_weekly','backup_retention_monthly','backup_retention_yearly','backup_max_backups','backup_auto_cleanup','backup_storage_type','backup_storage_path','backup_notify_started','backup_notify_completed','backup_notify_failed','backup_verify','backup_checksum','backup_integrity_check','backup_auto_restore_test','backup_encryption_password','backup_compress_level','backup_contents_hosting','backup_contents_streaming','backup_contents_games','backup_contents_vps','backup_timezone','backup_window_start','backup_window_end','backup_notify_email','backup_notify_webhook',
+            'backup_nas_host','backup_nas_path','backup_nas_username','backup_nas_password',
+            'backup_nfs_host','backup_nfs_export','backup_nfs_options',
+            'backup_smb_host','backup_smb_share','backup_smb_domain','backup_smb_username','backup_smb_password',
+            'backup_ftp_host','backup_ftp_port','backup_ftp_username','backup_ftp_password','backup_ftp_path',
+            'backup_sftp_host','backup_sftp_port','backup_sftp_username','backup_sftp_password','backup_sftp_path',
+            'backup_webdav_url','backup_webdav_username','backup_webdav_password',
+            'backup_s3_bucket','backup_s3_region','backup_s3_key','backup_s3_secret','backup_s3_endpoint',
+            'backup_b2_key_id','backup_b2_app_key','backup_b2_bucket',
+            'backup_wasabi_bucket','backup_wasabi_region','backup_wasabi_key','backup_wasabi_secret',
+            'backup_gcs_bucket','backup_gcs_project','backup_gcs_key_file',
+            'backup_azure_account','backup_azure_key','backup_azure_container',
+            'backup_do_space','backup_do_region','backup_do_key','backup_do_secret'];
         $post = $this->request->post();
         foreach ($keys as $k) {
             $val = isset($post[$k]) ? (is_array($post[$k]) ? json_encode($post[$k]) : $post[$k]) : '';
