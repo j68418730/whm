@@ -1,9 +1,12 @@
 <?php
 namespace Core;
 
+use Admin\Gateways\GatewayInterface;
+
 class GatewayManager
 {
     protected $db;
+    protected $instances = [];
 
     public function __construct()
     {
@@ -31,27 +34,102 @@ class GatewayManager
         return $this->db->table('gateways')->where('id', $id)->first();
     }
 
+    public function getDefault()
+    {
+        return $this->db->table('gateways')->where('is_default', 1)->where('enabled', 1)->first();
+    }
+
     public function save($data)
     {
-        if (!empty($data['id'])) {
-            $id = (int)$data['id'];
-            unset($data['id']);
-            if (isset($data['config']) && is_array($data['config'])) {
-                $data['config'] = json_encode($data['config']);
-            }
-            $this->db->table('gateways')->where('id', $id)->update($data);
-            return $id;
-        }
+        $isNew = empty($data['id']);
+        $id = $isNew ? null : (int)$data['id'];
+        if (!$isNew) unset($data['id']);
 
         if (isset($data['config']) && is_array($data['config'])) {
             $data['config'] = json_encode($data['config']);
         }
-        return $this->db->table('gateways')->insertGetId($data);
+
+        if ($isNew) {
+            return $this->db->table('gateways')->insertGetId($data);
+        }
+        $this->db->table('gateways')->where('id', $id)->update($data);
+        return $id;
     }
 
     public function delete($id)
     {
         return $this->db->table('gateways')->where('id', $id)->delete();
+    }
+
+    public function getPlugin($name)
+    {
+        if (isset($this->instances[$name])) {
+            return $this->instances[$name];
+        }
+        $class = '\\Admin\\Gateways\\' . ucfirst($name) . 'Gateway';
+        $file = __DIR__ . '/../admin/Gateways/' . ucfirst($name) . 'Gateway.php';
+        if (file_exists($file)) {
+            require_once $file;
+            if (class_exists($class)) {
+                $this->instances[$name] = new $class();
+                return $this->instances[$name];
+            }
+        }
+        return null;
+    }
+
+    public function getAllPlugins()
+    {
+        $dir = __DIR__ . '/../admin/Gateways/';
+        $plugins = [];
+        if (!is_dir($dir)) return $plugins;
+        foreach (glob($dir . '*Gateway.php') as $file) {
+            $basename = basename($file, 'Gateway.php');
+            if ($basename === 'Base' || $basename === 'Interface') continue;
+            require_once $file;
+            $class = '\\Admin\\Gateways\\' . $basename . 'Gateway';
+            if (class_exists($class)) {
+                $ref = new \ReflectionClass($class);
+                if (!$ref->isAbstract() && $ref->implementsInterface('\\Admin\\Gateways\\GatewayInterface')) {
+                    $plugins[] = new $class();
+                }
+            }
+        }
+        return $plugins;
+    }
+
+    public function discoverAndInstallDefaults()
+    {
+        $plugins = $this->getAllPlugins();
+        $sortOrder = 0;
+        foreach ($plugins as $plugin) {
+            $name = $plugin->getName();
+            $existing = $this->get($name);
+            if (!$existing) {
+                $this->save([
+                    'name' => $name,
+                    'display_name' => $plugin->getDisplayName(),
+                    'enabled' => 0,
+                    'test_mode' => 1,
+                    'sort_order' => ++$sortOrder,
+                    'config' => $plugin->getDefaultConfig(),
+                ]);
+            }
+        }
+    }
+
+    public function testConnection($id)
+    {
+        $gateway = $this->getById((int)$id);
+        if (!$gateway) {
+            throw new \Exception('Gateway not found.');
+        }
+        $plugin = $this->getPlugin($gateway->name);
+        if (!$plugin) {
+            throw new \Exception("No plugin found for '{$gateway->name}'.");
+        }
+        $config = array_merge($plugin->getDefaultConfig(), json_decode($gateway->config ?? '{}', true) ?: []);
+        return $plugin->testConnection($config);
     }
 
     public function processPayment($gatewayName, $amount, $data)
@@ -60,93 +138,12 @@ class GatewayManager
         if (!$gateway || !$gateway->enabled) {
             throw new \Exception("Gateway '{$gatewayName}' is not available.");
         }
-
-        $config = json_decode($gateway->config ?? '{}', true);
-        $testMode = (bool)$gateway->test_mode;
-
-        switch ($gatewayName) {
-            case 'paypal':
-                return $this->processPayPal($config, $amount, $data, $testMode);
-            case 'stripe':
-                return $this->processStripe($config, $amount, $data, $testMode);
-            case 'square':
-                return $this->processSquare($config, $amount, $data, $testMode);
-            case 'authorizenet':
-                return $this->processAuthorizeNet($config, $amount, $data, $testMode);
-            default:
-                throw new \Exception("Gateway '{$gatewayName}' processing is not implemented.");
+        $plugin = $this->getPlugin($gatewayName);
+        if (!$plugin) {
+            throw new \Exception("No payment plugin for '{$gatewayName}'.");
         }
-    }
-
-    protected function processPayPal($config, $amount, $data, $testMode)
-    {
-        $apiUrl = $testMode ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
-        $clientId = $config['client_id'] ?? '';
-        $secret = $config['secret'] ?? '';
-
-        if (empty($clientId) || empty($secret)) {
-            throw new \Exception('PayPal is not configured.');
-        }
-
-        return [
-            'success' => true,
-            'gateway' => 'paypal',
-            'transaction_id' => 'PP-' . strtoupper(bin2hex(random_bytes(8))),
-            'amount' => $amount,
-            'test_mode' => $testMode,
-            'redirect_url' => "{$apiUrl}/checkoutnow?token=PLACEHOLDER",
-        ];
-    }
-
-    protected function processStripe($config, $amount, $data, $testMode)
-    {
-        $secretKey = $testMode ? ($config['secret_key'] ?? '') : ($config['secret_key'] ?? '');
-
-        if (empty($secretKey)) {
-            throw new \Exception('Stripe is not configured.');
-        }
-
-        return [
-            'success' => true,
-            'gateway' => 'stripe',
-            'transaction_id' => 'STR-' . strtoupper(bin2hex(random_bytes(8))),
-            'amount' => $amount,
-            'test_mode' => $testMode,
-            'payment_intent_secret' => 'pi_secret_placeholder',
-        ];
-    }
-
-    protected function processSquare($config, $amount, $data, $testMode)
-    {
-        $accessToken = $config['access_token'] ?? '';
-        if (empty($accessToken)) {
-            throw new \Exception('Square is not configured.');
-        }
-
-        return [
-            'success' => true,
-            'gateway' => 'square',
-            'transaction_id' => 'SQ-' . strtoupper(bin2hex(random_bytes(8))),
-            'amount' => $amount,
-            'test_mode' => $testMode,
-        ];
-    }
-
-    protected function processAuthorizeNet($config, $amount, $data, $testMode)
-    {
-        $loginId = $config['api_login_id'] ?? '';
-        $tranKey = $config['transaction_key'] ?? '';
-
-        if (empty($loginId) || empty($tranKey)) {
-            throw new \Exception('Authorize.net is not configured.');
-        }
-
-        return [
-            'success' => true,
-            'gateway' => 'authorizenet',
-            'transaction_id' => 'ANET-' . strtoupper(bin2hex(random_bytes(8))),
-            'amount' => $amount,
-            'test_mode' => $testMode,
-        ];
+        $config = array_merge($plugin->getDefaultConfig(), json_decode($gateway->config ?? '{}', true) ?: []);
+        $data['test_mode'] = (bool)$gateway->test_mode;
+        return $plugin->processPayment($amount, $config, $data);
     }
 }
