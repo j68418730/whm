@@ -13,6 +13,7 @@
 
 <div class="section-grid">
 <a href="/admin/billing" class="section-card"><div class="icon">📊</div><div class="name">Billing Dashboard</div><div class="desc">Billing overview & stats</div></a>
+<a href="/admin/billing/cart" class="section-card"><div class="icon">🛒</div><div class="name">Shopping Cart</div><div class="desc">Cart embed & API integration</div></a>
 <a href="/admin/billing/products" class="section-card"><div class="icon">🏷️</div><div class="name">Products</div><div class="desc">Product & service catalog</div></a>
 <a href="/admin/billing/orders" class="section-card"><div class="icon">📋</div><div class="name">Orders</div><div class="desc">Customer orders</div></a>
 <a href="/admin/billing/invoices" class="section-card"><div class="icon">🧾</div><div class="name">Invoices</div><div class="desc">Invoice management</div></a>
