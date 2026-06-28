@@ -37,7 +37,7 @@ class BackupManager
     {
         try {
             $rows = $this->db->pdo()->query("
-                SELECT p.*, hu.username AS user_username, hu.email AS user_email
+                SELECT p.*, hu.username AS user_username, hu.email AS user_email, hu.domain AS user_domain
                 FROM backup_profiles p
                 LEFT JOIN hosting_users hu ON p.user_id = hu.id
                 ORDER BY p.id DESC
