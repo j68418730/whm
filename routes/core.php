@@ -470,6 +470,7 @@ $router->post('/admin/billing/products/update/{id}', 'Admin\Controllers\BillingC
 $router->get('/admin/billing/products/delete/{id}', 'Admin\Controllers\BillingController@productDelete');
 $router->post('/admin/billing/products/sort', 'Admin\Controllers\BillingController@productSort');
 $router->get('/admin/billing/orders', 'Admin\Controllers\BillingController@orders');
+$router->post('/admin/billing/orders/store', 'Admin\Controllers\BillingController@orderStore');
 $router->post('/admin/billing/orders/update/{id}', 'Admin\Controllers\BillingController@orderUpdate');
 $router->get('/admin/billing/services', 'Admin\Controllers\BillingController@services');
 $router->post('/admin/billing/services/update/{id}', 'Admin\Controllers\BillingController@serviceUpdate');
@@ -482,6 +483,7 @@ $router->post('/admin/billing/payments/store', 'Admin\Controllers\BillingControl
 $router->get('/admin/billing/payments/delete/{id}', 'Admin\Controllers\BillingController@paymentDelete');
 $router->get('/admin/billing/taxes', 'Admin\Controllers\BillingController@taxes');
 $router->post('/admin/billing/taxes/store', 'Admin\Controllers\BillingController@taxStore');
+$router->post('/admin/billing/taxes/update/{id}', 'Admin\Controllers\BillingController@taxUpdate');
 $router->get('/admin/billing/taxes/delete/{id}', 'Admin\Controllers\BillingController@taxDelete');
 $router->get('/admin/billing/coupons', 'Admin\Controllers\BillingController@coupons');
 $router->post('/admin/billing/coupons/store', 'Admin\Controllers\BillingController@couponStore');
@@ -499,7 +501,10 @@ $router->get('/admin/billing/refunds/delete/{id}', 'Admin\Controllers\BillingCon
 $router->get('/admin/gateways', 'Admin\Controllers\GatewayController@index');
 $router->post('/admin/gateways/store', 'Admin\Controllers\GatewayController@store');
 $router->get('/admin/gateways/delete/{id}', 'Admin\Controllers\GatewayController@delete');
+$router->get('/admin/gateways/toggle/{id}', 'Admin\Controllers\GatewayController@toggle');
+$router->get('/admin/gateways/toggle-test/{id}', 'Admin\Controllers\GatewayController@toggleTest');
 $router->get('/admin/gateways/test/{id}', 'Admin\Controllers\GatewayController@test');
+$router->get('/admin/gateways/webhook/{id}', 'Admin\Controllers\GatewayController@verifyWebhook');
 
 // -- Public store category routes --
 $router->get('/hosting/{category}', 'Admin\Controllers\StoreController@category');
