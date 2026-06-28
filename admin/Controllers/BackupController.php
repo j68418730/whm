@@ -132,6 +132,53 @@ class BackupController extends Controller
         ]);
     }
 
+    // ── Reports ──
+    public function reports()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $stats = $this->backup->getRestoreStats(30);
+        $history = $this->backup->getHistory(100);
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        return $this->view('admin.backup.index', [
+            'user' => $user, 'theme_settings' => $theme_settings,
+            'stats' => $stats, 'history' => $history, 'reportView' => true,
+        ]);
+    }
+
+    // ── Restore Points ──
+    public function restorePoints()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $restoreManager = new \Admin\Services\Migration\RestoreManager();
+        $points = $restoreManager->getRestorePoints();
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        return $this->view('admin.backup.index', [
+            'user' => $user, 'theme_settings' => $theme_settings,
+            'points' => $points, 'restorePointsView' => true,
+        ]);
+    }
+
+    public function deleteRestorePoint($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $restoreManager = new \Admin\Services\Migration\RestoreManager();
+        $restoreManager->deleteRestorePoint((int)$id);
+        $_SESSION['success_message'] = 'Restore point deleted.';
+        $this->response->redirect('/admin/backup/restore-points');
+        exit;
+    }
+
+    public function toggleFavoriteRestorePoint($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $restoreManager = new \Admin\Services\Migration\RestoreManager();
+        $restoreManager->toggleFavorite((int)$id);
+        $this->response->redirect('/admin/backup/restore-points');
+        exit;
+    }
+
     // ── Settings ──
     public function settings()
     {

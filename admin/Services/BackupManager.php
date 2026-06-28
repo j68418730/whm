@@ -115,6 +115,76 @@ class BackupManager
         return ['count' => count($files), 'total_size' => $total];
     }
 
+    public function createProfile(array $data)
+    {
+        try {
+            return $this->db->table('backup_profiles')->insertGetId([
+                'name' => $data['name'] ?? '',
+                'user_id' => (int)($data['user_id'] ?? 0),
+                'type' => $data['type'] ?? 'full',
+                'include_paths' => $data['include_paths'] ?? null,
+                'exclude_patterns' => $data['exclude_patterns'] ?? null,
+                'schedule' => $data['schedule'] ?? null,
+                'retention' => (int)($data['retention'] ?? 7),
+                'is_active' => (int)($data['is_active'] ?? 1),
+            ]);
+        } catch (\Exception $e) { return 0; }
+    }
+
+    public function updateProfile(int $id, array $data)
+    {
+        try {
+            $update = [];
+            foreach (['name','user_id','type','include_paths','exclude_patterns','schedule','retention','is_active'] as $k) {
+                if (isset($data[$k])) $update[$k] = $data[$k];
+            }
+            if (!empty($update)) $this->db->table('backup_profiles')->where('id', $id)->update($update);
+            return true;
+        } catch (\Exception $e) { return false; }
+    }
+
+    public function deleteProfile(int $id)
+    {
+        try {
+            $this->db->table('backup_profiles')->where('id', $id)->delete();
+            return true;
+        } catch (\Exception $e) { return false; }
+    }
+
+    public function restorePreview($filename)
+    {
+        $path = $this->backupDir . '/' . basename($filename);
+        if (!is_file($path)) return null;
+        $output = [];
+        exec("tar -tzf " . escapeshellarg($path) . " 2>/dev/null | head -200", $output, $code);
+        if ($code !== 0) return null;
+        $dirs = [];
+        foreach ($output as $line) {
+            $line = trim($line);
+            if (empty($line)) continue;
+            $parts = explode('/', $line);
+            $dir = $parts[0];
+            if (!isset($dirs[$dir])) $dirs[$dir] = ['name' => $dir, 'count' => 0];
+            $dirs[$dir]['count']++;
+        }
+        return [
+            'filename' => $filename,
+            'size' => filesize($path),
+            'total_entries' => count($output),
+            'directories' => array_values($dirs),
+        ];
+    }
+
+    public function getRestoreStats(int $days = 30): array
+    {
+        try {
+            $total = $this->db->pdo()->query("SELECT COUNT(*) as cnt FROM backup_history WHERE created_at >= DATE_SUB(NOW(), INTERVAL {$days} DAY)")->fetch(\PDO::FETCH_OBJ);
+            $completed = $this->db->pdo()->query("SELECT COUNT(*) as cnt FROM backup_history WHERE status='completed' AND created_at >= DATE_SUB(NOW(), INTERVAL {$days} DAY)")->fetch(\PDO::FETCH_OBJ);
+            $failed = $this->db->pdo()->query("SELECT COUNT(*) as cnt FROM backup_history WHERE status='failed' AND created_at >= DATE_SUB(NOW(), INTERVAL {$days} DAY)")->fetch(\PDO::FETCH_OBJ);
+            return ['total' => (int)($total->cnt ?? 0), 'completed' => (int)($completed->cnt ?? 0), 'failed' => (int)($failed->cnt ?? 0), 'success' => (int)($completed->cnt ?? 0)];
+        } catch (\Exception $e) { return ['total' => 0, 'completed' => 0, 'failed' => 0, 'success' => 0]; }
+    }
+
     protected function logHistory($action, $filename, $success)
     {
         try {
