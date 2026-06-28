@@ -101,16 +101,38 @@ class BillingController extends Controller
     {
         $this->guard();
         $user = $this->auth->user();
-        $income = $this->db->table('billing_payments')->get() ?: [];
-        $totalRevenue = 0;
-        foreach ($income as $p) { if ($p->status === 'completed') $totalRevenue += $p->amount; }
-        $orders = $this->db->table('billing_orders')->get() ?: [];
-        $activeServices = 0; $pendingOrders = 0;
-        foreach ($orders as $o) { if ($o->status === 'active') $activeServices++; if ($o->status === 'pending') $pendingOrders++; }
+        $pdo = $this->db->pdo();
+
+        $totalRevenue = (float)($pdo->query("SELECT COALESCE(SUM(amount),0) FROM billing_payments WHERE status='completed'")->fetchColumn() ?? 0);
+        $activeServices = (int)($pdo->query("SELECT COUNT(*) FROM billing_services WHERE status='active'")->fetchColumn() ?? 0);
+        $pendingOrders = (int)($pdo->query("SELECT COUNT(*) FROM billing_orders WHERE status='pending'")->fetchColumn() ?? 0);
+        $totalInvoices = (int)($pdo->query("SELECT COUNT(*) FROM invoices")->fetchColumn() ?? 0);
+
+        $productCount = (int)($pdo->query("SELECT COUNT(*) FROM billing_products")->fetchColumn() ?? 0);
+        $orderCount = (int)($pdo->query("SELECT COUNT(*) FROM billing_orders")->fetchColumn() ?? 0);
+        $serviceCount = (int)($pdo->query("SELECT COUNT(*) FROM billing_services")->fetchColumn() ?? 0);
+        $invoiceCount = $totalInvoices;
+        $paymentCount = (int)($pdo->query("SELECT COUNT(*) FROM billing_payments")->fetchColumn() ?? 0);
+        $taxCount = (int)($pdo->query("SELECT COUNT(*) FROM billing_taxes")->fetchColumn() ?? 0);
+        $couponCount = (int)($pdo->query("SELECT COUNT(*) FROM billing_coupons")->fetchColumn() ?? 0);
+        $creditCount = (int)($pdo->query("SELECT COUNT(*) FROM billing_credits")->fetchColumn() ?? 0);
+        $refundCount = (int)($pdo->query("SELECT COUNT(*) FROM billing_refunds")->fetchColumn() ?? 0);
+
+        $totalCollected = (float)($pdo->query("SELECT COALESCE(SUM(amount),0) FROM billing_payments WHERE status='completed'")->fetchColumn() ?? 0);
+        $outstandingBalance = (float)($pdo->query("SELECT COALESCE(SUM(total),0) FROM invoices WHERE status IN ('sent','overdue')")->fetchColumn() ?? 0);
+        $monthlyRecurring = (float)($pdo->query("SELECT COALESCE(SUM(price),0) FROM billing_services WHERE status='active'")->fetchColumn() ?? 0);
+
         return $this->view('admin.billing.index', [
             'user' => $user, 'title' => 'Billing', 'theme_settings' => $this->theme(),
-            'totalRevenue' => $totalRevenue, 'activeServices' => $activeServices, 'pendingOrders' => $pendingOrders,
-            'totalInvoices' => count($this->db->table('invoices')->get() ?: []),
+            'totalRevenue' => $totalRevenue, 'activeServices' => $activeServices,
+            'pendingOrders' => $pendingOrders, 'totalInvoices' => $totalInvoices,
+            'productCount' => $productCount, 'orderCount' => $orderCount,
+            'serviceCount' => $serviceCount, 'invoiceCount' => $invoiceCount,
+            'paymentCount' => $paymentCount, 'taxCount' => $taxCount,
+            'couponCount' => $couponCount, 'creditCount' => $creditCount,
+            'refundCount' => $refundCount,
+            'totalCollected' => $totalCollected, 'outstandingBalance' => $outstandingBalance,
+            'monthlyRecurring' => $monthlyRecurring,
         ]);
     }
 
@@ -179,7 +201,32 @@ class BillingController extends Controller
         $hostingUsers = $this->users();
         $userMap = [];
         foreach ($hostingUsers as $h) $userMap[$h->id] = $h;
-        return $this->view('admin.billing.orders', ['user' => $user, 'title' => 'Orders', 'theme_settings' => $this->theme(), 'orders' => $orders, 'userMap' => $userMap]);
+        $products = $this->db->table('billing_products')->orderBy('name', 'ASC')->get() ?: [];
+        $packages = $this->db->table('hosting_packages')->where('is_active', 1)->get() ?: [];
+        return $this->view('admin.billing.orders', [
+            'user' => $user, 'title' => 'Orders', 'theme_settings' => $this->theme(),
+            'orders' => $orders, 'userMap' => $userMap,
+            'products' => $products, 'packages' => $packages,
+        ]);
+    }
+
+    public function orderStore()
+    {
+        $this->guard();
+        $uid = (int)$this->request->post('user_id', 0);
+        $pid = (int)$this->request->post('product_id', 0);
+        $pkgId = $this->request->post('package_id') ? (int)$this->request->post('package_id') : null;
+        $total = (float)$this->request->post('total', 0);
+        $desc = $this->request->post('description', '');
+        if (!$uid) { $_SESSION['error_message'] = 'Please select a user.'; $this->response->redirect('/admin/billing/orders'); return; }
+        $this->db->table('billing_orders')->insert([
+            'user_id' => $uid, 'product_id' => $pid ?: null,
+            'package_id' => $pkgId, 'total' => $total,
+            'description' => $desc, 'status' => 'pending',
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        $_SESSION['success_message'] = 'Order created.';
+        $this->response->redirect('/admin/billing/orders');
     }
 
     public function orderUpdate($id)
@@ -196,7 +243,7 @@ class BillingController extends Controller
     {
         $this->guard();
         $user = $this->auth->user();
-        $services = $this->db->table('billing_services')->get() ?: [];
+        $services = $this->db->pdo()->query("SELECT s.*, hu.username, hu.domain, bp.name as product_name FROM billing_services s LEFT JOIN hosting_users hu ON s.user_id = hu.id LEFT JOIN billing_products bp ON s.product_id = bp.id ORDER BY s.id DESC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         return $this->view('admin.billing.services', ['user' => $user, 'title' => 'Services', 'theme_settings' => $this->theme(), 'services' => $services]);
     }
 
@@ -222,10 +269,15 @@ class BillingController extends Controller
         $credits = $this->db->table('billing_credits')->get() ?: [];
         $creditsByUser = [];
         foreach ($credits as $c) $creditsByUser[$c->user_id] = ($creditsByUser[$c->user_id] ?? 0) + $c->amount;
+        $pastDueByUser = [];
+        $overdueInvs = $this->db->pdo()->query("SELECT user_id, SUM(total) as total FROM invoices WHERE status = 'overdue' GROUP BY user_id")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        foreach ($overdueInvs as $oi) $pastDueByUser[$oi->user_id] = (float)$oi->total;
+        $userPackageList = $this->db->pdo()->query("SELECT s.user_id, s.billing_cycle, s.price, p.name as product_name FROM billing_services s LEFT JOIN billing_products p ON s.product_id = p.id WHERE s.status = 'active'")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         return $this->view('admin.billing.invoices', [
             'user' => $user, 'title' => 'Invoices', 'theme_settings' => $this->theme(),
             'invoices' => $invoices, 'hostingUsers' => $hostingUsers,
             'unpaidOrders' => $unpaidOrders, 'creditsByUser' => $creditsByUser,
+            'pastDueByUser' => $pastDueByUser, 'userPackageList' => $userPackageList,
         ]);
     }
 
@@ -235,22 +287,38 @@ class BillingController extends Controller
         $uid = (int)$this->request->post('user_id', 0);
         $total = (float)$this->request->post('total', 0);
         $combine = $this->request->post('combine_unpaid', '');
+        $applyCredit = $this->request->post('apply_credit', '');
         $num = 'INV-' . date('Ymd') . '-' . rand(1000, 9999);
         // If combine, add up unpaid order amounts
         if ($combine && $uid) {
             $orders = $this->db->pdo()->query("SELECT SUM(total) as total FROM billing_orders WHERE user_id = {$uid} AND status IN ('pending','suspended')")->fetch(\PDO::FETCH_OBJ);
             if ($orders && $orders->total > 0) $total += (float)$orders->total;
         }
+        $creditApplied = 0;
+        if ($applyCredit && $uid) {
+            $totalCredits = (float)$this->db->pdo()->query("SELECT SUM(amount) as total FROM billing_credits WHERE user_id = {$uid}")->fetch(\PDO::FETCH_OBJ)->total ?? 0;
+            $usedCredits = (float)$this->db->pdo()->query("SELECT SUM(amount) as total FROM billing_credit_usage WHERE user_id = {$uid}")->fetch(\PDO::FETCH_OBJ)->total ?? 0;
+            $available = $totalCredits - $usedCredits;
+            if ($available > 0) {
+                $creditApplied = min($available, $total);
+                $this->db->table('billing_credit_usage')->insert([
+                    'user_id' => $uid, 'amount' => -$creditApplied,
+                    'description' => "Applied to invoice {$num}",
+                    'created_at' => date('Y-m-d H:i:s'),
+                ]);
+            }
+        }
         $this->db->table('invoices')->insertGetId([
             'user_id' => $uid, 'invoice_number' => $num, 'date' => date('Y-m-d'),
             'due_date' => $this->request->post('due_date', date('Y-m-d', strtotime('+30 days'))),
-            'subtotal' => $total, 'total' => $total, 'status' => 'draft',
+            'subtotal' => $total, 'total' => $total - $creditApplied,
+            'credit_applied' => $creditApplied, 'status' => 'draft',
         ]);
         // Mark combined orders as invoiced
         if ($combine && $uid) {
             $this->db->pdo()->prepare("UPDATE billing_orders SET status = 'invoiced' WHERE user_id = ? AND status IN ('pending','suspended')")->execute([$uid]);
         }
-        $_SESSION['success_message'] = "Invoice {$num} created.";
+        $_SESSION['success_message'] = "Invoice {$num} created." . ($creditApplied > 0 ? " (\${$creditApplied} credit applied)" : '');
         $this->response->redirect('/admin/billing/invoices');
     }
 
@@ -274,9 +342,23 @@ class BillingController extends Controller
     {
         $this->guard();
         $user = $this->auth->user();
-        $payments = $this->db->pdo()->query("SELECT p.*, hu.username, hu.domain FROM billing_payments p LEFT JOIN hosting_users hu ON p.user_id = hu.id ORDER BY p.id DESC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        $q = trim($this->request->get('q', ''));
+        $sql = "SELECT p.*, hu.username, hu.domain FROM billing_payments p LEFT JOIN hosting_users hu ON p.user_id = hu.id";
+        $bind = [];
+        if ($q) {
+            $sql .= " WHERE p.transaction_id LIKE ? OR hu.username LIKE ? OR hu.domain LIKE ? OR p.invoice_id LIKE ? OR p.amount LIKE ?";
+            $like = "%{$q}%";
+            $bind = [$like, $like, $like, $like, $like];
+        }
+        $sql .= " ORDER BY p.id DESC";
+        $stmt = $this->db->pdo()->prepare($sql);
+        $stmt->execute($bind);
+        $payments = $stmt->fetchAll(\PDO::FETCH_OBJ) ?: [];
         $hostingUsers = $this->users();
-        return $this->view('admin.billing.payments', ['user' => $user, 'title' => 'Payments', 'theme_settings' => $this->theme(), 'payments' => $payments, 'hostingUsers' => $hostingUsers]);
+        return $this->view('admin.billing.payments', [
+            'user' => $user, 'title' => 'Payments', 'theme_settings' => $this->theme(),
+            'payments' => $payments, 'hostingUsers' => $hostingUsers, 'searchQuery' => $q,
+        ]);
     }
 
     public function paymentStore()
@@ -320,6 +402,19 @@ class BillingController extends Controller
         $this->response->redirect('/admin/billing/taxes');
     }
 
+    public function taxUpdate($id)
+    {
+        $this->guard();
+        $this->db->table('billing_taxes')->where('id', $id)->update([
+            'name' => $this->request->post('name', ''),
+            'rate' => (float)$this->request->post('rate', 0),
+            'country' => $this->request->post('country', ''),
+            'is_active' => (int)$this->request->post('is_active', 1),
+        ]);
+        $_SESSION['success_message'] = 'Tax rate updated.';
+        $this->response->redirect('/admin/billing/taxes');
+    }
+
     public function taxDelete($id)
     {
         $this->guard();
@@ -339,10 +434,11 @@ class BillingController extends Controller
     public function couponStore()
     {
         $this->guard();
+        $expires = $this->request->post('expires_at');
         $this->db->table('billing_coupons')->insertGetId([
             'code' => strtoupper($this->request->post('code', '')), 'type' => $this->request->post('type', 'percentage'),
             'value' => (float)$this->request->post('value', 0), 'max_uses' => (int)$this->request->post('max_uses', 0),
-            'min_total' => (float)$this->request->post('min_total', 0), 'expires_at' => $this->request->post('expires_at'),
+            'min_total' => (float)$this->request->post('min_total', 0), 'expires_at' => $expires ?: null,
             'is_active' => 1,
         ]);
         $_SESSION['success_message'] = 'Coupon created.';
@@ -352,13 +448,14 @@ class BillingController extends Controller
     public function couponUpdate($id)
     {
         $this->guard();
+        $expires = $this->request->post('expires_at');
         $this->db->table('billing_coupons')->where('id', $id)->update([
             'code' => strtoupper($this->request->post('code', '')),
             'type' => $this->request->post('type', 'percentage'),
             'value' => (float)$this->request->post('value', 0),
             'max_uses' => (int)$this->request->post('max_uses', 0),
             'min_total' => (float)$this->request->post('min_total', 0),
-            'expires_at' => $this->request->post('expires_at'),
+            'expires_at' => $expires ?: null,
             'is_active' => (int)$this->request->post('is_active', 1),
         ]);
         $_SESSION['success_message'] = 'Coupon updated.';

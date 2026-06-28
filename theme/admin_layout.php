@@ -149,17 +149,11 @@ function filterSidebar(val) {
 <?php endif; ?>
 </div>
 
-<div class="nav-section" data-section="billing">
-<div class="nav-label">Billing</div>
-<a href="/admin/billing" class="<?php echo str_contains($currentUrl,'/admin/billing') && !str_contains($currentUrl,'/admin/billing/')?'active':''; ?>">Billing Dashboard</a>
-<a href="/admin/billing/products" class="<?php echo str_contains($currentUrl,'/admin/billing/products')?'active':''; ?>">Products</a>
-<a href="/admin/billing/orders" class="<?php echo str_contains($currentUrl,'/admin/billing/orders')?'active':''; ?>">Orders</a>
-<a href="/admin/billing/services" class="<?php echo str_contains($currentUrl,'/admin/billing/services')?'active':''; ?>">Services</a>
-<a href="/admin/billing/invoices" class="<?php echo str_contains($currentUrl,'/admin/billing/invoices')?'active':''; ?>">Invoices</a>
-</div>
+
 
 <div class="nav-section" data-section="system">
 <div class="nav-label">System</div>
+<a href="/admin/gateways" class="<?php echo str_contains($currentUrl,'/admin/gateways')?'active':''; ?>">💳 Payment Gateways</a>
 <a href="/admin/backup" class="<?php echo str_contains($currentUrl,'/admin/backup')?'active':''; ?>">Backups</a>
 <a href="/admin/apache" class="<?php echo str_contains($currentUrl,'/admin/apache')?'active':''; ?>">Apache</a>
 <a href="/admin/php" class="<?php echo str_contains($currentUrl,'/admin/php')?'active':''; ?>">PHP Manager</a>
