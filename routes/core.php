@@ -464,6 +464,7 @@ $router->post('/paypal/ipn', 'Admin\Controllers\PaypalController@ipn');
 
 // -- Billing routes --
 $router->get('/admin/billing', 'Admin\Controllers\BillingController@index');
+$router->get('/admin/billing/cart', 'Admin\Controllers\BillingController@cart');
 $router->get('/admin/billing/products', 'Admin\Controllers\BillingController@products');
 $router->post('/admin/billing/products/store', 'Admin\Controllers\BillingController@productStore');
 $router->post('/admin/billing/products/update/{id}', 'Admin\Controllers\BillingController@productUpdate');

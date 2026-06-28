@@ -136,6 +136,18 @@ class BillingController extends Controller
         ]);
     }
 
+    // ── Shopping Cart Integration ──
+    public function cart()
+    {
+        $this->guard();
+        $user = $this->auth->user();
+        $products = $this->db->table('billing_products')->where('is_active', 1)->orderBy('sort_order', 'ASC')->get() ?: [];
+        return $this->view('admin.billing.cart', [
+            'user' => $user, 'title' => 'Shopping Cart', 'theme_settings' => $this->theme(),
+            'products' => $products,
+        ]);
+    }
+
     // ── Products ──
     public function products()
     {
