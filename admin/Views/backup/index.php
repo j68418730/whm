@@ -148,7 +148,7 @@ User: <?php echo htmlspecialchars($pt['user_id'] ?? ''); ?> · <?php echo $pt['c
 <div><label style="display:block;color:var(--text-secondary);font-size:13px;margin-bottom:4px">From Profile</label><select name="profile_id" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;min-width:200px;outline:none">
 <option value="">— Select Profile —</option>
 <?php foreach ($profiles as $p): ?>
-<option value="<?php echo $p['id']; ?>"><?php echo htmlspecialchars($p["name"]); if($p["user_username"]) echo " (" . htmlspecialchars($p["user_username"]) . ")"; ?></option>
+<option value="<?php echo $p['id']; ?>"><?php echo htmlspecialchars($p["name"]); if($p["user_username"]) echo " (" . htmlspecialchars($p["user_username"]) . " @ " . htmlspecialchars($p["user_domain"] ?? "") . ")"; ?></option>
 <?php endforeach; ?>
 </select></div>
 <button type="submit" class="btn primary">Create Backup</button>
