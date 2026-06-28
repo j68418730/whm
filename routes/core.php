@@ -224,6 +224,9 @@ $router->get('/admin/restore-center/favorite/{id}', 'Admin\Controllers\RestoreCe
 $router->get('/admin/restore-center/rollback/{id}', 'Admin\Controllers\RestoreCenterController@rollback');
 $router->get('/admin/restore-center/reports', 'Admin\Controllers\RestoreCenterController@reports');
 $router->get('/admin/restore-center/history', 'Admin\Controllers\RestoreCenterController@history');
+$router->get('/admin/restore-center/browse', 'Admin\Controllers\RestoreCenterController@browseBackups');
+$router->get('/admin/restore-center/browse/{filename}', 'Admin\Controllers\RestoreCenterController@browseBackup');
+$router->post('/admin/restore-center/restore-item', 'Admin\Controllers\RestoreCenterController@restoreItem');
 $router->get('/admin/restore-center/quick/{type}/{userId}', 'Admin\Controllers\RestoreCenterController@quick');
 $router->get('/admin/chat-dashboard', 'Admin\Controllers\ChatDashboardController@index');
 $router->get('/admin/firewall', 'Admin\Controllers\FirewallController@index');
