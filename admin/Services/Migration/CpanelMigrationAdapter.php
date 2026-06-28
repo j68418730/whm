@@ -10,7 +10,8 @@ class CpanelMigrationAdapter extends BaseMigrationAdapter
 
     public function testConnection(string $host, int $port, string $username, string $password, ?string $apiKey = null): array
     {
-        $resp = $this->httpGet("https://{$host}:{$port}/json-api/version?api.version=1", ["Authorization: whm {$username}:{$apiKey ?: $password}"]);
+        $auth = $apiKey ?: $password;
+        $resp = $this->httpGet("https://{$host}:{$port}/json-api/version?api.version=1", ["Authorization: whm {$username}:{$auth}"]);
         $connected = $resp['code'] === 200 && !empty($resp['body']);
         return ['connected' => $connected, 'error' => $connected ? null : "HTTP {$resp['code']}: {$resp['error']}", 'version' => json_decode($resp['body'], true)['version'] ?? '?'];
     }

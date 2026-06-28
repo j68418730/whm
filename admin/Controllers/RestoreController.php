@@ -141,14 +141,14 @@ class RestoreController extends Controller
         ]);
 
         try {
-            $backupDir = $this->backup->backupDir ?? '/var/backups/planet_hosts';
+            $backupDir = $this->backup->backupDir ?? '/root/backupfiles';
             $backupPath = rtrim($backupDir, '/') . '/' . $filename;
 
             if (!file_exists($backupPath)) {
                 // Try alternative locations
                 $altPaths = [
                     "K:\\site_del\\backups\\{$filename}",
-                    "/var/backups/planet_hosts/{$filename}",
+                    "/root/backupfiles/{$filename}",
                 ];
                 foreach ($altPaths as $p) {
                     if (file_exists($p)) { $backupPath = $p; break; }

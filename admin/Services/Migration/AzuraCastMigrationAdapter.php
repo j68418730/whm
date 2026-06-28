@@ -12,7 +12,8 @@ class AzuraCastMigrationAdapter extends BaseMigrationAdapter
 
     public function testConnection(string $host, int $port, string $username, string $password, ?string $apiKey = null): array
     {
-        $resp = $this->httpGet("https://{$host}:{$port}/api/admin/stations", ["Authorization: Bearer {$apiKey ?: $password}"]);
+        $auth = $apiKey ?: $password;
+        $resp = $this->httpGet("https://{$host}:{$port}/api/admin/stations", ["Authorization: Bearer {$auth}"]);
         return ['connected' => $resp['code'] === 200, 'error' => $resp['code'] !== 200 ? "HTTP {$resp['code']}" : null];
     }
 

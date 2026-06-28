@@ -201,6 +201,77 @@ class RestoreCenterController extends Controller
         ]);
     }
 
+    // ── Page-by-Page Backup Browser ──
+    public function browseBackups()
+    {
+        $this->guard();
+        $user = $this->auth->user();
+        $backups = $this->restore->listAvailableBackups();
+        $theme_settings = $this->theme();
+        return $this->view('admin.restorecenter.index', [
+            'user' => $user, 'title' => 'Browse Backups',
+            'theme_settings' => $theme_settings,
+            'backups' => $backups, 'browseView' => true,
+        ]);
+    }
+
+    public function browseBackup($filename)
+    {
+        $this->guard();
+        $user = $this->auth->user();
+        $contents = $this->restore->browseBackupContents($filename);
+        $theme_settings = $this->theme();
+        return $this->view('admin.restorecenter.index', [
+            'user' => $user, 'title' => 'Backup: ' . $filename,
+            'theme_settings' => $theme_settings,
+            'contents' => $contents, 'browseDetailView' => true,
+        ]);
+    }
+
+    public function restoreItem()
+    {
+        $this->guard();
+        $filename = $this->request->post('filename', '');
+        $itemPath = $this->request->post('item_path', '');
+
+        if (!$filename || !$itemPath) {
+            $_SESSION['error_message'] = 'Missing backup filename or item path.';
+            $this->response->redirect('/admin/restore-center/browse');
+            exit;
+        }
+
+        // Create a safety backup of the current state first
+        $itemName = basename($itemPath);
+        $safetyName = "safety_before_restore_{$itemName}_" . date('Ymd_His') . ".tar.gz";
+        $backupDir = '/root/backupfiles';
+        $safetyPath = $backupDir . '/' . $safetyName;
+        $restorePath = '/' . ltrim($itemPath, '/');
+        if (file_exists($restorePath)) {
+            exec("tar -czf " . escapeshellarg($safetyPath) . " " . escapeshellarg($restorePath) . " 2>/dev/null");
+        }
+
+        $result = $this->restore->restoreSingleItem($filename, $itemPath);
+
+        if ($result['success']) {
+            // Create a restore point entry
+            $rpId = $this->restore->createRestorePoint(
+                $this->auth->user()->id ?? 0,
+                "Single-item restore: {$itemPath} from {$filename}",
+                $safetyName,
+                [$itemPath],
+                'active',
+                "Restored single item {$itemPath} from backup {$filename}"
+            );
+
+            $_SESSION['success_message'] = "Item restored: {$result['item']} from {$filename}";
+        } else {
+            $_SESSION['error_message'] = 'Restore failed: ' . ($result['error'] ?? 'Unknown');
+        }
+
+        $this->response->redirect('/admin/restore-center/browse/' . urlencode($filename));
+        exit;
+    }
+
     // ── Quick Restore ──
     public function quick($type, $userId)
     {

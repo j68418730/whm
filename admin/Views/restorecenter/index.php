@@ -13,6 +13,7 @@
 <a href="/admin/restore-center/points" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text-secondary)">⏱ Restore Points</a>
 <a href="/admin/restore-center/reports" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text-secondary)">📊 Reports</a>
 <a href="/admin/restore-center/history" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text-secondary)">📜 History</a>
+<a href="/admin/restore-center/browse" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;<?php echo !empty($browseView) || !empty($browseDetailView) ? 'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff' : 'color:var(--text-secondary)'; ?>">📂 Browse Backups</a>
 </div>
 
 <?php if (!empty($pointsView)): ?>
@@ -115,6 +116,133 @@ User: <?php echo htmlspecialchars($pt['user_id']); ?> · Type: <?php echo $pt['t
 </tbody>
 </table>
 </div>
+<?php endif; ?>
+
+<?php elseif (!empty($browseView)): ?>
+<h3 style="color:var(--accent);margin-bottom:12px">📂 Browse Backups</h3>
+<p style="font-size:12px;color:#64748b;margin-bottom:12px">Select a backup to browse its contents and restore individual items page-by-page.</p>
+<?php if (empty($backups)): ?>
+<div class="card" style="text-align:center;padding:24px;color:#64748b">No backups found. Create a backup first from the <a href="/admin/backup" style="color:var(--accent)">Backup page</a>.</div>
+<?php else: ?>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px">
+<?php foreach ($backups as $bk): ?>
+<div class="card" style="margin-bottom:0;padding:14px">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<div>
+<span style="font-weight:600;font-size:13px"><?php echo htmlspecialchars($bk['name']); ?></span>
+</div>
+<a href="/admin/restore-center/browse/<?php echo urlencode($bk['name']); ?>" class="btn btn-sm primary">📂 Browse</a>
+</div>
+<div style="font-size:10px;color:#64748b;margin-top:6px">
+<?php echo $bk['size_formatted']; ?> · <?php echo $bk['date']; ?>
+</div>
+</div>
+<?php endforeach; ?>
+</div>
+<?php endif; ?>
+
+<?php elseif (!empty($browseDetailView)): ?>
+<h3 style="color:var(--accent);margin-bottom:12px">📂 <?php echo htmlspecialchars($contents['backup_name'] ?? ''); ?></h3>
+<div style="font-size:11px;color:#64748b;margin-bottom:12px">
+Size: <?php echo htmlspecialchars($contents['backup_size'] ?? ''); ?> · 
+Date: <?php echo htmlspecialchars($contents['backup_date'] ?? ''); ?> · 
+Total items: <?php echo $contents['total'] ?? 0; ?>
+</div>
+<a href="/admin/restore-center/browse" class="btn btn-sm secondary" style="margin-bottom:12px">← Back to backups</a>
+
+<?php if (!empty($contents['error'])): ?>
+<div class="card" style="text-align:center;padding:24px;color:#f87171"><?php echo htmlspecialchars($contents['error']); ?></div>
+<?php elseif (empty($contents['files'])): ?>
+<div class="card" style="text-align:center;padding:24px;color:#64748b">No files found in this backup.</div>
+<?php else: ?>
+<div class="card" style="margin-bottom:0;padding:14px">
+<div style="display:flex;gap:6px;margin-bottom:8px">
+<input type="text" id="fileFilter" class="form-control" placeholder="Filter files..." style="flex:1;padding:6px 10px;font-size:12px">
+<span style="padding:6px 10px;background:rgba(255,255,255,.05);border-radius:6px;font-size:11px;color:#64748b" id="fileCount"><?php echo $contents['total']; ?> files</span>
+</div>
+<div style="max-height:500px;overflow-y:auto;border:1px solid rgba(255,255,255,.06);border-radius:6px;font-size:11px;font-family:monospace">
+<form method="POST" action="/admin/restore-center/restore-item" id="restoreForm">
+<input type="hidden" name="filename" value="<?php echo htmlspecialchars($contents['backup_name'] ?? ''); ?>">
+<input type="hidden" name="item_path" id="selectedItemPath" value="">
+<table style="width:100%;border-collapse:collapse">
+<thead><tr style="background:rgba(0,0,0,.3);position:sticky;top:0">
+<th style="padding:6px 8px;text-align:left;width:24px"></th>
+<th style="padding:6px 8px;text-align:left">Path</th>
+<th style="padding:6px 8px;text-align:left">Name</th>
+<th style="padding:6px 8px;text-align:left;width:60px">Type</th>
+<th style="padding:6px 8px;text-align:left;width:80px">Action</th>
+</tr></thead>
+<tbody>
+<?php foreach ($contents['files'] as $fi): ?>
+<tr class="file-row" data-path="<?php echo htmlspecialchars($fi['path']); ?>" style="border-bottom:1px solid rgba(255,255,255,.04)">
+<td style="padding:4px 8px">
+<input type="radio" name="item_path_radio" value="<?php echo htmlspecialchars($fi['path']); ?>" class="item-radio" style="cursor:pointer">
+</td>
+<td style="padding:4px 8px;color:#64748b;font-size:10px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="<?php echo htmlspecialchars($fi['parent']); ?>">
+<?php echo htmlspecialchars($fi['parent'] !== '/' ? $fi['parent'] : ''); ?>
+</td>
+<td style="padding:4px 8px">
+<?php echo $fi['is_dir'] ? '📁' : '📄'; ?>
+<span style="<?php echo $fi['is_dir'] ? 'font-weight:600' : ''; ?>"><?php echo htmlspecialchars($fi['name']); ?></span>
+</td>
+<td style="padding:4px 8px;font-size:10px;color:#64748b"><?php echo $fi['is_dir'] ? 'DIR' : 'FILE'; ?></td>
+<td style="padding:4px 8px">
+<?php if (!$fi['is_dir']): ?>
+<button type="button" class="btn btn-sm primary restore-btn" style="font-size:10px;padding:3px 8px" data-path="<?php echo htmlspecialchars($fi['path']); ?>">Restore</button>
+<?php endif; ?>
+</td>
+</tr>
+<?php endforeach; ?>
+</tbody>
+</table>
+</form>
+</div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filter = document.getElementById('fileFilter');
+    const rows = document.querySelectorAll('.file-row');
+    const count = document.getElementById('fileCount');
+    const radios = document.querySelectorAll('.item-radio');
+
+    // Single-selection via radio buttons
+    radios.forEach(r => {
+        r.addEventListener('change', function() {
+            document.querySelectorAll('.file-row').forEach(row => row.style.background = 'transparent');
+            if (this.checked) {
+                this.closest('tr').style.background = 'rgba(0,191,255,.08)';
+            }
+        });
+    });
+
+    // Filter
+    if (filter) {
+        filter.addEventListener('input', function() {
+            const q = this.value.toLowerCase();
+            let visible = 0;
+            rows.forEach(row => {
+                const path = row.getAttribute('data-path').toLowerCase();
+                const match = !q || path.includes(q);
+                row.style.display = match ? '' : 'none';
+                if (match) visible++;
+            });
+            if (count) count.textContent = visible + ' files';
+        });
+    }
+
+    // Restore buttons
+    document.querySelectorAll('.restore-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            const path = this.getAttribute('data-path');
+            const name = path.split('/').pop();
+            if (!confirm('Restore "' + name + '" from backup?\n\nPath: ' + path + '\n\nThis will overwrite the current version.')) return;
+            document.getElementById('selectedItemPath').value = path;
+            document.getElementById('restoreForm').submit();
+        });
+    });
+});
+</script>
 <?php endif; ?>
 
 <?php else: ?>

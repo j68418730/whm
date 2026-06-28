@@ -36,7 +36,12 @@ class BackupManager
     public function getProfiles()
     {
         try {
-            $rows = $this->db->table('backup_profiles')->get() ?: [];
+            $rows = $this->db->pdo()->query("
+                SELECT p.*, hu.username AS user_username, hu.email AS user_email
+                FROM backup_profiles p
+                LEFT JOIN hosting_users hu ON p.user_id = hu.id
+                ORDER BY p.id DESC
+            ")->fetchAll(\PDO::FETCH_OBJ) ?: [];
             $profiles = [];
             foreach ($rows as $r) $profiles[] = (array)$r;
             return $profiles;

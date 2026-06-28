@@ -177,7 +177,7 @@ class RestoreManager
         } catch (\Exception $e) { return ['total' => 0, 'completed' => 0, 'failed' => 0, 'by_type' => []]; }
     }
 
-    public function executeRestore(int $jobId, string $backupDir = '/var/backups/planet_hosts'): array
+    public function executeRestore(int $jobId, string $backupDir = '/root/backupfiles'): array
     {
         $job = $this->getJob($jobId);
         if (!$job) return ['success' => false, 'error' => 'Job not found'];
@@ -322,13 +322,139 @@ class RestoreManager
         } catch (\Exception $e) { return false; }
     }
 
+    public function listAvailableBackups(string $backupDir = '/root/backupfiles'): array
+    {
+        $files = glob($backupDir . '/*.tar.gz');
+        $backups = [];
+        foreach ($files as $f) {
+            $backups[] = [
+                'name' => basename($f),
+                'size' => filesize($f),
+                'size_formatted' => $this->formatBytes(filesize($f)),
+                'date' => date('Y-m-d H:i:s', filemtime($f)),
+                'path' => $f,
+            ];
+        }
+        rsort($backups);
+        return $backups;
+    }
+
+    public function browseBackupContents(string $filename, string $backupDir = '/root/backupfiles'): array
+    {
+        $path = $backupDir . '/' . basename($filename);
+        if (!file_exists($path)) return ['error' => 'Backup file not found', 'files' => []];
+
+        $output = [];
+        $code = 0;
+        exec("tar -tzf " . escapeshellarg($path) . " 2>/dev/null", $output, $code);
+
+        if ($code !== 0) return ['error' => 'Failed to read backup archive', 'files' => []];
+
+        $tree = [];
+        $dirs = [];
+        foreach ($output as $line) {
+            $line = trim($line);
+            if (empty($line)) continue;
+            $isDir = str_ends_with($line, '/');
+            $parts = explode('/', $line);
+            $name = end($parts);
+            $parent = implode('/', array_slice($parts, 0, -1));
+
+            $entry = [
+                'path' => $line,
+                'name' => $name,
+                'is_dir' => $isDir,
+                'depth' => count($parts) - 1,
+                'parent' => $parent ?: '/',
+            ];
+
+            if ($isDir) {
+                $dirs[$line] = $entry;
+            }
+            $tree[] = $entry;
+        }
+
+        // Build folder hierarchy for frontend
+        $folders = [];
+        foreach ($dirs as $d) {
+            $parts = explode('/', trim($d['path'], '/'));
+            $node = &$folders;
+            foreach ($parts as $p) {
+                if (!isset($node[$p])) $node[$p] = [];
+                $node = &$node[$p];
+            }
+            unset($node);
+        }
+
+        return [
+            'files' => $tree,
+            'total' => count($tree),
+            'folders' => $folders,
+            'backup_name' => basename($filename),
+            'backup_date' => date('Y-m-d H:i:s', filemtime($path)),
+            'backup_size' => $this->formatBytes(filesize($path)),
+        ];
+    }
+
+    public function restoreSingleItem(string $filename, string $itemPath, string $backupDir = '/root/backupfiles'): array
+    {
+        $path = $backupDir . '/' . basename($filename);
+        if (!file_exists($path)) return ['success' => false, 'error' => 'Backup file not found'];
+
+        $extractDir = sys_get_temp_dir() . '/restore_' . uniqid();
+        @mkdir($extractDir, 0755, true);
+
+        $output = [];
+        $code = 0;
+        $escapedPath = escapeshellarg(rtrim($itemPath, '/'));
+        exec("tar -xzf " . escapeshellarg($path) . " -C " . escapeshellarg($extractDir) . " {$escapedPath} 2>/dev/null", $output, $code);
+
+        if ($code !== 0) {
+            @array_map('unlink', glob("{$extractDir}/*"));
+            @rmdir($extractDir);
+            return ['success' => false, 'error' => 'Failed to extract item from archive'];
+        }
+
+        // Move extracted item to original location
+        $restorePath = '/' . ltrim($itemPath, '/');
+        $restoreDir = dirname($restorePath);
+        if (!is_dir($restoreDir)) @mkdir($restoreDir, 0755, true);
+
+        $extractedItem = $extractDir . '/' . $itemPath;
+
+        $itemName = basename($itemPath);
+        if (is_dir($extractedItem)) {
+            exec("cp -r " . escapeshellarg($extractedItem) . " " . escapeshellarg($restoreDir . '/' . $itemName) . " 2>/dev/null", $out, $cpCode);
+        } else {
+            exec("cp " . escapeshellarg($extractedItem) . " " . escapeshellarg($restorePath) . " 2>/dev/null", $out, $cpCode);
+        }
+
+        // Cleanup temp
+        exec("rm -rf " . escapeshellarg($extractDir));
+
+        if ($cpCode !== 0) {
+            return ['success' => false, 'error' => 'Failed to copy item to destination'];
+        }
+
+        return ['success' => true, 'path' => $restorePath, 'item' => $itemName];
+    }
+
+    protected function formatBytes(int $bytes, int $precision = 2): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $bytes = max($bytes, 0);
+        $pow = min(floor(($bytes ? log($bytes) : 0) / log(1024)), count($units) - 1);
+        $pow = max(0, (int)$pow);
+        return round($bytes / pow(1024, $pow), $precision) . ' ' . $units[$pow];
+    }
+
     public function rollback(int $restorePointId): bool
     {
         try {
             $rp = $this->db->table('restore_center_points')->where('id', $restorePointId)->first();
             if (!$rp || !$rp->backup_filename) return false;
 
-            $backupDir = '/var/backups/planet_hosts';
+            $backupDir = '/root/backupfiles';
             $safetyPath = $backupDir . '/' . $rp->backup_filename;
             if (!file_exists($safetyPath)) return false;
 

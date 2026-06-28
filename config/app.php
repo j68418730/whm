@@ -101,7 +101,7 @@ return [
     |
     */
 
-    'backup_path' => '/var/backups/planet_hosts',
+    'backup_path' => '/root/backupfiles',
 
     'providers' => [
         // Legacy service providers can be listed here
