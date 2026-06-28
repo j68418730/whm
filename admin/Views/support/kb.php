@@ -3,15 +3,12 @@ select{background:rgba(8,16,28,.9);border:1px solid rgba(255,255,255,.12);color:
 select:focus{border-color:var(--accent)}
 select option{background:#0a0f1a;color:#e0e0e0}
 </style>
-<div class="page-grid" style="margin-bottom:20px">
-<a href="/admin/support/kb" class="action-card"><div class="icon">📚</div><div class="name">Knowledgebase</div></a>
-<a href="/admin/support/announcements" class="action-card"><div class="icon">📢</div><div class="name">Announcements</div></a>
-<a href="/admin/support/status" class="action-card"><div class="icon">🖥</div><div class="name">Server Status</div></a>
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+<h3 style="color:var(--accent);margin:0">Knowledgebase</h3>
+<div style="display:flex;gap:6px">
+<a class="btn primary" onclick="document.getElementById('catForm').classList.toggle('hidden')">+ Category</a>
+<a class="btn primary" onclick="document.getElementById('artForm').classList.toggle('hidden')">+ Article</a>
 </div>
-<h3 style="color:var(--accent);margin:16px 0 12px">Knowledgebase</h3>
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-<a class="btn primary" onclick="document.getElementById('catForm').classList.toggle('hidden')">Add Category</a>
-<a class="btn primary" onclick="document.getElementById('artForm').classList.toggle('hidden')">Add Article</a>
 </div>
 <div id="catForm" class="card hidden" style="max-width:400px;margin-bottom:12px">
 <form method="POST" action="/admin/support/kb/category/store">
@@ -28,16 +25,53 @@ select option{background:#0a0f1a;color:#e0e0e0}
 <div class="form-group"><label><input name="is_published" type="checkbox" value="1" checked> Published</label></div>
 <button type="submit" class="btn primary">Create</button>
 </form></div>
-<table><tr><th>Title</th><th>Category</th><th>Views</th><th>Status</th><th></th></tr>
+<h4 style="color:var(--accent);margin:16px 0 8px">Articles</h4>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px">
 <?php if (!empty($articles)): foreach ($articles as $a): $cn = $catNames[$a->category_id] ?? '-'; ?>
-<tr><td><?php echo htmlspecialchars($a->title); ?></td><td><?php echo htmlspecialchars($cn); ?></td><td><?php echo $a->views; ?></td>
-<td><span class="status-badge status-<?php echo $a->is_published ? 'active' : 'terminated'; ?>"><?php echo $a->is_published ? 'Published' : 'Draft'; ?></span></td>
-<td><a href="/admin/support/kb/article/delete/<?php echo $a->id; ?>" class="btn btn-sm danger" onclick="return confirm('Delete?')">Delete</a></td></tr>
-<?php endforeach; else: ?><tr><td colspan="5" style="text-align:center;padding:20px;color:#64748b">No articles yet.</td></tr>
-<?php endif; ?></table>
-<h3 style="color:var(--accent);margin:20px 0 12px">Categories</h3>
-<table><tr><th>Name</th><th>Description</th><th></th></tr>
-<?php if (!empty($cats)): foreach ($cats as $c): ?><tr><td><?php echo htmlspecialchars($c->name); ?></td><td><?php echo htmlspecialchars($c->description ?? '-'); ?></td>
-<td><a href="/admin/support/kb/category/delete/<?php echo $c->id; ?>" class="btn btn-sm danger" onclick="return confirm('Delete?')">Delete</a></td></tr>
-<?php endforeach; else: ?><tr><td colspan="3" style="text-align:center;padding:20px;color:#64748b">No categories.</td></tr>
-<?php endif; ?></table>
+<div class="card" style="margin-bottom:0;padding:14px">
+<div style="font-weight:600;font-size:14px"><?php echo htmlspecialchars($a->title); ?></div>
+<div style="font-size:12px;color:#94a3b8;margin-top:4px"><?php echo htmlspecialchars($cn); ?> · <?php echo $a->views; ?> views</div>
+<div style="font-size:11px;color:var(--text-secondary);margin-top:4px"><?php echo htmlspecialchars(substr(strip_tags($a->content ?? ''), 0, 100)); ?>...</div>
+<div style="margin-top:8px;display:flex;gap:4px">
+<span class="status-badge status-<?php echo $a->is_published ? 'active' : 'terminated'; ?>" style="font-size:10px"><?php echo $a->is_published ? 'Published' : 'Draft'; ?></span>
+<a href="/admin/support/kb/article/delete/<?php echo $a->id; ?>" class="btn btn-sm danger" onclick="return confirm('Delete?')">🗑</a>
+</div>
+</div>
+<?php endforeach; else: ?>
+<div class="card" style="text-align:center;padding:20px;grid-column:1/-1;color:#64748b">No articles yet.</div>
+<?php endif; ?>
+</div>
+<h4 style="color:var(--accent);margin:20px 0 8px">Categories</h4>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">
+<?php if (!empty($cats)): foreach ($cats as $c): ?>
+<div class="card" style="margin-bottom:0;padding:14px">
+<div style="display:flex;justify-content:space-between;align-items:start">
+<strong style="font-size:14px"><?php echo htmlspecialchars($c->name); ?></strong>
+<div style="display:flex;gap:4px">
+<a class="btn btn-sm secondary" onclick="editCat(<?php echo $c->id; ?>, '<?php echo htmlspecialchars(addslashes($c->name)); ?>', '<?php echo htmlspecialchars(addslashes($c->description ?? '')); ?>')">✏</a>
+<a href="/admin/support/kb/category/delete/<?php echo $c->id; ?>" class="btn btn-sm danger" onclick="return confirm('Delete?')">🗑</a>
+</div>
+</div>
+<div style="font-size:12px;color:#94a3b8;margin-top:4px"><?php echo htmlspecialchars($c->description ?? '-'); ?></div>
+</div>
+<?php endforeach; else: ?>
+<div class="card" style="text-align:center;padding:20px;grid-column:1/-1;color:#64748b">No categories.</div>
+<?php endif; ?>
+</div>
+<div id="editCatModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);align-items:center;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
+<div class="card" style="max-width:400px;margin:auto;position:relative;top:10%">
+<h4 style="color:var(--accent);margin-bottom:8px">Edit Category</h4>
+<form method="POST" action="" id="editCatForm">
+<div class="form-group"><label>Name</label><input name="name" id="ec_name" required></div>
+<div class="form-group"><label>Description</label><textarea name="description" id="ec_desc" rows="2"></textarea></div>
+<button type="submit" class="btn primary">Save</button>
+<button type="button" class="btn secondary" onclick="document.getElementById('editCatModal').style.display='none'">Cancel</button>
+</form></div></div>
+<script>
+function editCat(id, name, desc) {
+    document.getElementById('editCatForm').action = '/admin/support/kb/category/update/' + id;
+    document.getElementById('ec_name').value = name;
+    document.getElementById('ec_desc').value = desc;
+    document.getElementById('editCatModal').style.display = 'flex';
+}
+</script>
