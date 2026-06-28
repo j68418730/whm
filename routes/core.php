@@ -336,6 +336,7 @@ $router->get('/api/version', 'Admin\Controllers\DashboardController@version');
 $router->get('/admin/reviews', 'Admin\Controllers\ReviewsController@index');
 $router->get('/admin/reviews/approve/{id}', 'Admin\Controllers\ReviewsController@approve');
 $router->get('/admin/reviews/delete/{id}', 'Admin\Controllers\ReviewsController@delete');
+$router->get('/admin/reviews/deny/{id}', 'Admin\Controllers\ReviewsController@deny');
 // Login as user
 $router->get('/admin/account/login-as/{id}', 'Admin\Controllers\AccountController@loginAs');
 $router->get('/admin/exit-sudo', 'Admin\Controllers\AccountController@exitSudo');
@@ -426,14 +427,17 @@ $router->get('/admin/support/tickets', 'Admin\Controllers\SupportController@tick
 $router->get('/admin/support/tickets/{id}', 'Admin\Controllers\SupportController@ticketView');
 $router->post('/admin/support/tickets/reply/{id}', 'Admin\Controllers\SupportController@ticketReply');
 $router->get('/admin/support/tickets/close/{id}', 'Admin\Controllers\SupportController@ticketClose');
+$router->get('/admin/support/tickets/delete/{id}', 'Admin\Controllers\SupportController@ticketDelete');
 $router->get('/admin/support/kb', 'Admin\Controllers\SupportController@kb');
 $router->post('/admin/support/kb/category/store', 'Admin\Controllers\SupportController@kbCategoryStore');
 $router->get('/admin/support/kb/category/delete/{id}', 'Admin\Controllers\SupportController@kbCategoryDelete');
+$router->post('/admin/support/kb/category/update/{id}', 'Admin\Controllers\SupportController@kbCategoryUpdate');
 $router->post('/admin/support/kb/article/store', 'Admin\Controllers\SupportController@kbArticleStore');
 $router->get('/admin/support/kb/article/delete/{id}', 'Admin\Controllers\SupportController@kbArticleDelete');
 $router->get('/admin/support/announcements', 'Admin\Controllers\SupportController@announcements');
 $router->post('/admin/support/announcements/store', 'Admin\Controllers\SupportController@announcementStore');
 $router->get('/admin/support/announcements/delete/{id}', 'Admin\Controllers\SupportController@announcementDelete');
+$router->post('/admin/support/announcements/update/{id}', 'Admin\Controllers\SupportController@announcementUpdate');
 $router->get('/admin/support/status', 'Admin\Controllers\SupportController@serverStatus');
 
 // -- Settings routes --

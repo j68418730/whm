@@ -78,6 +78,15 @@ class SupportController extends Controller
         $this->response->redirect('/admin/support/tickets');
     }
 
+    public function ticketDelete($id)
+    {
+        $this->guard();
+        $this->db->table('ticket_replies')->where('ticket_id', $id)->delete();
+        $this->db->table('tickets')->where('id', $id)->delete();
+        $_SESSION['success_message'] = 'Ticket deleted.';
+        $this->response->redirect('/admin/support/tickets');
+    }
+
     // ── Knowledgebase ──
     public function kb()
     {
@@ -103,6 +112,18 @@ class SupportController extends Controller
     {
         $this->guard();
         $this->db->table('kb_categories')->where('id', $id)->delete();
+        $this->response->redirect('/admin/support/kb');
+    }
+
+    public function kbCategoryUpdate($id)
+    {
+        $this->guard();
+        $this->db->table('kb_categories')->where('id', $id)->update([
+            'name' => $this->request->post('name', ''),
+            'slug' => strtolower(preg_replace('/[^a-z0-9]+/', '-', $this->request->post('name', ''))),
+            'description' => $this->request->post('description', ''),
+        ]);
+        $_SESSION['success_message'] = 'Category updated.';
         $this->response->redirect('/admin/support/kb');
     }
 
@@ -150,6 +171,19 @@ class SupportController extends Controller
     {
         $this->guard();
         $this->db->table('announcements')->where('id', $id)->delete();
+        $this->response->redirect('/admin/support/announcements');
+    }
+
+    public function announcementUpdate($id)
+    {
+        $this->guard();
+        $this->db->table('announcements')->where('id', $id)->update([
+            'title' => $this->request->post('title', ''),
+            'content' => $this->request->post('content', ''),
+            'type' => $this->request->post('type', 'info'),
+            'is_active' => (int)$this->request->post('is_active', 0),
+        ]);
+        $_SESSION['success_message'] = 'Announcement updated.';
         $this->response->redirect('/admin/support/announcements');
     }
 

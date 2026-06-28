@@ -38,4 +38,12 @@ class ReviewsController extends Controller
         $this->response->redirect('/admin/reviews');
         exit;
     }
+
+    public function deny($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $this->db->table('reviews')->where('id', $id)->update(['approved' => 0]);
+        $this->response->redirect('/admin/reviews');
+        exit;
+    }
 }
