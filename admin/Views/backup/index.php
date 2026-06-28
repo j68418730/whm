@@ -101,38 +101,135 @@ User: <?php echo htmlspecialchars($pt['user_id'] ?? ''); ?> · <?php echo $pt['c
 
 <?php elseif (!empty($settingsView)): ?>
 <h3 style="color:var(--accent);margin-bottom:12px">⚙️ Settings</h3>
-<form method="POST" action="/admin/backup/settings/save" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-<?php $fields = [
-    'backup_enabled' => ['Enable Backups', 'checkbox'],
-    'backup_restore_enabled' => ['Enable Restore', 'checkbox'],
-    'backup_type' => ['Backup Type', 'select', ['full' => 'Full', 'incremental' => 'Incremental', 'differential' => 'Differential']],
-    'backup_compression' => ['Compression', 'select', ['gzip' => 'GZip', 'bzip2' => 'BZip2', 'xz' => 'XZ', 'none' => 'None']],
-    'backup_encryption' => ['Encryption', 'select', ['none' => 'None', 'aes256' => 'AES-256', 'gpg' => 'GPG']],
-    'backup_schedule' => ['Schedule', 'select', ['manual' => 'Manual', 'hourly' => 'Hourly', 'daily' => 'Daily', 'weekly' => 'Weekly', 'monthly' => 'Monthly']],
-    'backup_retention_daily' => ['Retain Daily', 'number', 7],
-    'backup_retention_weekly' => ['Retain Weekly', 'number', 4],
-    'backup_retention_monthly' => ['Retain Monthly', 'number', 3],
-    'backup_retention_yearly' => ['Retain Yearly', 'number', 1],
-    'backup_max_backups' => ['Max Backups', 'number', 10],
-    'backup_storage_type' => ['Storage Type', 'select', ['local' => 'Local', 'nas' => 'NAS', 'nfs' => 'NFS', 'smb' => 'SMB', 'ftp' => 'FTP', 's3' => 'Amazon S3', 'b2' => 'Backblaze B2', 'wasabi' => 'Wasabi', 'gcs' => 'GCS', 'azure' => 'Azure']],
-    'backup_storage_path' => ['Storage Path', 'text'],
-    'backup_encryption_password' => ['Encryption Password', 'password'],
-    'backup_compress_level' => ['Compress Level (1-9)', 'number', 6],
-    'backup_notify_email' => ['Notify Email', 'email'],
-]; foreach ($fields as $k => $cfg): ?>
-<div class="form-group">
-<label style="font-size:12px;color:var(--text-secondary)"><?php echo $cfg[0]; ?></label>
-<?php if ($cfg[1] === 'checkbox'): ?>
-<input type="checkbox" name="<?php echo $k; ?>" value="1" <?php echo !empty($settings[$k]) ? 'checked' : ''; ?> style="margin-top:4px">
-<?php elseif ($cfg[1] === 'select'): ?>
-<select name="<?php echo $k; ?>" class="form-control"><?php foreach ($cfg[2] as $v => $l): ?><option value="<?php echo $v; ?>" <?php echo ($settings[$k] ?? '') === $v ? 'selected' : ''; ?>><?php echo $l; ?></option><?php endforeach; ?></select>
-<?php else: ?>
-<input type="<?php echo $cfg[1]; ?>" name="<?php echo $k; ?>" value="<?php echo htmlspecialchars($settings[$k] ?? ($cfg[2] ?? '')); ?>" class="form-control" <?php echo $cfg[1] === 'number' ? "min='1' max='365'" : ''; ?>>
-<?php endif; ?>
+<form method="POST" action="/admin/backup/settings/save">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Enable Backups</label><input type="checkbox" name="backup_enabled" value="1" <?php echo !empty($settings['backup_enabled']) ? 'checked' : ''; ?> style="margin-top:4px"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Enable Restore</label><input type="checkbox" name="backup_restore_enabled" value="1" <?php echo !empty($settings['backup_restore_enabled']) ? 'checked' : ''; ?> style="margin-top:4px"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Backup Type</label><select name="backup_type" class="form-control"><?php foreach (['full'=>'Full','incremental'=>'Incremental','differential'=>'Differential'] as $v=>$l): ?><option value="<?php echo $v; ?>" <?php echo ($settings['backup_type']??'')===$v?'selected':''; ?>><?php echo $l; ?></option><?php endforeach; ?></select></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Compression</label><select name="backup_compression" class="form-control"><?php foreach (['gzip'=>'GZip','bzip2'=>'BZip2','xz'=>'XZ','none'=>'None'] as $v=>$l): ?><option value="<?php echo $v; ?>" <?php echo ($settings['backup_compression']??'')===$v?'selected':''; ?>><?php echo $l; ?></option><?php endforeach; ?></select></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Encryption</label><select name="backup_encryption" class="form-control"><?php foreach (['none'=>'None','aes256'=>'AES-256','gpg'=>'GPG'] as $v=>$l): ?><option value="<?php echo $v; ?>" <?php echo ($settings['backup_encryption']??'')===$v?'selected':''; ?>><?php echo $l; ?></option><?php endforeach; ?></select></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Schedule</label><select name="backup_schedule" class="form-control"><?php foreach (['manual'=>'Manual','hourly'=>'Hourly','daily'=>'Daily','weekly'=>'Weekly','monthly'=>'Monthly'] as $v=>$l): ?><option value="<?php echo $v; ?>" <?php echo ($settings['backup_schedule']??'')===$v?'selected':''; ?>><?php echo $l; ?></option><?php endforeach; ?></select></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Retain Daily</label><input type="number" name="backup_retention_daily" value="<?php echo htmlspecialchars($settings['backup_retention_daily']??'7'); ?>" class="form-control" min="1" max="365"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Retain Weekly</label><input type="number" name="backup_retention_weekly" value="<?php echo htmlspecialchars($settings['backup_retention_weekly']??'4'); ?>" class="form-control" min="1" max="365"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Retain Monthly</label><input type="number" name="backup_retention_monthly" value="<?php echo htmlspecialchars($settings['backup_retention_monthly']??'3'); ?>" class="form-control" min="1" max="365"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Retain Yearly</label><input type="number" name="backup_retention_yearly" value="<?php echo htmlspecialchars($settings['backup_retention_yearly']??'1'); ?>" class="form-control" min="1" max="365"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Max Backups</label><input type="number" name="backup_max_backups" value="<?php echo htmlspecialchars($settings['backup_max_backups']??'10'); ?>" class="form-control" min="1" max="365"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Compress Level (1-9)</label><input type="number" name="backup_compress_level" value="<?php echo htmlspecialchars($settings['backup_compress_level']??'6'); ?>" class="form-control" min="1" max="9"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Encryption Password</label><input type="password" name="backup_encryption_password" value="<?php echo htmlspecialchars($settings['backup_encryption_password']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Notify Email</label><input type="email" name="backup_notify_email" value="<?php echo htmlspecialchars($settings['backup_notify_email']??''); ?>" class="form-control"></div>
 </div>
-<?php endforeach; ?>
-<div style="grid-column:1/-1;margin-top:8px"><button type="submit" class="btn primary">Save Settings</button></div>
+
+<div class="card" style="margin-bottom:16px;padding:16px">
+<h4 style="color:var(--accent);margin:0 0 10px;font-size:14px">📦 Storage Destination</h4>
+<div class="form-group" style="margin-bottom:12px">
+<label style="font-size:12px;color:var(--text-secondary)">Storage Type</label>
+<select name="backup_storage_type" id="storageTypeSelect" class="form-control">
+<?php $types = ['local'=>'Local Storage','nas'=>'NAS','nfs'=>'NFS','smb'=>'SMB/CIFS','ftp'=>'FTP','sftp'=>'SFTP','webdav'=>'WebDAV','s3'=>'Amazon S3','b2'=>'Backblaze B2','wasabi'=>'Wasabi','gcs'=>'Google Cloud Storage','azure'=>'Azure Blob Storage','do'=>'DigitalOcean Spaces']; ?>
+<?php foreach ($types as $v=>$l): ?><option value="<?php echo $v; ?>" <?php echo ($settings['backup_storage_type']??'local')===$v?'selected':''; ?>><?php echo $l; ?></option><?php endforeach; ?>
+</select>
+</div>
+
+<div id="Storage-local" class="storage-fields"><div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Local Path</label><input name="backup_storage_path" value="<?php echo htmlspecialchars($settings['backup_storage_path']??'/root/backupfiles'); ?>" class="form-control" placeholder="/root/backupfiles"></div></div>
+
+<div id="Storage-nas" class="storage-fields" style="display:none">
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">NAS Host</label><input name="backup_nas_host" value="<?php echo htmlspecialchars($settings['backup_nas_host']??''); ?>" class="form-control" placeholder="nas.example.com"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">NAS Path</label><input name="backup_nas_path" value="<?php echo htmlspecialchars($settings['backup_nas_path']??''); ?>" class="form-control" placeholder="/mnt/backups"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Username</label><input name="backup_nas_username" value="<?php echo htmlspecialchars($settings['backup_nas_username']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Password</label><input type="password" name="backup_nas_password" value="<?php echo htmlspecialchars($settings['backup_nas_password']??''); ?>" class="form-control"></div>
+</div>
+
+<div id="Storage-nfs" class="storage-fields" style="display:none">
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">NFS Host</label><input name="backup_nfs_host" value="<?php echo htmlspecialchars($settings['backup_nfs_host']??''); ?>" class="form-control" placeholder="nfs.example.com"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">NFS Export</label><input name="backup_nfs_export" value="<?php echo htmlspecialchars($settings['backup_nfs_export']??''); ?>" class="form-control" placeholder="/export/backups"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Mount Options</label><input name="backup_nfs_options" value="<?php echo htmlspecialchars($settings['backup_nfs_options']??'rw,hard,intr'); ?>" class="form-control"></div>
+</div>
+
+<div id="Storage-smb" class="storage-fields" style="display:none">
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">SMB Host</label><input name="backup_smb_host" value="<?php echo htmlspecialchars($settings['backup_smb_host']??''); ?>" class="form-control" placeholder="smb.example.com"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">SMB Share</label><input name="backup_smb_share" value="<?php echo htmlspecialchars($settings['backup_smb_share']??''); ?>" class="form-control" placeholder="//server/backups"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Domain</label><input name="backup_smb_domain" value="<?php echo htmlspecialchars($settings['backup_smb_domain']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Username</label><input name="backup_smb_username" value="<?php echo htmlspecialchars($settings['backup_smb_username']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Password</label><input type="password" name="backup_smb_password" value="<?php echo htmlspecialchars($settings['backup_smb_password']??''); ?>" class="form-control"></div>
+</div>
+
+<div id="Storage-ftp" class="storage-fields" style="display:none">
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">FTP Host</label><input name="backup_ftp_host" value="<?php echo htmlspecialchars($settings['backup_ftp_host']??''); ?>" class="form-control" placeholder="ftp.example.com"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Port</label><input type="number" name="backup_ftp_port" value="<?php echo htmlspecialchars($settings['backup_ftp_port']??'21'); ?>" class="form-control" min="1" max="65535"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Username</label><input name="backup_ftp_username" value="<?php echo htmlspecialchars($settings['backup_ftp_username']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Password</label><input type="password" name="backup_ftp_password" value="<?php echo htmlspecialchars($settings['backup_ftp_password']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Remote Path</label><input name="backup_ftp_path" value="<?php echo htmlspecialchars($settings['backup_ftp_path']??'/'); ?>" class="form-control" placeholder="/"></div>
+</div>
+
+<div id="Storage-sftp" class="storage-fields" style="display:none">
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">SFTP Host</label><input name="backup_sftp_host" value="<?php echo htmlspecialchars($settings['backup_sftp_host']??''); ?>" class="form-control" placeholder="sftp.example.com"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Port</label><input type="number" name="backup_sftp_port" value="<?php echo htmlspecialchars($settings['backup_sftp_port']??'22'); ?>" class="form-control" min="1" max="65535"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Username</label><input name="backup_sftp_username" value="<?php echo htmlspecialchars($settings['backup_sftp_username']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Password / Key</label><input type="password" name="backup_sftp_password" value="<?php echo htmlspecialchars($settings['backup_sftp_password']??''); ?>" class="form-control" placeholder="Password or path to SSH key"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Remote Path</label><input name="backup_sftp_path" value="<?php echo htmlspecialchars($settings['backup_sftp_path']??'/'); ?>" class="form-control" placeholder="/"></div>
+</div>
+
+<div id="Storage-webdav" class="storage-fields" style="display:none">
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">WebDAV URL</label><input name="backup_webdav_url" value="<?php echo htmlspecialchars($settings['backup_webdav_url']??''); ?>" class="form-control" placeholder="https://webdav.example.com/backups"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Username</label><input name="backup_webdav_username" value="<?php echo htmlspecialchars($settings['backup_webdav_username']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Password</label><input type="password" name="backup_webdav_password" value="<?php echo htmlspecialchars($settings['backup_webdav_password']??''); ?>" class="form-control"></div>
+</div>
+
+<div id="Storage-s3" class="storage-fields" style="display:none">
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">S3 Bucket</label><input name="backup_s3_bucket" value="<?php echo htmlspecialchars($settings['backup_s3_bucket']??''); ?>" class="form-control" placeholder="my-backups"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Region</label><input name="backup_s3_region" value="<?php echo htmlspecialchars($settings['backup_s3_region']??'us-east-1'); ?>" class="form-control" placeholder="us-east-1"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Access Key</label><input name="backup_s3_key" value="<?php echo htmlspecialchars($settings['backup_s3_key']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Secret Key</label><input type="password" name="backup_s3_secret" value="<?php echo htmlspecialchars($settings['backup_s3_secret']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Endpoint (optional)</label><input name="backup_s3_endpoint" value="<?php echo htmlspecialchars($settings['backup_s3_endpoint']??''); ?>" class="form-control" placeholder="https://s3.custom.com"></div>
+</div>
+
+<div id="Storage-b2" class="storage-fields" style="display:none">
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">B2 Key ID</label><input name="backup_b2_key_id" value="<?php echo htmlspecialchars($settings['backup_b2_key_id']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">B2 App Key</label><input type="password" name="backup_b2_app_key" value="<?php echo htmlspecialchars($settings['backup_b2_app_key']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">B2 Bucket</label><input name="backup_b2_bucket" value="<?php echo htmlspecialchars($settings['backup_b2_bucket']??''); ?>" class="form-control" placeholder="my-bucket"></div>
+</div>
+
+<div id="Storage-wasabi" class="storage-fields" style="display:none">
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Wasabi Bucket</label><input name="backup_wasabi_bucket" value="<?php echo htmlspecialchars($settings['backup_wasabi_bucket']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Wasabi Region</label><input name="backup_wasabi_region" value="<?php echo htmlspecialchars($settings['backup_wasabi_region']??'us-east-1'); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Access Key</label><input name="backup_wasabi_key" value="<?php echo htmlspecialchars($settings['backup_wasabi_key']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Secret Key</label><input type="password" name="backup_wasabi_secret" value="<?php echo htmlspecialchars($settings['backup_wasabi_secret']??''); ?>" class="form-control"></div>
+</div>
+
+<div id="Storage-gcs" class="storage-fields" style="display:none">
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">GCS Bucket</label><input name="backup_gcs_bucket" value="<?php echo htmlspecialchars($settings['backup_gcs_bucket']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Project ID</label><input name="backup_gcs_project" value="<?php echo htmlspecialchars($settings['backup_gcs_project']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Service Account JSON Path</label><input name="backup_gcs_key_file" value="<?php echo htmlspecialchars($settings['backup_gcs_key_file']??'/root/gcs-key.json'); ?>" class="form-control"></div>
+</div>
+
+<div id="Storage-azure" class="storage-fields" style="display:none">
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Azure Storage Account</label><input name="backup_azure_account" value="<?php echo htmlspecialchars($settings['backup_azure_account']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Azure Access Key</label><input type="password" name="backup_azure_key" value="<?php echo htmlspecialchars($settings['backup_azure_key']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Azure Container</label><input name="backup_azure_container" value="<?php echo htmlspecialchars($settings['backup_azure_container']??''); ?>" class="form-control"></div>
+</div>
+
+<div id="Storage-do" class="storage-fields" style="display:none">
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">DO Space Name</label><input name="backup_do_space" value="<?php echo htmlspecialchars($settings['backup_do_space']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">DO Region</label><input name="backup_do_region" value="<?php echo htmlspecialchars($settings['backup_do_region']??'nyc3'); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Access Key</label><input name="backup_do_key" value="<?php echo htmlspecialchars($settings['backup_do_key']??''); ?>" class="form-control"></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Secret Key</label><input type="password" name="backup_do_secret" value="<?php echo htmlspecialchars($settings['backup_do_secret']??''); ?>" class="form-control"></div>
+</div>
+</div>
+
+<button type="submit" class="btn primary">Save Settings</button>
 </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sel = document.getElementById('storageTypeSelect');
+    function showFields() {
+        document.querySelectorAll('.storage-fields').forEach(el => el.style.display = 'none');
+        const target = document.getElementById('Storage-' + sel.value);
+        if (target) target.style.display = 'block';
+    }
+    sel.addEventListener('change', showFields);
+    showFields();
+});
+</script>
 
 <?php else: ?>
 <div class="stats-grid" style="margin-bottom:20px">
