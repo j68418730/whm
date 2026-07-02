@@ -16,7 +16,7 @@
 <a href="/admin/streams" class="section-card"><div class="icon">🔊</div><div class="name">Streams</div><div class="desc">Audio stream management</div></a>
 <a href="/admin/djs" class="section-card"><div class="icon">🎧</div><div class="name">DJ Accounts</div><div class="desc">DJ user management</div></a>
 <a href="/admin/autodj" class="section-card"><div class="icon">🤖</div><div class="name">AutoDJ</div><div class="desc">Automated playlist DJ</div></a>
-<a href="/admin/radio_dashboard" class="section-card"><div class="icon">🪟</div><div class="name">Radio Widgets</div><div class="desc">Embeddable radio widgets</div></a>
+<a href="/admin/radio/widgets" class="section-card"><div class="icon">🪟</div><div class="name">Radio Widgets</div><div class="desc">Embeddable radio widgets</div></a>
 <a href="/admin/streaming" class="section-card"><div class="icon">🔀</div><div class="name">Streaming Engine</div><div class="desc">SHOUTcast/Icecast multi-engine</div></a>
 <a href="/admin/radiosettings" class="section-card"><div class="icon">⚙️</div><div class="name">Radio Settings</div><div class="desc">Radio configuration</div></a>
 </div>

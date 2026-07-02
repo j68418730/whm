@@ -49,7 +49,7 @@ class License
 
     protected function verifyLocal($content)
     {
-        if (!preg_match("/^-----BEGIN PLANET HOSTS LICENSE-----+\s+(.+?)\s+-----BEGIN LICENSE DATA-----+\s+(.+?)\s+-----END LICENSE DATA-----+\s+-----END PLANET HOSTS LICENSE-----+\s*$/s", $content, $matches)) {
+        if (!preg_match("/^-----BEGIN PLANET HOSTS LICENSE-----\s+(.+?)\s+-----BEGIN LICENSE DATA-----\s+(.+?)\s+-----END LICENSE DATA-----\s+-----END PLANET HOSTS LICENSE-----\s*$/s", $content, $matches)) {
             return null;
         }
 

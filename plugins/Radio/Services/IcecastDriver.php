@@ -50,7 +50,7 @@ class IcecastDriver implements StreamingDriverInterface
     {
         $port = $data['port'] ?? $this->allocatePort();
         $password = $data['password'] ?? bin2hex(random_bytes(8));
-        $mount = $data['mount_point'] ?? '/live';
+        $mount = $data['mount_point'] ?? $this->generateMountPoint($userId, $data['name'] ?? '');
         $bitrate = $data['bitrate'] ?? 128;
         $name = $data['name'] ?? 'My Icecast Station';
         $maxListeners = $data['max_listeners'] ?? 100;
@@ -166,6 +166,14 @@ class IcecastDriver implements StreamingDriverInterface
         }
 
         $xml .= "    </listen-socket>\n"
+            . "    <mount>\n"
+            . "        <mount-name>{$mount}</mount-name>\n"
+            . "        <username>source</username>\n"
+            . "        <password>{$password}</password>\n"
+            . "        <max-listeners>{$maxListeners}</max-listeners>\n"
+            . "        <burst-size>65535</burst-size>\n"
+            . "        <no-yp>0</no-yp>\n"
+            . "    </mount>\n"
             . "    <fileserve>1</fileserve>\n"
             . "    <paths>\n"
             . "        <basedir>{$dir}</basedir>\n"
@@ -254,6 +262,17 @@ class IcecastDriver implements StreamingDriverInterface
     protected function releasePort($port)
     {
         // Port released by deletion
+    }
+
+    protected function generateMountPoint($userId, $name = ''): string
+    {
+        $slug = $name ? preg_replace('/[^a-z0-9]+/', '-', strtolower(trim($name))) : "user{$userId}";
+        $slug = trim($slug, '-') ?: "station";
+        // Ensure uniqueness by checking existing mount points
+        $existing = $this->db->table('streaming_stations')
+            ->where('mount_point', 'LIKE', "/{$slug}%")
+            ->count();
+        return $existing > 0 ? "/{$slug}-{$existing}" : "/{$slug}";
     }
 
     protected function getUsername($userId)

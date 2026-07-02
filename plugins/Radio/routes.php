@@ -33,7 +33,8 @@ $router->get('/admin/djs/remove/{id}', 'Plugins\Radio\Controllers\Admin\DjContro
 $router->get('/admin/radio/analytics', 'Plugins\Radio\Controllers\Admin\RadioDashboardController@index');
 
 // User Radio Routes
-$router->get('/radio', 'Plugins\Radio\Controllers\User\RadioController@index');
+// /radio/ is handled by radio/index.php (public portal)
+// $router->get('/radio', 'Plugins\Radio\Controllers\User\RadioController@index');
 $router->post('/radio/setup', 'Plugins\Radio\Controllers\User\RadioController@setup');
 $router->get('/radio/start/{id}', 'Plugins\Radio\Controllers\User\RadioController@start');
 $router->get('/radio/stop/{id}', 'Plugins\Radio\Controllers\User\RadioController@stop');

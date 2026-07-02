@@ -31,6 +31,7 @@ $router->post('/admin/radiosettings/update', 'Admin\Controllers\RadioSettingsCon
 
 // Admin Radio Dashboard Routes
 $router->get('/admin/radio_dashboard', 'Admin\Controllers\RadioDashboardController@index');
+// (route moved to core.php)
 
 // Admin Streams Management Routes
 $router->get('/admin/streams', 'Admin\Controllers\StreamsController@index');
