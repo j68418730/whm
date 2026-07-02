@@ -37,5 +37,54 @@ require BASE_PATH . '/core/PluginManager.php';
 $config = require BASE_PATH . '/config/app.php';
 $config['database'] = require BASE_PATH . '/config/database.php';
 $config['plugins'] = require BASE_PATH . '/config/plugins.php';
+
+// License check — only blocks WHM backend access after trial
+$uri = $_SERVER['REQUEST_URI'] ?? '/';
+$path = parse_url($uri, PHP_URL_PATH);
+$isLicensePage = str_starts_with($path, '/admin/licensing') || str_starts_with($path, '/admin/login') || str_starts_with($path, '/admin/support-status') || str_starts_with($path, '/api/') || str_starts_with($path, '/livechat') || str_starts_with($path, '/radio/');
+$license = new Core\License(BASE_PATH);
+$licenseResult = $license->verify();
+if (!$licenseResult['valid'] && !$isLicensePage) {
+    $error = $licenseResult['error'] ?? 'Trial period ended';
+    http_response_code(403);
+    echo <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>License Required - Planet Hosts</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #07111f; color: #d8e7f7; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #0d1b2e; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 2rem; max-width: 500px; text-align: center; }
+        h1 { color: #ff4444; }
+        p { color: #9bb4cf; line-height: 1.6; }
+        code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+        .btn { display: inline-block; margin-top: 1rem; padding: 0.75rem 1.5rem; background: #007bff; color: #fff; text-decoration: none; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>License Required</h1>
+        <p>This panel is not licensed. <a href="/admin/licensing" style="color:#4da3ff;">Enter your license key here</a> or contact Planet-Hosts to purchase a license.</p>
+        <p><strong>Error:</strong> {$error}</p>
+        <a class="btn" href="/admin/licensing">Enter License Key</a>
+    </div>
+</body>
+</html>
+HTML;
+    exit;
+}
+
 $app = new Core\Application(BASE_PATH, $config);
+
+// Serve /radio/ pages directly
+if ($path === '/radio/' || $path === '/radio') {
+    $radioIndex = BASE_PATH . '/public/radio/index.php';
+    if (is_file($radioIndex)) {
+        require $radioIndex;
+        exit;
+    }
+}
+
 $app->run();

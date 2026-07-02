@@ -133,7 +133,7 @@ class ShoutcastDriver implements StreamingDriverInterface
             'server_type' => 'shoutcast', 'port' => $port,
             'password' => password_hash($password, PASSWORD_DEFAULT),
             'admin_password' => password_hash($adminPassword, PASSWORD_DEFAULT),
-            'mount_point' => '/stream', 'bitrate' => $bitrate, 'format' => $format,
+            'mount_point' => $this->generateMountPoint($userId, $name), 'bitrate' => $bitrate, 'format' => $format,
             'max_listeners' => $maxListeners, 'public_server' => $public,
             'stream_authhash' => $authhash, 'config_path' => $configPath,
             'systemd_service' => $serviceName, 'status' => 'stopped',
@@ -526,6 +526,16 @@ class ShoutcastDriver implements StreamingDriverInterface
             . "ExecStart={$bin} {$configPath}\nExecStop=/bin/kill -s TERM \$MAINPID\n"
             . "Restart=on-failure\nRestartSec=10\nLimitNOFILE=65536\n\n"
             . "[Install]\nWantedBy=multi-user.target\n";
+    }
+
+    protected function generateMountPoint($userId, $name = ''): string
+    {
+        $slug = $name ? preg_replace('/[^a-z0-9]+/', '-', strtolower(trim($name))) : "user{$userId}";
+        $slug = trim($slug, '-') ?: "station";
+        $existing = $this->db->table('streaming_stations')
+            ->where('mount_point', 'LIKE', "/{$slug}%")
+            ->count();
+        return $existing > 0 ? "/{$slug}-{$existing}" : "/{$slug}";
     }
 
     protected function allocatePort()
