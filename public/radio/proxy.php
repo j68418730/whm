@@ -6,7 +6,7 @@
  * e.g. /home/planethosts/public_html/radio-proxy.php
  *
  * Access: https://planet-hosts.com/radio-proxy.php/radio/widgets/nowplaying.php?stream=1
- * Proxies to: http://127.0.0.1:2083/radio/widgets/nowplaying.php?stream=1
+ * Proxies to: https://127.0.0.1:2083/radio/widgets/nowplaying.php?stream=1
  */
 
 $targetHost = '127.0.0.1';
@@ -23,7 +23,7 @@ if (!$path || $path === '/') {
     exit;
 }
 
-$targetUrl = "http://{$targetHost}:{$targetPort}{$path}";
+$targetUrl = "https://{$targetHost}:{$targetPort}{$path}";
 
 $ch = curl_init();
 curl_setopt_array($ch, [
@@ -32,6 +32,8 @@ curl_setopt_array($ch, [
     CURLOPT_TIMEOUT => 15,
     CURLOPT_FOLLOWLOCATION => true,
     CURLOPT_HEADER => true,
+    CURLOPT_SSL_VERIFYPEER => false,
+    CURLOPT_SSL_VERIFYHOST => false,
     CURLOPT_HTTPHEADER => [
         'X-Forwarded-Host: planet-hosts.com',
         'X-Forwarded-Port: 443',
