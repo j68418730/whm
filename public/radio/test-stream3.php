@@ -57,6 +57,11 @@ audio{width:100%;margin-top:10px}
 <iframe src="widgets/songhistory.php?stream=3&layout=iframe" height="160"></iframe>
 </div>
 
+<div class="card" style="grid-column:1/-1">
+<h2>🎵 Full Player Page</h2>
+<iframe src="embed.php?stream=3" height="480" style="border:1px solid rgba(0,191,255,.08)"></iframe>
+</div>
+
 </div>
 
 <div class="links">
