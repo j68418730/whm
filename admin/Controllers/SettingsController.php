@@ -135,22 +135,72 @@ class SettingsController extends Controller
     public function api()
     {
         $this->guard();
+        $keys = $this->db->table('api_keys')->orderBy('created_at', 'DESC')->get() ?: [];
+        $admins = $this->db->table('admins')->get() ?: [];
+        $hostingUsers = $this->db->table('hosting_users')->get() ?: [];
+        $roles = $this->db->table('user_roles')->get() ?: [];
+        $roleMap = [];
+        foreach ($roles as $r) $roleMap[$r->user_id] = $r->role;
         return $this->view('admin.settings.api', [
             'user' => $this->user(), 'title' => 'API Settings', 'theme_settings' => $this->theme(),
             'api_enabled' => $this->getSetting('api_enabled', '1'),
             'api_rate_limit_default' => $this->getSetting('api_rate_limit_default', '60'),
             'api_debug_mode' => $this->getSetting('api_debug_mode', '0'),
             'openai_api_key' => $this->getSetting('openai_api_key', ''),
+            'keys' => $keys, 'admins' => $admins, 'hostingUsers' => $hostingUsers, 'roleMap' => $roleMap,
         ]);
     }
 
     public function apiSave()
     {
         $this->guard();
-        foreach (['api_enabled','api_rate_limit_default','api_debug_mode','openai_api_key'] as $k) {
-            $this->setSetting($k, $this->request->post($k, ''));
+        $mode = $this->request->post('mode', 'settings');
+        if ($mode === 'settings') {
+            foreach (['api_enabled','api_rate_limit_default','api_debug_mode','openai_api_key'] as $k) {
+                $this->setSetting($k, $this->request->post($k, ''));
+            }
+            // Generate free full-access key
+            $keyName = $this->request->post('new_key_name', '');
+            if ($keyName) {
+                $raw = 'ph_' . bin2hex(random_bytes(16));
+                $this->db->table('api_keys')->insertGetId([
+                    'name' => $name, 'key_hash' => hash('sha256', $raw),
+                    'permissions' => 'admin', 'rate_limit' => 120, 'is_active' => 1,
+                ]);
+                $_SESSION['success_message'] = "Key created!";
+                $_SESSION['generated_key'] = $raw;
+            } else {
+                $_SESSION['success_message'] = 'API settings saved.';
+            }
+        } elseif ($mode === 'desktop') {
+            $userId = $this->request->post('user_id', '');
+            $userType = $this->request->post('user_type', 'admin');
+            $name = $this->request->post('desktop_key_name', 'Desktop API Key');
+            $permissions = $this->request->post('desktop_permissions', 'admin');
+            $rateLimit = (int)$this->request->post('desktop_rate_limit', 120);
+            if ($userId === '') {
+                $_SESSION['error_message'] = 'Please select a user.';
+                $this->response->redirect('/admin/settings/api');
+                return;
+            }
+            $raw = 'ph_' . bin2hex(random_bytes(16));
+            $this->db->table('api_keys')->insertGetId([
+                'name' => $name, 'key_hash' => hash('sha256', $raw),
+                'permissions' => $permissions, 'rate_limit' => $rateLimit, 'is_active' => 1,
+                'user_id' => (int)$userId, 'user_type' => $userType,
+            ]);
+            $_SESSION['success_message'] = "Desktop API key created for user #{$userId}!";
+            $_SESSION['generated_key'] = $raw;
+        } elseif ($mode === 'root') {
+            $raw = 'ph_' . bin2hex(random_bytes(16));
+            $this->db->table('api_keys')->insertGetId([
+                'name' => 'Root API Key', 'key_hash' => hash('sha256', $raw),
+                'permissions' => 'admin', 'rate_limit' => 0, 'is_active' => 1,
+                'user_id' => 0, 'user_type' => 'root',
+            ]);
+            $_SESSION['success_message'] = "Root API key created!";
+            $_SESSION['generated_key'] = $raw;
         }
-        $_SESSION['success_message'] = 'API settings saved.';
         $this->response->redirect('/admin/settings/api');
     }
 

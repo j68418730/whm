@@ -21,7 +21,7 @@ class PublicStreamingApiController extends Controller
     protected function authenticate()
     {
         $apiKey = $this->request->header('X-API-Key') ?: $this->request->get('api_key', '');
-        $key = $this->db->table('api_keys')->where('key', $apiKey)->where('active', 1)->first();
+        $key = $this->db->table('api_keys')->where('key_hash', hash('sha256', $apiKey))->where('is_active', 1)->first();
         if (!$key) {
             $this->response->json(['error' => 'Unauthorized'], 401);
             exit;

@@ -62,4 +62,24 @@ class RadioDashboardController extends Controller
             'theme_settings' => $theme_settings
         ]);
     }
+
+    public function widgets()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) {
+            $this->response->redirect('/admin/login');
+            exit;
+        }
+        $user = $this->auth->user();
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+
+        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+        $streams = $pdo->query("SELECT id, name AS server_name, server_type, port, status, mount_point FROM streaming_stations ORDER BY id ASC")->fetchAll(\PDO::FETCH_OBJ);
+
+        return $this->view('admin.radio_dashboard.widgets', [
+            'user' => $user,
+            'theme_settings' => $theme_settings,
+            'streams' => $streams,
+            'baseUrl' => 'https://planet-hosts.com:2083',
+        ]);
+    }
 }

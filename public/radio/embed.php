@@ -1,25 +1,20 @@
 <?php
+require_once __DIR__ . '/radio_helper.php';
 header('Content-Type: text/html; charset=utf-8');
 $streamId = (int)($_GET['stream'] ?? 0);
 if (!$streamId) exit;
-try {
-    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
-    $pdo->exec("CREATE TABLE IF NOT EXISTS radio_song_history (
-        id INT AUTO_INCREMENT PRIMARY KEY, stream_id INT, title VARCHAR(255),
-        artist VARCHAR(255), duration INT DEFAULT 0, played_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-    $s = $pdo->prepare("SELECT * FROM radio_streams WHERE id = ?");
-    $s->execute([$streamId]);
-    $stream = $s->fetch(PDO::FETCH_OBJ);
-} catch (Exception $e) { $stream = null; }
+
+$stream = radio_get_stream($streamId);
 if (!$stream) exit;
-$name = htmlspecialchars($stream->server_name ?? 'Radio');
-$port = (int)($stream->port ?? 8000);
-$mount = htmlspecialchars($stream->mount_point ?? '/live');
-$sUrl = "http://planet-hosts.com:{$port}{$mount}";
-$status = $stream->status === 'running';
-$listeners = (int)($stream->listener_count ?? 0);
-$bitrate = (int)($stream->bitrate ?? 128);
+
+$stats = radio_fetch_stats($stream);
+$name = htmlspecialchars($stream->server_name ?: 'Radio');
+$sUrl = radio_stream_url($stream);
+$online = $stats['status'];
+$listeners = $stats['listeners'];
+$bitrate = $stats['bitrate'];
+$song = htmlspecialchars($stats['song'] ?: 'Not Playing');
+$artist = htmlspecialchars($stats['artist']);
 ?>
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -43,10 +38,10 @@ $bitrate = (int)($stream->bitrate ?? 128);
 </style></head><body>
 <div class="player">
 <div class="logo">PLANET <span>HOSTS</span></div>
-<div class="status <?php echo $status ? 'online' : 'offline'; ?>">● <?php echo $status ? 'LIVE' : 'OFFLINE'; ?></div>
-<div class="song" id="songDisplay"><?php echo htmlspecialchars($stream->current_song ?? 'Not Playing'); ?></div>
-<div class="artist" id="artistDisplay"><?php echo htmlspecialchars($stream->current_artist ?? ''); ?></div>
-<div class="stats"><span id="listenerCount"><?php echo $listeners; ?></span> Listeners &middot; <span><?php echo $bitrate; ?>kbps</span></div>
+<div class="status <?php echo $online ? 'online' : 'offline'; ?>">● <?php echo $online ? 'LIVE' : 'OFFLINE'; ?></div>
+<div class="song" id="songDisplay"><?php echo $song; ?></div>
+<?php if ($artist): ?><div class="artist" id="artistDisplay"><?php echo $artist; ?></div><?php endif; ?>
+<div class="stats"><span id="listenerCount"><?php echo $listeners; ?></span> Listeners · <span><?php echo $bitrate; ?>kbps</span></div>
 <audio id="audioPlayer" src="<?php echo $sUrl; ?>" preload="none"></audio>
 <div class="controls">
 <button class="play" onclick="document.getElementById('audioPlayer').play()">&#9654; Play</button>
@@ -61,4 +56,3 @@ audio.addEventListener('timeupdate', function() {
 });
 </script>
 </body></html>
-
