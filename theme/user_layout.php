@@ -19,7 +19,7 @@ if (($features['radio'] ?? 0) || $hasRadio || ($package->icecast_enabled ?? 0)) 
 if (($features['game'] ?? 0) || $hasGame || ($package->game_enabled ?? 0)) $features['game'] = 1;
 if (($features['builder'] ?? 0) || $hasBuilder || class_exists('\\Plugins\\WebsiteBuilder\\WebsiteBuilderPlugin')) $features['builder'] = 1;
 if (($features['dj_panel'] ?? 0) || ($package->dj_panel_enabled ?? 0)) $features['dj_panel'] = 1;
-if (($features['livechat'] ?? ($features['chatbox'] ?? 0)) || ($package->live_chat_enabled ?? 0)) $features['livechat'] = 1;
+if (($features['livechat'] ?? ($features['chatbox'] ?? 0)) || ($package->live_chat_enabled ?? 0) || ($package->chatroom_enabled ?? 0)) $features['livechat'] = 1;
 $features['web'] = $hasWeb;
 // Load feature-aware menu
 require_once BASE_PATH . '/core/UserMenu.php';

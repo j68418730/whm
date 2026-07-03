@@ -140,6 +140,14 @@ class WebsiteBuilderEngine
             }
             $html .= '</div>';
         }
+        $enabled = $this->db->query("SELECT setting_value FROM automation_settings WHERE setting_key = 'powered_by_enabled' LIMIT 1")->fetchColumn() ?? '1';
+        if ($enabled !== '0') {
+            $html .= '<div style="text-align:center;padding:14px 0;margin-top:30px;border-top:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b">
+                <a href="https://planethosts.com" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;color:#94a3b8;text-decoration:none">
+                    <img src="https://planethosts.com/assets/poweredby.png" alt="Planet Hosts" style="height:18px;vertical-align:middle"> Powered by Planet Hosts
+                </a>
+            </div>';
+        }
         $html .= '</body></html>';
         return $html;
     }

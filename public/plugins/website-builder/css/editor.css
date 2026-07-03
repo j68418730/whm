@@ -1,0 +1,45 @@
+:root{--wb-primary:#008cff;--wb-secondary:#00e5ff;--wb-bg:#02050e;--wb-card-bg:rgba(8,16,28,.85);--wb-text:#fff;--wb-accent:#38bdf8}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Inter,sans-serif;background:var(--wb-bg);color:var(--wb-text);overflow:hidden;height:100vh;display:flex;flex-direction:column}
+.editor-toolbar{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:rgba(8,16,28,.98);border-bottom:1px solid rgba(0,191,255,.1);flex-shrink:0;z-index:100;flex-wrap:wrap;gap:6px}
+.editor-toolbar .brand{font-weight:700;font-size:16px;color:var(--accent)}
+.editor-toolbar .actions{display:flex;gap:6px;flex-wrap:wrap}
+.editor-toolbar button,.editor-toolbar a{padding:6px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;cursor:pointer;font-size:12px;text-decoration:none;transition:.2s}
+.editor-toolbar button:hover,.editor-toolbar a:hover{background:rgba(0,191,255,.1)}
+.editor-toolbar .btn-save{background:var(--accent);color:#000;font-weight:700;border-color:var(--accent)}
+.editor-toolbar .device-btn.active{background:var(--accent);color:#000;border-color:var(--accent)}
+.editor-layout{display:flex;flex:1;overflow:hidden}
+.editor-sidebar{width:260px;background:rgba(8,16,28,.95);border-right:1px solid rgba(0,191,255,.1);overflow-y:auto;flex-shrink:0}
+.editor-sidebar .block-category{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
+.editor-sidebar .block-category h5{font-size:10px;text-transform:uppercase;color:var(--text_muted);letter-spacing:1px;margin-bottom:6px}
+.editor-sidebar .block-item{padding:6px 10px;margin-bottom:2px;border-radius:6px;cursor:grab;font-size:12px;display:flex;align-items:center;gap:8px;transition:.2s;color:#94a3b8}
+.editor-sidebar .block-item:hover{background:rgba(0,191,255,.08);color:#fff}
+.editor-main{flex:1;overflow-y:auto;padding:20px;background:#0a0e1a;display:flex;justify-content:center;transition:.3s}
+.editor-canvas{max-width:1000px;width:100%;min-height:600px;background:var(--wb-bg);border-radius:12px;border:1px solid rgba(0,191,255,.1);transition:max-width .3s,width .3s}
+.editor-canvas.mobile{max-width:375px;width:375px}
+.editor-canvas.tablet{max-width:768px;width:768px}
+.editor-canvas.desktop{max-width:1000px;width:100%}
+.editor-canvas.responsive{max-width:100%;width:100%}
+.editor-canvas .wb-zone{padding:8px;position:relative;min-height:40px;transition:.2s}
+.editor-canvas .wb-zone:hover{background:rgba(0,191,255,.03)}
+.editor-block{position:relative;padding:8px;margin:4px 0;border-radius:8px;border:1px solid transparent;transition:.2s}
+.editor-block:hover{border-color:rgba(0,191,255,.2);background:rgba(0,191,255,.03)}
+.editor-block.selected{border-color:var(--accent);background:rgba(0,191,255,.08)}
+.editor-block .block-controls{position:absolute;top:-12px;right:8px;display:none;gap:4px;z-index:10}
+.editor-block:hover .block-controls,.editor-block.selected .block-controls{display:flex}
+.editor-block .block-controls button{width:24px;height:24px;border-radius:4px;border:none;background:var(--accent);color:#000;font-size:10px;cursor:pointer}
+.editor-block .block-controls .btn-del{background:#ef4444;color:#fff}
+.editor-right-panel{width:320px;background:rgba(8,16,28,.95);border-left:1px solid rgba(0,191,255,.1);overflow-y:auto;flex-shrink:0;padding:16px}
+.editor-right-panel h5{font-size:11px;text-transform:uppercase;color:var(--text_muted);margin-bottom:12px;letter-spacing:1px}
+.editor-right-panel .field{margin-bottom:12px}
+.editor-right-panel .field label{display:block;font-size:11px;color:#94a3b8;margin-bottom:4px}
+.editor-right-panel .field input,.editor-right-panel .field textarea,.editor-right-panel .field select{width:100%;padding:8px 10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#fff;font-size:12px}
+.empty-zone{text-align:center;padding:20px;color:#64748b;font-size:12px;border:1px dashed rgba(255,255,255,.06);border-radius:8px}
+.editor-main.preview-mode .editor-canvas{box-shadow:0 0 0 1px rgba(0,191,255,.1),0 4px 20px rgba(0,0,0,.4)}
+.editor-main.preview-mode .wb-zone{border:1px dashed rgba(0,191,255,.1);margin:4px 0}
+.editor-main.preview-mode .editor-block .block-controls{opacity:.5}
+#previewFrame{width:100%;height:100%;border:none;background:#fff;display:none}
+.editor-main.split-mode{flex-direction:column}
+.editor-main.split-mode .editor-canvas{max-width:100%;border-radius:0;border-bottom:1px solid rgba(0,191,255,.1);min-height:300px}
+.editor-main.split-mode #previewFrame{display:block;flex:1;min-height:400px;background:#fff}
+@media(max-width:1024px){.editor-sidebar,.editor-right-panel{width:200px}}

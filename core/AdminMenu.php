@@ -29,6 +29,7 @@ if (!function_exists('admin_menu_sections')) {
             ['label' => 'Games', 'href' => '/admin/section/games', 'icon' => '🎮', 'match' => ['/admin/games']],
             ['label' => 'Builder', 'href' => '/admin/section/builder', 'icon' => '🏗️', 'match' => ['/admin/websitebuilder']],
             ['label' => 'Domains', 'href' => '/admin/section/domains', 'icon' => '🌍', 'match' => ['/admin/domains', '/admin/dns', '/admin/ip']],
+            ['label' => 'Chat', 'href' => '/chatbox/admin.php', 'icon' => '💬', 'match' => ['/admin/livechat', '/admin/chat-dashboard', '/chatbox']],
             ['label' => 'Security', 'href' => '/admin/section/security', 'icon' => '🔒', 'match' => ['/admin/security', '/admin/firewall', '/admin/ipblocker', '/admin/twofactor']],
             ['label' => 'System', 'href' => '/admin/section/system', 'icon' => '⚙️', 'match' => ['/admin/settings', '/admin/serverconfig', '/admin/hostname', '/admin/licensing', '/admin/plugins', '/admin/installers', '/admin/todo', '/admin/process-manager', '/admin/automation', '/admin/filesystem', '/admin/themes', '/admin/theme']],
         ];

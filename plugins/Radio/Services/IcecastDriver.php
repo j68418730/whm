@@ -5,7 +5,7 @@ namespace Plugins\Radio\Services;
 class IcecastDriver implements StreamingDriverInterface
 {
     protected $db;
-    protected $binaryPath = '/usr/bin/icecast';
+    protected $binaryPath = '/usr/bin/icecast2';
 
     public function __construct($db)
     {
@@ -13,18 +13,27 @@ class IcecastDriver implements StreamingDriverInterface
     }
 
     public function getDisplayName() { return 'Icecast'; }
-    public function getBinaryPath() { return $this->binaryPath; }
+    public function getBinaryPath() { return $this->detectBinaryPath(); }
+
+    protected function detectBinaryPath()
+    {
+        foreach ([$this->binaryPath, '/usr/bin/icecast', '/usr/local/bin/icecast', '/usr/local/bin/icecast2'] as $path) {
+            if (is_file($path) && is_executable($path)) return $path;
+        }
+        $which = trim(shell_exec('command -v icecast2 2>/dev/null || command -v icecast 2>/dev/null') ?: '');
+        return $which ?: $this->binaryPath;
+    }
 
     public function getVersion()
     {
-        $output = shell_exec($this->binaryPath . ' -v 2>/dev/null') ?: '';
+        $output = shell_exec($this->detectBinaryPath() . ' -v 2>/dev/null') ?: '';
         preg_match('/Icecast (\d+\.\d+\.\d+)/', $output, $m);
         return $m[1] ?? 'unknown';
     }
 
     public function isInstalled()
     {
-        return file_exists($this->binaryPath) || !empty(trim(shell_exec('which icecast 2>/dev/null') ?: ''));
+        return is_file($this->detectBinaryPath());
     }
 
     public function isRunning()
@@ -35,7 +44,7 @@ class IcecastDriver implements StreamingDriverInterface
 
     public function install($installPath = null)
     {
-        $cmd = $installPath ? "bash \"$installPath\"" : 'dnf install -y icecast 2>/dev/null || apt install -y icecast 2>/dev/null';
+        $cmd = $installPath ? "bash \"$installPath\"" : 'dnf install -y icecast icecast2 2>/dev/null || apt install -y icecast2 2>/dev/null';
         $output = shell_exec($cmd . ' 2>&1');
         shell_exec('systemctl enable --now icecast2 2>/dev/null || true');
         return ['success' => $this->isInstalled(), 'output' => $output];
@@ -43,7 +52,7 @@ class IcecastDriver implements StreamingDriverInterface
 
     public function uninstall()
     {
-        shell_exec('systemctl stop icecast2 2>/dev/null; dnf remove -y icecast 2>/dev/null || apt remove -y icecast 2>/dev/null');
+        shell_exec('systemctl stop icecast2 2>/dev/null; dnf remove -y icecast icecast2 2>/dev/null || apt remove -y icecast2 2>/dev/null');
     }
 
     public function createStation($userId, $data = [])
@@ -91,7 +100,7 @@ class IcecastDriver implements StreamingDriverInterface
             $this->generateConfig($station);
         }
         $pidFile = "/tmp/icecast_{$station->id}.pid";
-        $cmd = "nohup {$this->binaryPath} -c {$station->config_path} > /dev/null 2>&1 & echo \$! > {$pidFile}";
+        $cmd = "nohup " . $this->detectBinaryPath() . " -c {$station->config_path} > /dev/null 2>&1 & echo \$! > {$pidFile}";
         shell_exec($cmd);
         sleep(1);
         $this->db->table('streaming_stations')->where('id', $station->id)->update([

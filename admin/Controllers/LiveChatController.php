@@ -50,7 +50,7 @@ class LiveChatController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->json(['error'=>'Unauthorized']); $this->response->send(); exit; }
         $since = (int)$this->request->get('since', 0);
-        $all = $this->db->table('chat_messages')->where('session_id', $sessionId)->get() ?: [];
+        $all = $this->db->table('chat_messages')->where('session_id', $sessionId)->orderBy('id', 'ASC')->get() ?: [];
         // Deduplicate by id and only return new ones
         $seen = [];
         $msgs = [];
