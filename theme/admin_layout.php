@@ -132,6 +132,13 @@ function filterSidebar(val) {
 <a href="/admin/reviews" class="<?php echo str_contains($currentUrl,'/admin/reviews')?'active':''; ?>" style="font-size:12px;padding-left:20px;color:#facc15">📝 Reviews</a>
 </div>
 
+<div class="nav-section" data-section="chat">
+<div class="nav-label">💬 Chat</div>
+<a href="/admin/livechat" class="<?php echo str_contains($currentUrl,'/admin/livechat')?'active':''; ?>">Live Chat</a>
+<a href="/admin/chat-dashboard" class="<?php echo str_contains($currentUrl,'/admin/chat-dashboard')?'active':''; ?>">Chat Dashboard</a>
+<a href="/chatbox/admin.php" target="_blank" style="color:#38bdf8">Chat Admin</a>
+</div>
+
 <div class="nav-section" data-section="dashboards">
 <div class="nav-label">📊 Dashboards</div>
 <a href="/admin/radio_dashboard" class="<?php echo str_contains($currentUrl,'/admin/radio_dashboard')?'active':''; ?>">📡 Radio Dashboard</a>
@@ -139,11 +146,8 @@ function filterSidebar(val) {
 <a href="/admin/djs" class="<?php echo str_contains($currentUrl,'/admin/djs')?'active':''; ?>">🎤 DJ Accounts</a>
 <a href="/admin/autodj" class="<?php echo str_contains($currentUrl,'/admin/autodj')?'active':''; ?>">🤖 AutoDJ</a>
 <a href="/admin/radiosettings" class="<?php echo str_contains($currentUrl,'/admin/radiosettings')?'active':''; ?>">⚙️ Radio Settings</a>
-<a href="/admin/livechat" class="<?php echo str_contains($currentUrl,'/admin/livechat')?'active':''; ?>">💬 Live Chat</a>
 <a href="/admin/games" class="<?php echo str_contains($currentUrl,'/admin/games')?'active':''; ?>">🎮 Game Servers</a>
-<a href="/admin/chat-dashboard" class="<?php echo str_contains($currentUrl,'/admin/chat-dashboard')?'active':''; ?>">💬 Chat Dashboard</a>
 <a href="/admin/djs" style="font-size:12px;padding-left:20px;color:#a78bfa">🎤 DJ Dashboard</a>
-<a href="/chatbox/admin.php" target="_blank" style="font-size:12px;padding-left:20px;color:#38bdf8">💬 Chat Admin</a>
 <?php if (class_exists('\\Plugins\\WebsiteBuilder\\WebsiteBuilderPlugin')): ?>
 <a href="/admin/websitebuilder" style="font-size:12px;padding-left:20px;color:#34d399">🌐 Website Builder</a>
 <?php endif; ?>

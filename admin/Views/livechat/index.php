@@ -160,19 +160,28 @@ var sidebarTimer = null;
 var visitorMap = {};
 var remoteLink = '';
 
-// Auto-refresh sidebar every 15s
-sidebarTimer = setInterval(function() {
+function refreshChatSidebar() {
     var x = new XMLHttpRequest();
     x.open('GET', '/admin/livechat', true);
     x.onload = function() {
+        if (x.status !== 200) return;
         var parser = new DOMParser();
         var doc = parser.parseFromString(x.responseText, 'text/html');
         var newList = doc.getElementById('chatSidebarList');
         var oldList = document.getElementById('chatSidebarList');
-        if (newList && oldList) oldList.innerHTML = newList.innerHTML;
+        if (newList && oldList) {
+            oldList.innerHTML = newList.innerHTML;
+            if (currentSession) {
+                var active = oldList.querySelector('.item[data-id="' + currentSession + '"]');
+                if (active) active.classList.add('active');
+            }
+        }
     };
     x.send();
-}, 15000);
+}
+
+// Auto-refresh chat list without needing a page reload.
+sidebarTimer = setInterval(refreshChatSidebar, 3000);
 
 function switchTab(name, el) {
     document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
@@ -200,11 +209,13 @@ function fetchMessages() {
     var x = new XMLHttpRequest();
     x.open('GET', '/admin/livechat/messages/' + currentSession + '?since=' + lastMsgId, true);
     x.onload = function() {
+        if (x.status !== 200) return;
         try {
             var msgs = JSON.parse(x.responseText);
             if (msgs.error) return;
             var out = document.getElementById('chatMessages');
             if (msgs.length > 0) {
+                if (lastMsgId === 0) out.innerHTML = '';
                 var added = false;
                 msgs.forEach(function(m) {
                     if (m.id > lastMsgId) { lastMsgId = m.id; added = true; } else return;

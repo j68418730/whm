@@ -1,0 +1,8 @@
+{
+    "name": "Store",
+    "version": "1.0.0",
+    "author": "Planet Hosts",
+    "description": "E-commerce module for selling digital products and services",
+    "routes": "routes.php",
+    "migrations": ["database/create_store_tables.php"]
+}

@@ -19,6 +19,30 @@ $router->get('/admin/websitebuilder/themes', 'Plugins\WebsiteBuilder\Controllers
 $router->post('/admin/websitebuilder/themes/store', 'Plugins\WebsiteBuilder\Controllers\Admin\WebsiteBuilderController@themeStore');
 $router->get('/admin/websitebuilder/themes/delete/{id}', 'Plugins\WebsiteBuilder\Controllers\Admin\WebsiteBuilderController@themeDelete');
 $router->get('/admin/websitebuilder/settings', 'Plugins\WebsiteBuilder\Controllers\Admin\WebsiteBuilderController@settings');
+$router->post('/admin/websitebuilder/settings/save', 'Plugins\WebsiteBuilder\Controllers\Admin\WebsiteBuilderController@settingsSave');
+
+// AI Builder - Admin
+$router->get('/admin/websitebuilder/ai', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@adminDashboard');
+
+// AI Builder - User
+$router->get('/user/websites/ai', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@dashboard');
+$router->get('/user/websites/ai/wizard', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@wizard');
+$router->post('/user/websites/ai/wizard/generate', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@wizardGenerate');
+$router->get('/user/websites/ai/edit/{siteId}', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@editor');
+$router->post('/user/websites/ai/edit/apply', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@editBlocks');
+$router->get('/user/websites/ai/branding', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@branding');
+$router->post('/user/websites/ai/branding/generate', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@brandingGenerate');
+$router->get('/user/websites/ai/images', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@images');
+$router->post('/user/websites/ai/images/generate', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@imagesGenerate');
+$router->get('/user/websites/ai/analyze', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@analyze');
+$router->post('/user/websites/ai/analyze/run', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@analyzeRun');
+$router->get('/user/websites/ai/memory', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@memory');
+$router->get('/user/websites/ai/memory/{siteId}', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@memorySite');
+$router->post('/user/websites/ai/memory/save', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@memorySave');
+$router->get('/user/websites/ai/themes', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@themes');
+$router->get('/user/websites/ai/themes/{siteId}', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@themes');
+$router->post('/user/websites/ai/themes/generate', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@themesGenerate');
+$router->post('/user/websites/ai/themes/apply', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@themesApply');
 
 // User routes
 $router->get('/user/websites', 'Plugins\WebsiteBuilder\Controllers\User\WebsiteBuilderController@index');

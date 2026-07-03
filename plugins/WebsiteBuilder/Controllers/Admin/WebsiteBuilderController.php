@@ -196,6 +196,23 @@ class WebsiteBuilderController extends Controller
         ]);
     }
 
+    public function settingsSave()
+    {
+        $this->requireAdmin();
+        $openaiKey = $this->request->post('openai_api_key', '');
+        $steamKey = $this->request->post('steam_web_api_key', '');
+        $poweredBy = $this->request->post('powered_by_enabled', '1');
+        if ($openaiKey) {
+            $this->db->query("INSERT INTO automation_settings (setting_key, setting_value) VALUES ('openai_api_key', ?) ON DUPLICATE KEY UPDATE setting_value = ?", [$openaiKey, $openaiKey]);
+        }
+        if ($steamKey) {
+            $this->db->query("INSERT INTO automation_settings (setting_key, setting_value) VALUES ('steam_web_api_key', ?) ON DUPLICATE KEY UPDATE setting_value = ?", [$steamKey, $steamKey]);
+        }
+        $this->db->query("INSERT INTO automation_settings (setting_key, setting_value) VALUES ('powered_by_enabled', ?) ON DUPLICATE KEY UPDATE setting_value = ?", [$poweredBy, $poweredBy]);
+        $_SESSION['success_message'] = 'Settings saved.';
+        $this->response->redirect('/admin/websitebuilder/settings');
+    }
+
     public function blockTypes()
     {
         $this->requireAdmin();
