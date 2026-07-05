@@ -167,6 +167,8 @@ $router->post('/user/radio/schedule/add', 'User\Controllers\RadioController@addS
 $router->get('/user/radio/schedule/delete/{id}', 'User\Controllers\RadioController@deleteSchedule');
 $router->post('/user/radio/playlist/create', 'User\Controllers\RadioController@createPlaylist');
 $router->get('/user/radio/playlist/delete/{id}', 'User\Controllers\RadioController@deletePlaylist');
+$router->post('/user/radio/playlist/add-song', 'User\Controllers\RadioController@playlistAddSong');
+$router->get('/user/radio/playlist/remove-song/{id}', 'User\Controllers\RadioController@playlistRemoveSong');
 $router->post('/user/radio/settings/update', 'User\Controllers\RadioController@updateSettings');
 $router->post('/user/radio/autodj/update', 'User\Controllers\RadioController@updateAutodj');
 $router->post('/user/radio/branding/save', 'User\Controllers\RadioController@saveBranding');

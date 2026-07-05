@@ -1,236 +1,413 @@
+<?php
+$tab = $_GET['tab'] ?? 'overview';
+$stationId = $station->id ?? 0;
+$realId = $station->streaming_id ?? $stationId;
+$isIces = ($station->server_type ?? 'icecast') === 'icecast';
+$listenUrl = $isIces ? "http://{$_SERVER['HTTP_HOST']}:$station->port$station->mount" : "http://{$_SERVER['HTTP_HOST']}:$station->port";
+?>
 <style>
-.r-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:14px}
-.r-stat{background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.08);border-radius:10px;padding:14px;text-align:center}
-.r-stat .num{font-size:22px;font-weight:800}
-.r-stat .lbl{font-size:10px;color:#64748b;margin-top:2px}
-.r-card{background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.08);border-radius:10px;padding:18px;margin-bottom:12px}
-.r-card h3{font-size:14px;font-weight:600;margin:0 0 10px}
-.r-card h3 span{color:#64748b;font-size:12px;font-weight:400}
-.nav-pills{display:flex;gap:2px;flex-wrap:wrap;margin-bottom:14px;background:rgba(8,16,28,.6);border-radius:8px;padding:3px}
+.nav-pills{display:flex;gap:2px;flex-wrap:wrap;margin-bottom:14px;background:rgba(8,16,28,.6);border-radius:8px;padding:3px;max-height:200px;overflow-y:auto}
 .nav-pills a{padding:6px 12px;border-radius:6px;font-size:11px;text-decoration:none;color:#94a3b8;transition:.1s;white-space:nowrap}
 .nav-pills a:hover{color:#e0e0e0;background:rgba(255,255,255,.04)}
 .nav-pills a.active{color:#fff;background:rgba(0,140,255,.2)}
 .tab{display:none}
 .tab.active{display:block}
-.nowplaying{display:flex;align-items:center;gap:14px;padding:14px;background:linear-gradient(135deg,rgba(0,140,255,.06),rgba(168,85,247,.04));border:1px solid rgba(0,191,255,.1);border-radius:12px;margin-bottom:14px}
+.top-bar{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.top-bar .page-title{font-size:20px;font-weight:700;color:#e0e0e0}
+.top-bar .breadcrumb{font-size:11px;color:#64748b;display:flex;align-items:center;gap:4px;margin-bottom:2px}
+.top-bar .breadcrumb a{color:#64748b;text-decoration:none}
+.top-bar .breadcrumb a:hover{color:#0A84FF}
+.nowplaying-bar{display:flex;align-items:center;gap:14px;padding:14px;background:linear-gradient(135deg,rgba(0,140,255,.06),rgba(168,85,247,.04));border:1px solid rgba(0,191,255,.1);border-radius:12px;margin-bottom:16px}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.stat-box{text-align:center;padding:14px;background:rgba(8,16,28,.6);border-radius:8px}
+.stat-box .num{font-size:22px;font-weight:700}
+.stat-box .lbl{font-size:10px;color:#64748b;margin-top:2px}
+.upload-zone{border:2px dashed rgba(0,140,255,.2);border-radius:10px;padding:30px;text-align:center;color:#64748b;font-size:12px;cursor:pointer;transition:.15s;margin-bottom:10px}
+.upload-zone:hover{border-color:rgba(0,140,255,.4);background:rgba(0,140,255,.03);color:#94a3b8}
+.file-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.color-picker-wrap{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.color-picker-wrap input[type=color]{width:36px;height:36px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);cursor:pointer;padding:2px}
+.color-picker-wrap .hex{font-size:11px;color:#94a3b8;font-family:monospace}
+.inp{padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px;outline:none;width:100%;box-sizing:border-box}
+.inp:focus{border-color:rgba(0,140,255,.3)}
+.inp-sm{padding:4px 6px;font-size:10px}
+select.inp{color:#e0e0e0;cursor:pointer}
+select.inp option{background:#0a0e1a;color:#e0e0e0}
+.station-selector{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 14px;background:rgba(8,16,28,.6);border-radius:8px;font-size:12px}
+.station-selector select{padding:4px 8px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px;outline:none;min-width:200px}
+.card{background:rgba(8,16,28,.6);border:1px solid rgba(255,255,255,.04);border-radius:10px;padding:16px;margin-bottom:12px}
+.card h3{font-size:13px;font-weight:600;color:#e0e0e0;margin:0 0 12px 0}
+.card .hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:12px}
+.stat-card{padding:14px;background:rgba(0,0,0,.3);border-radius:8px;text-align:center}
+.stat-card .sv{font-size:20px;font-weight:700;color:#e0e0e0}
+.stat-card .sl{font-size:10px;color:#64748b;margin-top:2px}
+.btn{padding:6px 14px;border-radius:6px;font-size:11px;font-weight:500;border:none;cursor:pointer;transition:.1s;text-decoration:none;display:inline-block}
+.btn-sm{padding:4px 10px;font-size:10px}
+.btn-primary{background:rgba(0,140,255,.2);color:#0A84FF}
+.btn-primary:hover{background:rgba(0,140,255,.3)}
+.btn-success{background:rgba(0,200,83,.15);color:#00C853}
+.btn-success:hover{background:rgba(0,200,83,.25)}
+.btn-danger{background:rgba(255,68,68,.15);color:#ff4444}
+.btn-danger:hover{background:rgba(255,68,68,.25)}
+.btn-warning{background:rgba(255,193,7,.15);color:#ffc107}
+.btn-warning:hover{background:rgba(255,193,7,.25)}
+.btn-secondary{background:rgba(255,255,255,.06);color:#94a3b8}
+.btn-secondary:hover{background:rgba(255,255,255,.1)}
+.status-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600}
+.status-running{background:rgba(0,200,83,.15);color:#00C853}
+.status-stopped{background:rgba(255,68,68,.12);color:#ff4444}
+.status-starting{background:rgba(255,193,7,.15);color:#ffc107}
+.msg{padding:8px 12px;border-radius:6px;font-size:11px;margin-bottom:10px;display:none}
+.msg-success{display:block;background:rgba(0,200,83,.1);color:#00C853;border:1px solid rgba(0,200,83,.15)}
+.msg-error{display:block;background:rgba(255,68,68,.1);color:#ff4444;border:1px solid rgba(255,68,68,.15)}
+.empty-state{padding:30px;text-align:center;color:#64748b;font-size:12px}
+.progress-bar{height:4px;border-radius:2px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:6px}
+.progress-bar .fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#0A84FF,#5856D6);transition:width .3s}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{padding:8px 6px;text-align:left;font-weight:600;color:#64748b;border-bottom:1px solid rgba(255,255,255,.06)}
+td{padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.04);color:#c0c0c0}
+tr:hover td{background:rgba(255,255,255,.02)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.form-group{margin-bottom:10px}
+.form-group label{display:block;font-size:10px;color:#64748b;margin-bottom:3px;font-weight:500}
+.actions{display:flex;gap:4px;flex-wrap:wrap}
 </style>
-<?php $tab = $_GET['tab'] ?? 'overview'; ?>
-<h2>📻 Radio Dashboard</h2>
-<p style="color:#64748b;margin-bottom:14px">Manage your station, DJs, music, and listeners.</p>
-
-<?php if (!$station): ?>
-<div class="r-card" style="text-align:center;padding:30px"><h3>No Station</h3><p style="color:#64748b">No radio station found. Make sure your package includes radio hosting, then <a href="?tab=setup" style="color:#0A84FF">create one</a>.</p>
-<form method="POST" action="/user/radio/setup" style="margin-top:10px">
-<button type="submit" class="btn btn-sm btn-primary">Create Station</button>
-</form></div>
-<?php else: ?>
-
-<div class="nowplaying">
-<div style="font-size:36px">📻</div>
-<div style="flex:1"><strong style="font-size:16px"><?php echo htmlspecialchars($station->name ?? 'My Station'); ?></strong>
-<div style="font-size:12px;color:#64748b"><?php echo htmlspecialchars($station->current_song ?? 'Not Playing'); ?> • <?php echo $station->status === 'running' ? '<span style="color:#4ade80">● Live</span>' : '<span style="color:#64748b">● Offline</span>'; ?></div></div>
-<div style="text-align:right;font-size:12px;color:#64748b">
-Listeners: <strong><?php echo (int)($station->listener_count ?? 0); ?></strong><br>
-Peak: <strong><?php echo (int)($station->listener_peak ?? 0); ?></strong>
-</div></div>
-
-<div class="r-grid">
-<div class="r-stat"><div class="num" style="color:#0A84FF"><?php echo count($djs ?? []);?></div><div class="lbl">DJs</div></div>
-<div class="r-stat"><div class="num" style="color:#4ade80"><?php echo count($requests ?? []);?></div><div class="lbl">Requests</div></div>
-<div class="r-stat"><div class="num" style="color:#a78bfa"><?php echo count($schedule ?? []);?></div><div class="lbl">Shows</div></div>
-<div class="r-stat"><div class="num" style="color:#38bdf8"><?php echo $station->listener_peak ?? 0;?></div><div class="lbl">Peak</div></div>
+<div class="top-bar"><div><div class="breadcrumb"><a href="/user">Dashboard</a> &raquo; <span>Radio</span></div><div class="page-title">Radio Dashboard</div></div><?php if (empty($stations)): ?><a href="/user/radio/setup" class="btn btn-primary">Create Station</a><?php endif; ?></div>
+<?php if (isset($_SESSION['success'])): ?><div class="msg msg-success"><?=$_SESSION['success']; unset($_SESSION['success']); ?></div><?php endif; ?>
+<?php if (isset($_SESSION['error'])): ?><div class="msg msg-error"><?=$_SESSION['error']; unset($_SESSION['error']); ?></div><?php endif; ?>
+<?php if (!empty($stations) && $station): ?>
+<div class="station-selector">
+  <span>Station:</span>
+  <select onchange="window.location.href='/user/radio?station_id='+this.value+'&tab='+getTab()">
+    <?php foreach ($stations as $st): ?>
+    <option value="<?=$st->id?>" <?=$st->id==$stationId?'selected':''?>><?=htmlspecialchars($st->name)?> (<?=$st->server_type?> :<?=$st->port?>)</option>
+    <?php endforeach; ?>
+  </select>
+  <?php $sc = ($station->status??'stopped')==='running'?'status-running':(($station->status??'stopped')==='starting'?'status-starting':'status-stopped'); $sl = ucfirst($station->status??'Stopped'); ?>
+  <span class="status-badge <?=$sc?>"><?=$sl?></span>
+  <div style="margin-left:auto;display:flex;gap:4px">
+    <a href="/user/radio/start/<?=$stationId?>" class="btn btn-sm btn-success">Start</a>
+    <a href="/user/radio/stop/<?=$stationId?>" class="btn btn-sm btn-danger">Stop</a>
+    <a href="/user/radio/restart/<?=$stationId?>" class="btn btn-sm btn-warning">Restart</a>
+    <a href="<?=$listenUrl?>" target="_blank" class="btn btn-sm btn-secondary">Listen</a>
+  </div>
 </div>
-
+<div class="nowplaying-bar">
+  <div style="flex:1"><div style="font-size:10px;color:#64748b;margin-bottom:2px">Now Playing</div><div style="font-size:14px;font-weight:600;color:#e0e0e0"><?=htmlspecialchars($station->current_song ?: 'No song playing')?></div></div>
+  <div style="text-align:center"><div style="font-size:10px;color:#64748b">Listeners</div><div style="font-size:18px;font-weight:700;color:#0A84FF"><?=(int)($station->listener_count??0)?></div></div>
+  <div style="text-align:center"><div style="font-size:10px;color:#64748b">Peak</div><div style="font-size:18px;font-weight:700;color:#5856D6"><?=(int)($station->listener_peak??0)?></div></div>
+  <div style="text-align:center"><div style="font-size:10px;color:#64748b">Bitrate</div><div style="font-size:18px;font-weight:700;color:#e0e0e0"><?=$station->bitrate??128?> kbps</div></div>
+  <div style="text-align:center"><div style="font-size:10px;color:#64748b">Format</div><div style="font-size:18px;font-weight:700;color:#e0e0e0"><?=strtoupper($station->format??'mp3')?></div></div>
+  <div style="text-align:center">
+    <div style="font-size:10px;color:#64748b">Disk</div>
+    <div style="font-size:14px;font-weight:700;color:#e0e0e0"><?=$diskUsedFormatted?> / <?=$diskTotalFormatted?></div>
+    <?php $pct = $diskTotal > 0 ? min(100, round($diskUsed/$diskTotal*100)) : 0; ?>
+    <div class="progress-bar" style="width:100px"><div class="fill" style="width:<?=$pct?>%"></div></div>
+  </div>
+</div>
 <div class="nav-pills">
-<a href="?tab=overview" class="<?php echo $tab==='overview'?'active':'';?>">📊 Overview</a>
-<a href="?tab=djs" class="<?php echo $tab==='djs'?'active':'';?>">🎧 DJs</a>
-<a href="?tab=schedule" class="<?php echo $tab==='schedule'?'active':'';?>">📅 Schedule</a>
-<a href="?tab=requests" class="<?php echo $tab==='requests'?'active':'';?>">🙋 Requests</a>
-<a href="?tab=media" class="<?php echo $tab==='media'?'active':'';?>">🎶 Media</a>
-<a href="?tab=playlists" class="<?php echo $tab==='playlists'?'active':'';?>">📂 Playlists</a>
-<a href="?tab=mounts" class="<?php echo $tab==='mounts'?'active':'';?>">🔗 Mounts</a>
-<a href="?tab=widgets" class="<?php echo $tab==='widgets'?'active':'';?>">🧩 Widgets</a>
-<a href="?tab=stats" class="<?php echo $tab==='stats'?'active':'';?>">📊 Stats</a>
-<a href="?tab=backups" class="<?php echo $tab==='backups'?'active':'';?>">💾 Backups</a>
+  <a href="?station_id=<?=$stationId?>&tab=overview" class="<?=$tab==='overview'?'active':''?>">Overview</a>
+  <a href="?station_id=<?=$stationId?>&tab=djs" class="<?=$tab==='djs'?'active':''?>">DJs</a>
+  <a href="?station_id=<?=$stationId?>&tab=requests" class="<?=$tab==='requests'?'active':''?>">Requests</a>
+  <a href="?station_id=<?=$stationId?>&tab=schedule" class="<?=$tab==='schedule'?'active':''?>">Schedule</a>
+  <a href="?station_id=<?=$stationId?>&tab=playlists" class="<?=$tab==='playlists'?'active':''?>">Playlists</a>
+  <a href="?station_id=<?=$stationId?>&tab=media" class="<?=$tab==='media'?'active':''?>">Media</a>
+  <a href="?station_id=<?=$stationId?>&tab=autodj" class="<?=$tab==='autodj'?'active':''?>">AutoDJ</a>
+  <a href="?station_id=<?=$stationId?>&tab=settings" class="<?=$tab==='settings'?'active':''?>">Settings</a>
+  <a href="?station_id=<?=$stationId?>&tab=branding" class="<?=$tab==='branding'?'active':''?>">Branding</a>
+  <a href="?station_id=<?=$stationId?>&tab=mounts" class="<?=$tab==='mounts'?'active':''?>">Mounts</a>
+  <a href="?station_id=<?=$stationId?>&tab=song_history" class="<?=$tab==='song_history'?'active':''?>">Song History</a>
+  <a href="?station_id=<?=$stationId?>&tab=backups" class="<?=$tab==='backups'?'active':''?>">Backups</a>
 </div>
-
-<!-- Overview -->
-<div class="tab <?php echo $tab==='overview'?'active':'';?>">
-<div class="r-card"><h3>Stream Controls</h3>
-<div style="display:flex;gap:6px;flex-wrap:wrap">
-<a href="/user/radio/start/<?php echo $station->id;?>" class="btn btn-sm" style="background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2);padding:6px 14px;border-radius:6px;text-decoration:none">▶ Start</a>
-<a href="/user/radio/stop/<?php echo $station->id;?>" class="btn btn-sm" style="background:rgba(248,113,113,.1);color:#f87171;border:1px solid rgba(248,113,113,.2);padding:6px 14px;border-radius:6px;text-decoration:none">⏹ Stop</a>
-<a href="/user/radio/restart/<?php echo $station->id;?>" class="btn btn-sm" style="background:rgba(250,204,21,.1);color:#facc15;border:1px solid rgba(250,204,21,.2);padding:6px 14px;border-radius:6px;text-decoration:none">🔄 Restart</a>
-<form method="POST" action="/user/radio/kick-source" style="display:inline">
-<input type="hidden" name="station_id" value="<?php echo $station->id;?>">
-<button type="submit" class="btn btn-sm" style="background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.25);padding:6px 14px;border-radius:6px;cursor:pointer">⛔ Kick Source</button>
-</form>
-<form method="POST" action="/user/radio/autodj/toggle/<?php echo $station->id;?>" style="display:inline">
-<button type="submit" class="btn btn-sm" style="background:<?php echo $station->autodj_enabled?'rgba(248,113,113,.1);color:#f87171;border:1px solid rgba(248,113,113,.2)':'rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2)';?>;padding:6px 14px;border-radius:6px;cursor:pointer">
-<?php echo $station->autodj_enabled ? '⏹ Disable AutoDJ' : '▶ Enable AutoDJ';?></button>
-</form>
-</div></div>
-<div class="r-card"><h3>Station Info</h3>
-<div style="display:grid;grid-template-columns:120px 1fr;gap:4px;font-size:12px">
-<span style="color:#64748b">Name</span><span><?php echo htmlspecialchars($station->name);?></span>
-<span style="color:#64748b">Genre</span><span><?php echo htmlspecialchars($station->genre);?></span>
-<span style="color:#64748b">Status</span><span><span style="color:<?php echo $station->status==='running'?'#4ade80':'#64748b';?>">● <?php echo $station->status;?></span></span>
-<span style="color:#64748b">Port</span><span><code><?php echo $station->port;?></code></span>
-<span style="color:#64748b">Mount</span><span><code><?php echo htmlspecialchars($station->mount);?></code></span>
-<span style="color:#64748b">Bitrate</span><span><?php echo $station->bitrate;?> kbps</span>
-<span style="color:#64748b">Listen URL</span><span><code style="font-size:10px">http://<?php echo $_SERVER['HTTP_HOST']??'localhost';?>:<?php echo $station->port;?><?php echo htmlspecialchars($station->mount);?></code></span>
-</div></div>
+<div class="tab <?=$tab==='overview'?'active':''?>">
+  <div class="stat-grid">
+    <div class="stat-card"><div class="sv"><?=(int)($station->listener_count??0)?></div><div class="sl">Current Listeners</div></div>
+    <div class="stat-card"><div class="sv"><?=(int)($station->listener_peak??0)?></div><div class="sl">Peak Listeners</div></div>
+    <div class="stat-card"><div class="sv"><?=$station->bitrate??128?></div><div class="sl">Bitrate (kbps)</div></div>
+    <div class="stat-card"><div class="sv"><?=$diskUsedFormatted?></div><div class="sl">Disk Used</div></div>
+    <div class="stat-card"><div class="sv"><?=$diskTotalFormatted?></div><div class="sl">Disk Limit</div></div>
+    <div class="stat-card"><div class="sv"><?=count($djs)?></div><div class="sl">DJs</div></div>
+    <div class="stat-card"><div class="sv"><?=count($playlists)?></div><div class="sl">Playlists</div></div>
+    <div class="stat-card"><div class="sv"><?=count($songs)?></div><div class="sl">Recent Songs</div></div>
+    <div class="stat-card"><div class="sv"><?=count($schedule)?></div><div class="sl">Shows</div></div>
+  </div>
+  <div class="card"><h3>Quick Actions</h3><div style="display:flex;gap:6px;flex-wrap:wrap">
+    <a href="?station_id=<?=$stationId?>&tab=playlists" class="btn btn-sm btn-primary">Manage Playlists</a>
+    <a href="?station_id=<?=$stationId?>&tab=branding" class="btn btn-sm btn-primary">Branding</a>
+    <a href="?station_id=<?=$stationId?>&tab=autodj" class="btn btn-sm btn-primary">AutoDJ</a>
+    <a href="?station_id=<?=$stationId?>&tab=backups" class="btn btn-sm btn-secondary">Backups</a>
+    <a href="<?=$listenUrl?>" target="_blank" class="btn btn-sm btn-secondary">Listen URL</a>
+  </div></div>
+  <?php if (!empty($songs)): ?>
+  <div class="card"><div class="hdr"><h3>Recently Played</h3></div><table><tr><th>Title</th><th>Artist</th><th>Played At</th></tr>
+    <?php foreach (array_slice($songs,0,10) as $sh): ?>
+    <tr><td><?=htmlspecialchars($sh->title??'Unknown')?></td><td><?=htmlspecialchars($sh->artist??'Unknown')?></td><td><?=htmlspecialchars($sh->played_at??'')?></td></tr>
+    <?php endforeach; ?>
+  </table></div>
+  <?php endif; ?>
 </div>
-
-<!-- DJs -->
-<div class="tab <?php echo $tab==='djs'?'active':'';?>">
-<div class="r-card"><h3>➕ Create DJ</h3>
-<form method="POST" action="/user/radio/dj/create" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
-<input name="username" placeholder="Username" required style="padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<input name="password" placeholder="Password" required style="padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<input name="name" placeholder="Display Name" style="padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<input name="email" placeholder="Email" style="padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<div style="grid-column:span 4;display:flex;gap:6px">
-<input name="bio" placeholder="Bio / Genres" style="flex:1;padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<button type="submit" class="btn btn-sm btn-primary">➕ Add DJ</button>
+<div class="tab <?=$tab==='djs'?'active':''?>">
+  <div class="card"><div class="hdr"><h3>DJs</h3></div>
+  <table><tr><th>Username</th><th>Name</th><th>Status</th><th>Last Login</th><th>Actions</th></tr>
+    <?php if (empty($djs)): ?><tr><td colspan="5" class="empty-state">No DJs yet</td></tr>
+    <?php else: ?>
+    <?php foreach ($djs as $dj): ?>
+    <tr>
+      <td><?=htmlspecialchars($dj->username??'')?></td>
+      <td><?=htmlspecialchars($dj->display_name??$dj->username??'')?></td>
+      <td><span class="status-badge <?=$dj->status==='active'?'status-running':'status-stopped'?>"><?=$dj->status??'unknown'?></span></td>
+      <td><?=htmlspecialchars($dj->last_login??'Never')?></td>
+      <td class="actions">
+        <a href="/user/radio/toggle-dj/<?=$dj->id?>" class="btn btn-sm btn-warning"><?=$dj->status==='active'?'Suspend':'Activate'?></a>
+        <a href="/user/radio/delete-dj/<?=$dj->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a>
+      </td>
+    </tr>
+    <?php endforeach; ?>
+    <?php endif; ?>
+  </table></div>
+  <div class="card"><h3>Add DJ</h3>
+  <form method="post" action="/user/radio/create-dj">
+    <input type="hidden" name="station_id" value="<?=$stationId?>">
+    <div class="form-row"><div class="form-group"><label>Username</label><input class="inp inp-sm" name="username" required></div><div class="form-group"><label>Password</label><input class="inp inp-sm" type="password" name="password" required></div></div>
+    <div class="form-row"><div class="form-group"><label>Display Name</label><input class="inp inp-sm" name="name"></div><div class="form-group"><label>Email</label><input class="inp inp-sm" type="email" name="email"></div></div>
+    <div class="form-group"><label>Bio</label><textarea class="inp inp-sm" name="bio" rows="2"></textarea></div>
+    <div class="form-group"><label>Genres</label><input class="inp inp-sm" name="genres" placeholder="Rock, Pop, Jazz"></div>
+    <button class="btn btn-sm btn-primary">Add DJ</button>
+  </form></div>
 </div>
-</form></div>
-<div class="r-card"><h3>🎧 DJ Accounts <span>(<?php echo count($djs);?>)</span></h3>
-<?php if (empty($djs)):?><p style="color:#64748b;font-size:12px;text-align:center;padding:10px">No DJs yet.</p>
-<?php else:?>
-<table class="table"><thead><tr><th>Name</th><th>Username</th><th>Status</th><th>Last Login</th><th></th></tr></thead>
-<tbody><?php foreach($djs as $d):?>
-<tr><td><?php echo htmlspecialchars($d->display_name ?? $d->username);?></td>
-<td><code><?php echo htmlspecialchars($d->username);?></code></td>
-<td><span style="color:<?php echo $d->status==='active'?'#4ade80':'#f87171';?>">● <?php echo $d->status;?></span></td>
-<td><?php echo $d->last_login ? date('M j',strtotime($d->last_login)) : 'Never';?></td>
-<td style="display:flex;gap:3px">
-<a href="/user/radio/dj/toggle/<?php echo $d->id;?>" class="btn btn-sm <?php echo $d->status==='active'?'btn-warning':'btn-success';?>"><?php echo $d->status==='active'?'⏸':'▶';?></a>
-<a href="/user/radio/dj/delete/<?php echo $d->id;?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete <?php echo htmlspecialchars($d->username);?>?')">🗑</a>
-</td></tr>
-<?php endforeach;?></tbody></table>
-<?php endif;?>
-</div></div>
-
-<!-- Schedule -->
-<div class="tab <?php echo $tab==='schedule'?'active':'';?>">
-<div class="r-card"><h3>➕ Add Show</h3>
-<form method="POST" action="/user/radio/schedule/add" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
-<select name="dj_id" style="padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<option value="">DJ</option><?php foreach($djs as $d):?><option value="<?php echo $d->id;?>"><?php echo htmlspecialchars($d->display_name??$d->username);?></option><?php endforeach;?></select>
-<input name="show_name" placeholder="Show name" style="padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<select name="day_of_week" style="padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<option value="0">Sun</option><option value="1">Mon</option><option value="2">Tue</option><option value="3">Wed</option><option value="4">Thu</option><option value="5">Fri</option><option value="6">Sat</option></select>
-<div style="display:flex;gap:4px"><input name="start_time" type="time" style="flex:1;padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<input name="end_time" type="time" style="flex:1;padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<button type="submit" class="btn btn-sm btn-primary">➕</button></div>
-</form></div>
-<div class="r-card"><h3>📅 Schedule</h3>
-<?php if (empty($schedule)):?><p style="color:#64748b;font-size:12px;text-align:center;padding:10px">No shows.</p>
-<?php else:$days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];?>
-<table class="table"><thead><tr><th>Day</th><th>Time</th><th>Show</th><th>DJ</th><th></th></tr></thead>
-<tbody><?php foreach($schedule as $sc):?><tr><td><?php echo $days[$sc->day_of_week]??'?';?></td>
-<td><?php echo htmlspecialchars($sc->start_time??'');?>-<?php echo htmlspecialchars($sc->end_time??'');?></td>
-<td><?php echo htmlspecialchars($sc->show_name);?></td>
-<td><?php
-$djName=''; foreach($djs as $d){if($d->id==$sc->dj_id){$djName=$d->display_name??$d->username;break;}}
-echo htmlspecialchars($djName);?></td>
-<td><a href="/user/radio/schedule/delete/<?php echo $sc->id;?>" class="btn btn-sm btn-danger">✕</a></td></tr>
-<?php endforeach;?></tbody></table>
-<?php endif;?></div></div>
-
-<!-- Requests -->
-<div class="tab <?php echo $tab==='requests'?'active':'';?>">
-<div class="r-card"><h3>🙋 Pending Requests <span>(<?php echo count($requests);?>)</span></h3>
-<?php if(empty($requests)):?><p style="color:#64748b;font-size:12px;text-align:center;padding:15px">No pending requests.</p>
-<?php else: foreach($requests as $r):?>
-<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px">
-<div><strong><?php echo htmlspecialchars($r->title);?></strong> <?php if($r->artist):?>by <em><?php echo htmlspecialchars($r->artist);?></em><?php endif;?>
-<br><span style="color:#64748b;font-size:10px">From <?php echo htmlspecialchars($r->requester_name??'Anonymous');?></span></div>
-<div style="display:flex;gap:4px"><a href="/user/radio/request/approve/<?php echo $r->id;?>" class="btn btn-sm btn-success">✓</a>
-<a href="/user/radio/request/reject/<?php echo $r->id;?>" class="btn btn-sm btn-danger">✕</a></div></div>
-<?php endforeach; endif;?></div></div>
-
-<!-- Media Manager -->
-<div class="tab <?php echo $tab==='media'?'active':'';?>">
-<div class="r-card"><h3>🎶 Media Library</h3>
-<?php $musicDir = '/home/radio/' . $station->id . '/music'; $files = []; if (is_dir($musicDir)) $files = array_diff(scandir($musicDir), ['.','..']); ?>
-<div style="margin-bottom:10px">
-<form method="POST" action="/user/radio/media/upload" enctype="multipart/form-data" style="display:flex;gap:6px">
-<input type="file" name="file[]" multiple required style="flex:1;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px">
-<button type="submit" class="btn btn-sm btn-primary">📤 Upload</button>
-</form>
-<small style="color:#64748b">Supported: MP3, AAC, OGG, FLAC, WAV</small>
+<div class="tab <?=$tab==='requests'?'active':''?>">
+  <div class="card"><div class="hdr"><h3>Song Requests</h3><a href="/user/radio/toggle-requests/<?=$stationId?>" class="btn btn-sm btn-secondary">Requests: <?=$station->requests_enabled?'ON':'OFF'?></a></div>
+  <table><tr><th>Song</th><th>Artist</th><th>Requester</th><th>Date</th><th>Status</th><th>Actions</th></tr>
+    <?php if (empty($requests)): ?><tr><td colspan="6" class="empty-state">No requests</td></tr>
+    <?php else: ?>
+    <?php foreach ($requests as $r): ?>
+    <tr>
+      <td><?=htmlspecialchars($r->song??$r->title??'')?></td><td><?=htmlspecialchars($r->artist??'')?></td>
+      <td><?=htmlspecialchars($r->requester_name??$r->name??'Anonymous')?></td><td><?=htmlspecialchars($r->created_at??'')?></td>
+      <td><span class="status-badge <?=$r->status==='approved'?'status-running':($r->status==='rejected'?'status-stopped':'status-starting')?>"><?=$r->status??'pending'?></span></td>
+      <td class="actions"><?php if (($r->status??'pending')==='pending'): ?><a href="/user/radio/approve-request/<?=$r->id?>" class="btn btn-sm btn-success">Approve</a><a href="/user/radio/reject-request/<?=$r->id?>" class="btn btn-sm btn-danger">Reject</a><?php endif; ?></td>
+    </tr>
+    <?php endforeach; ?>
+    <?php endif; ?>
+  </table></div>
 </div>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px">
-<?php if (empty($files)):?><p style="color:#64748b;font-size:12px;grid-column:1/-1;text-align:center;padding:15px">No music files uploaded.</p>
-<?php else: foreach($files as $f): $ext = strtolower(pathinfo($f, PATHINFO_EXTENSION)); if (is_file("$musicDir/$f")): $sz = filesize("$musicDir/$f"); ?>
-<div style="background:rgba(8,16,28,.6);border:1px solid rgba(0,191,255,.06);border-radius:8px;padding:10px;text-align:center;font-size:11px">
-<div style="font-size:24px;margin-bottom:4px">🎵</div>
-<div style="font-weight:600;word-break:break-all"><?php echo htmlspecialchars($f);?></div>
-<div style="color:#64748b;font-size:10px"><?php echo $sz > 1048576 ? round($sz/1048576,1).' MB' : round($sz/1024,1).' KB'; ?></div>
-<a href="/user/radio/media/delete?file=<?php echo urlencode($f);?>" class="btn btn-sm btn-danger" style="margin-top:4px" onclick="return confirm('Delete?')">✕</a>
-</div><?php endif; endforeach; endif; ?>
-</div></div></div>
-
-<!-- Playlists -->
-<div class="tab <?php echo $tab==='playlists'?'active':'';?>">
-<div class="r-card"><h3>📂 Playlists</h3>
-<p style="color:#64748b;font-size:12px">Playlist management coming soon.</p></div></div>
-
-<!-- Mount Points -->
-<div class="tab <?php echo $tab==='mounts'?'active':'';?>">
-<?php $mounts = []; try { $mounts = $this->db->table('radio_mounts')->where('station_id', $station->id)->get() ?: []; } catch(\Exception $e) {} ?>
-<div class="r-card"><h3>🔗 Mount Points</h3>
-<form method="POST" action="/user/radio/mount/add" style="display:grid;grid-template-columns:1fr 1fr 80px;gap:6px;margin-bottom:10px">
-<input name="mount" placeholder="/stream2" value="/" style="padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<select name="bitrate" style="padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none"><option value="64">64 kbps</option><option value="128" selected>128 kbps</option><option value="192">192 kbps</option><option value="320">320 kbps</option></select>
-<button type="submit" class="btn btn-sm btn-primary">➕</button>
-</form>
-<?php if (empty($mounts)):?><p style="color:#64748b;font-size:12px;text-align:center;padding:10px">No additional mounts.</p>
-<?php else:?>
-<table class="table"><thead><tr><th>Mount</th><th>Bitrate</th><th>Listeners</th><th></th></tr></thead>
-<tbody><?php foreach($mounts as $m):?><tr><td><code><?php echo htmlspecialchars($m->mount);?></code></td><td><?php echo $m->bitrate;?> kbps</td><td><?php echo (int)$m->listener_count;?></td>
-<td><a href="/user/radio/mount/delete/<?php echo $m->id;?>" class="btn btn-sm btn-danger">✕</a></td></tr><?php endforeach;?></tbody></table>
-<?php endif;?></div></div>
-
-<!-- Statistics -->
-<div class="tab <?php echo $tab==='stats'?'active':'';?>">
-<div class="r-card"><h3>📊 Listener Statistics</h3>
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">
-<div style="text-align:center;padding:14px;background:rgba(8,16,28,.6);border-radius:8px"><div style="font-size:22px;font-weight:700;color:#0A84FF"><?php echo (int)($station->listener_count??0);?></div><div style="font-size:10px;color:#64748b">Current</div></div>
-<div style="text-align:center;padding:14px;background:rgba(8,16,28,.6);border-radius:8px"><div style="font-size:22px;font-weight:700;color:#38bdf8"><?php echo (int)($station->listener_peak??0);?></div><div style="font-size:10px;color:#64748b">Peak</div></div>
-<div style="text-align:center;padding:14px;background:rgba(8,16,28,.6);border-radius:8px"><div style="font-size:22px;font-weight:700;color:#a78bfa"><?php echo $station->bitrate??128;?>k</div><div style="font-size:10px;color:#64748b">Bitrate</div></div>
+<div class="tab <?=$tab==='schedule'?'active':''?>">
+  <div class="card"><h3>Schedule</h3>
+  <table><tr><th>Show</th><th>Day</th><th>Start</th><th>End</th><th>Playlist</th><th>DJ</th><th>Actions</th></tr>
+    <?php if (empty($schedule)): ?><tr><td colspan="7" class="empty-state">No shows scheduled</td></tr>
+    <?php else: ?>
+    <?php $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; ?>
+    <?php foreach ($schedule as $sh): ?>
+    <tr>
+      <td><?=htmlspecialchars($sh->show_name??'Untitled')?></td>
+      <td><?=$days[$sh->day_of_week]??$sh->day_of_week?></td>
+      <td><?=htmlspecialchars($sh->start_time??'')?></td><td><?=htmlspecialchars($sh->end_time??'')?></td>
+      <td><?php $pl=null; foreach($playlists as $p){if(($p->id??0)==($sh->playlist_id??0)){$pl=$p;break;}} echo htmlspecialchars($pl->name??'None'); ?></td>
+      <td><?php $dn=''; foreach($djs as $d){if(($d->id??0)==($sh->dj_id??0)){$dn=$d->display_name??$d->username??'';break;}} echo htmlspecialchars($dn?:'Auto'); ?></td>
+      <td class="actions"><a href="/user/radio/delete-schedule/<?=$sh->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></td>
+    </tr>
+    <?php endforeach; ?>
+    <?php endif; ?>
+  </table></div>
+  <div class="card"><h3>Add Show</h3>
+  <form method="post" action="/user/radio/add-schedule">
+    <input type="hidden" name="station_id" value="<?=$stationId?>">
+    <div class="form-row"><div class="form-group"><label>Show Name</label><input class="inp inp-sm" name="show_name" required></div>
+    <div class="form-group"><label>Day</label><select class="inp inp-sm" name="day_of_week"><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label>Start</label><input class="inp inp-sm" type="time" name="start_time" required></div><div class="form-group"><label>End</label><input class="inp inp-sm" type="time" name="end_time" required></div></div>
+    <div class="form-row">
+      <div class="form-group"><label>Playlist</label><select class="inp inp-sm" name="playlist_id"><option value="">None</option><?php foreach($playlists as $p): ?><option value="<?=$p->id?>"><?=htmlspecialchars($p->name)?></option><?php endforeach; ?></select></div>
+      <div class="form-group"><label>DJ</label><select class="inp inp-sm" name="dj_id"><option value="">Auto</option><?php foreach($djs as $d): ?><option value="<?=$d->id?>"><?=htmlspecialchars($d->display_name??$d->username??'')?></option><?php endforeach; ?></select></div>
+    </div>
+    <button class="btn btn-sm btn-primary">Add Show</button>
+  </form></div>
 </div>
-<p style="color:#64748b;font-size:12px">Detailed analytics available when stream is active.</p></div></div>
-
-<!-- Backups -->
-<div class="tab <?php echo $tab==='backups'?'active':'';?>">
-<?php $backupDir = '/home/radio/' . $station->id; $backups = is_dir($backupDir) ? glob($backupDir . '/backup_*.tar.gz') : []; rsort($backups); ?>
-<div class="r-card"><h3>💾 Backups</h3>
-<a href="/user/radio/backup/create" class="btn btn-sm btn-primary" style="margin-bottom:10px;display:inline-block">📦 Create Backup</a>
-<?php if (empty($backups)):?><p style="color:#64748b;font-size:12px;text-align:center;padding:10px">No backups yet.</p>
-<?php else:?>
-<table class="table"><thead><tr><th>Filename</th><th>Size</th><th>Date</th><th></th></tr></thead>
-<tbody><?php foreach(array_slice($backups,0,10) as $bf): $bn=basename($bf); $sz=filesize($bf); $dt=date('M j Y',filemtime($bf)); ?>
-<tr><td style="font-size:11px"><?php echo htmlspecialchars($bn);?></td>
-<td><?php echo $sz>1048576?round($sz/1048576,1).'MB':round($sz/1024,1).'KB';?></td>
-<td style="font-size:11px;color:#64748b"><?php echo $dt;?></td>
-<td style="display:flex;gap:4px"><a href="/user/radio/backup/download?file=<?php echo urlencode($bn);?>" class="btn btn-sm btn-primary">⬇</a>
-<a href="/user/radio/backup/delete?file=<?php echo urlencode($bn);?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">✕</a></td></tr>
-<?php endforeach;?></tbody></table>
-<?php endif;?></div></div>
-
-<!-- Widgets -->
-<div class="tab <?php echo $tab==='widgets'?'active':'';?>">
-<div class="r-card"><h3>🧩 Widgets</h3>
-<?php $h=$_SERVER['HTTP_HOST']??'localhost';$sp=$station->port??8000;$sm=$station->mount??'/stream';?>
-<div style="margin-bottom:8px"><div style="font-size:11px;color:#64748b">Now Playing</div>
-<textarea rows="2" style="width:100%;font-size:10px;font-family:monospace;padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#4ade80;outline:none" readonly>&lt;script src="http://<?php echo $h;?>/radio/widgets/nowplaying.php?stream=<?php echo $station->id;?>"&gt;&lt;/script&gt;</textarea></div>
-<div style="margin-bottom:8px"><div style="font-size:11px;color:#64748b">Listener Count</div>
-<textarea rows="2" style="width:100%;font-size:10px;font-family:monospace;padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#4ade80;outline:none" readonly>&lt;script src="http://<?php echo $h;?>/radio/widgets/listeners.php?stream=<?php echo $station->id;?>"&gt;&lt;/script&gt;</textarea></div>
-<div style="margin-bottom:8px"><div style="font-size:11px;color:#64748b">HTML5 Player</div>
-<textarea rows="2" style="width:100%;font-size:10px;font-family:monospace;padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#4ade80;outline:none" readonly>&lt;audio controls&gt;&lt;source src="http://<?php echo $h;?>:<?php echo $sp;?><?php echo $sm;?>" type="audio/mpeg"&gt;&lt;/audio&gt;</textarea></div>
-</div></div>
-
+<div class="tab <?=$tab==='playlists'?'active':''?>">
+  <div class="card"><div class="hdr"><h3>Playlists</h3></div>
+  <?php if (empty($playlists)): ?><div class="empty-state">No playlists yet.</div>
+  <?php else: ?>
+  <table><tr><th>Name</th><th>Type</th><th>Actions</th></tr>
+    <?php foreach ($playlists as $p): ?>
+    <tr>
+      <td><a href="?station_id=<?=$stationId?>&tab=playlists&playlist_id=<?=$p->id?>" style="color:#0A84FF;text-decoration:none"><?=htmlspecialchars($p->name)?></a></td>
+      <td><?=htmlspecialchars($p->type??'default')?></td>
+      <td class="actions"><a href="?station_id=<?=$stationId?>&tab=playlists&playlist_id=<?=$p->id?>" class="btn btn-sm btn-primary">Manage</a><a href="/user/radio/delete-playlist/<?=$p->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></td>
+    </tr>
+    <?php endforeach; ?>
+  </table>
+  <?php endif; ?>
+  </div>
+  <?php $selPlId = (int)($_GET['playlist_id']??0); $selPl = null; foreach($playlists as $p){if(($p->id??0)==$selPlId){$selPl=$p;break;}} ?>
+  <?php if ($selPl): ?>
+  <div class="card"><div class="hdr"><h3>Playlist: <?=htmlspecialchars($selPl->name)?></h3><span style="font-size:10px;color:#64748b"><?=count($playlistItems)?> songs</span></div>
+  <table><tr><th>Title</th><th>Artist</th><th>File</th><th>Duration</th><th>Order</th><th>Actions</th></tr>
+    <?php if (empty($playlistItems)): ?><tr><td colspan="6" class="empty-state">No songs</td></tr>
+    <?php else: ?>
+    <?php foreach ($playlistItems as $item): ?>
+    <tr>
+      <td><?=htmlspecialchars($item->title??'')?></td><td><?=htmlspecialchars($item->artist??'')?></td>
+      <td style="font-size:10px;color:#64748b"><?=htmlspecialchars(basename($item->file??''))?></td>
+      <td><?=$item->duration?gmdate('i:s',$item->duration):'-'?></td><td><?=$item->sort_order??0?></td>
+      <td class="actions"><a href="/user/radio/playlist/remove-song/<?=$item->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Remove?')">Remove</a></td>
+    </tr>
+    <?php endforeach; ?>
+    <?php endif; ?>
+  </table></div>
+  <div class="card"><h3>Add Song</h3>
+  <form method="post" action="/user/radio/playlist/add-song">
+    <input type="hidden" name="playlist_id" value="<?=$selPlId?>">
+    <div class="form-row"><div class="form-group"><label>Title</label><input class="inp inp-sm" name="title"></div><div class="form-group"><label>Artist</label><input class="inp inp-sm" name="artist"></div></div>
+    <div class="form-row"><div class="form-group"><label>File Path</label><input class="inp inp-sm" name="file" placeholder="/home/radio/1/music/song.mp3"></div><div class="form-group"><label>Duration (s)</label><input class="inp inp-sm" type="number" name="duration" value="0"></div></div>
+    <button class="btn btn-sm btn-primary">Add Song</button>
+  </form></div>
+  <?php endif; ?>
+  <div class="card"><h3>Create Playlist</h3>
+  <form method="post" action="/user/radio/create-playlist">
+    <input type="hidden" name="station_id" value="<?=$stationId?>">
+    <div class="form-row"><div class="form-group"><label>Name</label><input class="inp inp-sm" name="name" required></div><div class="form-group"><label>Type</label><select class="inp inp-sm" name="type"><option value="default">Default</option><option value="rotation">Rotation</option><option value="request">Request</option></select></div></div>
+    <div class="form-group"><label>Description</label><input class="inp inp-sm" name="description"></div>
+    <button class="btn btn-sm btn-primary">Create</button>
+  </form></div>
+</div>
+<div class="tab <?=$tab==='media'?'active':''?>">
+  <div class="card"><div class="hdr"><h3>Media Library</h3><?php $mPlId = isset($_GET['playlist_id'])?(int)$_GET['playlist_id']:null; if($mPlId): ?><span style="font-size:10px;color:#64748b">Playlist folder</span><?php endif; ?></div>
+  <form method="post" action="/user/radio/media-upload" enctype="multipart/form-data">
+    <input type="hidden" name="playlist_id" value="<?=$mPlId?:''?>">
+    <div class="upload-zone" onclick="document.getElementById('media-input').click()">Drop files or click to upload (mp3, aac, ogg, flac, wav, m4a)</div>
+    <input id="media-input" type="file" name="file[]" multiple style="display:none" onchange="this.form.submit()">
+    <button class="btn btn-sm btn-primary">Upload</button>
+  </form>
+  <?php if (empty($mediaFiles)): ?><div class="empty-state" style="margin-top:10px">No media files</div>
+  <?php else: ?>
+  <div class="file-grid" style="margin-top:10px">
+    <?php foreach ($mediaFiles as $f): ?>
+    <div style="padding:10px;background:rgba(0,0,0,.3);border-radius:8px;text-align:center">
+      <div style="font-size:28px;margin-bottom:4px;opacity:.5">&#9835;</div>
+      <div style="font-size:10px;color:#c0c0c0;word-break:break-all"><?=htmlspecialchars($f)?></div>
+      <div style="margin-top:6px;font-size:10px;color:#64748b"><?=round(filesize('/home/radio/'.$stationId.'/music'.($mPlId?'/playlist_'.$mPlId:'').'/'.$f)/1024,1)?> KB</div>
+      <div style="margin-top:6px"><a href="/user/radio/media-delete?file=<?=urlencode($f)?>&playlist_id=<?=$mPlId?>&station_id=<?=$stationId?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></div>
+    </div>
+    <?php endforeach; ?>
+  </div>
+  <?php endif; ?>
+  </div>
+</div>
+<div class="tab <?=$tab==='autodj'?'active':''?>">
+  <div class="card"><div class="hdr"><h3>AutoDJ</h3><div><a href="/user/radio/start-autodj/<?=$stationId?>" class="btn btn-sm btn-success">Start</a><a href="/user/radio/stop-autodj/<?=$stationId?>" class="btn btn-sm btn-danger">Stop</a><a href="/user/radio/restart-autodj/<?=$stationId?>" class="btn btn-sm btn-warning">Restart</a></div></div>
+  <form method="post" action="/user/radio/update-autodj">
+    <input type="hidden" name="station_id" value="<?=$stationId?>">
+    <div class="form-row-3">
+      <div class="form-group"><label>Crossfade (s)</label><input class="inp inp-sm" name="autodj_crossfade" value="<?=$settings->autodj_crossfade??3?>" type="number" step="0.5"></div>
+      <div class="form-group"><label>Schedule Mode</label><select class="inp inp-sm" name="autodj_schedule"><option value="sequential" <?=($settings->autodj_schedule??'sequential')==='sequential'?'selected':''?>>Sequential</option><option value="random" <?=($settings->autodj_schedule??'')==='random'?'selected':''?>>Random</option><option value="weighted" <?=($settings->autodj_schedule??'')==='weighted'?'selected':''?>>Weighted</option></select></div>
+      <div class="form-group"><label>DJ Handoff</label><select class="inp inp-sm" name="autodj_dj_handoff"><option value="auto" <?=($settings->autodj_dj_handoff??'auto')==='auto'?'selected':''?>>Auto</option><option value="manual" <?=($settings->autodj_dj_handoff??'')==='manual'?'selected':''?>>Manual</option></select></div>
+    </div>
+    <button class="btn btn-sm btn-primary">Save AutoDJ</button>
+  </form></div>
+</div>
+<div class="tab <?=$tab==='settings'?'active':''?>">
+  <div class="card"><h3>Station Settings</h3>
+  <form method="post" action="/user/radio/update-settings">
+    <input type="hidden" name="station_id" value="<?=$stationId?>">
+    <div class="form-row"><div class="form-group"><label>Station Name</label><input class="inp inp-sm" name="name" value="<?=htmlspecialchars($station->name??'')?>"></div><div class="form-group"><label>Genre</label><input class="inp inp-sm" name="genre" value="<?=htmlspecialchars($station->genre??'')?>"></div></div>
+    <div class="form-group"><label>Description</label><textarea class="inp inp-sm" name="description" rows="2"><?=htmlspecialchars($station->description??'')?></textarea></div>
+    <div class="form-row"><div class="form-group"><label>Mount Point</label><input class="inp inp-sm" name="mount" value="<?=htmlspecialchars($station->mount??'/stream')?>"></div><div class="form-group"><label>Bitrate</label><select class="inp inp-sm" name="bitrate"><option value="128" <?=($station->bitrate??128)==128?'selected':''?>>128 kbps</option><option value="192" <?=($station->bitrate??'')==192?'selected':''?>>192 kbps</option><option value="256" <?=($station->bitrate??'')==256?'selected':''?>>256 kbps</option><option value="320" <?=($station->bitrate??'')==320?'selected':''?>>320 kbps</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label>Source Password</label><input class="inp inp-sm" name="password" value="<?=htmlspecialchars($station->password??'')?>"></div><div class="form-group"><label>Admin Password</label><input class="inp inp-sm" name="admin_password" value="<?=htmlspecialchars($station->admin_password??'')?>"></div></div>
+    <div class="form-row"><div class="form-group"><label>Max Listeners</label><input class="inp inp-sm" type="number" name="max_listeners" value="<?=$station->max_listeners??100?>"></div><div class="form-group"><label>Public</label><select class="inp inp-sm" name="public_server"><option value="1" <?=($station->public_server??1)==1?'selected':''?>>Yes</option><option value="0" <?=($station->public_server??'')==='0'?'selected':''?>>No</option></select></div></div>
+    <button class="btn btn-sm btn-primary">Save Settings</button>
+  </form></div>
+</div>
+<div class="tab <?=$tab==='branding'?'active':''?>">
+  <div class="card"><div class="hdr"><h3>Station Branding</h3><span style="font-size:10px;color:#64748b">Your station's unique identity</span></div>
+  <form method="post" action="/user/radio/save-branding" enctype="multipart/form-data">
+    <input type="hidden" name="station_id" value="<?=$stationId?>">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <h4 style="font-size:11px;color:#94a3b8;margin:0 0 8px 0">Colors</h4>
+        <div class="color-picker-wrap"><label style="font-size:10px;color:#64748b;min-width:80px">Primary</label><input type="color" name="brand_primary_color" value="<?=htmlspecialchars($branding->brand_primary_color??'#0A84FF')?>"><span class="hex"><?=htmlspecialchars($branding->brand_primary_color??'#0A84FF')?></span></div>
+        <div class="color-picker-wrap"><label style="font-size:10px;color:#64748b;min-width:80px">Secondary</label><input type="color" name="brand_secondary_color" value="<?=htmlspecialchars($branding->brand_secondary_color??'#5856D6')?>"><span class="hex"><?=htmlspecialchars($branding->brand_secondary_color??'#5856D6')?></span></div>
+        <div class="color-picker-wrap"><label style="font-size:10px;color:#64748b;min-width:80px">Accent</label><input type="color" name="brand_accent_color" value="<?=htmlspecialchars($branding->brand_accent_color??'#00C853')?>"><span class="hex"><?=htmlspecialchars($branding->brand_accent_color??'#00C853')?></span></div>
+        <h4 style="font-size:11px;color:#94a3b8;margin:12px 0 8px 0">Fonts</h4>
+        <div class="form-group"><label>Header Font</label><input class="inp inp-sm" name="brand_header_font" value="<?=htmlspecialchars($branding->brand_header_font??'Inter')?>"></div>
+        <div class="form-group"><label>Body Font</label><input class="inp inp-sm" name="brand_body_font" value="<?=htmlspecialchars($branding->brand_body_font??'Inter')?>"></div>
+      </div>
+      <div>
+        <h4 style="font-size:11px;color:#94a3b8;margin:0 0 8px 0">Player Theme</h4>
+        <div class="form-row"><div class="form-group"><label>Theme</label><select class="inp inp-sm" name="brand_player_theme"><option value="default" <?=($branding->brand_player_theme??'default')==='default'?'selected':''?>>Default</option><option value="minimal" <?=($branding->brand_player_theme??'')==='minimal'?'selected':''?>>Minimal</option><option value="full" <?=($branding->brand_player_theme??'')==='full'?'selected':''?>>Full</option><option value="custom" <?=($branding->brand_player_theme??'')==='custom'?'selected':''?>>Custom</option></select></div>
+        <div class="form-group"><label>BG</label><select class="inp inp-sm" name="brand_player_bg"><option value="dark" <?=($branding->brand_player_bg??'dark')==='dark'?'selected':''?>>Dark</option><option value="light" <?=($branding->brand_player_bg??'')==='light'?'selected':''?>>Light</option><option value="gradient" <?=($branding->brand_player_bg??'')==='gradient'?'selected':''?>>Gradient</option><option value="transparent" <?=($branding->brand_player_bg??'')==='transparent'?'selected':''?>>Transparent</option></select></div></div>
+        <div class="form-group"><label>Slogan</label><input class="inp inp-sm" name="brand_slogan" value="<?=htmlspecialchars($branding->brand_slogan??'')?>"></div>
+        <h4 style="font-size:11px;color:#94a3b8;margin:12px 0 8px 0">Social Links</h4>
+        <div class="form-group"><label>Twitter</label><input class="inp inp-sm" name="brand_social_twitter" value="<?=htmlspecialchars($branding->brand_social_twitter??'')?>"></div>
+        <div class="form-group"><label>Facebook</label><input class="inp inp-sm" name="brand_social_facebook" value="<?=htmlspecialchars($branding->brand_social_facebook??'')?>"></div>
+        <div class="form-group"><label>Instagram</label><input class="inp inp-sm" name="brand_social_instagram" value="<?=htmlspecialchars($branding->brand_social_instagram??'')?>"></div>
+        <div class="form-group"><label>Discord</label><input class="inp inp-sm" name="brand_social_discord" value="<?=htmlspecialchars($branding->brand_social_discord??'')?>"></div>
+      </div>
+    </div>
+    <h4 style="font-size:11px;color:#94a3b8;margin:12px 0 8px 0">Images</h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">
+      <div class="form-group"><label>Logo</label><input type="file" name="brand_logo" accept="image/*" class="inp inp-sm" style="padding:3px"></div>
+      <div class="form-group"><label>Banner</label><input type="file" name="brand_banner" accept="image/*" class="inp inp-sm" style="padding:3px"></div>
+      <div class="form-group"><label>Player BG</label><input type="file" name="brand_player_bg_img" accept="image/*" class="inp inp-sm" style="padding:3px"></div>
+      <div class="form-group"><label>Default Art</label><input type="file" name="brand_default_art" accept="image/*" class="inp inp-sm" style="padding:3px"></div>
+    </div>
+    <button class="btn btn-sm btn-primary" style="margin-top:10px">Save Branding</button>
+  </form></div>
+</div>
+<div class="tab <?=$tab==='mounts'?'active':''?>">
+  <div class="card"><div class="hdr"><h3>Mount Points</h3></div>
+  <table><tr><th>Mount</th><th>Bitrate</th><th>Description</th><th>Actions</th></tr>
+    <?php if (empty($mounts)): ?><tr><td colspan="4" class="empty-state">Main mount: <?=htmlspecialchars($station->mount??'/stream')?></td></tr>
+    <?php else: ?>
+    <?php foreach ($mounts as $m): ?>
+    <tr><td><?=htmlspecialchars($m->mount??'')?></td><td><?=$m->bitrate??128?> kbps</td><td><?=htmlspecialchars($m->description??'')?></td><td class="actions"><a href="/user/radio/delete-mount/<?=$m->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></td></tr>
+    <?php endforeach; ?>
+    <?php endif; ?>
+  </table></div>
+  <div class="card"><h3>Add Mount</h3>
+  <form method="post" action="/user/radio/add-mount">
+    <input type="hidden" name="station_id" value="<?=$stationId?>">
+    <div class="form-row"><div class="form-group"><label>Mount Path</label><input class="inp inp-sm" name="mount" value="/stream2"></div><div class="form-group"><label>Bitrate</label><select class="inp inp-sm" name="bitrate"><option value="128">128</option><option value="64">64</option><option value="192">192</option><option value="320">320</option></select></div></div>
+    <div class="form-group"><label>Description</label><input class="inp inp-sm" name="description"></div>
+    <button class="btn btn-sm btn-primary">Add Mount</button>
+  </form></div>
+</div>
+<div class="tab <?=$tab==='song_history'?'active':''?>">
+  <div class="card"><div class="hdr"><h3>Song History</h3><input class="inp inp-sm" id="song-search" placeholder="Search..." style="width:200px" onkeyup="searchSongs(this.value)"></div>
+  <table id="song-table"><tr><th>Title</th><th>Artist</th><th>Album</th><th>Duration</th><th>Played At</th></tr>
+    <?php if (empty($songs)): ?><tr><td colspan="5" class="empty-state">No songs played yet</td></tr>
+    <?php else: ?>
+    <?php foreach ($songs as $sh): ?>
+    <tr class="song-row">
+      <td><?=htmlspecialchars($sh->title??'Unknown')?></td><td><?=htmlspecialchars($sh->artist??'Unknown')?></td>
+      <td><?=htmlspecialchars($sh->album??'')?></td><td><?=$sh->duration?gmdate('i:s',$sh->duration):'-'?></td>
+      <td><?=htmlspecialchars($sh->played_at??'')?></td>
+    </tr>
+    <?php endforeach; ?>
+    <?php endif; ?>
+  </table></div>
+</div>
+<div class="tab <?=$tab==='backups'?'active':''?>">
+  <div class="card"><div class="hdr"><h3>Backups</h3><a href="/user/radio/backup-create/<?=$stationId?>" class="btn btn-sm btn-primary">Create Backup</a></div>
+  <?php if (empty($backups)): ?><div class="empty-state">No backups yet</div>
+  <?php else: ?>
+  <table><tr><th>File</th><th>Size</th><th>Date</th><th>Actions</th></tr>
+    <?php foreach ($backups as $bk): $bn = basename($bk); ?>
+    <tr>
+      <td><?=htmlspecialchars($bn)?></td><td><?=round(filesize($bk)/1048576,1)?> MB</td><td><?=date('Y-m-d H:i',filemtime($bk))?></td>
+      <td class="actions"><a href="/user/radio/backup-download/<?=$stationId?>?file=<?=urlencode($bn)?>" class="btn btn-sm btn-success">Download</a><a href="/user/radio/backup-delete/<?=$stationId?>?file=<?=urlencode($bn)?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></td>
+    </tr>
+    <?php endforeach; ?>
+  </table>
+  <?php endif; ?>
+  </div>
+</div>
+<?php elseif (empty($stations)): ?>
+<div class="card"><div class="empty-state"><div style="font-size:40px;margin-bottom:10px">&#127926;</div><div style="font-size:14px;color:#c0c0c0;margin-bottom:6px">No radio stations found</div><div style="font-size:11px;color:#64748b;margin-bottom:14px">Create your first station</div><a href="/user/radio/setup" class="btn btn-primary">Create Station</a></div></div>
+<?php else: ?>
+<div class="card"><div class="empty-state"><div style="font-size:40px;margin-bottom:10px">&#9888;</div><div style="font-size:14px;color:#c0c0c0">No station selected</div></div></div>
 <?php endif; ?>
+<script>
+function getTab(){return new URLSearchParams(window.location.search).get('tab')||'overview';}
+function searchSongs(q){document.querySelectorAll('.song-row').forEach(function(r){r.style.display=r.textContent.toLowerCase().indexOf(q.toLowerCase())>=0?'':'none';});}
+</script>

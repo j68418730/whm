@@ -35,6 +35,7 @@ select option{background:#0a0f1a;color:#e0e0e0}
 <div class="tab" onclick="switchTab('canned',this)">⚡ Canned</div>
 <div class="tab" onclick="switchTab('groups',this)">👥 Groups</div>
 <div class="tab" onclick="switchTab('remote',this)">🖥 Remote Support</div>
+<div class="tab" onclick="switchTab('links',this)">🔗 Links</div>
 </div>
 
 <!-- Tab: Chats -->
@@ -150,6 +151,88 @@ select option{background:#0a0f1a;color:#e0e0e0}
 <button class="btn primary" onclick="generateRemoteLink()">🔗 Generate Link</button>
 <button class="btn secondary" onclick="copyRemoteLink()">📋 Copy Link</button>
 </div>
+</div>
+
+<!-- Tab: Links -->
+<div id="tab-links" class="tab-content">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+
+<div class="card">
+<h4 style="margin:0 0 12px;font-size:14px">🔗 Support Links</h4>
+<div class="canned-item"><a href="https://planet-hosts.com" target="_blank" style="color:var(--accent);text-decoration:none">🌐 Main Site</a></div>
+<div class="canned-item"><a href="https://planet-hosts.com:2083" target="_blank" style="color:var(--accent);text-decoration:none">🔑 WHM Panel</a></div>
+<div class="canned-item"><a href="https://planet-hosts.com:2087" target="_blank" style="color:var(--accent);text-decoration:none">⚙️ Admin Panel</a></div>
+<div class="canned-item"><a href="https://billing.planet-hosts.com" target="_blank" style="color:var(--accent);text-decoration:none">💳 Billing Portal</a></div>
+<div class="canned-item"><a href="https://status.planet-hosts.com" target="_blank" style="color:var(--accent);text-decoration:none">📊 Status Page</a></div>
+</div>
+
+<div class="card">
+<h4 style="margin:0 0 12px;font-size:14px">🛠️ External Tools</h4>
+<div class="canned-item"><a href="https://www.google.com/webmasters/tools" target="_blank" style="color:var(--accent);text-decoration:none">🔍 Google Search Console</a></div>
+<div class="canned-item"><a href="https://analytics.google.com" target="_blank" style="color:var(--accent);text-decoration:none">📈 Google Analytics</a></div>
+<div class="canned-item"><a href="https://developers.cloudflare.com" target="_blank" style="color:var(--accent);text-decoration:none">☁️ Cloudflare Dashboard</a></div>
+<div class="canned-item"><a href="https://github.com/j68418730/whm" target="_blank" style="color:var(--accent);text-decoration:none">📦 GitHub Repository</a></div>
+<div class="canned-item"><a href="https://www.ssllabs.com/ssltest" target="_blank" style="color:var(--accent);text-decoration:none">🔒 SSL Server Test</a></div>
+</div>
+
+<div class="card">
+<h4 style="margin:0 0 12px;font-size:14px">📱 Social Media</h4>
+<div class="canned-item"><a href="https://twitter.com/planethosts" target="_blank" style="color:var(--accent);text-decoration:none">🐦 Twitter / X</a></div>
+<div class="canned-item"><a href="https://facebook.com/planethosts" target="_blank" style="color:var(--accent);text-decoration:none">📘 Facebook</a></div>
+<div class="canned-item"><a href="https://instagram.com/planethosts" target="_blank" style="color:var(--accent);text-decoration:none">📸 Instagram</a></div>
+<div class="canned-item"><a href="https://discord.gg/planethosts" target="_blank" style="color:var(--accent);text-decoration:none">💬 Discord</a></div>
+<div class="canned-item"><a href="https://youtube.com/@planethosts" target="_blank" style="color:var(--accent);text-decoration:none">🎥 YouTube</a></div>
+</div>
+
+<div class="card">
+<h4 style="margin:0 0 12px;font-size:14px">📋 Chat History</h4>
+<div class="canned-item"><a href="/admin/livechat?filter=closed" style="color:var(--accent);text-decoration:none">📁 Closed Chats</a></div>
+<div class="canned-item"><a href="/admin/livechat?filter=all" style="color:var(--accent);text-decoration:none">📂 All Chats</a></div>
+<div class="canned-item"><a href="/admin/livechat/export" style="color:var(--accent);text-decoration:none">📤 Export Chat Logs</a></div>
+<div class="canned-item"><a href="/admin/livechat/visitors" style="color:var(--accent);text-decoration:none">👤 Visitor History</a></div>
+</div>
+
+</div>
+
+<div class="card" style="max-width:100%">
+<h4 style="margin:0 0 12px;font-size:14px">📋 Live Chat Embed Code</h4>
+<p style="color:var(--text-muted);font-size:13px;margin:0 0 8px">Copy and paste this code into any HTML page to add the live chat widget:</p>
+<div style="position:relative">
+<pre id="embedCodeBox" style="background:rgba(0,0,0,.5);border:1px solid rgba(0,191,255,.15);border-radius:8px;padding:16px;font-size:12px;line-height:1.6;overflow-x:auto;white-space:pre-wrap;color:#4ade80;margin:0"><?php echo htmlspecialchars('<script>
+(function() {
+  var s = document.createElement("script");
+  s.src = "https://planet-hosts.com/chatbox/widget.js.php";
+  s.async = true;
+  s.onload = function() {
+    if (window.LiveChatWidget) {
+      LiveChatWidget.init({ token: "visitor" });
+    }
+  };
+  document.head.appendChild(s);
+})();
+<\/script>'); ?></pre>
+<button class="btn btn-sm primary" onclick="copyEmbedCode()" style="position:absolute;top:8px;right:8px">📋 Copy</button>
+</div>
+</div>
+
+<div class="card" style="max-width:100%;margin-top:16px">
+<h4 style="margin:0 0 12px;font-size:14px">👁️ Visitor Tracking Embed Code</h4>
+<p style="color:var(--text-muted);font-size:13px;margin:0 0 8px">Add to any page to track visitors (used by Live Chat):</p>
+<div style="position:relative">
+<pre id="trackCodeBox" style="background:rgba(0,0,0,.5);border:1px solid rgba(0,191,255,.15);border-radius:8px;padding:16px;font-size:12px;line-height:1.6;overflow-x:auto;white-space:pre-wrap;color:#4ade80;margin:0"><?php echo htmlspecialchars('<script>
+(function() {
+  var x = new XMLHttpRequest();
+  x.open("POST", "https://planet-hosts.com/admin/livechat/track", true);
+  x.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+  x.send("page=" + encodeURIComponent(window.location.pathname) +
+         "&referrer=" + encodeURIComponent(document.referrer) +
+         "&url=" + encodeURIComponent(window.location.href));
+})();
+<\/script>'); ?></pre>
+<button class="btn btn-sm primary" onclick="copyTrackCode()" style="position:absolute;top:8px;right:8px">📋 Copy</button>
+</div>
+</div>
+
 </div>
 
 <script>
@@ -289,5 +372,15 @@ function generateRemoteLink() {
 
 function copyRemoteLink() {
     if (remoteLink) navigator.clipboard.writeText(remoteLink);
+}
+
+function copyEmbedCode() {
+    var el = document.getElementById('embedCodeBox');
+    if (el) { navigator.clipboard.writeText(el.textContent); alert('Embed code copied!'); }
+}
+
+function copyTrackCode() {
+    var el = document.getElementById('trackCodeBox');
+    if (el) { navigator.clipboard.writeText(el.textContent); alert('Tracking code copied!'); }
 }
 </script>
