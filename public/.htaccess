@@ -1,5 +1,5 @@
 RewriteEngine On
 
-# Handle front controller — skip only existing files, route everything else
+# Handle front controller — route everything except existing files to index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^ index.php [L]
