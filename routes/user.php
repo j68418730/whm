@@ -158,14 +158,23 @@ $router->post('/user/apps/python/create', 'User\Controllers\AppsController@pytho
 $router->get('/user/apps/python/start/{id}', 'User\Controllers\AppsController@pythonStart');
 $router->get('/user/apps/python/stop/{id}', 'User\Controllers\AppsController@pythonStop');
 $router->get('/user/apps/python/delete/{id}', 'User\Controllers\AppsController@pythonDelete');
-// Radio routes
-$router->get('/user/radio', 'User\Controllers\RadioController@index');
-$router->get('/user/radio/settings/{id}', 'User\Controllers\RadioController@show');
-$router->get('/user/radio/start/{id}', 'User\Controllers\RadioController@start');
-$router->get('/user/radio/stop/{id}', 'User\Controllers\RadioController@stop');
-$router->get('/user/radio/restart/{id}', 'User\Controllers\RadioController@restart');
-$router->post('/user/radio/autodj/toggle/{id}', 'User\Controllers\RadioController@enableAutodj');
-$router->get('/user/radio/autodj/disable/{id}', 'User\Controllers\RadioController@disableAutodj');
+// Radio routes (actions using station_id query param)
+$router->get('/user/radio/dj/create', 'User\Controllers\RadioController@createDj');
+$router->post('/user/radio/dj/create', 'User\Controllers\RadioController@createDj');
+$router->get('/user/radio/dj/delete/{id}', 'User\Controllers\RadioController@deleteDj');
+$router->get('/user/radio/dj/toggle/{id}', 'User\Controllers\RadioController@toggleDj');
+$router->post('/user/radio/schedule/add', 'User\Controllers\RadioController@addSchedule');
+$router->get('/user/radio/schedule/delete/{id}', 'User\Controllers\RadioController@deleteSchedule');
+$router->post('/user/radio/playlist/create', 'User\Controllers\RadioController@createPlaylist');
+$router->get('/user/radio/playlist/delete/{id}', 'User\Controllers\RadioController@deletePlaylist');
+$router->post('/user/radio/settings/update', 'User\Controllers\RadioController@updateSettings');
+$router->post('/user/radio/autodj/update', 'User\Controllers\RadioController@updateAutodj');
+$router->post('/user/radio/branding/save', 'User\Controllers\RadioController@saveBranding');
+$router->get('/user/radio/requests/toggle/{id}', 'User\Controllers\RadioController@toggleRequests');
+$router->get('/user/radio/autodj/start/{id}', 'User\Controllers\RadioController@startAutodj');
+$router->get('/user/radio/autodj/stop/{id}', 'User\Controllers\RadioController@stopAutodj');
+$router->get('/user/radio/autodj/restart/{id}', 'User\Controllers\RadioController@restartAutodj');
+$router->get('/user/radio/song-history', 'User\Controllers\RadioController@songHistory');
 // Chat routes
 $router->post('/chat/start', 'User\Controllers\ChatController@start');
 $router->get('/chat/poll/{sessionId}', 'User\Controllers\ChatController@poll');
