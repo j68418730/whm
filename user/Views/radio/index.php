@@ -295,16 +295,134 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </div>
 </div>
 <div class="tab <?=$tab==='autodj'?'active':''?>">
-  <div class="card"><div class="hdr"><h3>AutoDJ</h3><div><a href="/user/radio/autodj/start/<?=$stationId?>" class="btn btn-sm btn-success">Start</a><a href="/user/radio/autodj/stop/<?=$stationId?>" class="btn btn-sm btn-danger">Stop</a><a href="/user/radio/autodj/restart/<?=$stationId?>" class="btn btn-sm btn-warning">Restart</a></div></div>
-  <form method="post" action="/user/radio/autodj/update">
-    <input type="hidden" name="station_id" value="<?=$stationId?>">
-    <div class="form-row-3">
-      <div class="form-group"><label>Crossfade (s)</label><input class="inp inp-sm" name="autodj_crossfade" value="<?=$settings->autodj_crossfade??3?>" type="number" step="0.5"></div>
-      <div class="form-group"><label>Schedule Mode</label><select class="inp inp-sm" name="autodj_schedule"><option value="sequential" <?=($settings->autodj_schedule??'sequential')==='sequential'?'selected':''?>>Sequential</option><option value="random" <?=($settings->autodj_schedule??'')==='random'?'selected':''?>>Random</option><option value="weighted" <?=($settings->autodj_schedule??'')==='weighted'?'selected':''?>>Weighted</option></select></div>
-      <div class="form-group"><label>DJ Handoff</label><select class="inp inp-sm" name="autodj_dj_handoff"><option value="auto" <?=($settings->autodj_dj_handoff??'auto')==='auto'?'selected':''?>>Auto</option><option value="manual" <?=($settings->autodj_dj_handoff??'')==='manual'?'selected':''?>>Manual</option></select></div>
-    </div>
-    <button class="btn btn-sm btn-primary">Save AutoDJ</button>
-  </form></div>
+<?php if (!$autodjCfg || !$autodjCfg->wizard_completed): ?>
+<div class="card" style="text-align:center;padding:40px">
+<div style="font-size:50px;margin-bottom:10px">&#9881;</div>
+<div style="font-size:15px;color:#c0c0c0;margin-bottom:4px">AutoDJ Not Configured</div>
+<div style="font-size:11px;color:#64748b;margin-bottom:14px">Complete the setup wizard to configure AutoDJ settings, playlists, and rotation rules</div>
+<a href="/user/radio/autodj/setup?station_id=<?=$stationId?>" class="btn btn-primary">Start Setup Wizard</a>
+</div>
+<?php else: ?>
+<?php $adTab = $_GET['adtab'] ?? 'overview'; $ac = $autodjCfg; ?>
+<div class="nowplaying-bar">
+<div style="flex:1"><div style="font-size:10px;color:#64748b;margin-bottom:2px">AutoDJ</div><div style="font-size:14px;font-weight:600;color:#e0e0e0"><?=$ac->autodj_enabled?'Running':'Stopped'?></div></div>
+<div style="text-align:center"><div style="font-size:10px;color:#64748b">Mode</div><div style="font-size:14px;font-weight:700;color:#0A84FF"><?=ucfirst($ac->playlist_mode)?></div></div>
+<div style="text-align:center"><div style="font-size:10px;color:#64748b">Crossfade</div><div style="font-size:14px;font-weight:700;color:#5856D6"><?=$ac->crossfade_time?>s</div></div>
+<div style="text-align:center"><div style="font-size:10px;color:#64748b">Bitrate</div><div style="font-size:14px;font-weight:700;color:#e0e0e0"><?=$ac->bitrate?> kbps</div></div>
+<div style="text-align:center;display:flex;gap:4px">
+<a href="/user/radio/autodj/start/<?=$stationId?>" class="btn btn-sm <?=$ac->autodj_enabled?'btn-secondary':'btn-success'?>"><?=$ac->autodj_enabled?'Restart':'Start'?></a>
+<a href="/user/radio/autodj/stop/<?=$stationId?>" class="btn btn-sm btn-danger">Stop</a>
+</div>
+</div>
+<div class="nav-pills" style="margin-bottom:12px">
+<a href="?station_id=<?=$stationId?>&tab=autodj&adtab=overview" class="<?=$adTab==='overview'?'active':''?>">Overview</a>
+<a href="?station_id=<?=$stationId?>&tab=autodj&adtab=playback" class="<?=$adTab==='playback'?'active':''?>">Playback</a>
+<a href="?station_id=<?=$stationId?>&tab=autodj&adtab=rotation" class="<?=$adTab==='rotation'?'active':''?>">Rotation</a>
+<a href="?station_id=<?=$stationId?>&tab=autodj&adtab=categories" class="<?=$adTab==='categories'?'active':''?>">Categories</a>
+<a href="?station_id=<?=$stationId?>&tab=autodj&adtab=logs" class="<?=$adTab==='logs'?'active':''?>">Logs</a>
+<a href="?station_id=<?=$stationId?>&tab=autodj&adtab=ai" class="<?=$adTab==='ai'?'active':''?>">AI Assistant</a>
+</div>
+<div class="tab <?=$adTab==='overview'?'active':''?>">
+<div class="stat-grid">
+<div class="stat-card"><div class="sv"><?=$ac->autodj_enabled?'Running':'Stopped'?></div><div class="sl">Status</div></div>
+<div class="stat-card"><div class="sv"><?=ucfirst($ac->playlist_mode)?></div><div class="sl">Mode</div></div>
+<div class="stat-card"><div class="sv"><?=$ac->crossfade_time?>s</div><div class="sl">Crossfade</div></div>
+<div class="stat-card"><div class="sv"><?=$ac->bitrate?>k</div><div class="sl">Bitrate</div></div>
+<div class="stat-card"><div class="sv"><?=$ac->normalize_audio?'On':'Off'?></div><div class="sl">Normalize</div></div>
+<div class="stat-card"><div class="sv"><?=$ac->shuffle_enabled?'On':'Off'?></div><div class="sl">Shuffle</div></div>
+</div>
+<div class="card"><h3>Quick Actions</h3><div style="display:flex;gap:6px;flex-wrap:wrap">
+<a href="/user/radio/autodj/setup?step=1&station_id=<?=$stationId?>" class="btn btn-sm btn-secondary">Re-run Wizard</a>
+<a href="?station_id=<?=$stationId?>&tab=autodj&adtab=playback" class="btn btn-sm btn-primary">Playback Settings</a>
+<a href="?station_id=<?=$stationId?>&tab=autodj&adtab=rotation" class="btn btn-sm btn-primary">Rotation Rules</a>
+<a href="?station_id=<?=$stationId?>&tab=autodj&adtab=categories" class="btn btn-sm btn-primary">Categories</a>
+<a href="?station_id=<?=$stationId?>&tab=playlists" class="btn btn-sm btn-primary">Playlists</a>
+<a href="?station_id=<?=$stationId?>&tab=autodj&adtab=ai" class="btn btn-sm btn-primary" style="background:rgba(168,85,247,.15);color:#a855f7">AI Assistant</a>
+</div></div>
+</div>
+<div class="tab <?=$adTab==='playback'?'active':''?>">
+<div class="card"><h3>Playback Controls</h3>
+<div style="display:flex;gap:6px;margin-bottom:12px">
+<a href="/user/radio/autodj/start/<?=$stationId?>" class="btn btn-sm btn-success">Start</a>
+<a href="/user/radio/autodj/stop/<?=$stationId?>" class="btn btn-sm btn-danger">Stop</a>
+<a href="/user/radio/autodj/restart/<?=$stationId?>" class="btn btn-sm btn-warning">Restart</a>
+</div>
+<form method="post" action="/user/radio/autodj/update">
+<input type="hidden" name="station_id" value="<?=$stationId?>">
+<div class="form-row-3">
+<div class="form-group"><label>Playlist Mode</label><select class="inp inp-sm" name="playlist_mode"><option value="sequential" <?=$ac->playlist_mode==='sequential'?'selected':''?>>Sequential</option><option value="random" <?=$ac->playlist_mode==='random'?'selected':''?>>Random</option><option value="weighted" <?=$ac->playlist_mode==='weighted'?'selected':''?>>Weighted</option></select></div>
+<div class="form-group"><label>Crossfade (s)</label><input class="inp inp-sm" name="crossfade_time" value="<?=$ac->crossfade_time?:5?>" type="number" step="0.5"></div>
+<div class="form-group"><label>&nbsp;</label><div class="check-group"><label><input type="checkbox" name="crossfade_enabled" value="1" <?=$ac->crossfade_enabled?'checked':''?>> Enable Crossfade</label></div></div>
+</div>
+<div class="form-row-3">
+<div class="check-group"><label><input type="checkbox" name="normalize_audio" value="1" <?=$ac->normalize_audio?'checked':''?>> Normalize Audio</label></div>
+<div class="check-group"><label><input type="checkbox" name="replaygain" value="1" <?=$ac->replaygain?'checked':''?>> ReplayGain</label></div>
+<div class="check-group"><label><input type="checkbox" name="silence_detection" value="1" <?=$ac->silence_detection?'checked':''?>> Silence Detection</label></div>
+</div>
+<div class="check-group"><label><input type="checkbox" name="remove_duplicates" value="1" <?=$ac->remove_duplicates?'checked':''?>> Remove Duplicates</label></div>
+<button class="btn btn-sm btn-primary" style="margin-top:8px">Save Playback Settings</button>
+</form></div>
+</div>
+<div class="tab <?=$adTab==='rotation'?'active':''?>">
+<div class="card"><h3>Rotation Rules</h3>
+<form method="post" action="/user/radio/autodj/update">
+<input type="hidden" name="station_id" value="<?=$stationId?>">
+<div class="form-row-3">
+<div class="form-group"><label>Max Artist Repeat</label><select class="inp inp-sm" name="max_artist_repeat"><?php foreach([15,30,60,120,240] as $v): ?><option value="<?=$v?>" <?=($ac->max_artist_repeat?:60)==$v?'selected':''?>><?=$v>=60?($v/60).'h':$v.'m'?></option><?php endforeach; ?></select></div>
+<div class="form-group"><label>Max Song Repeat</label><select class="inp inp-sm" name="max_song_repeat"><?php foreach([60,120,240,480] as $v): ?><option value="<?=$v?>" <?=($ac->max_song_repeat?:240)==$v?'selected':''?>><?=$v>=60?($v/60).'h':$v.'m'?></option><?php endforeach; ?></select></div>
+<div class="form-group"><label>Max Album Repeat</label><select class="inp inp-sm" name="max_album_repeat"><?php foreach([30,60,120,240] as $v): ?><option value="<?=$v?>" <?=($ac->max_album_repeat?:120)==$v?'selected':''?>><?=$v>=60?($v/60).'h':$v.'m'?></option><?php endforeach; ?></select></div>
+</div>
+<div class="check-group">
+<label><input type="checkbox" name="shuffle_enabled" value="1" <?=$ac->shuffle_enabled?'checked':''?>> Shuffle</label>
+<label><input type="checkbox" name="weight_new_songs" value="1" <?=$ac->weight_new_songs?'checked':''?>> Weight New Songs</label>
+<label><input type="checkbox" name="weight_favorites" value="1" <?=$ac->weight_favorites?'checked':''?>> Weight Favorites</label>
+</div>
+<button class="btn btn-sm btn-primary" style="margin-top:8px">Save Rotation Rules</button>
+</form></div>
+</div>
+<div class="tab <?=$adTab==='categories'?'active':''?>">
+<div class="card"><div class="hdr"><h3>Categories</h3></div>
+<table><tr><th>Name</th><th>Type</th><th>Playlist</th><th>Actions</th></tr>
+<?php if (empty($autodjCats)): ?><tr><td colspan="4" class="empty-state">No categories</td></tr>
+<?php else: ?>
+<?php foreach ($autodjCats as $c): ?>
+<tr><td><?=htmlspecialchars($c->name)?></td><td><?=htmlspecialchars($c->type)?></td><td><?php $pl=null; foreach($playlists as $p){if(($p->id??0)==($c->playlist_id??0)){$pl=$p;break;}} echo htmlspecialchars($pl->name??'-'); ?></td><td class="actions"><a href="/user/radio/autodj/category/delete/<?=$c->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></td></tr>
+<?php endforeach; ?>
+<?php endif; ?>
+</table></div>
+<div class="card"><h3>Add Category</h3>
+<form method="post" action="/user/radio/autodj/category/add">
+<input type="hidden" name="station_id" value="<?=$stationId?>">
+<div class="form-row"><div class="form-group"><label>Name</label><input class="inp inp-sm" name="name" required placeholder="e.g. Morning Music"></div>
+<div class="form-group"><label>Type</label><select class="inp inp-sm" name="type"><option value="music">Music</option><option value="jingle">Jingle</option><option value="promo">Promo</option><option value="ad">Advertisement</option><option value="sweeper">Sweeper</option><option value="station_id">Station ID</option><option value="news">News</option><option value="weather">Weather</option><option value="talk">Talk Show</option></select></div></div>
+<div class="form-group"><label>Link to Playlist (optional)</label><select class="inp inp-sm" name="playlist_id"><option value="">None</option><?php foreach($playlists as $p): ?><option value="<?=$p->id?>"><?=htmlspecialchars($p->name)?></option><?php endforeach; ?></select></div>
+<button class="btn btn-sm btn-primary">Add Category</button>
+</form></div>
+</div>
+<div class="tab <?=$adTab==='logs'?'active':''?>">
+<div class="card"><div class="hdr"><h3>AutoDJ Logs</h3><a href="/user/radio/autodj/clear-logs?station_id=<?=$stationId?>" class="btn btn-sm btn-danger" onclick="return confirm('Clear all logs?')">Clear Logs</a></div>
+<table><tr><th>Time</th><th>Type</th><th>Message</th></tr>
+<?php if (empty($autodjLogs)): ?><tr><td colspan="3" class="empty-state">No log entries</td></tr>
+<?php else: ?>
+<?php foreach ($autodjLogs as $l): ?>
+<tr><td style="white-space:nowrap"><?=htmlspecialchars($l->created_at??'')?></td><td><span class="status-badge <?=$l->type==='error'?'status-stopped':($l->type==='warning'?'status-starting':'status-running')?>"><?=htmlspecialchars($l->type)?></span></td><td><?=htmlspecialchars($l->message)?></td></tr>
+<?php endforeach; ?>
+<?php endif; ?>
+</table></div>
+</div>
+<div class="tab <?=$adTab==='ai'?'active':''?>">
+<div class="card"><div class="hdr"><h3>AI AutoDJ Assistant</h3><span style="font-size:10px;color:#64748b">Powered by OpenAI</span></div>
+<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:12px;margin-bottom:12px;max-height:300px;overflow-y:auto" id="aiChat">
+<div style="padding:8px 12px;margin-bottom:6px;background:rgba(168,85,247,.08);border-radius:8px;font-size:11px;color:#94a3b8">Hello! I'm your AI AutoDJ assistant. Ask me to create playlists, configure rotation rules, schedule music, or optimize your station.<br><br>Try: "Create a classic rock playlist with no artist repeating within 2 hours" or "Schedule Christmas music from December 1st"</div>
+</div>
+<div style="display:flex;gap:6px">
+<input class="inp inp-sm" id="aiQuestion" placeholder="Ask the AI AutoDJ assistant..." style="flex:1" onkeydown="if(event.key==='Enter')askAI()">
+<button class="btn btn-sm btn-primary" onclick="askAI()">Ask</button>
+</div>
+</div>
+<div class="card" id="aiSuggestions" style="display:none"><h3>AI Suggestion</h3><div id="aiAnswer" style="font-size:12px;color:#c0c0c0;white-space:pre-wrap"></div></div>
+</div>
+<?php endif; ?>
 </div>
 <div class="tab <?=$tab==='settings'?'active':''?>">
   <div class="card"><h3>Station Settings</h3>
@@ -410,4 +528,5 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <script>
 function getTab(){return new URLSearchParams(window.location.search).get('tab')||'overview';}
 function searchSongs(q){document.querySelectorAll('.song-row').forEach(function(r){r.style.display=r.textContent.toLowerCase().indexOf(q.toLowerCase())>=0?'':'none';});}
+function askAI(){var q=document.getElementById('aiQuestion');if(!q.value.trim())return;var chat=document.getElementById('aiChat');var msg=document.createElement('div');msg.style.cssText='padding:8px 12px;margin-bottom:6px;background:rgba(0,140,255,.08);border-radius:8px;font-size:11px;color:#e0e0e0';msg.textContent=q.value;chat.appendChild(msg);chat.scrollTop=chat.scrollHeight;var sug=document.getElementById('aiSuggestions');sug.style.display='block';document.getElementById('aiAnswer').textContent='Thinking...';var x=new XMLHttpRequest();x.open('POST','/user/radio/autodj/ai-ask',true);x.setRequestHeader('Content-Type','application/x-www-form-urlencoded');x.onload=function(){try{var r=JSON.parse(x.responseText);document.getElementById('aiAnswer').textContent=r.answer||'Error: '+(r.error||'Unknown');var resp=document.createElement('div');resp.style.cssText='padding:8px 12px;margin-bottom:6px;background:rgba(168,85,247,.08);border-radius:8px;font-size:11px;color:#94a3b8;white-space:pre-wrap';resp.textContent=r.answer||r.error;chat.appendChild(resp);chat.scrollTop=chat.scrollHeight;}catch(e){document.getElementById('aiAnswer').textContent='Error processing response'}};x.send('question='+encodeURIComponent(q.value)+'&station_id=<?=$stationId?>');q.value='';}
 </script>

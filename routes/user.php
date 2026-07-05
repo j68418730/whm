@@ -181,6 +181,18 @@ $router->get('/user/radio/autodj/start/{id}', 'User\Controllers\RadioController@
 $router->get('/user/radio/autodj/stop/{id}', 'User\Controllers\RadioController@stopAutodj');
 $router->get('/user/radio/autodj/restart/{id}', 'User\Controllers\RadioController@restartAutodj');
 $router->get('/user/radio/song-history', 'User\Controllers\RadioController@songHistory');
+$router->get('/user/radio/autodj/setup', 'User\Controllers\RadioController@autodjSetup');
+$router->post('/user/radio/autodj/setup', 'User\Controllers\RadioController@autodjSetup');
+$router->get('/user/radio/autodj/dashboard', 'User\Controllers\RadioController@autodjDashboard');
+$router->post('/user/radio/autodj/save-step', 'User\Controllers\RadioController@autodjSaveStep');
+$router->post('/user/radio/autodj/update-setting', 'User\Controllers\RadioController@autodjUpdateSetting');
+$router->get('/user/radio/autodj/ai-ask', 'User\Controllers\RadioController@autodjAIAsk');
+$router->post('/user/radio/autodj/ai-ask', 'User\Controllers\RadioController@autodjAIAsk');
+$router->get('/user/radio/autodj/ai-memory', 'User\Controllers\RadioController@autodjAIMemory');
+$router->post('/user/radio/autodj/category/add', 'User\Controllers\RadioController@autodjAddCategory');
+$router->get('/user/radio/autodj/category/delete/{id}', 'User\Controllers\RadioController@autodjDeleteCategory');
+$router->post('/user/radio/autodj/add-log', 'User\Controllers\RadioController@autodjAddLog');
+$router->get('/user/radio/autodj/clear-logs', 'User\Controllers\RadioController@autodjClearLogs');
 // Chat routes
 $router->post('/chat/start', 'User\Controllers\ChatController@start');
 $router->get('/chat/poll/{sessionId}', 'User\Controllers\ChatController@poll');
