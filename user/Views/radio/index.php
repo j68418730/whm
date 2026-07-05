@@ -160,15 +160,15 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <td><span class="status-badge <?=$dj->status==='active'?'status-running':'status-stopped'?>"><?=$dj->status??'unknown'?></span></td>
       <td><?=htmlspecialchars($dj->last_login??'Never')?></td>
       <td class="actions">
-        <a href="/user/radio/toggle-dj/<?=$dj->id?>" class="btn btn-sm btn-warning"><?=$dj->status==='active'?'Suspend':'Activate'?></a>
-        <a href="/user/radio/delete-dj/<?=$dj->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a>
+        <a href="/user/radio/dj/toggle/<?=$dj->id?>" class="btn btn-sm btn-warning"><?=$dj->status==='active'?'Suspend':'Activate'?></a>
+        <a href="/user/radio/dj/delete/<?=$dj->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a>
       </td>
     </tr>
     <?php endforeach; ?>
     <?php endif; ?>
   </table></div>
   <div class="card"><h3>Add DJ</h3>
-  <form method="post" action="/user/radio/create-dj">
+  <form method="post" action="/user/radio/dj/create">
     <input type="hidden" name="station_id" value="<?=$stationId?>">
     <div class="form-row"><div class="form-group"><label>Username</label><input class="inp inp-sm" name="username" required></div><div class="form-group"><label>Password</label><input class="inp inp-sm" type="password" name="password" required></div></div>
     <div class="form-row"><div class="form-group"><label>Display Name</label><input class="inp inp-sm" name="name"></div><div class="form-group"><label>Email</label><input class="inp inp-sm" type="email" name="email"></div></div>
@@ -178,7 +178,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </form></div>
 </div>
 <div class="tab <?=$tab==='requests'?'active':''?>">
-  <div class="card"><div class="hdr"><h3>Song Requests</h3><a href="/user/radio/toggle-requests/<?=$stationId?>" class="btn btn-sm btn-secondary">Requests: <?=$station->requests_enabled?'ON':'OFF'?></a></div>
+  <div class="card"><div class="hdr"><h3>Song Requests</h3><a href="/user/radio/requests/toggle/<?=$stationId?>" class="btn btn-sm btn-secondary">Requests: <?=$station->requests_enabled?'ON':'OFF'?></a></div>
   <table><tr><th>Song</th><th>Artist</th><th>Requester</th><th>Date</th><th>Status</th><th>Actions</th></tr>
     <?php if (empty($requests)): ?><tr><td colspan="6" class="empty-state">No requests</td></tr>
     <?php else: ?>
@@ -187,7 +187,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <td><?=htmlspecialchars($r->song??$r->title??'')?></td><td><?=htmlspecialchars($r->artist??'')?></td>
       <td><?=htmlspecialchars($r->requester_name??$r->name??'Anonymous')?></td><td><?=htmlspecialchars($r->created_at??'')?></td>
       <td><span class="status-badge <?=$r->status==='approved'?'status-running':($r->status==='rejected'?'status-stopped':'status-starting')?>"><?=$r->status??'pending'?></span></td>
-      <td class="actions"><?php if (($r->status??'pending')==='pending'): ?><a href="/user/radio/approve-request/<?=$r->id?>" class="btn btn-sm btn-success">Approve</a><a href="/user/radio/reject-request/<?=$r->id?>" class="btn btn-sm btn-danger">Reject</a><?php endif; ?></td>
+      <td class="actions"><?php if (($r->status??'pending')==='pending'): ?><a href="/user/radio/request/approve/<?=$r->id?>" class="btn btn-sm btn-success">Approve</a><a href="/user/radio/request/reject/<?=$r->id?>" class="btn btn-sm btn-danger">Reject</a><?php endif; ?></td>
     </tr>
     <?php endforeach; ?>
     <?php endif; ?>
@@ -206,13 +206,13 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <td><?=htmlspecialchars($sh->start_time??'')?></td><td><?=htmlspecialchars($sh->end_time??'')?></td>
       <td><?php $pl=null; foreach($playlists as $p){if(($p->id??0)==($sh->playlist_id??0)){$pl=$p;break;}} echo htmlspecialchars($pl->name??'None'); ?></td>
       <td><?php $dn=''; foreach($djs as $d){if(($d->id??0)==($sh->dj_id??0)){$dn=$d->display_name??$d->username??'';break;}} echo htmlspecialchars($dn?:'Auto'); ?></td>
-      <td class="actions"><a href="/user/radio/delete-schedule/<?=$sh->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></td>
+      <td class="actions"><a href="/user/radio/schedule/delete/<?=$sh->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></td>
     </tr>
     <?php endforeach; ?>
     <?php endif; ?>
   </table></div>
   <div class="card"><h3>Add Show</h3>
-  <form method="post" action="/user/radio/add-schedule">
+  <form method="post" action="/user/radio/schedule/add">
     <input type="hidden" name="station_id" value="<?=$stationId?>">
     <div class="form-row"><div class="form-group"><label>Show Name</label><input class="inp inp-sm" name="show_name" required></div>
     <div class="form-group"><label>Day</label><select class="inp inp-sm" name="day_of_week"><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select></div></div>
@@ -233,7 +233,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <tr>
       <td><a href="?station_id=<?=$stationId?>&tab=playlists&playlist_id=<?=$p->id?>" style="color:#0A84FF;text-decoration:none"><?=htmlspecialchars($p->name)?></a></td>
       <td><?=htmlspecialchars($p->type??'default')?></td>
-      <td class="actions"><a href="?station_id=<?=$stationId?>&tab=playlists&playlist_id=<?=$p->id?>" class="btn btn-sm btn-primary">Manage</a><a href="/user/radio/delete-playlist/<?=$p->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></td>
+      <td class="actions"><a href="?station_id=<?=$stationId?>&tab=playlists&playlist_id=<?=$p->id?>" class="btn btn-sm btn-primary">Manage</a><a href="/user/radio/playlist/delete/<?=$p->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></td>
     </tr>
     <?php endforeach; ?>
   </table>
@@ -264,7 +264,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </form></div>
   <?php endif; ?>
   <div class="card"><h3>Create Playlist</h3>
-  <form method="post" action="/user/radio/create-playlist">
+  <form method="post" action="/user/radio/playlist/create">
     <input type="hidden" name="station_id" value="<?=$stationId?>">
     <div class="form-row"><div class="form-group"><label>Name</label><input class="inp inp-sm" name="name" required></div><div class="form-group"><label>Type</label><select class="inp inp-sm" name="type"><option value="default">Default</option><option value="rotation">Rotation</option><option value="request">Request</option></select></div></div>
     <div class="form-group"><label>Description</label><input class="inp inp-sm" name="description"></div>
@@ -273,7 +273,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </div>
 <div class="tab <?=$tab==='media'?'active':''?>">
   <div class="card"><div class="hdr"><h3>Media Library</h3><?php $mPlId = isset($_GET['playlist_id'])?(int)$_GET['playlist_id']:null; if($mPlId): ?><span style="font-size:10px;color:#64748b">Playlist folder</span><?php endif; ?></div>
-  <form method="post" action="/user/radio/media-upload" enctype="multipart/form-data">
+  <form method="post" action="/user/radio/media/upload" enctype="multipart/form-data">
     <input type="hidden" name="playlist_id" value="<?=$mPlId?:''?>">
     <div class="upload-zone" onclick="document.getElementById('media-input').click()">Drop files or click to upload (mp3, aac, ogg, flac, wav, m4a)</div>
     <input id="media-input" type="file" name="file[]" multiple style="display:none" onchange="this.form.submit()">
@@ -287,7 +287,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div style="font-size:28px;margin-bottom:4px;opacity:.5">&#9835;</div>
       <div style="font-size:10px;color:#c0c0c0;word-break:break-all"><?=htmlspecialchars($f)?></div>
       <div style="margin-top:6px;font-size:10px;color:#64748b"><?=round(filesize('/home/radio/'.$stationId.'/music'.($mPlId?'/playlist_'.$mPlId:'').'/'.$f)/1024,1)?> KB</div>
-      <div style="margin-top:6px"><a href="/user/radio/media-delete?file=<?=urlencode($f)?>&playlist_id=<?=$mPlId?>&station_id=<?=$stationId?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></div>
+      <div style="margin-top:6px"><a href="/user/radio/media/delete?file=<?=urlencode($f)?>&playlist_id=<?=$mPlId?>&station_id=<?=$stationId?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></div>
     </div>
     <?php endforeach; ?>
   </div>
@@ -295,8 +295,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </div>
 </div>
 <div class="tab <?=$tab==='autodj'?'active':''?>">
-  <div class="card"><div class="hdr"><h3>AutoDJ</h3><div><a href="/user/radio/start-autodj/<?=$stationId?>" class="btn btn-sm btn-success">Start</a><a href="/user/radio/stop-autodj/<?=$stationId?>" class="btn btn-sm btn-danger">Stop</a><a href="/user/radio/restart-autodj/<?=$stationId?>" class="btn btn-sm btn-warning">Restart</a></div></div>
-  <form method="post" action="/user/radio/update-autodj">
+  <div class="card"><div class="hdr"><h3>AutoDJ</h3><div><a href="/user/radio/autodj/start/<?=$stationId?>" class="btn btn-sm btn-success">Start</a><a href="/user/radio/autodj/stop/<?=$stationId?>" class="btn btn-sm btn-danger">Stop</a><a href="/user/radio/autodj/restart/<?=$stationId?>" class="btn btn-sm btn-warning">Restart</a></div></div>
+  <form method="post" action="/user/radio/autodj/update">
     <input type="hidden" name="station_id" value="<?=$stationId?>">
     <div class="form-row-3">
       <div class="form-group"><label>Crossfade (s)</label><input class="inp inp-sm" name="autodj_crossfade" value="<?=$settings->autodj_crossfade??3?>" type="number" step="0.5"></div>
@@ -308,7 +308,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </div>
 <div class="tab <?=$tab==='settings'?'active':''?>">
   <div class="card"><h3>Station Settings</h3>
-  <form method="post" action="/user/radio/update-settings">
+  <form method="post" action="/user/radio/settings/update">
     <input type="hidden" name="station_id" value="<?=$stationId?>">
     <div class="form-row"><div class="form-group"><label>Station Name</label><input class="inp inp-sm" name="name" value="<?=htmlspecialchars($station->name??'')?>"></div><div class="form-group"><label>Genre</label><input class="inp inp-sm" name="genre" value="<?=htmlspecialchars($station->genre??'')?>"></div></div>
     <div class="form-group"><label>Description</label><textarea class="inp inp-sm" name="description" rows="2"><?=htmlspecialchars($station->description??'')?></textarea></div>
@@ -320,7 +320,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </div>
 <div class="tab <?=$tab==='branding'?'active':''?>">
   <div class="card"><div class="hdr"><h3>Station Branding</h3><span style="font-size:10px;color:#64748b">Your station's unique identity</span></div>
-  <form method="post" action="/user/radio/save-branding" enctype="multipart/form-data">
+  <form method="post" action="/user/radio/branding/save" enctype="multipart/form-data">
     <input type="hidden" name="station_id" value="<?=$stationId?>">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div>
@@ -360,12 +360,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <?php if (empty($mounts)): ?><tr><td colspan="4" class="empty-state">Main mount: <?=htmlspecialchars($station->mount??'/stream')?></td></tr>
     <?php else: ?>
     <?php foreach ($mounts as $m): ?>
-    <tr><td><?=htmlspecialchars($m->mount??'')?></td><td><?=$m->bitrate??128?> kbps</td><td><?=htmlspecialchars($m->description??'')?></td><td class="actions"><a href="/user/radio/delete-mount/<?=$m->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></td></tr>
+    <tr><td><?=htmlspecialchars($m->mount??'')?></td><td><?=$m->bitrate??128?> kbps</td><td><?=htmlspecialchars($m->description??'')?></td><td class="actions"><a href="/user/radio/mount/delete/<?=$m->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></td></tr>
     <?php endforeach; ?>
     <?php endif; ?>
   </table></div>
   <div class="card"><h3>Add Mount</h3>
-  <form method="post" action="/user/radio/add-mount">
+  <form method="post" action="/user/radio/mount/add">
     <input type="hidden" name="station_id" value="<?=$stationId?>">
     <div class="form-row"><div class="form-group"><label>Mount Path</label><input class="inp inp-sm" name="mount" value="/stream2"></div><div class="form-group"><label>Bitrate</label><select class="inp inp-sm" name="bitrate"><option value="128">128</option><option value="64">64</option><option value="192">192</option><option value="320">320</option></select></div></div>
     <div class="form-group"><label>Description</label><input class="inp inp-sm" name="description"></div>
@@ -388,14 +388,14 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </table></div>
 </div>
 <div class="tab <?=$tab==='backups'?'active':''?>">
-  <div class="card"><div class="hdr"><h3>Backups</h3><a href="/user/radio/backup-create/<?=$stationId?>" class="btn btn-sm btn-primary">Create Backup</a></div>
+  <div class="card"><div class="hdr"><h3>Backups</h3><a href="/user/radio/backup/create" class="btn btn-sm btn-primary">Create Backup</a></div>
   <?php if (empty($backups)): ?><div class="empty-state">No backups yet</div>
   <?php else: ?>
   <table><tr><th>File</th><th>Size</th><th>Date</th><th>Actions</th></tr>
     <?php foreach ($backups as $bk): $bn = basename($bk); ?>
     <tr>
       <td><?=htmlspecialchars($bn)?></td><td><?=round(filesize($bk)/1048576,1)?> MB</td><td><?=date('Y-m-d H:i',filemtime($bk))?></td>
-      <td class="actions"><a href="/user/radio/backup-download/<?=$stationId?>?file=<?=urlencode($bn)?>" class="btn btn-sm btn-success">Download</a><a href="/user/radio/backup-delete/<?=$stationId?>?file=<?=urlencode($bn)?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></td>
+      <td class="actions"><a href="/user/radio/backup/download?file=<?=urlencode($bn)?>" class="btn btn-sm btn-success">Download</a><a href="/user/radio/backup/delete?file=<?=urlencode($bn)?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></td>
     </tr>
     <?php endforeach; ?>
   </table>
