@@ -17,7 +17,7 @@ if (!function_exists('user_menu_sections')) {
             $sections[] = ['label' => 'Email', 'href' => '/user/section/email', 'icon' => '📧', 'match' => ['/user/email','/user/section/email']];
 
         if (!empty($f->radio) || !empty($f->icecast))
-            $sections[] = ['label' => 'Radio', 'href' => '/radio', 'icon' => '📻', 'match' => ['/radio','/user/dj','/user/radio','/user/dj-manager','/dj_panel.php','/user/stats','/user/public-djs','/user/section/radio']];
+            $sections[] = ['label' => 'Radio', 'href' => '/user/radio', 'icon' => '📻', 'match' => ['/user/radio','/user/dj','/user/dj-manager','/dj_panel.php','/user/stats','/user/public-djs','/user/section/radio']];
 
         if (!empty($f->builder))
             $sections[] = ['label' => 'Builder', 'href' => '/user/section/builder', 'icon' => '🏗️', 'match' => ['/user/websitebuilder','/user/builder','/user/section/builder']];
