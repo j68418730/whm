@@ -41,7 +41,7 @@ $config['plugins'] = require BASE_PATH . '/config/plugins.php';
 // License check — only blocks WHM backend access after trial
 $uri = $_SERVER['REQUEST_URI'] ?? '/';
 $path = parse_url($uri, PHP_URL_PATH);
-$isLicensePage = str_starts_with($path, '/admin/') || str_starts_with($path, '/api/') || str_starts_with($path, '/livechat') || str_starts_with($path, '/radio/');
+$isLicensePage = str_starts_with($path, '/admin/licensing') || str_starts_with($path, '/admin/login') || str_starts_with($path, '/admin/support-status') || str_starts_with($path, '/api/') || str_starts_with($path, '/livechat') || str_starts_with($path, '/radio/');
 $license = new Core\License(BASE_PATH);
 $licenseResult = $license->verify();
 if (!$licenseResult['valid'] && !$isLicensePage) {
