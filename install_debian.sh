@@ -120,7 +120,8 @@ install_required "Web stack" apache2 mariadb-server jailkit quota quotatool \
   php-xmlreader php-xsl php-apcu php-imagick php-soap \
   postfix dovecot-imapd dovecot-pop3d vsftpd bind9 \
   unzip wget curl git openssl \
-  firewalld fail2ban clamav-daemon rspamd aide rkhunter chkrootkit lynis
+  firewalld fail2ban clamav-daemon rspamd aide rkhunter chkrootkit lynis \
+  certbot python3-certbot-apache nginx
 systemctl enable --now apache2 mariadb postfix dovecot vsftpd named
 HTTPD_INSTALLED=1; MARIADB_INSTALLED=1; PHP_INSTALLED=1
 FIREWALLD_INSTALLED=1
@@ -188,8 +189,17 @@ enabled = true; logpath = /var/log/icecast2/error.log; port = 8000:8100; maxretr
 JAIL
 systemctl restart fail2ban 2>/dev/null || true
 
-# 4c. phpMyAdmin + SnappyMail (replaces Roundcube)
-echo "[4/9] Installing phpMyAdmin, SnappyMail..."
+# 4c. Node.js 20.x + npm (for chat/desktop tools)
+echo "[4c/13] Installing Node.js 20.x and npm..."
+log "NODEJS" "install" "RUNNING" "Installing Node.js 20.x"
+if ! command -v node >/dev/null 2>&1; then
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    install_required "Node.js" nodejs
+fi
+npm install -g npm@latest 2>/dev/null || true
+log "NODEJS" "install" "OK" "Node.js $(node --version) npm $(npm --version) installed"
+
+# 4d. phpMyAdmin + SnappyMail (replaces Roundcube)
 log "PHPMYADMIN" "install" "RUNNING" "Installing phpMyAdmin"
 install_optional "phpMyAdmin" phpmyadmin && PHPMYADMIN_INSTALLED=1
 SM_VER="2.38.2"

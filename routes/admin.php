@@ -76,6 +76,10 @@ $router->get('/admin/mysql', 'Admin\Controllers\MysqlController@index');
 
 // Admin SSL/TLS Management Routes
 $router->get('/admin/ssl', 'Admin\Controllers\SslController@index');
+$router->get('/admin/ssl/autossl', 'Admin\Controllers\SslController@autossl');
+$router->post('/admin/ssl/autossl-enable', 'Admin\Controllers\SslController@autossl');
+$router->get('/admin/ssl/autossl-run', 'Admin\Controllers\SslController@autosslRun');
+$router->post('/admin/ssl/install', 'Admin\Controllers\SslController@install');
 
 // Admin Security Center Routes
 $router->get('/admin/security', 'Admin\Controllers\SecurityController@index');
