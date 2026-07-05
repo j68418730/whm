@@ -47,7 +47,7 @@ class StreamsController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
         $users = $this->db->table('hosting_users')->get() ?: [];
-        $packages = $this->db->table('hosting_packages')->whereRaw("shoutcast_enabled = 1 OR icecast_enabled = 1")->get() ?: [];
+        $packages = $this->db->pdo()->query("SELECT * FROM hosting_packages WHERE shoutcast_enabled = 1 OR icecast_enabled = 1")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         $ips = $this->db->table('server_ips')->get() ?: [];
         $nodes = [];
         foreach ($ips as $ip) {
