@@ -51,8 +51,7 @@ class StreamsController extends Controller
         $ips = $this->db->table('server_ips')->get() ?: [];
         $nodes = [];
         foreach ($ips as $ip) {
-            $label = $ip->hostname ? $ip->hostname . ' (' . $ip->ip_address . ')' : $ip->ip_address;
-            $nodes[] = $label;
+            $nodes[] = $ip->ip_address;
         }
         if (empty($nodes)) $nodes = ['Main Server (45.61.59.55)'];
         return $this->view('Plugins.Radio.Views.admin.streams.create', [
@@ -132,9 +131,22 @@ class StreamsController extends Controller
     public function delete($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $stream = $this->db->table('streaming_stations')->where('id', $id)->first();
-        if ($stream) $this->db->table('streaming_stations')->where('id', $id)->delete();
-        $_SESSION['success_message'] = 'Stream deleted successfully!';
+        try {
+            $stream = $this->db->table('streaming_stations')->where('id', $id)->first();
+            if (!$stream) { $_SESSION['error_message'] = 'Stream not found.'; $this->response->redirect('/admin/streams'); exit; }
+            $this->db->table('radio_autodj')->where('stream_id', $id)->delete();
+            $this->db->table('radio_djs')->where('stream_id', $id)->delete();
+            $this->db->table('radio_playlists')->where('stream_id', $id)->delete();
+            $this->db->table('radio_mounts')->where('stream_id', $id)->delete();
+            $this->db->table('radio_song_history')->where('stream_id', $id)->delete();
+            $this->db->table('radio_requests')->where('stream_id', $id)->delete();
+            $this->db->table('radio_listener_analytics')->where('stream_id', $id)->delete();
+            $this->db->table('radio_streams')->where('id', $id)->delete();
+            $this->db->table('streaming_stations')->where('id', $id)->delete();
+            $_SESSION['success_message'] = 'Stream deleted successfully!';
+        } catch (\Exception $e) {
+            $_SESSION['error_message'] = 'Delete failed: ' . $e->getMessage();
+        }
         $this->response->redirect('/admin/streams');
     }
 
