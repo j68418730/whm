@@ -35,11 +35,14 @@ class StreamingApiController extends Controller
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         $engines = $this->engine->getAvailableDrivers();
         $stations = $this->engine->getAllStations();
+        $users = $this->db->table('hosting_users')->get() ?: [];
+        $packages = $this->db->pdo()->query("SELECT * FROM hosting_packages ORDER BY name_english ASC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         return $this->view('admin.radio_dashboard.streaming', [
             'user' => $user, 'theme_settings' => $theme_settings, 'title' => 'Streaming Engine',
             'engines' => $engines, 'stations' => $stations,
             'totalStations' => count($stations),
             'runningStations' => count(array_filter($stations, fn($s) => $s->status === 'running')),
+            'users' => $users, 'packages' => $packages,
         ]);
     }
 

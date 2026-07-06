@@ -42,13 +42,26 @@ Status: <strong style="color:<?php echo $e['installed'] ? '#4ade80' : '#f87171';
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
 <div class="form-group"><label>Engine</label>
 <select name="engine">
-<option value="shoutcast">SHOUTcast</option>
+<option value="shoutcast">SHOUTcast v2</option>
+<option value="shoutcast1">SHOUTcast v1</option>
 <option value="icecast">Icecast</option>
 </select></div>
 <div class="form-group"><label>Station Name</label>
 <input name="name" placeholder="My Radio Station" required></div>
-<div class="form-group"><label>User ID</label>
-<input name="user_id" type="number" placeholder="1" required></div>
+<div class="form-group"><label>User</label>
+<select name="user_id" required>
+<option value="">Select user...</option>
+<?php foreach ($users as $u): ?>
+<option value="<?php echo $u->id; ?>"><?php echo htmlspecialchars($u->username); ?> (<?php echo htmlspecialchars($u->email); ?>)</option>
+<?php endforeach; ?>
+</select></div>
+<div class="form-group"><label>Package</label>
+<select name="package_id">
+<option value="">Select package...</option>
+<?php foreach ($packages as $p): ?>
+<option value="<?php echo $p->id; ?>"><?php echo htmlspecialchars($p->name); ?> ($<?php echo $p->monthly_price; ?>/mo)</option>
+<?php endforeach; ?>
+</select></div>
 <div class="form-group"><label>Bitrate</label>
 <select name="bitrate">
 <option value="64">64 kbps</option>
