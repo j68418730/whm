@@ -47,7 +47,7 @@ class StreamsController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
         $users = $this->db->table('hosting_users')->get() ?: [];
-        $packages = $this->db->pdo()->query("SELECT * FROM hosting_packages ORDER BY name_english ASC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        $packages = $this->db->pdo()->query("SELECT * FROM hosting_packages ORDER BY name ASC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         $ips = $this->db->table('server_ips')->get() ?: [];
         $nodes = [];
         foreach ($ips as $ip) {
