@@ -271,14 +271,28 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </form></div>
 </div>
 <div class="tab <?=$tab==='media'?'active':''?>">
-  <div class="card"><div class="hdr"><h3>Media Library</h3><?php $mPlId = isset($_GET['playlist_id'])?(int)$_GET['playlist_id']:null; if($mPlId): ?><span style="font-size:10px;color:#64748b">Playlist folder</span><?php endif; ?></div>
+  <div class="card"><div class="hdr"><h3>Media Library</h3></div>
+  <?php $mPlId = isset($_GET['playlist_id'])?(int)$_GET['playlist_id']:null; $selPlName = ''; foreach($playlists as $p){if(($p->id??0)==$mPlId){$selPlName=$p->name;break;}} ?>
+  <div class="form-row" style="margin-bottom:12px">
+    <div class="form-group" style="flex:1">
+      <select class="inp inp-sm" onchange="window.location.href='?station_id=<?=$stationId?>&tab=media&playlist_id='+this.value">
+        <option value="">-- All Music --</option>
+        <?php foreach($playlists as $p): ?>
+        <option value="<?=$p->id?>" <?=$mPlId==$p->id?'selected':''?>><?=htmlspecialchars($p->name)?></option>
+        <?php endforeach; ?>
+      </select>
+    </div>
+    <?php if($mPlId && $selPlName): ?>
+    <div style="font-size:12px;color:#0A84FF;padding:6px 0 0 8px">Playlist: <?=htmlspecialchars($selPlName)?></div>
+    <?php endif; ?>
+  </div>
   <form method="post" action="/user/radio/media/upload" enctype="multipart/form-data">
     <input type="hidden" name="playlist_id" value="<?=$mPlId?:''?>">
     <div class="upload-zone" onclick="document.getElementById('media-input').click()">Drop files or click to upload (mp3, aac, ogg, flac, wav, m4a)</div>
     <input id="media-input" type="file" name="file[]" multiple style="display:none" onchange="this.form.submit()">
     <button class="btn btn-sm btn-primary">Upload</button>
   </form>
-  <?php if (empty($mediaFiles)): ?><div class="empty-state" style="margin-top:10px">No media files</div>
+  <?php if (empty($mediaFiles)): ?><div class="empty-state" style="margin-top:10px">No media files<?=$mPlId?' in this playlist':''?></div>
   <?php else: ?>
   <div class="file-grid" style="margin-top:10px">
     <?php foreach ($mediaFiles as $f): ?>
