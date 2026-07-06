@@ -283,8 +283,8 @@ class RadioController extends Controller
         if ($name) {
             try {
                 $id = $this->db->table('radio_playlists')->insertGetId([
-                    'station_id' => $station->id, 'name' => $name,
-                    'type' => $_POST['type'] ?? 'default',
+                    'stream_id' => $station->id, 'name' => $name,
+                    'playlist_type' => $_POST['type'] ?? 'default',
                     'description' => $_POST['description'] ?? '',
                 ]);
                 $pdir = $this->getPlaylistDir($station->id, $id);
