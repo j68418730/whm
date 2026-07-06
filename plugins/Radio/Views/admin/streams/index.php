@@ -57,6 +57,6 @@ ksort($grouped);
 <div style="font-size:48px;margin-bottom:8px">📻</div>
 <h4 style="margin:0 0 4px">No Streams</h4>
 <p style="color:var(--text_muted);font-size:13px;margin:0 0 14px">No radio streams created yet.</p>
-<a href="/admin/streams/create" class="btn btn-primary">Create First Stream</a>
+<a href="/admin/streaming" class="btn btn-primary">Create First Stream</a>
 </div>
 <?php endif; ?>
