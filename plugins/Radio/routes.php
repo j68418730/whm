@@ -86,6 +86,10 @@ $router->post('/radio/kick-source', 'Plugins\Radio\Controllers\User\RadioControl
 // Streaming Engine Dashboard
 $router->get('/admin/streaming', 'Plugins\Radio\Controllers\Admin\StreamingApiController@dashboard');
 
+// Wizard API endpoints
+$router->get('/admin/api/streaming/available-ports', 'Plugins\Radio\Controllers\Admin\StreamingApiController@availablePorts');
+$router->get('/admin/api/streaming/server-ip', 'Plugins\Radio\Controllers\Admin\StreamingApiController@serverIp');
+
 // Streaming Engine Admin API
 $router->get('/admin/api/streaming/engines', 'Plugins\Radio\Controllers\Admin\StreamingApiController@engines');
 $router->post('/admin/api/streaming/install', 'Plugins\Radio\Controllers\Admin\StreamingApiController@installEngine');
