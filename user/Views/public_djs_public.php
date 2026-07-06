@@ -15,10 +15,9 @@ h2{font-size:16px;font-weight:700;margin-bottom:12px;color:#0A84FF}
 <h2>🎧 <?php echo htmlspecialchars($stationName);?> DJs</h2>
 <div class="dj-grid">
 <?php if(empty($djs)):?><p style="color:#64748b;font-size:12px;grid-column:1/-1;text-align:center;padding:20px">No DJs found.</p>
-<?php else: foreach($djs as $dj): $init = strtoupper(substr($dj->display_name ?? $dj->username, 0, 1)); $online = $dj->last_active && (time()-strtotime($dj->last_active)) < 300; ?>
+<?php else: foreach($djs as $dj): $init = strtoupper(substr($dj->name ?? $dj->username, 0, 1)); $online = $dj->last_active && (time()-strtotime($dj->last_active)) < 300; ?>
 <div class="dj-card"><div class="avatar"><?php echo $init;?></div>
-<div class="name"><?php echo htmlspecialchars($dj->display_name ?? $dj->username);?></div>
+<div class="name"><?php echo htmlspecialchars($dj->name ?? $dj->username);?></div>
 <div class="status" style="color:<?php echo $online?'#4ade80':'#64748b';?>">● <?php echo $online ? 'Online' : 'Offline';?></div>
-<?php if($dj->genres):?><div class="genres"><?php echo htmlspecialchars($dj->genres);?></div><?php endif;?>
 </div><?php endforeach; endif;?>
 </div></body></html>

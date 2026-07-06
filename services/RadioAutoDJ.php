@@ -32,14 +32,14 @@ class RadioAutoDJ
             // DJ connected - disable AutoDJ
             $this->db->table('radio_streams')->where('id', $stream->id)->update([
                 'autodj_enabled' => 0,
-                'autodj_status' => 'paused_dj_active',
+                'autodj_active' => 0,
             ]);
             $this->log("AutoDJ paused for {$stream->server_name} - DJ connected");
-        } elseif (!$isDjConnected && !$autodjEnabled && ($stream->autodj_status ?? '') === 'paused_dj_active') {
+        } elseif (!$isDjConnected && !$autodjEnabled && ($stream->autodj_active ?? 0) == 0) {
             // DJ disconnected - re-enable AutoDJ
             $this->db->table('radio_streams')->where('id', $stream->id)->update([
                 'autodj_enabled' => 1,
-                'autodj_status' => 'running',
+                'autodj_active' => 1,
             ]);
             $this->log("AutoDJ resumed for {$stream->server_name} - DJ disconnected");
         }

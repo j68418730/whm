@@ -51,12 +51,12 @@ function radio_fetch_stats(stdClass $stream): array
 {
     $default = [
         'listeners' => (int)($stream->listener_count ?? 0),
-        'peak' => (int)($stream->peak_listeners ?? 0),
+        'peak' => (int)($stream->listener_count ?? 0),
         'bitrate' => (int)($stream->bitrate ?? 128),
-        'song' => $stream->last_song_title ?? '',
-        'artist' => $stream->last_song_artist ?? '',
+        'song' => $stream->current_song ?? $stream->name ?? '',
+        'artist' => '',
         'status' => $stream->status === 'running',
-        'uptime' => $stream->uptime ?? '',
+        'uptime' => '',
     ];
     if ($stream->status !== 'running') return $default;
 

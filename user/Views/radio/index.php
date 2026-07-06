@@ -156,7 +156,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <?php foreach ($djs as $dj): ?>
     <tr>
       <td><?=htmlspecialchars($dj->username??'')?></td>
-      <td><?=htmlspecialchars($dj->display_name??$dj->username??'')?></td>
+      <td><?=htmlspecialchars($dj->name??$dj->username??'')?></td>
       <td><span class="status-badge <?=$dj->status==='active'?'status-running':'status-stopped'?>"><?=$dj->status??'unknown'?></span></td>
       <td><?=htmlspecialchars($dj->last_login??'Never')?></td>
       <td class="actions">
@@ -195,8 +195,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </div>
 <div class="tab <?=$tab==='schedule'?'active':''?>">
   <div class="card"><h3>Schedule</h3>
-  <table><tr><th>Show</th><th>Day</th><th>Start</th><th>End</th><th>Playlist</th><th>DJ</th><th>Actions</th></tr>
-    <?php if (empty($schedule)): ?><tr><td colspan="7" class="empty-state">No shows scheduled</td></tr>
+  <table><tr><th>Show</th><th>Day</th><th>Start</th><th>End</th><th>DJ</th><th>Actions</th></tr>
+    <?php if (empty($schedule)): ?><tr><td colspan="6" class="empty-state">No shows scheduled</td></tr>
     <?php else: ?>
     <?php $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; ?>
     <?php foreach ($schedule as $sh): ?>
@@ -204,8 +204,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <td><?=htmlspecialchars($sh->show_name??'Untitled')?></td>
       <td><?=$days[$sh->day_of_week]??$sh->day_of_week?></td>
       <td><?=htmlspecialchars($sh->start_time??'')?></td><td><?=htmlspecialchars($sh->end_time??'')?></td>
-      <td><?php $pl=null; foreach($playlists as $p){if(($p->id??0)==($sh->playlist_id??0)){$pl=$p;break;}} echo htmlspecialchars($pl->name??'None'); ?></td>
-      <td><?php $dn=''; foreach($djs as $d){if(($d->id??0)==($sh->dj_id??0)){$dn=$d->display_name??$d->username??'';break;}} echo htmlspecialchars($dn?:'Auto'); ?></td>
+      <td><?php $dn=''; foreach($djs as $d){if(($d->id??0)==($sh->dj_id??0)){$dn=$d->name??$d->username??'';break;}} echo htmlspecialchars($dn?:'Auto'); ?></td>
       <td class="actions"><a href="/user/radio/schedule/delete/<?=$sh->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></td>
     </tr>
     <?php endforeach; ?>
@@ -218,8 +217,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="form-group"><label>Day</label><select class="inp inp-sm" name="day_of_week"><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select></div></div>
     <div class="form-row"><div class="form-group"><label>Start</label><input class="inp inp-sm" type="time" name="start_time" required></div><div class="form-group"><label>End</label><input class="inp inp-sm" type="time" name="end_time" required></div></div>
     <div class="form-row">
-      <div class="form-group"><label>Playlist</label><select class="inp inp-sm" name="playlist_id"><option value="">None</option><?php foreach($playlists as $p): ?><option value="<?=$p->id?>"><?=htmlspecialchars($p->name)?></option><?php endforeach; ?></select></div>
-      <div class="form-group"><label>DJ</label><select class="inp inp-sm" name="dj_id"><option value="">Auto</option><?php foreach($djs as $d): ?><option value="<?=$d->id?>"><?=htmlspecialchars($d->display_name??$d->username??'')?></option><?php endforeach; ?></select></div>
+      <div class="form-group"><label>DJ</label><select class="inp inp-sm" name="dj_id"><option value="">Auto</option><?php foreach($djs as $d): ?><option value="<?=$d->id?>"><?=htmlspecialchars($d->name??$d->username??'')?></option><?php endforeach; ?></select></div>
+      <div class="form-group"><label>DJ Name</label><input class="inp inp-sm" name="dj_name" placeholder="DJ display name"></div>
     </div>
     <button class="btn btn-sm btn-primary">Add Show</button>
   </form></div>

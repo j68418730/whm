@@ -65,7 +65,7 @@ XML;
     exec("nohup /usr/bin/icecast -c {$configFile} > /dev/null 2>&1 & echo \$!", $out);
     $pid = (int)($out[0] ?? 0);
     if ($pid > 0) {
-        $pdo->prepare("UPDATE radio_streams SET pid = ? WHERE id = ?")->execute([$pid, $streamId]);
+        $pdo->prepare("UPDATE radio_streams SET pid_file = ? WHERE id = ?")->execute(['/var/run/icecast_' . $streamId . '.pid', $streamId]);
     }
 
     return $streamId;

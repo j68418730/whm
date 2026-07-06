@@ -115,7 +115,7 @@ class StreamsController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $data = [];
-        foreach (['name', 'description', 'server_type', 'mount_point', 'format', 'hostname', 'status'] as $f) {
+        foreach (['name', 'description', 'server_type', 'mount_point', 'format', 'status'] as $f) {
             $v = $this->request->post($f);
             if ($v !== null) $data[$f] = $v;
         }
