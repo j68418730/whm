@@ -258,7 +258,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <form method="post" action="/user/radio/playlist/add-song">
     <input type="hidden" name="playlist_id" value="<?=$selPlId?>">
     <div class="form-row"><div class="form-group"><label>Title</label><input class="inp inp-sm" name="title"></div><div class="form-group"><label>Artist</label><input class="inp inp-sm" name="artist"></div></div>
-    <div class="form-row"><div class="form-group"><label>File Path</label><input class="inp inp-sm" name="file" placeholder="/home/radio/1/music/song.mp3"></div><div class="form-group"><label>Duration (s)</label><input class="inp inp-sm" type="number" name="duration" value="0"></div></div>
+    <div class="form-row"><div class="form-group"><label>File Path</label><input class="inp inp-sm" name="file" placeholder="/home/<?=$station->username?>/radio/musicdatabase/song.mp3"></div><div class="form-group"><label>Duration (s)</label><input class="inp inp-sm" type="number" name="duration" value="0"></div></div>
     <button class="btn btn-sm btn-primary">Add Song</button>
   </form></div>
   <?php endif; ?>
@@ -285,7 +285,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div style="padding:10px;background:rgba(0,0,0,.3);border-radius:8px;text-align:center">
       <div style="font-size:28px;margin-bottom:4px;opacity:.5">&#9835;</div>
       <div style="font-size:10px;color:#c0c0c0;word-break:break-all"><?=htmlspecialchars($f)?></div>
-      <div style="margin-top:6px;font-size:10px;color:#64748b"><?=round(filesize('/home/radio/'.$stationId.'/music'.($mPlId?'/playlist_'.$mPlId:'').'/'.$f)/1024,1)?> KB</div>
+      <div style="margin-top:6px;font-size:10px;color:#64748b"><?=round(filesize('/home/'.$station->username.'/radio/musicdatabase'.($mPlId?'/playlist_'.$mPlId:'').'/'.$f)/1024,1)?> KB</div>
       <div style="margin-top:6px"><a href="/user/radio/media/delete?file=<?=urlencode($f)?>&playlist_id=<?=$mPlId?>&station_id=<?=$stationId?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></div>
     </div>
     <?php endforeach; ?>

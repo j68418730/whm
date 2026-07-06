@@ -39,6 +39,7 @@ class RadioController extends Controller
                     'id' => 10000 + $s->id,
                     'streaming_id' => $s->id,
                     'hosting_user_id' => $hosting->id,
+                    'username' => $hosting->username,
                     'name' => $s->name,
                     'description' => $s->description ?? '',
                     'genre' => $s->description ?? 'Mixed',
@@ -79,9 +80,9 @@ class RadioController extends Controller
         return null;
     }
 
-    protected function getPlaylistDir($stationId, $playlistId = null)
+    protected function getPlaylistDir($station, $playlistId = null)
     {
-        $dir = '/home/radio/' . $stationId . '/music';
+        $dir = '/home/' . $station->username . '/radio/musicdatabase';
         if ($playlistId) $dir .= '/playlist_' . $playlistId;
         return $dir;
     }
@@ -118,16 +119,16 @@ class RadioController extends Controller
                 try { $playlistItems = $this->db->table('radio_playlist_items')->where('playlist_id', $selectedPlaylist)->get() ?: []; } catch (\Exception $e) {}
             }
 
-            $musicDir = $this->getPlaylistDir($sid, $selectedPlaylist);
+            $musicDir = $this->getPlaylistDir($station, $selectedPlaylist);
             $mediaFiles = is_dir($musicDir) ? array_values(array_diff(scandir($musicDir), ['.', '..'])) : [];
 
-            $backupDir = '/home/radio/' . $sid;
+            $backupDir = '/home/' . $station->username . '/radio';
             $backups = is_dir($backupDir) ? glob($backupDir . '/backup_*.tar.gz') : [];
             rsort($backups);
             $backups = array_slice($backups, 0, 20);
 
             $diskUsed = 0;
-            $baseDir = '/home/radio/' . $sid . '/music';
+            $baseDir = '/home/' . $station->username . '/radio/musicdatabase';
             if (is_dir($baseDir)) {
                 $du = @shell_exec("du -sb " . escapeshellarg($baseDir) . " 2>/dev/null | awk '{print \$1}'");
                 $diskUsed = $du ? (int)trim($du) : 0;
@@ -286,11 +287,11 @@ class RadioController extends Controller
         if ($name) {
             try {
                 $id = $this->db->table('radio_playlists')->insertGetId([
-                    'stream_id' => $station->id, 'name' => $name,
+                    'stream_id' => $station->streaming_id ?? $station->id, 'name' => $name,
                     'playlist_type' => $_POST['type'] ?? 'default',
                     'description' => $_POST['description'] ?? '',
                 ]);
-                $pdir = $this->getPlaylistDir($station->id, $id);
+                $pdir = $this->getPlaylistDir($station, $id);
                 if (!is_dir($pdir)) @mkdir($pdir, 0755, true);
                 $_SESSION['success'] = "Playlist '{$name}' created.";
             } catch (\Exception $e) { $_SESSION['error'] = 'Failed to create playlist.'; }
@@ -305,7 +306,7 @@ class RadioController extends Controller
         if ($station) {
             $this->db->table('radio_playlists')->where('id', $id)->where('stream_id', $station->streaming_id ?? $station->id)->delete();
             $this->db->table('radio_playlist_items')->where('playlist_id', $id)->delete();
-            $pdir = $this->getPlaylistDir($station->id, $id);
+            $pdir = $this->getPlaylistDir($station, $id);
             if (is_dir($pdir)) {
                 array_map('unlink', glob($pdir . '/*'));
                 @rmdir($pdir);
@@ -356,7 +357,7 @@ class RadioController extends Controller
         $station = $this->getStation();
         if (!$station) exit;
         $playlistId = isset($_POST['playlist_id']) ? (int)$_POST['playlist_id'] : null;
-        $dir = $this->getPlaylistDir($station->id, $playlistId);
+        $dir = $this->getPlaylistDir($station, $playlistId);
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
         if (!empty($_FILES['file']['name'][0])) {
             $count = 0;
@@ -381,7 +382,7 @@ class RadioController extends Controller
         if (!$station) exit;
         $file = basename($_GET['file'] ?? '');
         $playlistId = isset($_GET['playlist_id']) ? (int)$_GET['playlist_id'] : null;
-        $dir = $this->getPlaylistDir($station->id, $playlistId);
+        $dir = $this->getPlaylistDir($station, $playlistId);
         $path = $dir . '/' . $file;
         if ($file && is_file($path)) unlink($path);
         $qs = $playlistId ? '&playlist_id=' . $playlistId : '';
@@ -417,9 +418,9 @@ class RadioController extends Controller
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
         if (!$station) exit;
-        $dir = '/home/radio/' . $station->id;
+        $dir = '/home/' . $station->username . '/radio';
         $file = $dir . '/backup_' . date('Y-m-d_H-i-s') . '.tar.gz';
-        @exec("tar czf '{$file}' -C '{$dir}/music' . 2>/dev/null");
+        @exec("tar czf '{$file}' -C '{$dir}/musicdatabase' . 2>/dev/null");
         $_SESSION['success'] = 'Backup created.';
         header('Location: /user/radio?tab=backups&station_id=' . $station->id); exit;
     }
@@ -430,7 +431,7 @@ class RadioController extends Controller
         $station = $this->getStation();
         if (!$station) exit;
         $file = basename($_GET['file'] ?? '');
-        $path = '/home/radio/' . $station->id . '/' . $file;
+        $path = '/home/' . $station->username . '/radio/' . $file;
         if (is_file($path)) { header('Content-Type: application/octet-stream'); header('Content-Disposition: attachment; filename="' . $file . '"'); readfile($path); exit; }
         header('Location: /user/radio?tab=backups&station_id=' . $station->id); exit;
     }
@@ -441,7 +442,7 @@ class RadioController extends Controller
         $station = $this->getStation();
         if (!$station) exit;
         $file = basename($_GET['file'] ?? '');
-        $path = '/home/radio/' . $station->id . '/' . $file;
+        $path = '/home/' . $station->username . '/radio/' . $file;
         if ($file && is_file($path)) unlink($path);
         header('Location: /user/radio?tab=backups&station_id=' . $station->id); exit;
     }
@@ -469,7 +470,7 @@ class RadioController extends Controller
             if (!empty($_FILES[$uf]['name'])) {
                 $ext = strtolower(pathinfo($_FILES[$uf]['name'], PATHINFO_EXTENSION));
                 if (in_array($ext, ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'])) {
-                    $dir = '/home/radio/' . $station->id . '/branding';
+                    $dir = '/home/' . $station->username . '/radio/branding';
                     if (!is_dir($dir)) @mkdir($dir, 0755, true);
                     $dest = $dir . '/' . $uf . '.' . $ext;
                     move_uploaded_file($_FILES[$uf]['tmp_name'], $dest);

@@ -85,7 +85,7 @@ class StreamsController extends Controller
             $port = $last ? max($base, $last->port + 1) : $base;
         }
 
-        $this->db->table('streaming_stations')->insertGetId([
+        $sid = $this->db->table('streaming_stations')->insertGetId([
             'user_id' => $uid, 'engine' => $engine, 'name' => $name ?: "Stream #$uid",
             'description' => $description, 'server_type' => $engine, 'port' => $port,
             'password' => password_hash($password, PASSWORD_DEFAULT), 'plain_password' => $password,
@@ -93,6 +93,14 @@ class StreamsController extends Controller
             'mount_point' => $mount, 'bitrate' => $bitrate, 'format' => $format,
             'max_listeners' => $maxListeners, 'public_server' => $public,
             'autodj_enabled' => $autodj, 'ssl_enabled' => $ssl, 'status' => 'stopped',
+        ]);
+
+        $this->db->table('radio_streams')->insertGetId([
+            'id' => $sid, 'user_id' => $uid, 'server_name' => $name ?: "Stream #$uid",
+            'server_type' => $engine, 'port' => $port, 'mount_point' => $mount,
+            'bitrate' => $bitrate, 'format' => $format, 'max_listeners' => $maxListeners,
+            'public_server' => $public, 'password' => $password, 'plain_password' => $password,
+            'status' => 'stopped', 'autodj_enabled' => $autodj, 'ssl_enabled' => $ssl,
         ]);
 
         $_SESSION['success_message'] = "Stream '$name' created on port $port. Source password: $password";
