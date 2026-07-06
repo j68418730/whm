@@ -286,12 +286,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div style="font-size:12px;color:#0A84FF;padding:6px 0 0 8px">Playlist: <?=htmlspecialchars($selPlName)?></div>
     <?php endif; ?>
   </div>
-  <form method="post" action="/user/radio/media/upload" enctype="multipart/form-data">
-    <input type="hidden" name="playlist_id" value="<?=$mPlId?:''?>">
-    <div class="upload-zone" onclick="document.getElementById('media-input').click()">Drop files or click to upload (mp3, aac, ogg, flac, wav, m4a)</div>
-    <input id="media-input" type="file" name="file[]" multiple style="display:none" onchange="this.form.submit()">
-    <button class="btn btn-sm btn-primary">Upload</button>
-  </form>
+  <div id="uploadZone" class="upload-zone" style="cursor:pointer;border:2px dashed rgba(0,191,255,.2);border-radius:10px;padding:30px;text-align:center;transition:.3s;background:rgba(0,0,0,.2)" ontouchend="document.getElementById('media-input').click()">Drop files here or click to browse (mp3, aac, ogg, flac, wav, m4a)</div>
+  <input id="media-input" type="file" name="files[]" multiple accept=".mp3,.aac,.ogg,.flac,.wav,.m4a" style="display:none">
+  <div id="uploadQueue" style="margin-top:8px;font-size:11px;color:#94a3b8"></div>
+  <div id="uploadProgress" style="display:none;margin-top:8px;background:rgba(0,0,0,.3);border-radius:6px;overflow:hidden;height:6px"><div id="uploadProgressBar" style="width:0;height:100%;background:linear-gradient(90deg,#008cff,#3bb8ff);transition:width .3s"></div></div>
+  <div id="uploadStatus" style="margin-top:6px;font-size:10px;color:#64748b;text-align:center"></div>
+  <button id="uploadBtn" class="btn btn-sm btn-primary" style="margin-top:8px;display:none" onclick="startUpload()">Upload <span id="uploadCount"></span></button>
   <?php if (empty($mediaFiles)): ?><div class="empty-state" style="margin-top:10px">No media files<?=$mPlId?' in this playlist':''?></div>
   <?php else: ?>
   <div class="file-grid" style="margin-top:10px">
@@ -542,4 +542,13 @@ tr:hover td{background:rgba(255,255,255,.02)}
 function getTab(){return new URLSearchParams(window.location.search).get('tab')||'overview';}
 function searchSongs(q){document.querySelectorAll('.song-row').forEach(function(r){r.style.display=r.textContent.toLowerCase().indexOf(q.toLowerCase())>=0?'':'none';});}
 function askAI(){var q=document.getElementById('aiQuestion');if(!q.value.trim())return;var chat=document.getElementById('aiChat');var msg=document.createElement('div');msg.style.cssText='padding:8px 12px;margin-bottom:6px;background:rgba(0,140,255,.08);border-radius:8px;font-size:11px;color:#e0e0e0';msg.textContent=q.value;chat.appendChild(msg);chat.scrollTop=chat.scrollHeight;var sug=document.getElementById('aiSuggestions');sug.style.display='block';document.getElementById('aiAnswer').textContent='Thinking...';var x=new XMLHttpRequest();x.open('POST','/user/radio/autodj/ai-ask',true);x.setRequestHeader('Content-Type','application/x-www-form-urlencoded');x.onload=function(){try{var r=JSON.parse(x.responseText);document.getElementById('aiAnswer').textContent=r.answer||'Error: '+(r.error||'Unknown');var resp=document.createElement('div');resp.style.cssText='padding:8px 12px;margin-bottom:6px;background:rgba(168,85,247,.08);border-radius:8px;font-size:11px;color:#94a3b8;white-space:pre-wrap';resp.textContent=r.answer||r.error;chat.appendChild(resp);chat.scrollTop=chat.scrollHeight;}catch(e){document.getElementById('aiAnswer').textContent='Error processing response'}};x.send('question='+encodeURIComponent(q.value)+'&station_id=<?=$stationId?>');q.value='';}
+var _queue=[],_playlistId=<?=$mPlId?:'null'?>;_playlistId=_playlistId||'';
+var _z=document.getElementById('uploadZone'),_inp=document.getElementById('media-input'),_q=document.getElementById('uploadQueue'),_p=document.getElementById('uploadProgress'),_pb=document.getElementById('uploadProgressBar'),_ps=document.getElementById('uploadStatus'),_btn=document.getElementById('uploadBtn'),_cnt=document.getElementById('uploadCount');
+['dragenter','dragover'].forEach(function(e){_z.addEventListener(e,function(ev){ev.preventDefault();_z.style.borderColor='#008cff';_z.style.background='rgba(0,140,255,.08)';});});
+['dragleave','drop'].forEach(function(e){_z.addEventListener(e,function(ev){ev.preventDefault();_z.style.borderColor='rgba(0,191,255,.2)';_z.style.background='rgba(0,0,0,.2)';});});
+_z.addEventListener('drop',function(ev){ev.preventDefault();handleFiles(ev.dataTransfer.files);});
+_inp.addEventListener('change',function(){handleFiles(this.files);});
+function handleFiles(files){for(var i=0;i<files.length;i++){var f=files[i];var ext=f.name.split('.').pop().toLowerCase();if(['mp3','aac','ogg','flac','wav','m4a'].indexOf(ext)<0)continue;_queue.push(f);}renderQueue();}
+function renderQueue(){_q.innerHTML='';if(!_queue.length){_btn.style.display='none';return;}_btn.style.display='inline-block';_cnt.textContent=_queue.length+' file(s)';for(var i=0;i<_queue.length;i++){var d=document.createElement('div');d.style.cssText='padding:4px 8px;margin:2px 0;background:rgba(0,0,0,.2);border-radius:4px';d.textContent=_queue[i].name+' ('+Math.round(_queue[i].size/1024)+' KB)';_q.appendChild(d);}}
+function startUpload(){if(!_queue.length)return;_btn.disabled=true;_btn.textContent='Uploading...';_p.style.display='block';_pb.style.width='0';_ps.textContent='';var i=0;var total=_queue.length;function uploadNext(){if(i>=total){_ps.textContent='All files uploaded!';_btn.textContent='Done';setTimeout(function(){location.reload();},1000);return;}var fd=new FormData();fd.append('playlist_id',_playlistId);fd.append('files[]',_queue[i]);var x=new XMLHttpRequest();x.open('POST','/user/radio/media/upload',true);x.upload.onprogress=function(ev){if(ev.lengthComputable){var pct=Math.round(((i+ev.loaded/ev.total)/total)*100);_pb.style.width=pct+'%';_ps.textContent='Uploading '+_queue[i].name+' ('+Math.round(ev.loaded/ev.total*100)+'%)';}};x.onload=function(){if(x.status===200){i++;uploadNext();}else{_ps.textContent='Failed: '+_queue[i].name;_btn.disabled=false;}};x.send(fd);}uploadNext();}
 </script>
