@@ -50,10 +50,11 @@ class Response
         exit;
     }
 
-    public function json($data)
+    public function json($data, $statusCode = 200)
     {
         $this->setHeader('Content-Type', 'application/json');
         $this->setContent(json_encode($data));
+        $this->statusCode = $statusCode;
         return $this;
     }
 }

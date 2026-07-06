@@ -62,7 +62,7 @@ class StreamingApiController extends Controller
             if (!in_array($p, $used)) $ports[] = $p;
             if (count($ports) >= 20) break;
         }
-        $this->response->json(['ports' => $ports]);
+        return $this->response->json(['ports' => $ports]);
     }
 
     public function serverIp()
@@ -72,7 +72,7 @@ class StreamingApiController extends Controller
         $list = [];
         foreach ($ips as $ip) { $list[] = $ip->ip_address; }
         if (empty($list)) $list = ['45.61.59.55'];
-        $this->response->json(['ips' => $list]);
+        return $this->response->json(['ips' => $list]);
     }
 
     // ─── Engine Management ───
@@ -80,35 +80,35 @@ class StreamingApiController extends Controller
     public function engines()
     {
         $this->guard();
-        $this->response->json($this->engine->getAvailableDrivers());
+        return $this->response->json($this->engine->getAvailableDrivers());
     }
 
     public function installEngine()
     {
         $this->guard();
         $engine = $this->request->post('engine', '');
-        $this->response->json($this->engine->installEngine($engine));
+        return $this->response->json($this->engine->installEngine($engine));
     }
 
     public function updateEngine()
     {
         $this->guard();
         $engine = $this->request->post('engine', '');
-        $this->response->json($this->engine->updateEngine($engine));
+        return $this->response->json($this->engine->updateEngine($engine));
     }
 
     public function repairEngine()
     {
         $this->guard();
         $engine = $this->request->post('engine', '');
-        $this->response->json($this->engine->repairEngine($engine));
+        return $this->response->json($this->engine->repairEngine($engine));
     }
 
     public function engineStatus()
     {
         $this->guard();
         $engine = $this->request->get('engine', 'shoutcast');
-        $this->response->json($this->engine->getEngineStatus($engine));
+        return $this->response->json($this->engine->getEngineStatus($engine));
     }
 
     // ─── Station CRUD ───
@@ -118,7 +118,7 @@ class StreamingApiController extends Controller
         $this->guard();
         $userId = (int)$this->request->get('user_id', 0);
         $stations = $userId ? $this->engine->getUserStations($userId) : $this->engine->getAllStations();
-        $this->response->json($stations);
+        return $this->response->json($stations);
     }
 
     public function createStation()
@@ -126,7 +126,7 @@ class StreamingApiController extends Controller
         $this->guard();
         $userId = (int)$this->request->post('user_id', 0);
         $engine = $this->request->post('engine', 'shoutcast');
-        if (!$userId) { $this->response->json(['error'=>'user_id required'], 400); return; }
+        if (!$userId) { return $this->response->json(['error'=>'user_id required'], 400); }
 
         try {
             $result = $this->engine->createStation($userId, $engine, [
@@ -138,9 +138,9 @@ class StreamingApiController extends Controller
                 'public_server' => (int)$this->request->post('public_server', 0),
                 'stream_authhash' => $this->request->post('stream_authhash', ''),
             ]);
-            $this->response->json(['success' => true, 'station' => $result]);
+            return $this->response->json(['success' => true, 'station' => $result]);
         } catch (\Exception $e) {
-            $this->response->json(['error' => $e->getMessage()], 500);
+            return $this->response->json(['error' => $e->getMessage()], 500);
         }
     }
 
@@ -149,18 +149,18 @@ class StreamingApiController extends Controller
         $this->guard();
         $id = (int)$this->request->post('id', 0);
         $action = $this->request->post('action', '');
-        if (!$id || !$action) { $this->response->json(['error'=>'id and action required'], 400); return; }
+        if (!$id || !$action) { return $this->response->json(['error'=>'id and action required'], 400); }
 
         $map = [
             'start' => 'startStation', 'stop' => 'stopStation', 'restart' => 'restartStation',
             'delete' => 'deleteStation', 'suspend' => 'suspendStation', 'resume' => 'resumeStation',
         ];
-        if (!isset($map[$action])) { $this->response->json(['error'=>"Unknown: {$action}"], 400); return; }
+        if (!isset($map[$action])) { return $this->response->json(['error'=>"Unknown: {$action}"], 400); }
 
         try {
-            $this->response->json(['success'=>true, 'result'=>$this->engine->{$map[$action]}($id)]);
+            return $this->response->json(['success'=>true, 'result'=>$this->engine->{$map[$action]}($id)]);
         } catch (\Exception $e) {
-            $this->response->json(['error'=>$e->getMessage()], 500);
+            return $this->response->json(['error'=>$e->getMessage()], 500);
         }
     }
 
@@ -171,7 +171,7 @@ class StreamingApiController extends Controller
         $this->guard();
         $id = (int)$this->request->post('id', 0);
         $name = $this->request->post('name', null);
-        $this->response->json($this->engine->cloneStation($id, $name));
+        return $this->response->json($this->engine->cloneStation($id, $name));
     }
 
     public function renameStation()
@@ -179,14 +179,14 @@ class StreamingApiController extends Controller
         $this->guard();
         $id = (int)$this->request->post('id', 0);
         $name = $this->request->post('name', '');
-        $this->response->json($this->engine->renameStation($id, $name));
+        return $this->response->json($this->engine->renameStation($id, $name));
     }
 
     public function backupStation()
     {
         $this->guard();
         $id = (int)$this->request->post('id', 0);
-        $this->response->json($this->engine->backupStation($id));
+        return $this->response->json($this->engine->backupStation($id));
     }
 
     public function restoreStation()
@@ -194,14 +194,14 @@ class StreamingApiController extends Controller
         $this->guard();
         $id = (int)$this->request->post('id', 0);
         $file = $this->request->post('file', '');
-        $this->response->json($this->engine->restoreStation($id, $file));
+        return $this->response->json($this->engine->restoreStation($id, $file));
     }
 
     public function stationSsl()
     {
         $this->guard();
         $id = (int)$this->request->post('id', 0);
-        $this->response->json($this->engine->generateStationSsl($id));
+        return $this->response->json($this->engine->generateStationSsl($id));
     }
 
     public function stationAutodj()
@@ -209,7 +209,7 @@ class StreamingApiController extends Controller
         $this->guard();
         $id = (int)$this->request->post('id', 0);
         $type = $this->request->post('type', 'liquidsoap');
-        $this->response->json($this->engine->configureAutodj($id, $type));
+        return $this->response->json($this->engine->configureAutodj($id, $type));
     }
 
     // ─── Station Info ───
@@ -218,16 +218,16 @@ class StreamingApiController extends Controller
     {
         $this->guard();
         $id = (int)$this->request->get('id', 0);
-        if (!$id) { $this->response->json(['error'=>'id required'], 400); return; }
-        $this->response->json($this->engine->getStationStats($id));
+        if (!$id) { return $this->response->json(['error'=>'id required'], 400); }
+        return $this->response->json($this->engine->getStationStats($id));
     }
 
     public function stationHealth()
     {
         $this->guard();
         $id = (int)$this->request->get('id', 0);
-        if (!$id) { $this->response->json(['error'=>'id required'], 400); return; }
-        $this->response->json($this->engine->healthCheck($id));
+        if (!$id) { return $this->response->json(['error'=>'id required'], 400); }
+        return $this->response->json($this->engine->healthCheck($id));
     }
 
     public function stationLogs()
@@ -235,16 +235,16 @@ class StreamingApiController extends Controller
         $this->guard();
         $id = (int)$this->request->get('id', 0);
         $lines = (int)$this->request->get('lines', 100);
-        if (!$id) { $this->response->json(['error'=>'id required'], 400); return; }
-        $this->response->json(['logs' => $this->engine->getStationLogs($id, $lines)]);
+        if (!$id) { return $this->response->json(['error'=>'id required'], 400); }
+        return $this->response->json(['logs' => $this->engine->getStationLogs($id, $lines)]);
     }
 
     public function stationMonitoring()
     {
         $this->guard();
         $id = (int)$this->request->get('id', 0);
-        if (!$id) { $this->response->json(['error'=>'id required'], 400); return; }
-        $this->response->json($this->engine->getMonitoringData($id));
+        if (!$id) { return $this->response->json(['error'=>'id required'], 400); }
+        return $this->response->json($this->engine->getMonitoringData($id));
     }
 
     // ─── Admin Operations ───
@@ -252,7 +252,7 @@ class StreamingApiController extends Controller
     public function autoRestart()
     {
         $this->guard();
-        $this->response->json($this->engine->autoRestartFailed());
+        return $this->response->json($this->engine->autoRestartFailed());
     }
 
     public function allMonitoring()
@@ -263,6 +263,6 @@ class StreamingApiController extends Controller
         foreach ($stations as $s) {
             $data[] = $this->engine->getMonitoringData($s->id);
         }
-        $this->response->json($data);
+        return $this->response->json($data);
     }
 }
