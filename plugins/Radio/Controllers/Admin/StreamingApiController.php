@@ -46,6 +46,35 @@ class StreamingApiController extends Controller
         ]);
     }
 
+    // ─── Wizard API (ports + IPs) ───
+
+    public function availablePorts()
+    {
+        $this->guard();
+        $engine = $this->request->get('engine', 'icecast');
+        $ranges = ['icecast' => [8000, 9000], 'shoutcast' => [9000, 11000], 'shoutcast1' => [11000, 12000]];
+        $range = $ranges[$engine] ?? $ranges['icecast'];
+        $used = [];
+        $rows = $this->db->table('streaming_stations')->get() ?: [];
+        foreach ($rows as $s) { $used[] = (int)$s->port; }
+        $ports = [];
+        for ($p = $range[0]; $p <= $range[1]; $p++) {
+            if (!in_array($p, $used)) $ports[] = $p;
+            if (count($ports) >= 20) break;
+        }
+        $this->response->json(['ports' => $ports]);
+    }
+
+    public function serverIp()
+    {
+        $this->guard();
+        $ips = $this->db->table('server_ips')->get() ?: [];
+        $list = [];
+        foreach ($ips as $ip) { $list[] = $ip->ip_address; }
+        if (empty($list)) $list = ['45.61.59.55'];
+        $this->response->json(['ips' => $list]);
+    }
+
     // ─── Engine Management ───
 
     public function engines()

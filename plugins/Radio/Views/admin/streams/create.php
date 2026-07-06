@@ -201,7 +201,7 @@ data-bandwidth="<?php echo $p->bandwidth ?? 0; ?>"><?php echo htmlspecialchars($
 </div>
 <div class="col-md-6">
 <div class="form-group"><label>Hostname</label>
-<input name="hostname" class="form-control" value="planet-hosts.com" placeholder="stream.example.com"></div>
+<input name="hostname" class="form-control" value="https://server.planet-hosts.com/" placeholder="https://stream.example.com"></div>
 </div>
 <div class="col-md-6">
 <div class="form-group"><label>IP Address</label>
