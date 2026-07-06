@@ -7,7 +7,7 @@
 .req-item:last-child{border:none}
 </style>
 <h2>🎤 DJ Portal</h2>
-<p style="color:#64748b;margin-bottom:14px">Welcome, <?php echo htmlspecialchars($dj->display_name ?? $dj->username); ?>!</p>
+<p style="color:#64748b;margin-bottom:14px">Welcome, <?php echo htmlspecialchars($dj->name ?? $dj->username); ?>!</p>
 <div class="portal-grid">
 <div class="portal-stat"><div class="num"><?php echo $station->status ?? 'N/A';?></div><div class="lbl">Station</div></div>
 <div class="portal-stat"><div class="num"><?php echo $station->listener_count ?? 0;?></div><div class="lbl">Listeners</div></div>

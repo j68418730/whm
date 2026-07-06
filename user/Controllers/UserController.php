@@ -208,12 +208,12 @@ class UserController extends Controller
     public function websiteBuilder() { $u = $this->loadUser(); return $this->view('user.websitebuilder', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Website Builder']); }
     public function installer() { $u = $this->loadUser(); return $this->view('user.installer', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Quick Install']); }
     public function djPanel() { header('Location: /dj_panel.php'); exit; }
-    public function publicDjs() { $u = $this->loadUser(); $allDjs = []; if ($this->hostingUser) { try { $pdo = $this->db->pdo(); $hid = (int)$this->hostingUser->id; $stmt = $pdo->prepare("SELECT d.* FROM radio_djs d JOIN radio_stations s ON d.station_id = s.id WHERE s.hosting_user_id = ? AND d.status = 'active' ORDER BY d.display_name ASC"); $stmt->execute([$hid]); $allDjs = $stmt->fetchAll(\PDO::FETCH_OBJ); } catch(\Exception $e) {} } return $this->view('user.public_djs', ['user' => $u, 'hosting' => $this->hostingUser, 'allDjs' => $allDjs, 'title' => 'Our DJs']); }
+    public function publicDjs() { $u = $this->loadUser(); $allDjs = []; if ($this->hostingUser) { try { $pdo = $this->db->pdo(); $hid = (int)$this->hostingUser->id; $stmt = $pdo->prepare("SELECT d.* FROM radio_djs d JOIN radio_stations s ON d.stream_id = s.id WHERE s.hosting_user_id = ? AND d.status = 'active' ORDER BY d.name ASC"); $stmt->execute([$hid]); $allDjs = $stmt->fetchAll(\PDO::FETCH_OBJ); } catch(\Exception $e) {} } return $this->view('user.public_djs', ['user' => $u, 'hosting' => $this->hostingUser, 'allDjs' => $allDjs, 'title' => 'Our DJs']); }
     public function publicDjsEmbed() { require BASE_PATH . '/user/Views/public_djs_embed.php'; exit; }
     public function publicDjsByUser($username)
     {
         $pdo = $this->db->pdo();
-        $stmt = $pdo->prepare("SELECT d.*, s.name as station_name FROM radio_djs d JOIN radio_stations s ON d.station_id = s.id JOIN hosting_users h ON s.hosting_user_id = h.id WHERE h.username = ? AND d.status = 'active' ORDER BY d.display_name ASC");
+        $stmt = $pdo->prepare("SELECT d.*, s.name as station_name FROM radio_djs d JOIN radio_stations s ON d.stream_id = s.id JOIN hosting_users h ON s.hosting_user_id = h.id WHERE h.username = ? AND d.status = 'active' ORDER BY d.name ASC");
         $stmt->execute([$username]);
         $djs = $stmt->fetchAll(\PDO::FETCH_OBJ);
         $stationName = $djs[0]->station_name ?? $username . "'s Station";
@@ -223,7 +223,7 @@ class UserController extends Controller
     public function publicDjsOnline($username)
     {
         $pdo = $this->db->pdo();
-        $stmt = $pdo->prepare("SELECT d.*, s.name as station_name FROM radio_djs d JOIN radio_stations s ON d.station_id = s.id JOIN hosting_users h ON s.hosting_user_id = h.id WHERE h.username = ? AND d.status = 'active' AND d.last_active >= NOW() - INTERVAL 5 MINUTE ORDER BY d.display_name ASC");
+        $stmt = $pdo->prepare("SELECT d.*, s.name as station_name FROM radio_djs d JOIN radio_stations s ON d.stream_id = s.id JOIN hosting_users h ON s.hosting_user_id = h.id WHERE h.username = ? AND d.status = 'active' AND d.last_active >= NOW() - INTERVAL 5 MINUTE ORDER BY d.name ASC");
         $stmt->execute([$username]);
         $djs = $stmt->fetchAll(\PDO::FETCH_OBJ);
         $stationName = $username . "'s Station";

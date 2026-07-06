@@ -98,12 +98,13 @@ class RadioController extends Controller
         if ($station) {
             $sid = $station->id;
             $realStationId = $station->streaming_id ?? $sid;
-            try { $djs = $this->db->table('radio_djs')->where('station_id', $sid)->get() ?: []; } catch (\Exception $e) {}
-            try { $requests = $this->db->table('radio_requests')->where('station_id', $sid)->orderBy('created_at', 'desc')->limit(50)->get() ?: []; } catch (\Exception $e) {}
-            try { $schedule = $this->db->table('radio_schedule')->where('station_id', $sid)->where('is_active', 1)->orderBy('day_of_week')->orderBy('start_time')->get() ?: []; } catch (\Exception $e) {}
-            try { $playlists = $this->db->table('radio_playlists')->where('station_id', $sid)->get() ?: []; } catch (\Exception $e) {}
-            try { $songs = $this->db->table('radio_song_history')->where('station_id', $sid)->orderBy('played_at', 'desc')->limit(50)->get() ?: []; } catch (\Exception $e) {}
-            try { $settings = $this->db->table('radio_settings')->where('station_id', $sid)->first() ?: []; } catch (\Exception $e) {}
+            try { $djs = $this->db->table('radio_djs')->where('stream_id', $realStationId)->get() ?: []; } catch (\Exception $e) {}
+            try { $requests = $this->db->table('radio_requests')->where('stream_id', $realStationId)->orderBy('created_at', 'desc')->limit(50)->get() ?: []; } catch (\Exception $e) {}
+            try { $schedule = $this->db->table('radio_schedule')->where('stream_id', $realStationId)->where('is_active', 1)->orderBy('day_of_week')->orderBy('start_time')->get() ?: []; } catch (\Exception $e) {}
+            try { $playlists = $this->db->table('radio_playlists')->where('stream_id', $realStationId)->get() ?: []; } catch (\Exception $e) {}
+            try { $songs = $this->db->table('radio_song_history')->where('stream_id', $realStationId)->orderBy('played_at', 'desc')->limit(50)->get() ?: []; } catch (\Exception $e) {}
+            $hosting = $this->getHosting();
+            try { $settings = $hosting ? $this->db->table('radio_settings')->where('user_id', $hosting->id)->first() ?: [] : []; } catch (\Exception $e) {}
             try { $mounts = $this->db->table('radio_mounts')->where('station_id', $sid)->get() ?: []; } catch (\Exception $e) {}
             try { $branding = $this->db->table('radio_branding')->where('station_id', $sid)->first(); } catch (\Exception $e) {}
 
@@ -193,11 +194,12 @@ class RadioController extends Controller
         $name = $_POST['name'] ?? $username;
         if ($username && $password) {
             try {
+                $realStationId = $station->streaming_id ?? $station->id;
                 $this->db->table('radio_djs')->insertGetId([
-                    'station_id' => $station->id, 'username' => $username,
-                    'password_hash' => password_hash($password, PASSWORD_DEFAULT),
-                    'display_name' => $name, 'email' => $_POST['email'] ?? '',
-                    'bio' => $_POST['bio'] ?? '', 'genres' => $_POST['genres'] ?? '', 'status' => 'active'
+                    'stream_id' => $realStationId, 'username' => $username,
+                    'password' => password_hash($password, PASSWORD_DEFAULT),
+                    'name' => $name, 'email' => $_POST['email'] ?? '',
+                    'bio' => $_POST['bio'] ?? '', 'status' => 'active'
                 ]);
                 $_SESSION['success'] = "DJ '{$name}' created.";
             } catch (\Exception $e) { $_SESSION['error'] = 'Username already exists.'; }
@@ -209,7 +211,7 @@ class RadioController extends Controller
     {
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
-        if ($station) { $this->db->table('radio_djs')->where('id', $id)->where('station_id', $station->id)->delete(); $_SESSION['success'] = 'DJ deleted.'; }
+        if ($station) { $this->db->table('radio_djs')->where('id', $id)->where('stream_id', $station->streaming_id ?? $station->id)->delete(); $_SESSION['success'] = 'DJ deleted.'; }
         header('Location: /user/radio?tab=djs&station_id=' . ($station->id ?? '')); exit;
     }
 
@@ -218,7 +220,8 @@ class RadioController extends Controller
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
         if ($station) {
-            $dj = $this->db->table('radio_djs')->where('id', $id)->where('station_id', $station->id)->first();
+            $rid = $station->streaming_id ?? $station->id;
+            $dj = $this->db->table('radio_djs')->where('id', $id)->where('stream_id', $rid)->first();
             if ($dj) {
                 $new = $dj->status === 'active' ? 'suspended' : 'active';
                 $this->db->table('radio_djs')->where('id', $id)->update(['status' => $new]);
@@ -235,9 +238,9 @@ class RadioController extends Controller
         if (!$station) { header('Location: /user/radio'); exit; }
         try {
             $data = [
-                'station_id' => $station->id,
+                'stream_id' => $station->streaming_id ?? $station->id,
                 'dj_id' => (int)($_POST['dj_id'] ?? 0) ?: null,
-                'playlist_id' => (int)($_POST['playlist_id'] ?? 0) ?: null,
+                'dj_name' => $_POST['dj_name'] ?? '',
                 'show_name' => $_POST['show_name'] ?? 'Untitled',
                 'day_of_week' => (int)($_POST['day_of_week'] ?? 0),
                 'start_time' => $_POST['start_time'] ?? '00:00',
@@ -254,7 +257,7 @@ class RadioController extends Controller
     {
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
-        if ($station) { $this->db->table('radio_schedule')->where('id', $id)->where('station_id', $station->id)->delete(); }
+        if ($station) { $this->db->table('radio_schedule')->where('id', $id)->where('stream_id', $station->streaming_id ?? $station->id)->delete(); }
         header('Location: /user/radio?tab=schedule&station_id=' . ($station->id ?? '')); exit;
     }
 
@@ -262,7 +265,7 @@ class RadioController extends Controller
     {
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
-        if ($station) { $this->db->table('radio_requests')->where('id', $id)->where('station_id', $station->id)->update(['status' => 'approved']); }
+        if ($station) { $this->db->table('radio_requests')->where('id', $id)->where('stream_id', $station->streaming_id ?? $station->id)->update(['status' => 'approved']); }
         header('Location: /user/radio?tab=requests&station_id=' . ($station->id ?? '')); exit;
     }
 
@@ -270,7 +273,7 @@ class RadioController extends Controller
     {
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
-        if ($station) { $this->db->table('radio_requests')->where('id', $id)->where('station_id', $station->id)->update(['status' => 'rejected']); }
+        if ($station) { $this->db->table('radio_requests')->where('id', $id)->where('stream_id', $station->streaming_id ?? $station->id)->update(['status' => 'rejected']); }
         header('Location: /user/radio?tab=requests&station_id=' . ($station->id ?? '')); exit;
     }
 
@@ -300,7 +303,7 @@ class RadioController extends Controller
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
         if ($station) {
-            $this->db->table('radio_playlists')->where('id', $id)->where('station_id', $station->id)->delete();
+            $this->db->table('radio_playlists')->where('id', $id)->where('stream_id', $station->streaming_id ?? $station->id)->delete();
             $this->db->table('radio_playlist_items')->where('playlist_id', $id)->delete();
             $pdir = $this->getPlaylistDir($station->id, $id);
             if (is_dir($pdir)) {
@@ -325,8 +328,8 @@ class RadioController extends Controller
             try {
                 $this->db->table('radio_playlist_items')->insertGetId([
                     'playlist_id' => $playlistId, 'title' => $title ?: basename($file),
-                    'artist' => $artist, 'file' => $file, 'duration' => (int)($_POST['duration'] ?? 0),
-                    'sort_order' => (int)($_POST['sort_order'] ?? 0),
+                    'artist' => $artist, 'file_path' => $file, 'duration' => (int)($_POST['duration'] ?? 0),
+                    'position' => (int)($_POST['sort_order'] ?? 0),
                 ]);
                 $_SESSION['success'] = 'Song added to playlist.';
             } catch (\Exception $e) { $_SESSION['error'] = 'Failed to add song.'; }
@@ -486,7 +489,7 @@ class RadioController extends Controller
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
         if (!$station) exit;
-        $allowed = ['name', 'description', 'genre', 'language', 'timezone', 'bitrate', 'channels', 'mount', 'password', 'admin_password', 'max_listeners', 'public_server'];
+        $allowed = ['name', 'description', 'genre', 'timezone', 'bitrate', 'channels', 'mount', 'password', 'admin_password'];
         $update = [];
         foreach ($allowed as $f) { if (isset($_POST[$f])) $update[$f] = $_POST[$f]; }
         if (!empty($update)) {
@@ -547,7 +550,7 @@ class RadioController extends Controller
         $station = $this->getStation();
         if (!$station) { echo json_encode([]); exit; }
         $q = trim($_GET['q'] ?? '');
-        $query = $this->db->table('radio_song_history')->where('station_id', $station->id);
+        $query = $this->db->table('radio_song_history')->where('stream_id', $station->streaming_id ?? $station->id);
         if ($q) $query->where(function ($qb) use ($q) { $qb->where('title', 'like', "%{$q}%")->orWhere('artist', 'like', "%{$q}%"); });
         $results = $query->orderBy('played_at', 'desc')->limit(100)->get() ?: [];
         header('Content-Type: application/json');
@@ -562,7 +565,7 @@ class RadioController extends Controller
             $username = $_POST['username'] ?? '';
             $password = $_POST['password'] ?? '';
             $dj = $this->db->table('radio_djs')->where('username', $username)->where('status', 'active')->first();
-            if ($dj && password_verify($password, $dj->password_hash)) {
+            if ($dj && password_verify($password, $dj->password)) {
                 $_SESSION['dj_user'] = $dj;
                 $this->db->table('radio_djs')->where('id', $dj->id)->update(['last_login' => date('Y-m-d H:i:s')]);
                 header('Location: /dj/portal'); exit;
@@ -576,9 +579,9 @@ class RadioController extends Controller
     {
         $dj = $_SESSION['dj_user'] ?? null;
         if (!$dj) { header('Location: /dj/login'); exit; }
-        $station = $this->db->table('radio_stations')->where('id', $dj->station_id)->first();
-        $requests = $this->db->table('radio_requests')->where('station_id', $dj->station_id)->where('status', 'pending')->get() ?: [];
-        $schedule = $this->db->table('radio_schedule')->where('station_id', $dj->station_id)->where('dj_id', $dj->id)->get() ?: [];
+        $station = $this->db->table('radio_stations')->where('id', $dj->stream_id)->first();
+        $requests = $this->db->table('radio_requests')->where('stream_id', $dj->stream_id)->where('status', 'pending')->get() ?: [];
+        $schedule = $this->db->table('radio_schedule')->where('stream_id', $dj->stream_id)->where('dj_id', $dj->id)->get() ?: [];
         $this->db->table('radio_djs')->where('id', $dj->id)->update(['last_active' => date('Y-m-d H:i:s')]);
         return $this->view('user.radio.dj_portal', ['dj' => $dj, 'station' => $station, 'requests' => $requests, 'schedule' => $schedule, 'title' => 'DJ Portal']);
     }
@@ -825,7 +828,7 @@ class RadioController extends Controller
         if (!$question) { echo json_encode(['error' => 'No question']); exit; }
         $cfg = $this->getAutodjConfig($station->id);
         $playlists = [];
-        try { $playlists = $this->db->table('radio_playlists')->where('station_id', $station->id)->get() ?: []; } catch (\Exception $e) {}
+        try { $playlists = $this->db->table('radio_playlists')->where('stream_id', $station->streaming_id ?? $station->id)->get() ?: []; } catch (\Exception $e) {}
         $plNames = implode(', ', array_map(function($p) { return $p->name; }, $playlists));
         try {
             $apiKey = '';
