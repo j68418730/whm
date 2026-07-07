@@ -10,11 +10,11 @@ class Config {
 
     getConfigPath() {
         const home = process.env.HOME || process.env.USERPROFILE || '.';
-        const dir = path.join(home, '.planet-hosts');
+        const dir = path.join(home, '.planethosts');
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
         }
-        return path.join(dir, 'connector.json');
+        return path.join(dir, 'connector-config.json');
     }
 
     load() {
@@ -92,7 +92,7 @@ class Config {
 
             this.save();
             console.log('\nConfiguration saved to:', this.configPath);
-            process.exit(0);
+            console.log('Starting connector...\n');
         })();
     }
 }
