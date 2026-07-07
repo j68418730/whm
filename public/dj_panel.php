@@ -59,9 +59,36 @@ if ($_POST && $action === 'login') {
             'port' => $dj->port, 'stream_status' => $dj->stream_status,
         ];
         $pdo->prepare("UPDATE radio_djs SET last_login = NOW() WHERE id = ?")->execute([$dj->id]);
-        header('Location: /dj_panel.php?action=dashboard');
-        exit;
+    header('Location: /dj_panel.php?action=dashboard');
+    exit;
+}
+
+// ─── SAVE PROFILE DATA ───
+if ($action === 'save_profile_data' && $_POST && isset($_SESSION['dj_user'])) {
+    $did = $_SESSION['dj_user']['id'];
+    $fields = ['name','bio','website_url','real_name','nickname','stage_name','full_bio','years_as_dj','hometown','country','languages',
+        'booking_email','booking_form','phone','position','on_air_since','employee_type','department','dj_status',
+        'show_name','show_description','timezone','show_duration','preferred_genres','preferred_decades','favorite_artists','favorite_songs',
+        'favorite_albums','favorite_djs','hobbies','pets','fun_fact','favorite_food','favorite_drink','favorite_movie','favorite_tv_show','favorite_sports_team',
+        'skills','mixer','controller','microphone','headphones','streaming_software','operating_system','preferred_software',
+        'years_on_station','total_shows','total_hours','listener_likes','followers','awards','birthday',
+        'profile_color','bg_color','accent_color','profile_layout'];
+    $simple = ['clean_music_only','explicit_allowed','request_friendly','open_format','specialty_show',
+        'accept_requests','accept_dedications','live_chat_enabled','private_messages','fan_mail',
+        'public_profile','station_only','hidden_email','hidden_birthday','hidden_location'];
+    $profileData = [];
+    foreach ($fields as $f) { $profileData[$f] = $_POST[$f] ?? ''; }
+    foreach ($simple as $f) { $profileData[$f] = isset($_POST[$f]) ? 1 : 0; }
+    // Social media
+    foreach (['facebook','instagram','twitter','tiktok','youtube','twitch','discord','spotify','apple_music','soundcloud','mixcloud','beatport'] as $s) {
+        $profileData[$s] = $_POST[$s] ?? '';
     }
+    $pdo->prepare("UPDATE radio_djs SET name=?, bio=?, website_url=?, profile_data=? WHERE id=?")
+        ->execute([$_POST['name'] ?? '', $_POST['bio'] ?? '', $_POST['website_url'] ?? '', json_encode($profileData), $did]);
+    $_SESSION['dj_user']['name'] = $_POST['name'] ?: $_SESSION['dj_user']['name'];
+    $success = 'Profile saved!';
+    $action = 'dashboard';
+}
     $error = 'Invalid DJ name or password, or account inactive.';
 }
 
@@ -545,38 +572,121 @@ $requests = $reqs->fetchAll(PDO::FETCH_OBJ);
 </div>
 
 <div class="dj-panel" id="pn-profile">
+<?php
+$pd = $djData->profile_data ? json_decode($djData->profile_data, true) : [];
+function pf($k, $d=''){global $pd; return htmlspecialchars($pd[$k] ?? $d);}
+?>
+<form method="POST" action="/dj_panel.php?action=save_profile_data">
 <div class="dj-grid">
 <div class="card">
-<h3><i class="fas fa-user"></i> My Profile</h3>
-<div class="profile-section">
-<div class="avatar-box">
+<h3><i class="fas fa-camera"></i> Photo</h3>
+<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
 <?php if ($djData->avatar && file_exists($djData->avatar)): ?>
-<img src="/<?php echo $djData->avatar; ?>" alt="Avatar">
-<?php else: ?>
-<i class="fas fa-microphone"></i>
-<?php endif; ?>
-</div>
-<div style="flex:1;min-width:200px">
-<form method="POST" enctype="multipart/form-data" style="margin-bottom:12px">
-<input type="file" name="file" accept="image/*" style="display:none" id="avatarInput" onchange="this.form.submit()">
-<input type="hidden" name="action" value="upload_avatar">
-<label for="avatarInput" class="upload-btn"><i class="fas fa-camera"></i> Change Avatar</label>
-</form>
-<form method="POST" enctype="multipart/form-data">
-<input type="file" name="file" accept="image/*" style="display:none" id="bannerInput" onchange="this.form.submit()">
-<input type="hidden" name="action" value="upload_banner">
-<label for="bannerInput" class="upload-btn"><i class="fas fa-image"></i> Change Banner</label>
-</form>
+<img src="/<?php echo $djData->avatar; ?>" style="width:64px;height:64px;border-radius:50%;object-fit:cover">
+<?php else: ?><div style="width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:28px">🎤</div><?php endif; ?>
+<label class="upload-btn" style="cursor:pointer;padding:6px 12px;background:rgba(0,140,255,.1);border:1px solid rgba(0,140,255,.2);border-radius:6px;font-size:11px">Change Photo<input type="file" name="file" style="display:none" onchange="var f=this.form;f.action='/dj_panel.php?action=upload_avatar';f.submit()"></label>
+<label class="upload-btn" style="cursor:pointer;padding:6px 12px;background:rgba(250,204,21,.1);border:1px solid rgba(250,204,21,.2);border-radius:6px;font-size:11px">Change Banner<input type="file" name="file" style="display:none" onchange="var f=this.form;f.action='/dj_panel.php?action=upload_banner';f.submit()"></label>
 </div>
 </div>
-<form method="POST" action="/dj_panel.php?action=save_profile" style="margin-top:16px">
+
+<div class="card"><h3>Basic Info</h3>
 <div class="form-group"><label>Display Name</label><input name="name" value="<?php echo htmlspecialchars($djData->name ?? ''); ?>"></div>
-<div class="form-group"><label>Bio</label><textarea name="bio" rows="3"><?php echo htmlspecialchars($djData->bio ?? ''); ?></textarea></div>
-<div class="form-group"><label>Website</label><input name="website_url" value="<?php echo htmlspecialchars($djData->website_url ?? ''); ?>" placeholder="https://"></div>
-<button type="submit" class="btn btn-primary">Save Profile</button>
+<div class="form-group"><label>Real Name</label><input name="real_name" value="<?php echo pf('real_name'); ?>"></div>
+<div class="form-group"><label>Nickname / Stage Name</label><input name="stage_name" value="<?php echo pf('stage_name'); ?>"></div>
+<div class="form-group"><label>Years as DJ</label><input name="years_as_dj" value="<?php echo pf('years_as_dj'); ?>"></div>
+<div class="form-group"><label>Hometown</label><input name="hometown" value="<?php echo pf('hometown'); ?>"></div>
+<div class="form-group"><label>Country</label><input name="country" value="<?php echo pf('country'); ?>"></div>
+<div class="form-group"><label>Languages</label><input name="languages" value="<?php echo pf('languages'); ?>" placeholder="English, Spanish"></div>
+<div class="form-group"><label>Short Bio</label><textarea name="bio" rows="3"><?php echo htmlspecialchars($djData->bio ?? ''); ?></textarea></div>
+<div class="form-group"><label>Full Biography</label><textarea name="full_bio" rows="5"><?php echo pf('full_bio'); ?></textarea></div>
+</div>
+
+<div class="card"><h3>Contact</h3>
+<div class="form-group"><label>Website</label><input name="website_url" value="<?php echo htmlspecialchars($djData->website_url ?? ''); ?>"></div>
+<div class="form-group"><label>Booking Email</label><input name="booking_email" value="<?php echo pf('booking_email'); ?>"></div>
+<div class="form-group"><label>Phone</label><input name="phone" value="<?php echo pf('phone'); ?>"></div>
+</div>
+
+<div class="card"><h3>Social Media</h3>
+<?php foreach(['facebook'=>'Facebook','instagram'=>'Instagram','twitter'=>'X (Twitter)','tiktok'=>'TikTok','youtube'=>'YouTube','twitch'=>'Twitch','discord'=>'Discord','spotify'=>'Spotify','apple_music'=>'Apple Music','soundcloud'=>'SoundCloud','mixcloud'=>'Mixcloud','beatport'=>'Beatport'] as $k=>$l): ?>
+<div class="form-group"><label><?php echo $l; ?></label><input name="<?php echo $k; ?>" value="<?php echo pf($k); ?>" placeholder="https://"></div>
+<?php endforeach; ?>
+</div>
+
+<div class="card"><h3>Favorites</h3>
+<div class="form-group"><label>Favorite Genres</label><input name="favorite_genres" value="<?php echo pf('favorite_genres'); ?>" placeholder="Rock, Country, EDM"></div>
+<div class="form-group"><label>Favorite Artists</label><textarea name="favorite_artists" rows="3"><?php echo pf('favorite_artists'); ?></textarea></div>
+<div class="form-group"><label>Favorite Songs</label><textarea name="favorite_songs" rows="3"><?php echo pf('favorite_songs'); ?></textarea></div>
+<div class="form-group"><label>Favorite Albums</label><textarea name="favorite_albums" rows="3"><?php echo pf('favorite_albums'); ?></textarea></div>
+<div class="form-group"><label>Favorite DJs</label><textarea name="favorite_djs" rows="3"><?php echo pf('favorite_djs'); ?></textarea></div>
+</div>
+
+<div class="card"><h3>Station Info</h3>
+<div class="form-group"><label>Position</label><input name="position" value="<?php echo pf('position'); ?>" placeholder="Music Director, Host"></div>
+<div class="form-group"><label>On Air Since</label><input name="on_air_since" value="<?php echo pf('on_air_since'); ?>" placeholder="2024"></div>
+<div class="form-group"><label>Department</label><input name="department" value="<?php echo pf('department'); ?>"></div>
+</div>
+
+<div class="card"><h3>Show Info</h3>
+<div class="form-group"><label>Show Name</label><input name="show_name" value="<?php echo pf('show_name'); ?>"></div>
+<div class="form-group"><label>Show Description</label><textarea name="show_description" rows="3"><?php echo pf('show_description'); ?></textarea></div>
+<div class="form-group"><label>Time Zone</label><input name="timezone" value="<?php echo pf('timezone'); ?>" placeholder="America/New_York"></div>
+<div class="form-group"><label>Duration (minutes)</label><input name="show_duration" value="<?php echo pf('show_duration'); ?>"></div>
+</div>
+
+<div class="card"><h3>Music Preferences</h3>
+<div class="form-group"><label>Preferred Genres</label><input name="preferred_genres" value="<?php echo pf('preferred_genres'); ?>" placeholder="Rock, Pop, EDM"></div>
+<div class="form-group"><label>Preferred Decades</label><input name="preferred_decades" value="<?php echo pf('preferred_decades'); ?>" placeholder="80s, 90s, 2000s"></div>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="clean_music_only" value="1" <?php echo pf('clean_music_only')?'checked':''; ?>> Clean Music Only</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="explicit_allowed" value="1" <?php echo pf('explicit_allowed')?'checked':''; ?>> Explicit Allowed</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="request_friendly" value="1" <?php echo pf('request_friendly')?'checked':''; ?>> Request Friendly</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="open_format" value="1" <?php echo pf('open_format')?'checked':''; ?>> Open Format</label>
+</div>
+
+<div class="card"><h3>Skills</h3>
+<div class="form-group"><label>Skills (comma separated)</label><input name="skills" value="<?php echo pf('skills'); ?>" placeholder="Radio Host, Club DJ, Producer, Voice Over"></div>
+</div>
+
+<div class="card"><h3>Equipment</h3>
+<div class="form-group"><label>Mixer</label><input name="mixer" value="<?php echo pf('mixer'); ?>"></div>
+<div class="form-group"><label>Controller</label><input name="controller" value="<?php echo pf('controller'); ?>"></div>
+<div class="form-group"><label>Microphone</label><input name="microphone" value="<?php echo pf('microphone'); ?>"></div>
+<div class="form-group"><label>Headphones</label><input name="headphones" value="<?php echo pf('headphones'); ?>"></div>
+<div class="form-group"><label>Streaming Software</label><input name="streaming_software" value="<?php echo pf('streaming_software'); ?>"></div>
+<div class="form-group"><label>Preferred Software</label><input name="preferred_software" value="<?php echo pf('preferred_software'); ?>" placeholder="SAM Broadcaster, OBS, Mixxx"></div>
+</div>
+
+<div class="card"><h3>Personal</h3>
+<div class="form-group"><label>Birthday</label><input name="birthday" type="date" value="<?php echo pf('birthday'); ?>"></div>
+<div class="form-group"><label>Favorite Food</label><input name="favorite_food" value="<?php echo pf('favorite_food'); ?>"></div>
+<div class="form-group"><label>Favorite Drink</label><input name="favorite_drink" value="<?php echo pf('favorite_drink'); ?>"></div>
+<div class="form-group"><label>Favorite Movie</label><input name="favorite_movie" value="<?php echo pf('favorite_movie'); ?>"></div>
+<div class="form-group"><label>Hobbies</label><input name="hobbies" value="<?php echo pf('hobbies'); ?>"></div>
+<div class="form-group"><label>Fun Fact</label><textarea name="fun_fact" rows="2"><?php echo pf('fun_fact'); ?></textarea></div>
+</div>
+
+<div class="card"><h3>Listener Interaction</h3>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="accept_requests" value="1" <?php echo pf('accept_requests')?'checked':''; ?>> Accept Song Requests</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="accept_dedications" value="1" <?php echo pf('accept_dedications')?'checked':''; ?>> Accept Dedications</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="live_chat_enabled" value="1" <?php echo pf('live_chat_enabled')?'checked':''; ?>> Live Chat Enabled</label>
+</div>
+
+<div class="card"><h3>Privacy</h3>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="public_profile" value="1" <?php echo pf('public_profile', '1')?'checked':''; ?>> Public Profile</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="hidden_email" value="1" <?php echo pf('hidden_email')?'checked':''; ?>> Hide Email</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="hidden_birthday" value="1" <?php echo pf('hidden_birthday')?'checked':''; ?>> Hide Birthday</label>
+</div>
+
+<div class="card"><h3>Custom Theme</h3>
+<div style="display:flex;gap:12px;flex-wrap:wrap">
+<div><label style="font-size:11px;color:#94a3b8">Profile Color</label><input name="profile_color" type="color" value="<?php echo pf('profile_color','#008cff'); ?>" style="width:60px;height:40px;padding:2px"></div>
+<div><label style="font-size:11px;color:#94a3b8">Accent Color</label><input name="accent_color" type="color" value="<?php echo pf('accent_color','#a855f7'); ?>" style="width:60px;height:40px;padding:2px"></div>
+</div>
+</div>
+
+</div>
+<div style="margin-top:12px;text-align:center"><button class="btn btn-primary" style="padding:12px 40px;font-size:14px">Save All Profile Changes</button></div>
 </form>
-</div>
-</div>
 </div>
 
 <div class="dj-panel" id="pn-gallery">
