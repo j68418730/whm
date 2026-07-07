@@ -38,3 +38,7 @@ update_dj_table.php
 
 # SQL dumps
 plugins/webbasesams/*.sql.gz
+
+# Desktop Connector build
+desktop-connector/dist/
+desktop-connector/node_modules/
