@@ -1,6 +1,7 @@
 <?php
 session_start();
-$action = $_POST['action'] ?? $_GET['action'] ?? 'login';
+$baseDir = '/var/www/radiohosting/public/storage/dj/';
+$uploadDir = function() use ($baseDir) { return $baseDir . $_SESSION['dj_user']['id'] . '/'; };
 $error = '';
 $success = '';
 $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
@@ -120,7 +121,7 @@ if ($action === 'takeover' && $_POST && isset($_SESSION['dj_user'])) {
             $pdo->exec("UPDATE radio_autodj_config SET autodj_enabled=0 WHERE station_id=" . ((int)$sid + 10000));
             $pdo->exec("UPDATE radio_streams SET current_dj=" . $pdo->quote($djUsername) . " WHERE id=" . (int)$sid);
         } catch (\Exception $e) {}
-        $success = 'AutoDJ stopped. Connect your broadcasting software to port ' . ((int)$sid + 8998) . ' with your DJ username and password.';
+        $success = 'AutoDJ stopped. Connect your broadcasting software to port 9000 with your DJ username:password.';
     }
     header('Location: /dj_panel.php?action=dashboard');
     exit;
@@ -189,11 +190,14 @@ if ($_FILES && $action === 'upload_banner' && isset($_SESSION['dj_user'])) {
     $allowed = ['jpg','jpeg','png','gif','webp'];
     $ext = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
     if (in_array($ext, $allowed) && $_FILES['file']['size'] < 5 * 1024 * 1024) {
-        $dir = '/var/www/radiohosting/storage/dj/' . $_SESSION['dj_user']['id'] . '/';
+        $dj = $_SESSION['dj_user']['username'] ?? '';
+        $hst = $pdo->prepare("SELECT hu.username FROM radio_djs d JOIN streaming_stations ss ON d.stream_id=ss.id JOIN hosting_users hu ON ss.user_id=hu.id WHERE d.username=?");
+        $hst->execute([$dj]); $hu = $hst->fetchColumn();
+        $dir = $hu ? "/home/{$hu}/radio/dj/{$dj}/" : '/var/www/radiohosting/public/uploads/';
         @mkdir($dir, 0755, true);
-        $name = 'banner_' . bin2hex(random_bytes(8)) . '.' . $ext;
+        $name = 'banner.' . $ext;
         move_uploaded_file($_FILES['file']['tmp_name'], $dir . $name);
-        $urlPath = '/storage/dj/' . $_SESSION['dj_user']['id'] . '/' . $name;
+        $urlPath = $hu ? "/dj-file.php?dj={$dj}&file={$name}" : '/uploads/' . $name;
         $pdo->prepare("UPDATE radio_djs SET banner = ? WHERE id = ?")->execute([$urlPath, $_SESSION['dj_user']['id']]);
         $success = 'Banner uploaded.';
     } else {
@@ -207,11 +211,14 @@ if ($_FILES && $action === 'upload_avatar' && isset($_SESSION['dj_user'])) {
     $allowed = ['jpg','jpeg','png','gif','webp'];
     $ext = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
     if (in_array($ext, $allowed) && $_FILES['file']['size'] < 2 * 1024 * 1024) {
-        $dir = '/var/www/radiohosting/storage/dj/' . $_SESSION['dj_user']['id'] . '/';
+        $dj = $_SESSION['dj_user']['username'] ?? '';
+        $hst = $pdo->prepare("SELECT hu.username FROM radio_djs d JOIN streaming_stations ss ON d.stream_id=ss.id JOIN hosting_users hu ON ss.user_id=hu.id WHERE d.username=?");
+        $hst->execute([$dj]); $hu = $hst->fetchColumn();
+        $dir = $hu ? "/home/{$hu}/radio/dj/{$dj}/" : '/var/www/radiohosting/public/uploads/';
         @mkdir($dir, 0755, true);
-        $name = 'avatar_' . bin2hex(random_bytes(8)) . '.' . $ext;
+        $name = 'avatar.' . $ext;
         move_uploaded_file($_FILES['file']['tmp_name'], $dir . $name);
-        $urlPath = '/storage/dj/' . $_SESSION['dj_user']['id'] . '/' . $name;
+        $urlPath = $hu ? "/dj-file.php?dj={$dj}&file={$name}" : '/uploads/' . $name;
         $pdo->prepare("UPDATE radio_djs SET avatar = ? WHERE id = ?")->execute([$urlPath, $_SESSION['dj_user']['id']]);
         $success = 'Avatar updated.';
     } else {
@@ -225,18 +232,21 @@ if ($action === 'upload_gallery' && $_FILES && isset($_SESSION['dj_user'])) {
     $allowed = ['jpg','jpeg','png','gif','webp','mp4','mov','avi'];
     $ext = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
     if (in_array($ext, $allowed) && $_FILES['file']['size'] < 20 * 1024 * 1024) {
-        $dir = '/var/www/radiohosting/storage/dj/' . $_SESSION['dj_user']['id'] . '/';
+        $dj = $_SESSION['dj_user']['username'] ?? '';
+        $hst = $pdo->prepare("SELECT hu.username FROM radio_djs d JOIN streaming_stations ss ON d.stream_id=ss.id JOIN hosting_users hu ON ss.user_id=hu.id WHERE d.username=?");
+        $hst->execute([$dj]); $hu = $hst->fetchColumn();
+        $dir = $hu ? "/home/{$hu}/radio/dj/{$dj}/gallery/" : '/var/www/radiohosting/public/uploads/gallery/';
         @mkdir($dir, 0755, true);
-        $name = 'gallery_' . bin2hex(random_bytes(8)) . '.' . $ext;
+        $name = bin2hex(random_bytes(8)) . '.' . $ext;
         move_uploaded_file($_FILES['file']['tmp_name'], $dir . $name);
-        $urlPath = '/storage/dj/' . $_SESSION['dj_user']['id'] . '/' . $name;
+        $urlPath = $hu ? "/dj-file.php?dj={$dj}&file=gallery/{$name}" : '/uploads/gallery/' . $name;
         $existing = $pdo->query("SELECT gallery FROM radio_djs WHERE id=" . (int)$_SESSION['dj_user']['id'])->fetchColumn();
         $gallery = $existing ? json_decode($existing, true) : [];
         $gallery[] = ['url' => $urlPath, 'type' => in_array($ext, ['mp4','mov','avi']) ? 'video' : 'image', 'uploaded_at' => date('Y-m-d H:i:s')];
         $pdo->prepare("UPDATE radio_djs SET gallery=? WHERE id=?")->execute([json_encode($gallery), $_SESSION['dj_user']['id']]);
         $success = 'File added to gallery.';
     } else { $error = 'Invalid file. Max 20MB. Allowed: jpg, png, gif, webp, mp4, mov, avi.'; }
-    header('Location: /dj_panel.php?action=dashboard&tab=gallery');
+    header('Location: /dj_panel.php?action=dashboard');
     exit;
 }
 
@@ -247,7 +257,7 @@ if ($action === 'delete_gallery' && isset($_GET['idx']) && isset($_SESSION['dj_u
     $gallery = $existing ? json_decode($existing, true) : [];
     if (isset($gallery[$idx])) { array_splice($gallery, $idx, 1); }
     $pdo->prepare("UPDATE radio_djs SET gallery=? WHERE id=?")->execute([json_encode($gallery), $_SESSION['dj_user']['id']]);
-    header('Location: /dj_panel.php?action=dashboard&tab=gallery');
+    header('Location: /dj_panel.php?action=dashboard');
     exit;
 }
 
@@ -287,9 +297,9 @@ if ($action === 'download_playlist' && isset($_SESSION['dj_user'])) {
 // ─── GET FRESH DJ DATA ───
 $djData = null;
 if (isset($_SESSION['dj_user'])) {
-    $stmt = $pdo->prepare("SELECT d.*, ss.status as stream_status, ss.listener_count, ss.current_song, ss.autodj_enabled as autodj_active,
+    $stmt = $pdo->prepare("SELECT d.*, ss.status as stream_status, ss.listener_count, ss.current_song, ss.autodj_enabled as autodj_active, hu.username as hosting_username,
         (SELECT COUNT(*) FROM radio_playlist_items pi JOIN radio_playlists p ON pi.playlist_id = p.id WHERE p.stream_id = d.stream_id) as track_count
-        FROM radio_djs d JOIN streaming_stations ss ON d.stream_id = ss.id WHERE d.id = ?");
+        FROM radio_djs d JOIN streaming_stations ss ON d.stream_id = ss.id JOIN hosting_users hu ON ss.user_id = hu.id WHERE d.id = ?");
     $stmt->execute([$_SESSION['dj_user']['id']]);
     $djData = $stmt->fetch(PDO::FETCH_OBJ);
     if (!$djData) { session_destroy(); header('Location: /dj_panel.php'); exit; }
@@ -436,7 +446,7 @@ Connect your broadcasting software with these details.
 </div>
 <div class="card" style="background:rgba(250,204,21,.06);border:1px solid rgba(250,204,21,.15);border-radius:8px;padding:12px;margin-bottom:12px">
 <div style="font-size:11px;color:#facc15;font-weight:600;margin-bottom:4px">📻 SAM Broadcaster Users</div>
-<div style="font-size:11px;color:#94a3b8">Enter your credentials as <strong style="color:#e0e0e0">djusername:djpassword</strong> in the <strong style="color:#e0e0e0">Password</strong> field. SAM only has one password field — combine them with a colon.</div>
+<div style="font-size:11px;color:#94a3b8">Enter your credentials as <strong style="color:#e0e0e0">djusername:djpassword</strong> in the <strong style="color:#e0e0e0">Password</strong> field on port <strong style="color:#4ade80">9000</strong>. SAM only has one password field — combine them with a colon.</div>
 </div>
 <div style="background:rgba(0,0,0,.3);border-radius:8px;padding:16px;font-family:monospace;font-size:12px;line-height:2">
 <div style="display:flex;justify-content:space-between;align-items:center">
@@ -444,7 +454,7 @@ Connect your broadcasting software with these details.
 <button class="btn" style="padding:2px 8px;font-size:10px;background:rgba(255,255,255,.06);color:#94a3b8;border:none;border-radius:4px;cursor:pointer" onclick="copyField('bi-server')">Copy</button>
 </div>
 <div style="display:flex;justify-content:space-between;align-items:center">
-<span><strong style="color:#64748b">Port:</strong> <span style="color:#4ade80" id="bi-port"><?php echo $djPort + 2; ?></span> <span style="color:#64748b;font-size:10px">(DJ relay)</span></span>
+<span><strong style="color:#64748b">Port:</strong> <span style="color:#4ade80" id="bi-port"><?php echo $djPort; ?></span> <span style="color:#64748b;font-size:10px">(DJ auth)</span></span>
 <button class="btn" style="padding:2px 8px;font-size:10px;background:rgba(255,255,255,.06);color:#94a3b8;border:none;border-radius:4px;cursor:pointer" onclick="copyField('bi-port')">Copy</button>
 </div>
 <div style="display:flex;justify-content:space-between;align-items:center">
@@ -461,22 +471,20 @@ Connect your broadcasting software with these details.
 </div>
 <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
 <button class="btn btn-primary" style="font-size:12px;padding:8px 16px" onclick="copyAll()">📋 Copy All</button>
-<?php if (!$isOwner): ?>
-<button class="btn" style="font-size:12px;padding:8px 16px;background:rgba(255,255,255,.06);color:#e0e0e0" onclick="window.location.href='/dj_panel.php?action=takeover'">🎤 Stop AutoDJ</button>
-<?php endif; ?>
+<button class="btn" style="font-size:12px;padding:8px 16px;background:rgba(248,113,113,.15);color:#f87171" onclick="window.location.href='/dj_panel.php?action=takeover'">🎤 Stop AutoDJ &amp; Connect</button>
 </div>
 </div>
 <script>
 function copyField(id){var t=document.getElementById(id).textContent;navigator.clipboard.writeText(t);var b=event.target;b.textContent='Copied!';setTimeout(function(){b.textContent='Copy'},1500);}
 function togglePass(){var p=document.getElementById('bi-pass');if(p.textContent=='••••••••'){p.textContent='<?php echo addslashes($djPass); ?>';event.target.textContent='Hide'}else{p.textContent='••••••••';event.target.textContent='Show'}}
-function copyAll(){var t='Server: <?php echo addslashes($djHost); ?>\nPort: <?php echo $djPort + 2; ?>\nUsername: <?php echo addslashes($djUsername); ?>\nPassword: <?php echo $isOwner ? addslashes($djPass) : '<your DJ password>'; ?>\nFormat: MP3 <?php echo $station->bitrate ?? 128; ?>kbps';navigator.clipboard.writeText(t);var b=event.target;b.textContent='Copied All!';setTimeout(function(){b.textContent='📋 Copy All'},2000);}
+function copyAll(){var t='Server: <?php echo addslashes($djHost); ?>\nPort: <?php echo $djPort; ?>\nUsername: <?php echo addslashes($djUsername); ?>\nPassword: <?php echo $isOwner ? addslashes($djPass) : '<your DJ password>'; ?>\nFormat: MP3 <?php echo $station->bitrate ?? 128; ?>kbps';navigator.clipboard.writeText(t);var b=event.target;b.textContent='Copied All!';setTimeout(function(){b.textContent='📋 Copy All'},2000);}
 </script>
 
 </div>
 
 <!-- Banner -->
 <div class="banner">
-<?php if ($djData->banner && file_exists($djData->banner)): ?>
+<?php if ($djData->banner && $djData->banner): ?>
 <img src="/<?php echo $djData->banner; ?>" alt="Banner">
 <?php else: ?>
 <i class="fas fa-image" style="font-size:32px;opacity:.3"></i> No banner set
@@ -505,7 +513,7 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 <!-- Banner Upload -->
 <div class="card" style="border-color:rgba(250,204,21,.15)">
 <h3 style="color:#facc15"><i class="fas fa-image"></i> Profile Banner</h3>
-<?php if ($djData->banner && file_exists($djData->banner)): ?>
+<?php if ($djData->banner && $djData->banner): ?>
 <img src="/<?php echo $djData->banner; ?>" style="width:100%;max-height:100px;object-fit:cover;border-radius:6px;margin-bottom:8px">
 <?php endif; ?>
 <form method="POST" enctype="multipart/form-data">
@@ -625,7 +633,7 @@ function pf($k, $d=''){global $pd; return htmlspecialchars($pd[$k] ?? $d);}
 <div class="card">
 <h3><i class="fas fa-camera"></i> Photo</h3>
 <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-<?php if ($djData->avatar && file_exists($djData->avatar)): ?>
+<?php if ($djData->avatar && $djData->avatar): ?>
 <img src="/<?php echo $djData->avatar; ?>" style="width:64px;height:64px;border-radius:50%;object-fit:cover">
 <?php else: ?><div style="width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:28px">🎤</div><?php endif; ?>
 <label class="upload-btn" style="cursor:pointer;padding:6px 12px;background:rgba(0,140,255,.1);border:1px solid rgba(0,140,255,.2);border-radius:6px;font-size:11px">Change Photo<input type="file" name="file" style="display:none" onchange="var f=this.form;f.action='/dj_panel.php?action=upload_avatar';f.submit()"></label>
@@ -769,7 +777,11 @@ function sw(e,id){
   document.querySelectorAll('.dj-panel').forEach(function(p){p.classList.remove('act')});
   e.currentTarget.classList.add('act');
   document.getElementById('pn-'+id).classList.add('act');
+  history.replaceState(null,'','?action=dashboard&tab='+id);
 }
+// Restore tab from URL
+var t = new URLSearchParams(window.location.search).get('tab');
+if (t) { var el = document.querySelector('.dj-tab[onclick*="'+t+'"]'); if(el) el.click(); }
 </script>
 </body></html>
 
