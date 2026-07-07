@@ -10,7 +10,13 @@
     "start": "node index.js",
     "install-service": "node bin/install-service.js",
     "watch": "node lib/watcher.js",
-    "update": "node lib/updater.js"
+    "update": "node lib/updater.js",
+    "build": "pkg . --targets node18-win-x64 --output dist/PlanetHostsConnector.exe",
+    "build-all": "pkg . --targets node18-win-x64,node18-linux-x64,node18-macos-x64 --output dist/PlanetHostsConnector"
+  },
+  "pkg": {
+    "assets": ["lib/**/*", "bin/**/*"],
+    "targets": ["node18-win-x64"]
   },
   "dependencies": {
     "chokidar": "^3.6.0",
@@ -21,6 +27,9 @@
     "fluent-ffmpeg": "^2.1.2",
     "form-data": "^4.0.0",
     "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
   },
   "engines": {
     "node": ">=18.0.0"
