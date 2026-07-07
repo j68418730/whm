@@ -25,7 +25,7 @@ if ($streamId) {
 <input type="hidden" name="stream_id" value="<?php echo $streamId;?>">
 <select name="dj_id" required style="padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
 <option value="">Select DJ</option>
-<?php foreach($djs as $d):?><option value="<?php echo $d->id;?>"><?php echo htmlspecialchars($d->name??$d->username);?></option><?php endforeach;?>
+<?php foreach($djs as $d):?><option value="<?php echo $d->id;?>"><?php echo htmlspecialchars($d->name ?: $d->username);?></option><?php endforeach;?>
 </select>
 <input name="show_name" placeholder="Show name" style="padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
 <input name="day_of_week" placeholder="Day (0=Sun,1=Mon...)" style="padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
