@@ -3,7 +3,12 @@ $tab = $_GET['tab'] ?? 'overview';
 $stationId = $station->id ?? 0;
 $realId = $station->streaming_id ?? $stationId;
 $isIces = ($station->server_type ?? 'icecast') === 'icecast';
-$listenUrl = $isIces ? "http://{$_SERVER['HTTP_HOST']}:$station->port$station->mount" : "http://{$_SERVER['HTTP_HOST']}:$station->port";
+$streamHost = 'planet-hosts.com';
+$streamProto = 'https';
+$mount = $station->mount ?? '/live';
+if (!str_starts_with($mount, '/')) $mount = "/{$mount}";
+$listenUrl = $streamProto . '://' . $streamHost . ':2083/radio/stream-proxy.php?stream=' . $station->streaming_id;
+$directUrl = $isIces ? "http://{$streamHost}:{$station->port}{$mount}" : "http://{$streamHost}:{$station->port}/;stream.nsv";
 ?>
 <style>
 .nav-pills{display:flex;gap:2px;flex-wrap:wrap;margin-bottom:14px;background:rgba(8,16,28,.6);border-radius:8px;padding:3px;max-height:200px;overflow-y:auto}
@@ -119,9 +124,68 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <a href="?station_id=<?=$stationId?>&tab=branding" class="<?=$tab==='branding'?'active':''?>">Branding</a>
   <a href="?station_id=<?=$stationId?>&tab=mounts" class="<?=$tab==='mounts'?'active':''?>">Mounts</a>
   <a href="?station_id=<?=$stationId?>&tab=song_history" class="<?=$tab==='song_history'?'active':''?>">Song History</a>
+  <a href="?station_id=<?=$stationId?>&tab=applications" class="<?=$tab==='applications'?'active':''?>" style="color:#facc15">📋 Applications</a>
   <a href="?station_id=<?=$stationId?>&tab=backups" class="<?=$tab==='backups'?'active':''?>">Backups</a>
+  <a href="/user/radio/widgets?station_id=<?=$stationId?>" style="color:#a855f7;font-weight:700">🎨 Widgets</a>
+  <a href="/dj_panel.php" target="_blank" style="color:#facc15;font-weight:600">🎧 DJ Panel</a>
 </div>
 <div class="tab <?=$tab==='overview'?'active':''?>">
+  <div style="background:linear-gradient(135deg,rgba(0,140,255,.06),rgba(168,85,247,.03));border:1px solid rgba(0,191,255,.08);border-radius:12px;padding:16px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div style="flex-shrink:0;width:60px;height:60px;border-radius:12px;background:linear-gradient(135deg,rgba(0,140,255,.15),rgba(168,85,247,.1));display:flex;align-items:center;justify-content:center;font-size:28px;border:1px solid rgba(0,191,255,.1)">🎵</div>
+    <div style="flex:1;min-width:150px">
+      <div style="font-size:14px;font-weight:600;color:#e0e0e0;margin-bottom:2px">Now Playing</div>
+      <div style="font-size:12px;color:#94a3b8" id="ov-song"><?=$autodjCfg->autodj_enabled?'Loading...':'AutoDJ Stopped'?></div>
+    </div>
+    <div style="flex-shrink:0;min-width:200px">
+      <audio src="<?=$listenUrl?>" preload="none" controls style="width:100%;height:36px;border-radius:8px"></audio>
+    </div>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <a href="https://planet-hosts.com:2083/radio/embed.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-primary" style="font-size:10px;padding:6px 10px">Player</a>
+      <a href="<?=$isIces ? 'http://planet-hosts.com:'.$station->port.$station->mount : 'http://planet-hosts.com:'.$station->port.'/;stream.nsv'?>" target="_blank" class="btn btn-sm btn-secondary" style="font-size:10px;padding:6px 10px">Direct</a>
+  </div>
+</div>
+<div class="tab <?=$tab==='station_info'?'active':''?>">
+  <div class="card"><div class="hdr"><h3>Station Information</h3></div>
+  <table>
+    <tr><td style="color:#64748b;padding:6px 0">Station Name</td><td style="padding:6px 0"><?=htmlspecialchars($station->name??'')?></td></tr>
+    <tr><td style="color:#64748b;padding:6px 0">Server Type</td><td style="padding:6px 0"><?=strtoupper($station->server_type??'ICECAST')?></td></tr>
+    <tr><td style="color:#64748b;padding:6px 0">Port</td><td style="padding:6px 0"><?=$station->port?></td></tr>
+    <tr><td style="color:#64748b;padding:6px 0">Mount Point</td><td style="padding:6px 0"><?=htmlspecialchars($station->mount??'/stream')?></td></tr>
+    <tr><td style="color:#64748b;padding:6px 0">Bitrate</td><td style="padding:6px 0"><?=$station->bitrate??128?> kbps</td></tr>
+    <tr><td style="color:#64748b;padding:6px 0">Status</td><td style="padding:6px 0;color:<?=$station->status==='running'?'#4ade80':'#f87171'?>"><?=$station->status??'stopped'?></td></tr>
+  </table>
+  </div>
+  <div class="card"><h3>Source Password</h3>
+  <div style="display:flex;gap:8px;align-items:center">
+    <input class="inp inp-sm" id="src-pass" value="<?=htmlspecialchars($station->password??'')?>" readonly style="flex:1;font-family:monospace;font-size:13px;color:#4ade80">
+    <button class="btn btn-sm btn-sec" onclick="var p=document.getElementById('src-pass');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(function(){this.textContent='Copy'}.bind(this),2000)">Copy</button>
+  </div>
+  </div>
+  <div class="card"><h3>Admin Password</h3>
+  <div style="display:flex;gap:8px;align-items:center">
+    <input class="inp inp-sm" id="adm-pass" value="<?=htmlspecialchars($station->admin_password??'')?>" readonly style="flex:1;font-family:monospace;font-size:13px;color:#facc15">
+    <button class="btn btn-sm btn-sec" onclick="var p=document.getElementById('adm-pass');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(function(){this.textContent='Copy'}.bind(this),2000)">Copy</button>
+  </div>
+  </div>
+  <div class="card"><h3>Change Passwords</h3>
+  <form method="post" action="/user/radio/update-passwords">
+    <input type="hidden" name="station_id" value="<?=$stationId?>">
+    <div class="form-row">
+      <div class="form-group"><label>New Source Password</label><input class="inp inp-sm" name="password" placeholder="Leave blank to keep current"></div>
+      <div class="form-group"><label>New Admin Password</label><input class="inp inp-sm" name="admin_password" placeholder="Leave blank to keep current"></div>
+    </div>
+    <button class="btn btn-sm btn-primary">Update Passwords</button>
+  </form>
+  </div>
+</div>
+  <script>
+  setInterval(function(){
+    var x=new XMLHttpRequest();
+    x.open('GET','/user/radio/autodj/dashboard?station_id=<?=$stationId?>',true);
+    x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.config){document.getElementById('ov-song').textContent=d.config.autodj_enabled?'AutoDJ Active':'AutoDJ Stopped'}}catch(e){}};
+    x.send();
+  },10000);
+  </script>
   <div class="stat-grid">
     <div class="stat-card"><div class="sv"><?=(int)($station->listener_count??0)?></div><div class="sl">Current Listeners</div></div>
     <div class="stat-card"><div class="sv"><?=(int)($station->listener_peak??0)?></div><div class="sl">Peak Listeners</div></div>
@@ -138,7 +202,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <a href="?station_id=<?=$stationId?>&tab=branding" class="btn btn-sm btn-primary">Branding</a>
     <a href="?station_id=<?=$stationId?>&tab=autodj" class="btn btn-sm btn-primary">AutoDJ</a>
     <a href="?station_id=<?=$stationId?>&tab=backups" class="btn btn-sm btn-secondary">Backups</a>
-    <a href="<?=$listenUrl?>" target="_blank" class="btn btn-sm btn-secondary">Listen URL</a>
+    <a href="https://planet-hosts.com:2083/radio/embed.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-secondary">Listen</a>
   </div></div>
   <?php if (!empty($songs)): ?>
   <div class="card"><div class="hdr"><h3>Recently Played</h3></div><table><tr><th>Title</th><th>Artist</th><th>Played At</th></tr>
@@ -150,16 +214,18 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </div>
 <div class="tab <?=$tab==='djs'?'active':''?>">
   <div class="card"><div class="hdr"><h3>DJs</h3></div>
-  <table><tr><th>Username</th><th>Name</th><th>Status</th><th>Last Login</th><th>Actions</th></tr>
+  <table><tr><th>Username</th><th>Name</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr>
     <?php if (empty($djs)): ?><tr><td colspan="5" class="empty-state">No DJs yet</td></tr>
     <?php else: ?>
     <?php foreach ($djs as $dj): ?>
     <tr>
       <td><?=htmlspecialchars($dj->username??'')?></td>
       <td><?=htmlspecialchars($dj->name??$dj->username??'')?></td>
+      <td><?=htmlspecialchars($dj->role??'dj')?></td>
       <td><span class="status-badge <?=$dj->status==='active'?'status-running':'status-stopped'?>"><?=$dj->status??'unknown'?></span></td>
       <td><?=htmlspecialchars($dj->last_login??'Never')?></td>
       <td class="actions">
+        <a href="?station_id=<?=$stationId?>&tab=djs&edit_dj=<?=$dj->id?>" class="btn btn-sm btn-primary">Edit</a>
         <a href="/user/radio/dj/toggle/<?=$dj->id?>" class="btn btn-sm btn-warning"><?=$dj->status==='active'?'Suspend':'Activate'?></a>
         <a href="/user/radio/dj/delete/<?=$dj->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a>
       </td>
@@ -173,9 +239,38 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="form-row"><div class="form-group"><label>Username</label><input class="inp inp-sm" name="username" required></div><div class="form-group"><label>Password</label><input class="inp inp-sm" type="password" name="password" required></div></div>
     <div class="form-row"><div class="form-group"><label>Display Name</label><input class="inp inp-sm" name="name"></div><div class="form-group"><label>Email</label><input class="inp inp-sm" type="email" name="email"></div></div>
     <div class="form-group"><label>Bio</label><textarea class="inp inp-sm" name="bio" rows="2"></textarea></div>
-    <div class="form-group"><label>Genres</label><input class="inp inp-sm" name="genres" placeholder="Rock, Pop, Jazz"></div>
+    <div class="form-group"><label>Role</label><div style="display:flex;gap:12px"><label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#c0c0c0"><input type="radio" name="role" value="dj" checked> DJ</label><label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#c0c0c0"><input type="radio" name="role" value="mod"> Mod</label></div></div>
     <button class="btn btn-sm btn-primary">Add DJ</button>
   </form></div>
+  <div class="card"><h3>DJ Takeover</h3>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <span style="font-size:11px;color:#64748b">When a DJ connects via SAM Broadcaster or other software, click below to stop AutoDJ and allow the DJ to take over:</span>
+    <form method="post" action="/user/radio/kick-source" style="display:inline">
+      <input type="hidden" name="station_id" value="<?=$stationId?>">
+      <button class="btn btn-sm btn-warning">🎤 Stop AutoDJ for DJ</button>
+    </form>
+  </div>
+  </div>
+  <div class="card"><h3>DJ Login Link</h3>
+  <p style="font-size:11px;color:#64748b;margin-bottom:8px">Share this link with your DJs so they can access the DJ Panel with their credentials:</p>
+  <div style="display:flex;gap:8px;align-items:center">
+    <input class="inp inp-sm" value="https://planet-hosts.com:2083/dj_panel.php" readonly style="flex:1;font-family:monospace;font-size:12px;color:#4ade80">
+    <button class="btn btn-sm btn-primary" onclick="var i=this.previousElementSibling;i.select();navigator.clipboard.writeText(i.value);this.textContent='Copied!';setTimeout(function(){this.textContent='Copy'}.bind(this),2000)">Copy</button>
+  </div>
+  </div>
+  <?php $editDjId = (int)($_GET['edit_dj']??0); $editDj = null; foreach($djs as $d){if($d->id==$editDjId){$editDj=$d;break;}} ?>
+  <?php if ($editDj): ?>
+  <div class="card"><h3>Edit DJ: <?=htmlspecialchars($editDj->name?:$editDj->username)?></h3>
+  <form method="post" action="/user/radio/dj/update/<?=$editDj->id?>">
+    <input type="hidden" name="station_id" value="<?=$stationId?>">
+    <div class="form-row"><div class="form-group"><label>Username</label><input class="inp inp-sm" name="username" value="<?=htmlspecialchars($editDj->username??'')?>"></div><div class="form-group"><label>New Password</label><input class="inp inp-sm" type="password" name="password" placeholder="Leave blank to keep current"></div></div>
+    <div class="form-row"><div class="form-group"><label>Display Name</label><input class="inp inp-sm" name="name" value="<?=htmlspecialchars($editDj->name??'')?>"></div><div class="form-group"><label>Email</label><input class="inp inp-sm" type="email" name="email" value="<?=htmlspecialchars($editDj->email??'')?>"></div></div>
+    <div class="form-group"><label>Bio</label><textarea class="inp inp-sm" name="bio" rows="2"><?=htmlspecialchars($editDj->bio??'')?></textarea></div>
+    <div class="form-group"><label>Role</label><div style="display:flex;gap:12px"><label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#c0c0c0"><input type="radio" name="role" value="dj" <?=($editDj->role??'dj')==='dj'?'checked':''?>> DJ</label><label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#c0c0c0"><input type="radio" name="role" value="mod" <?=($editDj->role??'')==='mod'?'checked':''?>> Mod</label></div></div>
+    <button class="btn btn-sm btn-primary">Save Changes</button>
+    <a href="?station_id=<?=$stationId?>&tab=djs" class="btn btn-sm btn-secondary">Cancel</a>
+  </form></div>
+  <?php endif; ?>
 </div>
 <div class="tab <?=$tab==='requests'?'active':''?>">
   <div class="card"><div class="hdr"><h3>Song Requests</h3><a href="/user/radio/requests/toggle/<?=$stationId?>" class="btn btn-sm btn-secondary">Requests: <?=$station->requests_enabled?'ON':'OFF'?></a></div>
@@ -217,7 +312,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="form-group"><label>Day</label><select class="inp inp-sm" name="day_of_week"><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select></div></div>
     <div class="form-row"><div class="form-group"><label>Start</label><input class="inp inp-sm" type="time" name="start_time" required></div><div class="form-group"><label>End</label><input class="inp inp-sm" type="time" name="end_time" required></div></div>
     <div class="form-row">
-      <div class="form-group"><label>DJ</label><select class="inp inp-sm" name="dj_id"><option value="">Auto</option><?php foreach($djs as $d): ?><option value="<?=$d->id?>"><?=htmlspecialchars($d->name??$d->username??'')?></option><?php endforeach; ?></select></div>
+      <div class="form-group"><label>DJ</label><select class="inp inp-sm" name="dj_id"><option value="">Auto</option><?php foreach($djs as $d): ?><option value="<?=$d->id?>"><?=htmlspecialchars($d->name ?: $d->username)?></option><?php endforeach; ?></select></div>
       <div class="form-group"><label>DJ Name</label><input class="inp inp-sm" name="dj_name" placeholder="DJ display name"></div>
     </div>
     <button class="btn btn-sm btn-primary">Add Show</button>
@@ -247,20 +342,18 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <?php foreach ($playlistItems as $item): ?>
     <tr>
       <td><?=htmlspecialchars($item->title??'')?></td><td><?=htmlspecialchars($item->artist??'')?></td>
-      <td style="font-size:10px;color:#64748b"><?=htmlspecialchars(basename($item->file??''))?></td>
-      <td><?=$item->duration?gmdate('i:s',$item->duration):'-'?></td><td><?=$item->sort_order??0?></td>
+      <td style="font-size:10px;color:#64748b"><?=htmlspecialchars(basename($item->file_path??''))?></td>
+      <td><?=$item->duration?gmdate('i:s',$item->duration):'-'?></td><td><?=$item->position??0?></td>
       <td class="actions"><a href="/user/radio/playlist/remove-song/<?=$item->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Remove?')">Remove</a></td>
     </tr>
     <?php endforeach; ?>
     <?php endif; ?>
-  </table></div>
-  <div class="card"><h3>Add Song</h3>
-  <form method="post" action="/user/radio/playlist/add-song">
-    <input type="hidden" name="playlist_id" value="<?=$selPlId?>">
-    <div class="form-row"><div class="form-group"><label>Title</label><input class="inp inp-sm" name="title"></div><div class="form-group"><label>Artist</label><input class="inp inp-sm" name="artist"></div></div>
-    <div class="form-row"><div class="form-group"><label>File Path</label><input class="inp inp-sm" name="file" placeholder="/home/<?=$station->username?>/radio/musicdatabase/song.mp3"></div><div class="form-group"><label>Duration (s)</label><input class="inp inp-sm" type="number" name="duration" value="0"></div></div>
-    <button class="btn btn-sm btn-primary">Add Song</button>
-  </form></div>
+  </table>
+  <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+    <a href="?station_id=<?=$stationId?>&tab=media&playlist_id=<?=$selPlId?>" class="btn btn-sm btn-primary">Upload Media</a>
+    <a href="/user/radio/autodj/restart/<?=$stationId?>" class="btn btn-sm btn-warning">⟳ Reload in AutoDJ</a>
+  </div>
+  </div>
   <?php endif; ?>
   <div class="card"><h3>Create Playlist</h3>
   <form method="post" action="/user/radio/playlist/create">
@@ -286,22 +379,50 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div style="font-size:12px;color:#0A84FF;padding:6px 0 0 8px">Playlist: <?=htmlspecialchars($selPlName)?></div>
     <?php endif; ?>
   </div>
-  <form method="post" action="/user/radio/media/upload" enctype="multipart/form-data">
+  <form method="post" action="/user/radio/media/upload" enctype="multipart/form-data" id="media-form">
     <input type="hidden" name="playlist_id" value="<?=$mPlId?:''?>">
-    <div class="upload-zone" onclick="document.getElementById('media-input').click()">Drop files or click to upload (mp3, aac, ogg, flac, wav, m4a)</div>
+    <div class="upload-zone" id="upload-zone">Drop files or click to upload (mp3, aac, ogg, flac, wav, m4a)</div>
     <input id="media-input" type="file" name="file[]" multiple style="display:none" onchange="this.form.submit()">
-    <button class="btn btn-sm btn-primary">Upload</button>
+    <button class="btn btn-sm btn-primary" type="button" onclick="document.getElementById('media-input').click()">Select Files</button>
   </form>
+  <script>
+  var uz = document.getElementById('upload-zone');
+  ['dragenter','dragover','dragleave','drop'].forEach(function(e){uz.addEventListener(e,function(ev){ev.preventDefault();ev.stopPropagation()})});
+  uz.addEventListener('dragenter',function(){uz.style.borderColor='#0A84FF';uz.style.background='rgba(0,140,255,.08)'});
+  uz.addEventListener('dragleave',function(){uz.style.borderColor='rgba(0,140,255,.2)';uz.style.background='transparent'});
+  uz.addEventListener('drop',function(ev){uz.style.borderColor='rgba(0,140,255,.2)';uz.style.background='transparent';
+    var files=ev.dataTransfer.files;if(!files.length)return;
+    var fd=new FormData(document.getElementById('media-form'));
+    for(var i=0;i<files.length;i++)fd.append('file[]',files[i]);
+    var x=new XMLHttpRequest();x.open('POST','/user/radio/media/upload',true);
+    x.onload=function(){window.location.reload()};
+    x.send(fd);
+  });
+  </script>
   <?php if (empty($mediaFiles)): ?><div class="empty-state" style="margin-top:10px">No media files<?=$mPlId?' in this playlist':''?></div>
   <?php else: ?>
+  <?php $plDirMap = []; foreach($playlists as $p) $plDirMap['playlist_'.$p->id] = $p->name; ?>
   <div class="file-grid" style="margin-top:10px">
-    <?php foreach ($mediaFiles as $f): ?>
-    <div style="padding:10px;background:rgba(0,0,0,.3);border-radius:8px;text-align:center">
-      <div style="font-size:28px;margin-bottom:4px;opacity:.5">&#9835;</div>
-      <div style="font-size:10px;color:#c0c0c0;word-break:break-all"><?=htmlspecialchars($f)?></div>
-      <div style="margin-top:6px;font-size:10px;color:#64748b"><?=round(filesize('/home/'.$station->username.'/radio/musicdatabase'.($mPlId?'/playlist_'.$mPlId:'').'/'.$f)/1024,1)?> KB</div>
+    <?php foreach ($mediaFiles as $f):
+      $isDir = is_dir('/home/'.$station->username.'/radio/musicdatabase'.($mPlId?'/playlist_'.$mPlId:'').'/'.$f);
+      $plName = $plDirMap[$f] ?? null;
+      $displayName = $plName ? htmlspecialchars($plName) : htmlspecialchars($f);
+      $plIdFromDir = $plName ? (int)str_replace('playlist_','',$f) : 0;
+    ?>
+    <?php if ($isDir && $plIdFromDir): ?>
+    <a href="?station_id=<?=$stationId?>&tab=media&playlist_id=<?=$plIdFromDir?>" style="text-decoration:none">
+    <?php endif; ?>
+    <div style="padding:10px;background:rgba(0,0,0,.3);border-radius:8px;text-align:center;<?=$isDir?'cursor:pointer;border:1px solid rgba(0,140,255,.15)':''?>">
+      <div style="font-size:28px;margin-bottom:4px;opacity:.5"><?=$isDir?'&#128193;':'&#9835;'?></div>
+      <div style="font-size:10px;color:<?=$plName?'#0A84FF':'#c0c0c0'?>;word-break:break-all;font-weight:<?=$plName?'600':'400'?>"><?=$displayName?></div>
+      <div style="margin-top:6px;font-size:10px;color:#64748b"><?=$isDir?'Playlist folder':round(filesize('/home/'.$station->username.'/radio/musicdatabase'.($mPlId?'/playlist_'.$mPlId:'').'/'.$f)/1024,1).' KB'?></div>
+      <?php if (!$isDir): ?>
       <div style="margin-top:6px"><a href="/user/radio/media/delete?file=<?=urlencode($f)?>&playlist_id=<?=$mPlId?>&station_id=<?=$stationId?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></div>
+      <?php endif; ?>
     </div>
+    <?php if ($isDir && $plIdFromDir): ?>
+    </a>
+    <?php endif; ?>
     <?php endforeach; ?>
   </div>
   <?php endif; ?>
@@ -337,13 +458,27 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </div>
 <div class="tab <?=$adTab==='overview'?'active':''?>">
 <div class="stat-grid">
-<div class="stat-card"><div class="sv"><?=$ac->autodj_enabled?'Running':'Stopped'?></div><div class="sl">Status</div></div>
+<div class="stat-card"><div class="sv" id="ad-status"><?=$ac->autodj_enabled?'Running':'Stopped'?></div><div class="sl">Status</div></div>
 <div class="stat-card"><div class="sv"><?=ucfirst($ac->playlist_mode)?></div><div class="sl">Mode</div></div>
 <div class="stat-card"><div class="sv"><?=$ac->crossfade_time?>s</div><div class="sl">Crossfade</div></div>
 <div class="stat-card"><div class="sv"><?=$ac->bitrate?>k</div><div class="sl">Bitrate</div></div>
 <div class="stat-card"><div class="sv"><?=$ac->normalize_audio?'On':'Off'?></div><div class="sl">Normalize</div></div>
 <div class="stat-card"><div class="sv"><?=$ac->shuffle_enabled?'On':'Off'?></div><div class="sl">Shuffle</div></div>
 </div>
+<?php if (!empty($playlists)): ?>
+<div class="card"><h3>Active Playlists</h3>
+<?php $savedPlIds = !empty($ac->playlist_ids) ? json_decode($ac->playlist_ids, true) : []; ?>
+<form method="post" action="/user/radio/autodj/update" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+<input type="hidden" name="station_id" value="<?=$stationId?>">
+<?php foreach ($playlists as $p): $checked = empty($savedPlIds) || in_array($p->id, $savedPlIds) ? 'checked' : ''; ?>
+<label style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(0,0,0,.3);border-radius:6px;font-size:11px;color:#c0c0c0;cursor:pointer">
+<input type="checkbox" name="playlist_ids[]" value="<?=$p->id?>" <?=$checked?>> <?=htmlspecialchars($p->name)?>
+</label>
+<?php endforeach; ?>
+<button type="submit" class="btn btn-sm btn-primary" style="margin-left:auto">Save Playlists</button>
+</form>
+</div>
+<?php endif; ?>
 <div class="card"><h3>Quick Actions</h3><div style="display:flex;gap:6px;flex-wrap:wrap">
 <a href="/user/radio/autodj/setup?step=1&station_id=<?=$stationId?>" class="btn btn-sm btn-secondary">Re-run Wizard</a>
 <a href="?station_id=<?=$stationId?>&tab=autodj&adtab=playback" class="btn btn-sm btn-primary">Playback Settings</a>
@@ -444,7 +579,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="form-row"><div class="form-group"><label>Station Name</label><input class="inp inp-sm" name="name" value="<?=htmlspecialchars($station->name??'')?>"></div><div class="form-group"><label>Genre</label><input class="inp inp-sm" name="genre" value="<?=htmlspecialchars($station->genre??'')?>"></div></div>
     <div class="form-group"><label>Description</label><textarea class="inp inp-sm" name="description" rows="2"><?=htmlspecialchars($station->description??'')?></textarea></div>
     <div class="form-row"><div class="form-group"><label>Mount Point</label><input class="inp inp-sm" name="mount" value="<?=htmlspecialchars($station->mount??'/stream')?>"></div><div class="form-group"><label>Bitrate</label><select class="inp inp-sm" name="bitrate"><option value="128" <?=($station->bitrate??128)==128?'selected':''?>>128 kbps</option><option value="192" <?=($station->bitrate??'')==192?'selected':''?>>192 kbps</option><option value="256" <?=($station->bitrate??'')==256?'selected':''?>>256 kbps</option><option value="320" <?=($station->bitrate??'')==320?'selected':''?>>320 kbps</option></select></div></div>
-    <div class="form-row"><div class="form-group"><label>Source Password</label><input class="inp inp-sm" name="password" value="<?=htmlspecialchars($station->password??'')?>"></div><div class="form-group"><label>Admin Password</label><input class="inp inp-sm" name="admin_password" value="<?=htmlspecialchars($station->admin_password??'')?>"></div></div>
+    <div class="form-row"><div class="form-group"><label>Source Password</label><input class="inp inp-sm" name="password" value="<?=htmlspecialchars($station->plain_password??$station->password??'')?>" style="font-family:monospace;color:#4ade80"></div><div class="form-group"><label>Admin Password</label><input class="inp inp-sm" name="admin_password" value="<?=htmlspecialchars($station->admin_password??'')?>" style="font-family:monospace;color:#facc15"></div></div>
     <div class="form-row"><div class="form-group"><label>Max Listeners</label><input class="inp inp-sm" type="number" name="max_listeners" value="<?=$station->max_listeners??100?>"></div><div class="form-group"><label>Public</label><select class="inp inp-sm" name="public_server"><option value="1" <?=($station->public_server??1)==1?'selected':''?>>Yes</option><option value="0" <?=($station->public_server??'')==='0'?'selected':''?>>No</option></select></div></div>
     <button class="btn btn-sm btn-primary">Save Settings</button>
   </form></div>
@@ -527,6 +662,36 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <tr>
       <td><?=htmlspecialchars($bn)?></td><td><?=round(filesize($bk)/1048576,1)?> MB</td><td><?=date('Y-m-d H:i',filemtime($bk))?></td>
       <td class="actions"><a href="/user/radio/backup/download?file=<?=urlencode($bn)?>" class="btn btn-sm btn-success">Download</a><a href="/user/radio/backup/delete?file=<?=urlencode($bn)?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></td>
+    </tr>
+    <?php endforeach; ?>
+  </table>
+  <?php endif; ?>
+  </div>
+</div>
+<div class="tab <?=$tab==='applications'?'active':''?>">
+  <div class="card"><div class="hdr"><h3>DJ Applications</h3><a href="https://planet-hosts.com:2083/radio/apply.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-primary">Public Form</a></div>
+  <?php $apps = $applications ?? []; $as = $_GET['app_filter'] ?? 'pending';
+  $fa = array_filter($apps, function($a) use ($as) { return $as === 'all' || ($a->status ?? 'pending') === $as; }); ?>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+    <a href="?station_id=<?=$stationId?>&tab=applications&app_filter=pending" class="btn btn-sm <?=$as==='pending'?'btn-primary':'btn-secondary'?>">Pending</a>
+    <a href="?station_id=<?=$stationId?>&tab=applications&app_filter=approved" class="btn btn-sm <?=$as==='approved'?'btn-primary':'btn-secondary'?>">Approved</a>
+    <a href="?station_id=<?=$stationId?>&tab=applications&app_filter=rejected" class="btn btn-sm <?=$as==='rejected'?'btn-primary':'btn-secondary'?>">Rejected</a>
+    <a href="?station_id=<?=$stationId?>&tab=applications&app_filter=all" class="btn btn-sm <?=$as==='all'?'btn-primary':'btn-secondary'?>">All</a>
+  </div>
+  <?php if (empty($fa)): ?><div class="empty-state">No <?=$as!=='all'?$as:''?> applications</div>
+  <?php else: ?>
+  <table><tr><th>Name</th><th>Email</th><th>DJ Name</th><th>Date</th><th>Status</th><th>Actions</th></tr>
+    <?php foreach ($fa as $a): ?>
+    <tr>
+      <td><?=htmlspecialchars($a->name??'')?></td><td><?=htmlspecialchars($a->email??'')?></td>
+      <td><?=htmlspecialchars($a->dj_name??'-')?></td><td style="font-size:11px"><?=htmlspecialchars($a->created_at??'')?></td>
+      <td><span class="status-badge <?=$a->status==='approved'?'status-running':($a->status==='rejected'?'status-stopped':'status-starting')?>"><?=$a->status??'pending'?></span></td>
+      <td class="actions">
+        <?php if ($a->status === 'pending'): ?>
+          <a href="/user/radio/dj/approve/<?=$a->id?>" class="btn btn-sm btn-success" onclick="return confirm('Approve? DJ account will be created.')">Approve</a>
+          <a href="/user/radio/dj/reject/<?=$a->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Reject?')">Reject</a>
+        <?php else: ?><span style="font-size:10px;color:#64748b"><?=ucfirst($a->status)?></span><?php endif; ?>
+      </td>
     </tr>
     <?php endforeach; ?>
   </table>

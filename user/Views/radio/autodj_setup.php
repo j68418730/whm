@@ -46,9 +46,9 @@ textarea.inp{resize:vertical;min-height:60px}
 </style>
 <?php $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; ?>
 <div class="wizard-wrap">
-<div class="wizard-header"><h1><?=$step===1?'Welcome to AutoDJ Setup':($step===15?'Setup Complete!':'AutoDJ Setup - Step '.$step.'/15')?></h1><p>Planet Hosts AutoDJ Configuration Wizard</p></div>
+<div class="wizard-header"><h1><?=$step===1?'Welcome to AutoDJ Setup':($step===12?'Setup Complete!':'AutoDJ Setup - Step '.$step.'/12')?></h1><p>Planet Hosts AutoDJ Configuration Wizard</p></div>
 <div class="wizard-progress">
-<?php for($i=1;$i<=15;$i++): $cls = $i==$step?'active':($i<$step?'done':''); ?>
+<?php for($i=1;$i<=12;$i++): $cls = $i==$step?'active':($i<$step?'done':''); ?>
 <div class="step <?=$cls?>"><?=$i<=9?'0':''?><?=$i?></div>
 <?php endfor; ?>
 </div>
@@ -89,17 +89,18 @@ textarea.inp{resize:vertical;min-height:60px}
 <div class="wizard-nav"><a href="/user/radio" class="btn btn-secondary">Cancel</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
 
 <?php elseif ($step === 3): ?>
+<?php $engine = $config->streaming_engine ?: ($station->server_type === 'shoutcast' ? 'shoutcast2' : 'icecast'); ?>
+<?php $labels = ['icecast' => 'Icecast', 'shoutcast' => 'SHOUTcast', 'shoutcast1' => 'SHOUTcast v1', 'shoutcast2' => 'SHOUTcast v2']; ?>
 <div class="wizard-card">
 <h2>Streaming Engine</h2>
-<div class="desc">Choose your streaming server software</div>
-<div class="radio-group">
-<label><input type="radio" name="streaming_engine" value="shoutcast2" <?=$config->streaming_engine==='shoutcast2'?'checked':''?> <?=$station->server_type==='shoutcast'?'':'disabled'?>><span>SHOUTcast v2</span></label>
-<label><input type="radio" name="streaming_engine" value="shoutcast1" <?=$config->streaming_engine==='shoutcast1'?'checked':''?> <?=$station->server_type==='shoutcast'?'':'disabled'?>><span>SHOUTcast v1</span></label>
-<label><input type="radio" name="streaming_engine" value="icecast" <?=$config->streaming_engine==='icecast'?'checked':''?>><span>Icecast</span></label>
+<div class="desc">Your station is configured to use <strong><?=$labels[$engine]??strtoupper($engine)?></strong></div>
+<input type="hidden" name="streaming_engine" value="<?=$engine?>">
+<div class="feature-grid">
+<div class="feature-item"><div class="icon">&#128264;</div><div class="label"><?=$labels[$engine]??strtoupper($engine)?></div></div>
+<div class="feature-item"><div class="icon">&#127911;</div><div class="label">Port <?=$station->port?:'Auto'?></div></div>
 </div>
-<div class="form-group" style="margin-top:12px"><label>Server Type</label><input class="inp inp-sm" value="<?=strtoupper($station->server_type??'ICECAST')?>" disabled><div class="hint">Detected from your station configuration</div></div>
 </div>
-<div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
+<div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Continue &raquo;</button></div>
 
 <?php elseif ($step === 4): ?>
 <div class="wizard-card">
@@ -125,7 +126,7 @@ textarea.inp{resize:vertical;min-height:60px}
 <h2>AutoDJ</h2>
 <div class="desc">Configure AutoDJ playback behavior</div>
 <div class="check-group" style="margin-bottom:12px">
-<label><input type="checkbox" name="autodj_enabled" value="1" <?=$config->autodj_enabled?'checked':''?>> <span>Enable AutoDJ</span></label>
+<label><input type="hidden" name="autodj_enabled" value="0"><input type="checkbox" name="autodj_enabled" value="1" <?=$config->autodj_enabled?'checked':''?>> <span>Enable AutoDJ</span></label>
 </div>
 <div class="form-group"><label>Playlist Mode</label>
 <select class="inp" name="playlist_mode">
@@ -135,28 +136,18 @@ textarea.inp{resize:vertical;min-height:60px}
 </select></div>
 <div class="grid-3">
 <div class="form-group"><label>Crossfade Time</label><input class="inp" type="number" name="crossfade_time" value="<?=$config->crossfade_time?:5?>"><div class="hint">Seconds</div></div>
-<div class="form-group"><label>&nbsp;</label><div class="check-group"><label><input type="checkbox" name="crossfade_enabled" value="1" <?=$config->crossfade_enabled?'checked':''?>> <span>Crossfade</span></label></div></div>
+<div class="form-group"><label>&nbsp;</label><div class="check-group"><label><input type="hidden" name="crossfade_enabled" value="0"><input type="checkbox" name="crossfade_enabled" value="1" <?=$config->crossfade_enabled?'checked':''?>> <span>Crossfade</span></label></div></div>
 </div>
 <div class="grid-3">
-<div class="check-group"><label><input type="checkbox" name="normalize_audio" value="1" <?=$config->normalize_audio?'checked':''?>> <span>Normalize Audio</span></label></div>
-<div class="check-group"><label><input type="checkbox" name="replaygain" value="1" <?=$config->replaygain?'checked':''?>> <span>ReplayGain</span></label></div>
-<div class="check-group"><label><input type="checkbox" name="silence_detection" value="1" <?=$config->silence_detection?'checked':''?>> <span>Silence Detection</span></label></div>
+<div class="check-group"><label><input type="hidden" name="normalize_audio" value="0"><input type="checkbox" name="normalize_audio" value="1" <?=$config->normalize_audio?'checked':''?>> <span>Normalize Audio</span></label></div>
+<div class="check-group"><label><input type="hidden" name="replaygain" value="0"><input type="checkbox" name="replaygain" value="1" <?=$config->replaygain?'checked':''?>> <span>ReplayGain</span></label></div>
+<div class="check-group"><label><input type="hidden" name="silence_detection" value="0"><input type="checkbox" name="silence_detection" value="1" <?=$config->silence_detection?'checked':''?>> <span>Silence Detection</span></label></div>
 </div>
-<div class="check-group"><label><input type="checkbox" name="remove_duplicates" value="1" <?=$config->remove_duplicates?'checked':''?>> <span>Remove Duplicates</span></label></div>
+<div class="check-group"><label><input type="hidden" name="remove_duplicates" value="0"><input type="checkbox" name="remove_duplicates" value="1" <?=$config->remove_duplicates?'checked':''?>> <span>Remove Duplicates</span></label></div>
 </div>
 <div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
 
 <?php elseif ($step === 6): ?>
-<div class="wizard-card">
-<h2>Music Library</h2>
-<div class="desc">Upload your music or import from folders</div>
-<div class="upload-area" onclick="document.getElementById('music-upload').click()">Click to upload or drag &amp; drop<br><span style="font-size:10px">MP3, AAC, FLAC, OGG, WAV supported</span></div>
-<input id="music-upload" type="file" name="music_files[]" multiple accept=".mp3,.aac,.flac,.ogg,.wav" style="display:none">
-<div class="hint" style="margin-top:8px">You can also upload ZIP archives for bulk import</div>
-</div>
-<div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
-
-<?php elseif ($step === 7): ?>
 <div class="wizard-card">
 <h2>Playlist</h2>
 <div class="desc">Create playlists for your station</div>
@@ -170,7 +161,7 @@ textarea.inp{resize:vertical;min-height:60px}
 </div>
 <div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
 
-<?php elseif ($step === 8): ?>
+<?php elseif ($step === 7): ?>
 <div class="wizard-card">
 <h2>Rotation Rules</h2>
 <div class="desc">Control how often songs repeat</div>
@@ -180,33 +171,33 @@ textarea.inp{resize:vertical;min-height:60px}
 <div class="form-group"><label>Max Album Repeat</label><select class="inp" name="max_album_repeat"><option value="30" <?=$config->max_album_repeat==30?'selected':''?>>30 Minutes</option><option value="60" <?=$config->max_album_repeat==60?'selected':''?>>1 Hour</option><option value="120" <?=$config->max_album_repeat==120?'selected':''?>>2 Hours</option><option value="240" <?=$config->max_album_repeat==240?'selected':''?>>4 Hours</option></select></div>
 </div>
 <div class="check-group">
-<label><input type="checkbox" name="shuffle_enabled" value="1" <?=$config->shuffle_enabled?'checked':''?>> <span>Shuffle</span></label>
-<label><input type="checkbox" name="weight_new_songs" value="1" <?=$config->weight_new_songs?'checked':''?>> <span>Weight New Songs</span></label>
-<label><input type="checkbox" name="weight_favorites" value="1" <?=$config->weight_favorites?'checked':''?>> <span>Weight Favorites</span></label>
+<label><input type="hidden" name="shuffle_enabled" value="0"><input type="checkbox" name="shuffle_enabled" value="1" <?=$config->shuffle_enabled?'checked':''?>> <span>Shuffle</span></label>
+<label><input type="hidden" name="weight_new_songs" value="0"><input type="checkbox" name="weight_new_songs" value="1" <?=$config->weight_new_songs?'checked':''?>> <span>Weight New Songs</span></label>
+<label><input type="hidden" name="weight_favorites" value="0"><input type="checkbox" name="weight_favorites" value="1" <?=$config->weight_favorites?'checked':''?>> <span>Weight Favorites</span></label>
+</div>
+</div>
+<div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
+
+<?php elseif ($step === 8): ?>
+<div class="wizard-card">
+<h2>DJ Override</h2>
+<div class="desc">Configure live DJ integration</div>
+<div class="grid-2">
+<div class="check-group"><label><input type="hidden" name="allow_live_djs" value="0"><input type="checkbox" name="allow_live_djs" value="1" <?=$config->allow_live_djs?'checked':''?>> <span>Allow Live DJs</span></label></div>
+<div class="check-group"><label><input type="hidden" name="auto_switch_dj" value="0"><input type="checkbox" name="auto_switch_dj" value="1" <?=$config->auto_switch_dj?'checked':''?>> <span>Auto-Switch to DJ</span></label></div>
+</div>
+<div class="grid-2">
+<div class="check-group"><label><input type="hidden" name="fallback_autodj" value="0"><input type="checkbox" name="fallback_autodj" value="1" <?=$config->fallback_autodj?'checked':''?>> <span>Fallback to AutoDJ</span></label></div>
+<div class="form-group"><label>Reconnect Time</label><select class="inp" name="reconnect_time"><option value="10" <?=$config->reconnect_time==10?'selected':''?>>10 Seconds</option><option value="30" <?=$config->reconnect_time==30?'selected':''?>>30 Seconds</option><option value="60" <?=$config->reconnect_time==60?'selected':''?>>1 Minute</option><option value="300" <?=$config->reconnect_time==300?'selected':''?>>5 Minutes</option></select></div>
 </div>
 </div>
 <div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
 
 <?php elseif ($step === 9): ?>
 <div class="wizard-card">
-<h2>DJ Override</h2>
-<div class="desc">Configure live DJ integration</div>
-<div class="grid-2">
-<div class="check-group"><label><input type="checkbox" name="allow_live_djs" value="1" <?=$config->allow_live_djs?'checked':''?>> <span>Allow Live DJs</span></label></div>
-<div class="check-group"><label><input type="checkbox" name="auto_switch_dj" value="1" <?=$config->auto_switch_dj?'checked':''?>> <span>Auto-Switch to DJ</span></label></div>
-</div>
-<div class="grid-2">
-<div class="check-group"><label><input type="checkbox" name="fallback_autodj" value="1" <?=$config->fallback_autodj?'checked':''?>> <span>Fallback to AutoDJ</span></label></div>
-<div class="form-group"><label>Reconnect Time</label><select class="inp" name="reconnect_time"><option value="10" <?=$config->reconnect_time==10?'selected':''?>>10 Seconds</option><option value="30" <?=$config->reconnect_time==30?'selected':''?>>30 Seconds</option><option value="60" <?=$config->reconnect_time==60?'selected':''?>>1 Minute</option><option value="300" <?=$config->reconnect_time==300?'selected':''?>>5 Minutes</option></select></div>
-</div>
-</div>
-<div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
-
-<?php elseif ($step === 10): ?>
-<div class="wizard-card">
 <h2>Jingles</h2>
 <div class="desc">Configure station IDs, sweepers, and promos</div>
-<div class="check-group" style="margin-bottom:12px"><label><input type="checkbox" name="jingles_enabled" value="1" <?=$config->jingles_enabled?'checked':''?>> <span>Enable Jingles</span></label></div>
+<div class="check-group" style="margin-bottom:12px"><label><input type="hidden" name="jingles_enabled" value="0"><input type="checkbox" name="jingles_enabled" value="1" <?=$config->jingles_enabled?'checked':''?>> <span>Enable Jingles</span></label></div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
 <div>
 <div class="upload-area" style="padding:20px" onclick="document.getElementById('jingle-upload').click()">Upload Station IDs</div>
@@ -224,11 +215,11 @@ textarea.inp{resize:vertical;min-height:60px}
 </div>
 <div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
 
-<?php elseif ($step === 11): ?>
+<?php elseif ($step === 10): ?>
 <div class="wizard-card">
 <h2>Advertisements</h2>
 <div class="desc">Configure ad insertion</div>
-<div class="check-group" style="margin-bottom:12px"><label><input type="checkbox" name="ads_enabled" value="1" <?=$config->ads_enabled?'checked':''?>> <span>Enable Ads</span></label></div>
+<div class="check-group" style="margin-bottom:12px"><label><input type="hidden" name="ads_enabled" value="0"><input type="checkbox" name="ads_enabled" value="1" <?=$config->ads_enabled?'checked':''?>> <span>Enable Ads</span></label></div>
 <div class="grid-2">
 <div class="form-group"><label>Max Ads Per Hour</label><select class="inp" name="max_ads_per_hour"><option value="1" <?=$config->max_ads_per_hour==1?'selected':''?>>1</option><option value="2" <?=$config->max_ads_per_hour==2?'selected':''?>>2</option><option value="3" <?=$config->max_ads_per_hour==3?'selected':''?>>3</option><option value="4" <?=$config->max_ads_per_hour==4?'selected':''?>>4</option><option value="6" <?=$config->max_ads_per_hour==6?'selected':''?>>6</option><option value="8" <?=$config->max_ads_per_hour==8?'selected':''?>>8</option></select></div>
 <div class="upload-area" style="padding:20px" onclick="document.getElementById('ad-upload').click()">Upload Ads</div>
@@ -237,11 +228,11 @@ textarea.inp{resize:vertical;min-height:60px}
 </div>
 <div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
 
-<?php elseif ($step === 12): ?>
+<?php elseif ($step === 11): ?>
 <div class="wizard-card">
 <h2>Song Requests</h2>
 <div class="desc">Configure listener song requests</div>
-<div class="check-group" style="margin-bottom:12px"><label><input type="checkbox" name="requests_enabled" value="1" <?=$config->requests_enabled?'checked':''?>> <span>Enable Requests</span></label></div>
+<div class="check-group" style="margin-bottom:12px"><label><input type="hidden" name="requests_enabled" value="0"><input type="checkbox" name="requests_enabled" value="1" <?=$config->requests_enabled?'checked':''?>> <span>Enable Requests</span></label></div>
 <div class="grid-3">
 <div class="form-group"><label>Request Delay</label><select class="inp" name="request_delay"><option value="0" <?=$config->request_delay==0?'selected':''?>>None</option><option value="15" <?=$config->request_delay==15?'selected':''?>>15 Minutes</option><option value="30" <?=$config->request_delay==30?'selected':''?>>30 Minutes</option><option value="60" <?=$config->request_delay==60?'selected':''?>>1 Hour</option></select></div>
 <div class="form-group"><label>Max Requests/Listener</label><select class="inp" name="max_requests_per_listener"><option value="1" <?=$config->max_requests_per_listener==1?'selected':''?>>1</option><option value="2" <?=$config->max_requests_per_listener==2?'selected':''?>>2</option><option value="3" <?=$config->max_requests_per_listener==3?'selected':''?>>3</option><option value="5" <?=$config->max_requests_per_listener==5?'selected':''?>>5</option></select></div>
@@ -250,43 +241,7 @@ textarea.inp{resize:vertical;min-height:60px}
 </div>
 <div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
 
-<?php elseif ($step === 13): ?>
-<div class="wizard-card">
-<h2>Metadata</h2>
-<div class="desc">Configure now-playing metadata</div>
-<div class="feature-grid">
-<div class="feature-item"><div class="icon">&#9835;</div><div class="label">Artist</div></div>
-<div class="feature-item"><div class="icon">&#9835;</div><div class="label">Title</div></div>
-<div class="feature-item"><div class="icon">&#9835;</div><div class="label">Album</div></div>
-<div class="feature-item"><div class="icon">&#9835;</div><div class="label">Genre</div></div>
-</div>
-<div class="check-group" style="margin-top:12px"><label><input type="checkbox" name="metadata_update" value="1" <?=$config->metadata_update?'checked':''?>> <span>Auto-Update Metadata (ICY/Now Playing)</span></label></div>
-</div>
-<div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
-
-<?php elseif ($step === 14): ?>
-<div class="wizard-card">
-<h2>Backup</h2>
-<div class="desc">Configure automatic backups</div>
-<div class="form-group"><label>Backup Frequency</label>
-<select class="inp" name="backup_frequency">
-<option value="daily" <?=$config->backup_frequency==='daily'?'selected':''?>>Daily</option>
-<option value="weekly" <?=$config->backup_frequency==='weekly'?'selected':''?>>Weekly</option>
-<option value="monthly" <?=$config->backup_frequency==='monthly'?'selected':''?>>Monthly</option>
-<option value="never" <?=$config->backup_frequency==='never'?'selected':''?>>Never</option>
-</select></div>
-<div class="form-group"><label>Cloud Backup</label>
-<select class="inp" name="cloud_backup">
-<option value="" <?=!$config->cloud_backup?'selected':''?>>None</option>
-<option value="google_drive" <?=$config->cloud_backup==='google_drive'?'selected':''?>>Google Drive</option>
-<option value="dropbox" <?=$config->cloud_backup==='dropbox'?'selected':''?>>Dropbox</option>
-<option value="onedrive" <?=$config->cloud_backup==='onedrive'?'selected':''?>>OneDrive</option>
-<option value="s3" <?=$config->cloud_backup==='s3'?'selected':''?>>Amazon S3</option>
-</select></div>
-</div>
-<div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
-
-<?php elseif ($step === 15): ?>
+<?php elseif ($step === 12): ?>
 <div class="wizard-card">
 <h2>Setup Complete!</h2>
 <div class="desc">Your AutoDJ is ready to go</div>
@@ -301,7 +256,7 @@ textarea.inp{resize:vertical;min-height:60px}
 <div style="font-size:16px;color:#c0c0c0;margin-bottom:4px">Station Ready</div>
 <div style="font-size:12px;color:#64748b">All settings have been saved. You can now manage your AutoDJ from the dashboard.</div>
 </div>
-<label class="check-group" style="justify-content:center;margin-bottom:10px"><input type="checkbox" name="autodj_enabled" value="1" <?=$config->autodj_enabled?'checked':''?> checked> <span>Start AutoDJ immediately</span></label>
+<label class="check-group" style="justify-content:center;margin-bottom:10px"><input type="hidden" name="autodj_enabled" value="0"><input type="checkbox" name="autodj_enabled" value="1" <?=$config->autodj_enabled?'checked':''?>> <span>Start AutoDJ immediately</span></label>
 </div>
 <div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-success">Finish Setup &raquo;</button></div>
 <?php endif; ?>

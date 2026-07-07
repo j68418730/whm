@@ -1,6 +1,6 @@
 <?php
 session_start();
-$action = $_GET['action'] ?? 'login';
+$action = $_POST['action'] ?? $_GET['action'] ?? 'login';
 $error = '';
 $success = '';
 $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
@@ -47,9 +47,9 @@ if (!isset($_SESSION['dj_user']) && isset($_SESSION['user'])) {
 if ($_POST && $action === 'login') {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
-    $stmt = $pdo->prepare("SELECT d.*, s.port, s.status as stream_status, s.current_dj, s.autodj_active,
+    $stmt = $pdo->prepare("SELECT d.*, ss.port, ss.status as stream_status, ss.autodj_enabled as autodj_active,
         (SELECT COUNT(*) FROM radio_listener_analytics WHERE stream_id = d.stream_id AND date = CURDATE()) as today_listeners
-        FROM radio_djs d JOIN radio_streams s ON d.stream_id = s.id WHERE d.username = ? AND d.status = 'active'");
+        FROM radio_djs d JOIN streaming_stations ss ON d.stream_id = ss.id WHERE d.username = ? AND d.status = 'active'");
     $stmt->execute([$username]);
     $dj = $stmt->fetch(PDO::FETCH_OBJ);
     if ($dj && password_verify($password, $dj->password)) {
@@ -71,6 +71,81 @@ if ($action === 'logout') {
     exit;
 }
 
+if ($action === 'takeover' && $_POST && isset($_SESSION['dj_user'])) {
+    $sid = $_SESSION['dj_user']['stream_id'] ?? 0;
+    $djUsername = $_SESSION['dj_user']['username'] ?? '';
+    if ($sid > 0) {
+        // Kill AutoDJ by stream-specific runner filename
+        exec("pkill -f \"runner_{$sid}\" 2>/dev/null");
+        // Kill PID file process
+        $pidFile = '/home/' . $sid . '/radio/autodj/autodj.pid';
+        // Try planethosts path too
+        $altPidFile = '/home/planethosts/radio/autodj/autodj.pid';
+        foreach ([$pidFile, $altPidFile] as $pf) {
+            if (file_exists($pf)) { $pid = (int)trim(file_get_contents($pf)); if ($pid > 0) { exec("kill {$pid} 2>/dev/null"); usleep(200000); } @unlink($pf); }
+        }
+        // Also kill any ffmpeg/shoutcast processes
+        exec("pkill -f \"ffmpeg.*{$sid}\" 2>/dev/null");
+        exec("pkill -f \"ShoutcastSource\" 2>/dev/null");
+        // Update DB
+        try {
+            $pdo->exec("UPDATE streaming_stations SET autodj_enabled=0 WHERE id=" . (int)$sid);
+            $pdo->exec("UPDATE radio_autodj_config SET autodj_enabled=0 WHERE station_id=" . ((int)$sid + 10000));
+            $pdo->exec("UPDATE radio_streams SET current_dj=" . $pdo->quote($djUsername) . " WHERE id=" . (int)$sid);
+        } catch (\Exception $e) {}
+        $success = 'AutoDJ stopped. Connect your broadcasting software to port ' . ((int)$sid + 8998) . ' with your DJ username and password.';
+    }
+    header('Location: /dj_panel.php?action=dashboard');
+    exit;
+}
+
+// ─── KICK STREAM ───
+if ($action === 'kick' && $_POST && isset($_SESSION['dj_user'])) {
+    $ksid = (int)($_POST['stream_id'] ?? 0);
+    $djUser = $_SESSION['dj_user']['username'] ?? 'unknown';
+    if ($ksid > 0) {
+        $st = $pdo->prepare("SELECT * FROM streaming_stations WHERE id = ?");
+        $st->execute([$ksid]);
+        $s = $st->fetch(PDO::FETCH_OBJ);
+        if ($s) {
+            $engine = strtolower($s->engine ?? $s->server_type ?? 'icecast');
+            if ($engine === 'icecast') {
+                @file_get_contents("http://localhost:{$s->port}/admin/killsource?mount={$s->mount_point}", false, stream_context_create(['http'=>['timeout'=>3, 'header'=>"Authorization: Basic " . base64_encode("admin:{$s->admin_password}")]]));
+            } elseif (in_array($engine, ['shoutcast2', 'shoutcast'])) {
+                @file_get_contents("http://localhost:{$s->port}/admin.cgi?mode=kicksrc&sid=1", false, stream_context_create(['http'=>['timeout'=>3, 'header'=>"Authorization: Basic " . base64_encode("admin:{$s->admin_password}")]]));
+            } else {
+                @file_get_contents("http://localhost:{$s->port}/admin.cgi?pass={$s->admin_password}&mode=kicksrc", false, stream_context_create(['http'=>['timeout'=>3]]));
+            }
+            exec("pkill -f \"runner_{$ksid}\" 2>/dev/null");
+            $pidFile = '/home/planethosts/radio/autodj/autodj.pid';
+            if (file_exists($pidFile)) { $pid = (int)trim(file_get_contents($pidFile)); if ($pid > 0) exec("kill {$pid} 2>/dev/null"); @unlink($pidFile); }
+            try { $pdo->exec("INSERT INTO radio_kick_log (stream_id, kicked_by, engine, method) VALUES ($ksid, " . $pdo->quote($djUser) . ", " . $pdo->quote($engine) . ", 'dj_panel')"); } catch (\Exception $e) {}
+            $success = 'Source kicked on stream #' . $ksid . '.';
+        }
+    }
+    header('Location: /dj_panel.php?action=dashboard');
+    exit;
+}
+
+// ─── ADD SCHEDULE ───
+if ($action === 'add_schedule' && $_POST && isset($_SESSION['dj_user'])) {
+    $sId = $_SESSION['dj_user']['stream_id'] ?? 0;
+    $djId = $_SESSION['dj_user']['id'] ?? 0;
+    $sn = trim($_POST['show_name'] ?? '');
+    $dw = (int)($_POST['day_of_week'] ?? 0);
+    $st = trim($_POST['start_time'] ?? '');
+    $et = trim($_POST['end_time'] ?? '');
+    if ($sn && $st && $et && $sId) {
+        try {
+            $pdo->prepare("INSERT INTO radio_schedule (stream_id, dj_id, show_name, day_of_week, start_time, end_time, is_active, created_by) VALUES (?,?,?,?,?,?,1,'dj')")
+                ->execute([$sId, $djId, $sn, $dw, $st, $et]);
+            $success = 'Show added to your schedule.';
+        } catch (\Exception $e) { $error = 'Failed to add show.'; }
+    } else { $error = 'Please fill all fields.'; }
+    header('Location: /dj_panel.php?action=dashboard');
+    exit;
+}
+
 // ─── SAVE PROFILE ───
 if ($_POST && $action === 'save_profile' && isset($_SESSION['dj_user'])) {
     $did = $_SESSION['dj_user']['id'];
@@ -87,11 +162,12 @@ if ($_FILES && $action === 'upload_banner' && isset($_SESSION['dj_user'])) {
     $allowed = ['jpg','jpeg','png','gif','webp'];
     $ext = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
     if (in_array($ext, $allowed) && $_FILES['file']['size'] < 5 * 1024 * 1024) {
-        $dir = 'storage/dj/' . $_SESSION['dj_user']['id'] . '/';
+        $dir = '/var/www/radiohosting/storage/dj/' . $_SESSION['dj_user']['id'] . '/';
         @mkdir($dir, 0755, true);
         $name = 'banner_' . bin2hex(random_bytes(8)) . '.' . $ext;
         move_uploaded_file($_FILES['file']['tmp_name'], $dir . $name);
-        $pdo->prepare("UPDATE radio_djs SET banner = ? WHERE id = ?")->execute([$dir . $name, $_SESSION['dj_user']['id']]);
+        $urlPath = '/storage/dj/' . $_SESSION['dj_user']['id'] . '/' . $name;
+        $pdo->prepare("UPDATE radio_djs SET banner = ? WHERE id = ?")->execute([$urlPath, $_SESSION['dj_user']['id']]);
         $success = 'Banner uploaded.';
     } else {
         $error = 'Invalid file. Allowed: jpg, png, gif, webp. Max 5MB.';
@@ -104,11 +180,12 @@ if ($_FILES && $action === 'upload_avatar' && isset($_SESSION['dj_user'])) {
     $allowed = ['jpg','jpeg','png','gif','webp'];
     $ext = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
     if (in_array($ext, $allowed) && $_FILES['file']['size'] < 2 * 1024 * 1024) {
-        $dir = 'storage/dj/' . $_SESSION['dj_user']['id'] . '/';
+        $dir = '/var/www/radiohosting/storage/dj/' . $_SESSION['dj_user']['id'] . '/';
         @mkdir($dir, 0755, true);
         $name = 'avatar_' . bin2hex(random_bytes(8)) . '.' . $ext;
         move_uploaded_file($_FILES['file']['tmp_name'], $dir . $name);
-        $pdo->prepare("UPDATE radio_djs SET avatar = ? WHERE id = ?")->execute([$dir . $name, $_SESSION['dj_user']['id']]);
+        $urlPath = '/storage/dj/' . $_SESSION['dj_user']['id'] . '/' . $name;
+        $pdo->prepare("UPDATE radio_djs SET avatar = ? WHERE id = ?")->execute([$urlPath, $_SESSION['dj_user']['id']]);
         $success = 'Avatar updated.';
     } else {
         $error = 'Invalid file. Allowed: jpg, png, gif, webp. Max 2MB.';
@@ -152,9 +229,9 @@ if ($action === 'download_playlist' && isset($_SESSION['dj_user'])) {
 // ─── GET FRESH DJ DATA ───
 $djData = null;
 if (isset($_SESSION['dj_user'])) {
-    $stmt = $pdo->prepare("SELECT d.*, s.port, s.status as stream_status, s.listener_count, s.current_dj, s.autodj_active,
+    $stmt = $pdo->prepare("SELECT d.*, ss.status as stream_status, ss.listener_count, ss.current_song,
         (SELECT COUNT(*) FROM radio_playlist_items pi JOIN radio_playlists p ON pi.playlist_id = p.id WHERE p.stream_id = d.stream_id) as track_count
-        FROM radio_djs d JOIN radio_streams s ON d.stream_id = s.id WHERE d.id = ?");
+        FROM radio_djs d JOIN streaming_stations ss ON d.stream_id = ss.id WHERE d.id = ?");
     $stmt->execute([$_SESSION['dj_user']['id']]);
     $djData = $stmt->fetch(PDO::FETCH_OBJ);
     if (!$djData) { session_destroy(); header('Location: /dj_panel.php'); exit; }
@@ -255,7 +332,70 @@ textarea{min-height:80px;resize:vertical}
 <div class="stat-card" style="--c:#4ade80"><div class="num"><?php echo $djData->stream_status ?? 'N/A'; ?></div><div class="label">Stream Status</div></div>
 <div class="stat-card" style="--c:#38bdf8"><div class="num"><?php echo $djData->listener_count ?? 0; ?></div><div class="label">Current Listeners</div></div>
 <div class="stat-card" style="--c:#facc15"><div class="num"><?php echo $djData->track_count ?? 0; ?></div><div class="label">Library Tracks</div></div>
-<div class="stat-card" style="--c:#a78bfa"><div class="num"><?php echo $djData->autodj_active ? 'AutoDJ' : ($djData->current_dj ? 'Live DJ' : 'Offline'); ?></div><div class="label">Source</div></div>
+<div class="stat-card" style="--c:#a78bfa"><div class="num" id="dj-source-status"><?php echo $djData->autodj_active ? 'AutoDJ' : ($djData->current_dj ? 'Live DJ' : 'Offline'); ?></div><div class="label">Source</div></div>
+</div>
+
+<!-- DJ Takeover -->
+<?php
+$streamId = $djData->stream_id ?? 0;
+$ss = $pdo->prepare("SELECT * FROM streaming_stations WHERE id = ?");
+$ss->execute([$streamId]);
+$station = $ss->fetch(PDO::FETCH_OBJ);
+$djPort = $station->port ?? 8000;
+$djPass = $station->plain_password ?? '';
+$djHost = 'planet-hosts.com';
+$djUsername = $_SESSION['dj_user']['username'] ?? '';
+$djRealPass = $_SESSION['dj_user']['real_password'] ?? 'your-dj-password'; // Will be set below if available
+// Try to get the actual DJ password from the DB (if this user owns the stream, show the source password instead)
+$isOwner = !empty($_SESSION['dj_user']['is_owner']);
+?>
+
+<!-- Broadcaster Info -->
+<div class="card" style="border-color:rgba(0,191,255,.2)">
+<h3 style="color:#0A84FF"><i class="fas fa-broadcast-tower"></i> Broadcaster Info</h3>
+<div style="margin-bottom:12px;font-size:13px;color:#94a3b8;line-height:1.5">
+Connect your broadcasting software with these details.
+</div>
+<div class="card" style="background:rgba(250,204,21,.06);border:1px solid rgba(250,204,21,.15);border-radius:8px;padding:12px;margin-bottom:12px">
+<div style="font-size:11px;color:#facc15;font-weight:600;margin-bottom:4px">📻 SAM Broadcaster Users</div>
+<div style="font-size:11px;color:#94a3b8">Enter your credentials as <strong style="color:#e0e0e0">djusername:djpassword</strong> in the <strong style="color:#e0e0e0">Password</strong> field. SAM only has one password field — combine them with a colon.</div>
+</div>
+<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:16px;font-family:monospace;font-size:12px;line-height:2">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<span><strong style="color:#64748b">Server:</strong> <span style="color:#4ade80" id="bi-server"><?php echo $djHost; ?></span></span>
+<button class="btn" style="padding:2px 8px;font-size:10px;background:rgba(255,255,255,.06);color:#94a3b8;border:none;border-radius:4px;cursor:pointer" onclick="copyField('bi-server')">Copy</button>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center">
+<span><strong style="color:#64748b">Port:</strong> <span style="color:#4ade80" id="bi-port"><?php echo $djPort + 2; ?></span> <span style="color:#64748b;font-size:10px">(DJ relay)</span></span>
+<button class="btn" style="padding:2px 8px;font-size:10px;background:rgba(255,255,255,.06);color:#94a3b8;border:none;border-radius:4px;cursor:pointer" onclick="copyField('bi-port')">Copy</button>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center">
+<span><strong style="color:#64748b">Username:</strong> <span style="color:#38bdf8" id="bi-user"><?php echo htmlspecialchars($djUsername); ?></span></span>
+<button class="btn" style="padding:2px 8px;font-size:10px;background:rgba(255,255,255,.06);color:#94a3b8;border:none;border-radius:4px;cursor:pointer" onclick="copyField('bi-user')">Copy</button>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center">
+<span><strong style="color:#64748b">Password:</strong> <span style="color:#facc15" id="bi-pass"><?php echo $isOwner ? htmlspecialchars($djPass) : '••••••••'; ?></span></span>
+<button class="btn" style="padding:2px 8px;font-size:10px;background:rgba(255,255,255,.06);color:#94a3b8;border:none;border-radius:4px;cursor:pointer" onclick="togglePass()"><?php echo $isOwner ? 'Hide' : 'Show'; ?></button>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center">
+<span><strong style="color:#64748b">Format:</strong> <span style="color:#94a3b8">MP3 · <?php echo $station->bitrate ?? 128; ?> kbps</span></span>
+</div>
+</div>
+<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn btn-primary" style="font-size:12px;padding:8px 16px" onclick="copyAll()">📋 Copy All</button>
+<?php if (!$isOwner): ?>
+<button class="btn" style="font-size:12px;padding:8px 16px;background:rgba(255,255,255,.06);color:#e0e0e0" onclick="window.location.href='/dj_panel.php?action=takeover'">🎤 Stop AutoDJ</button>
+<?php endif; ?>
+</div>
+</div>
+<script>
+function copyField(id){var t=document.getElementById(id).textContent;navigator.clipboard.writeText(t);var b=event.target;b.textContent='Copied!';setTimeout(function(){b.textContent='Copy'},1500);}
+function togglePass(){var p=document.getElementById('bi-pass');if(p.textContent=='••••••••'){p.textContent='<?php echo addslashes($djPass); ?>';event.target.textContent='Hide'}else{p.textContent='••••••••';event.target.textContent='Show'}}
+function copyAll(){var t='Server: <?php echo addslashes($djHost); ?>\nPort: <?php echo $djPort + 2; ?>\nUsername: <?php echo addslashes($djUsername); ?>\nPassword: <?php echo $isOwner ? addslashes($djPass) : '<your DJ password>'; ?>\nFormat: MP3 <?php echo $station->bitrate ?? 128; ?>kbps';navigator.clipboard.writeText(t);var b=event.target;b.textContent='Copied All!';setTimeout(function(){b.textContent='📋 Copy All'},2000);}
+</script>
+
+<!-- Profile -->
+</div>
 </div>
 
 <!-- Banner -->
@@ -267,38 +407,6 @@ textarea{min-height:80px;resize:vertical}
 <?php endif; ?>
 </div>
 
-<!-- Profile -->
-<div class="card">
-<h3><i class="fas fa-user"></i> My Profile</h3>
-<div class="profile-section">
-<div class="avatar-box">
-<?php if ($djData->avatar && file_exists($djData->avatar)): ?>
-<img src="/<?php echo $djData->avatar; ?>" alt="Avatar">
-<?php else: ?>
-<i class="fas fa-microphone"></i>
-<?php endif; ?>
-</div>
-<div style="flex:1;min-width:200px">
-<form method="POST" enctype="multipart/form-data" style="margin-bottom:12px">
-<input type="file" name="file" accept="image/*" style="display:none" id="avatarInput" onchange="this.form.submit()">
-<input type="hidden" name="action" value="upload_avatar">
-<label for="avatarInput" class="upload-btn"><i class="fas fa-camera"></i> Change Avatar</label>
-</form>
-<form method="POST" enctype="multipart/form-data">
-<input type="file" name="file" accept="image/*" style="display:none" id="bannerInput" onchange="this.form.submit()">
-<input type="hidden" name="action" value="upload_banner">
-<label for="bannerInput" class="upload-btn"><i class="fas fa-image"></i> Change Banner</label>
-</form>
-</div>
-</div>
-
-<form method="POST" action="/dj_panel.php?action=save_profile" style="margin-top:16px">
-<div class="form-group"><label>Display Name</label><input name="name" value="<?php echo htmlspecialchars($djData->name ?? ''); ?>"></div>
-<div class="form-group"><label>Bio</label><textarea name="bio"><?php echo htmlspecialchars($djData->bio ?? ''); ?></textarea></div>
-<div class="form-group"><label>Website / Social Link</label><input name="website_url" value="<?php echo htmlspecialchars($djData->website_url ?? ''); ?>" placeholder="https://"></div>
-<button type="submit" class="btn btn-primary">Save Profile</button>
-</form>
-</div>
 
 <!-- Song Requests -->
 <?php
@@ -333,27 +441,113 @@ $requests = $reqs->fetchAll(PDO::FETCH_OBJ);
 <p style="font-size:11px;color:#64748b">Downloads a SAM Broadcaster compatible playlist file with all your tracks.</p>
 </div>
 
-<!-- Embed Player -->
+<!-- My Schedule -->
+<?php
+$sId = $_SESSION['dj_user']['stream_id'] ?? 0;
+$djId = $_SESSION['dj_user']['id'] ?? 0;
+$schStmt = $pdo->prepare("SELECT * FROM radio_schedule WHERE stream_id = ? AND (dj_id = ? OR dj_id = 0 OR dj_id IS NULL) ORDER BY day_of_week, start_time");
+$schStmt->execute([$sId, $djId]);
+$mySchedule = $schStmt->fetchAll(PDO::FETCH_OBJ);
+$days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+?>
 <div class="card">
-<h3><i class="fas fa-code"></i> Embed Now Playing Widget</h3>
-<div style="background:rgba(0,0,0,.3);padding:10px;border-radius:6px;font-family:monospace;font-size:11px;color:#4ade80;word-break:break-all;margin-bottom:8px">
-&lt;iframe src="http://planet-hosts.com/radio/nowplaying.php?stream=<?php echo $_SESSION['dj_user']['stream_id']; ?>&scroll=yes" width="100%" height="400"&gt;&lt;/iframe&gt;
+<h3><i class="fas fa-calendar-alt"></i> My Schedule</h3>
+<form method="POST" action="/dj_panel.php?action=add_schedule" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+<input name="show_name" placeholder="Show name" required style="flex:1;min-width:100px;padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
+<select name="day_of_week" style="padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
+<?php foreach($days as $i=>$d): ?><option value="<?=$i?>"><?=$d?></option><?php endforeach; ?>
+</select>
+<input name="start_time" type="time" required style="padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
+<input name="end_time" type="time" required style="padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
+<button class="btn btn-primary" style="padding:7px 14px;font-size:11px;width:auto">Add Show</button>
+</form>
+<?php if (empty($mySchedule)): ?>
+<p style="color:#64748b;font-size:13px">No shows scheduled yet.</p>
+<?php else: ?>
+<table style="width:100%;border-collapse:collapse;font-size:12px">
+<tr style="border-bottom:1px solid rgba(255,255,255,.06)"><th style="padding:8px 6px;text-align:left;color:#64748b;font-weight:600">Show</th><th style="padding:8px 6px;text-align:left;color:#64748b;font-weight:600">Day</th><th style="padding:8px 6px;text-align:left;color:#64748b;font-weight:600">Time</th></tr>
+<?php foreach ($mySchedule as $sh): ?>
+<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+<td style="padding:8px 6px"><?php echo htmlspecialchars($sh->show_name ?? 'Untitled'); ?></td>
+<td style="padding:8px 6px"><?php echo $days[$sh->day_of_week] ?? $sh->day_of_week; ?></td>
+<td style="padding:8px 6px"><?php echo htmlspecialchars($sh->start_time ?? '') . ' - ' . htmlspecialchars($sh->end_time ?? ''); ?></td>
+</tr>
+<?php endforeach; ?>
+</table>
+<?php endif; ?>
 </div>
-<p style="font-size:11px;color:#64748b">Add <code>?scroll=no</code> to disable scrolling.</p>
+<?php
+// Get user's streams for kick feature
+$userId = $_SESSION['dj_user']['id'] ?? 0;
+$streamId = $_SESSION['dj_user']['stream_id'] ?? 0;
+$isOwner = !empty($_SESSION['dj_user']['is_owner']);
+// Find hosting_user_id from stream
+$hSt = $pdo->prepare("SELECT user_id FROM streaming_stations WHERE id=?");
+$hSt->execute([$streamId]);
+$hRow = $hSt->fetch(PDO::FETCH_OBJ);
+$hostingId = $hRow->user_id ?? 0;
+// Get all streams for this user
+$userStreams = $pdo->prepare("SELECT id, name, engine, port, status FROM streaming_stations WHERE user_id=? ORDER BY id");
+$userStreams->execute([$hostingId]);
+$myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
+?>
 </div>
 
-<!-- Connection Info -->
+<!-- Kick Stream -->
+<div class="card" style="border-color:rgba(248,113,113,.2)">
+<h3 style="color:#f87171"><i class="fas fa-ban"></i> Kick Source</h3>
+<p style="font-size:12px;color:#94a3b8;margin-bottom:12px">Force-disconnect the current source (AutoDJ or Live DJ). The stream will stop until someone reconnects.</p>
+<?php if (empty($myStreams)): ?>
+<p style="color:#64748b;font-size:13px">No streams available.</p>
+<?php else: ?>
+<?php foreach ($myStreams as $st): 
+  $stEngine = strtolower($st->engine ?? $st->server_type ?? 'icecast');
+  $stLabel = strtoupper($stEngine === 'shoutcast' || $stEngine === 'shoutcast1' || $stEngine === 'shoutcast2' ? 'SHOUTcast' : 'Icecast');
+?>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+<div>
+<strong><?php echo htmlspecialchars($st->name ?? "Stream #{$st->id}"); ?></strong>
+<div style="font-size:11px;color:#64748b"><?php echo $stLabel; ?> · Port <?php echo $st->port; ?> · <span style="color:<?php echo $st->status === 'running' ? '#4ade80' : '#f87171'; ?>"><?php echo $st->status; ?></span></div>
+</div>
+<form method="POST" action="/dj_panel.php?action=kick" style="display:inline" onsubmit="return confirm('Kick the source on <?php echo htmlspecialchars($st->name ?? 'this stream'); ?>?');">
+<input type="hidden" name="stream_id" value="<?php echo $st->id; ?>">
+<button class="btn" style="padding:6px 14px;font-size:11px;background:rgba(248,113,113,.15);color:#f87171;width:auto">Kick</button>
+</form>
+</div>
+<?php endforeach; ?>
+<?php endif; ?>
+</div>
+
+<!-- Profile -->
 <div class="card">
-<h3><i class="fas fa-plug"></i> Stream Connection</h3>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
-<div><span style="color:#64748b">Server</span><br><strong><?php echo $_SERVER['SERVER_NAME'] ?? 'planet-hosts.com'; ?></strong></div>
-<div><span style="color:#64748b">Port</span><br><strong><?php echo $djData->port ?? 'N/A'; ?></strong></div>
-<div><span style="color:#64748b">Mount</span><br><strong>/stream.ogg</strong></div>
-<div><span style="color:#64748b">Username</span><br><strong><?php echo htmlspecialchars($djData->username); ?></strong></div>
+<h3><i class="fas fa-user"></i> My Profile</h3>
+<div class="profile-section">
+<div class="avatar-box">
+<?php if ($djData->avatar && file_exists($djData->avatar)): ?>
+<img src="/<?php echo $djData->avatar; ?>" alt="Avatar">
+<?php else: ?>
+<i class="fas fa-microphone"></i>
+<?php endif; ?>
 </div>
-<div style="margin-top:12px;padding:10px;background:rgba(0,0,0,.2);border-radius:8px;font-size:11px;color:#64748b">
-<i class="fas fa-info-circle"></i> Use these details in your streaming software (Mixxx, SAM Broadcaster, OBS, etc.)
+<div style="flex:1;min-width:200px">
+<form method="POST" enctype="multipart/form-data" style="margin-bottom:12px">
+<input type="file" name="file" accept="image/*" style="display:none" id="avatarInput" onchange="this.form.submit()">
+<input type="hidden" name="action" value="upload_avatar">
+<label for="avatarInput" class="upload-btn"><i class="fas fa-camera"></i> Change Avatar</label>
+</form>
+<form method="POST" enctype="multipart/form-data">
+<input type="file" name="file" accept="image/*" style="display:none" id="bannerInput" onchange="this.form.submit()">
+<input type="hidden" name="action" value="upload_banner">
+<label for="bannerInput" class="upload-btn"><i class="fas fa-image"></i> Change Banner</label>
+</form>
 </div>
+</div>
+<form method="POST" action="/dj_panel.php?action=save_profile" style="margin-top:16px">
+<div class="form-group"><label>Display Name</label><input name="name" value="<?php echo htmlspecialchars($djData->name ?? ''); ?>"></div>
+<div class="form-group"><label>Bio</label><textarea name="bio"><?php echo htmlspecialchars($djData->bio ?? ''); ?></textarea></div>
+<div class="form-group"><label>Website / Social Link</label><input name="website_url" value="<?php echo htmlspecialchars($djData->website_url ?? ''); ?>" placeholder="https://"></div>
+<button type="submit" class="btn btn-primary">Save Profile</button>
+</form>
 </div>
 
 </div>
