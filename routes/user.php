@@ -198,6 +198,7 @@ $router->get('/user/radio/autodj/category/delete/{id}', 'User\Controllers\RadioC
 $router->post('/user/radio/autodj/add-log', 'User\Controllers\RadioController@autodjAddLog');
 $router->get('/user/radio/autodj/clear-logs', 'User\Controllers\RadioController@autodjClearLogs');
 $router->get('/user/radio/widgets', 'User\Controllers\RadioController@widgets');
+$router->get('/studio', 'User\Controllers\RadioController@studio');
 // Chat routes
 $router->post('/chat/start', 'User\Controllers\ChatController@start');
 $router->get('/chat/poll/{sessionId}', 'User\Controllers\ChatController@poll');
