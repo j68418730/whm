@@ -229,7 +229,7 @@ if ($action === 'download_playlist' && isset($_SESSION['dj_user'])) {
 // ─── GET FRESH DJ DATA ───
 $djData = null;
 if (isset($_SESSION['dj_user'])) {
-    $stmt = $pdo->prepare("SELECT d.*, ss.status as stream_status, ss.listener_count, ss.current_song,
+    $stmt = $pdo->prepare("SELECT d.*, ss.status as stream_status, ss.listener_count, ss.current_song, ss.autodj_enabled as autodj_active,
         (SELECT COUNT(*) FROM radio_playlist_items pi JOIN radio_playlists p ON pi.playlist_id = p.id WHERE p.stream_id = d.stream_id) as track_count
         FROM radio_djs d JOIN streaming_stations ss ON d.stream_id = ss.id WHERE d.id = ?");
     $stmt->execute([$_SESSION['dj_user']['id']]);
@@ -313,6 +313,15 @@ textarea{min-height:80px;resize:vertical}
 .stream-status{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
 .stream-status.online{background:rgba(74,222,128,.12);color:#4ade80}
 .stream-status.offline{background:rgba(248,113,113,.12);color:#f87171}
+.dj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:0}
+.dj-grid .card{margin-bottom:0}
+@media(min-width:1200px){.dj-grid{grid-template-columns:repeat(5,1fr)}}
+.dj-tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap}
+.dj-tab{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:.15s;color:#64748b;background:rgba(255,255,255,.04);border:1px solid transparent}
+.dj-tab:hover{background:rgba(0,140,255,.08);color:#0A84FF}
+.dj-tab.act{background:rgba(0,140,255,.15);border-color:rgba(0,140,255,.3);color:#0A84FF}
+.dj-panel{display:none}
+.dj-panel.act{display:block}
 </style></head><body>
 <div class="bg"></div>
 <div class="topbar">
@@ -327,6 +336,15 @@ textarea{min-height:80px;resize:vertical}
 <?php if ($success): ?><div class="alert" style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);border-radius:8px;padding:10px 14px;color:#4ade80;font-size:13px;margin-bottom:16px"><?php echo htmlspecialchars($success); ?></div><?php endif; ?>
 <?php if ($error): ?><div class="alert" style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:10px 14px;color:#f87171;font-size:13px;margin-bottom:16px"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
 
+<div class="dj-tabs">
+<div class="dj-tab act" onclick="sw(event,'overview')">Overview</div>
+<div class="dj-tab" onclick="sw(event,'schedule')">Schedule</div>
+<div class="dj-tab" onclick="sw(event,'requests')">Requests</div>
+<div class="dj-tab" onclick="sw(event,'profile')">Profile</div>
+<div class="dj-tab" onclick="sw(event,'gallery')">Gallery</div>
+</div>
+
+<div class="dj-panel act" id="pn-overview">
 <!-- Stats -->
 <div class="grid">
 <div class="stat-card" style="--c:#4ade80"><div class="num"><?php echo $djData->stream_status ?? 'N/A'; ?></div><div class="label">Stream Status</div></div>
@@ -349,6 +367,8 @@ $djRealPass = $_SESSION['dj_user']['real_password'] ?? 'your-dj-password'; // Wi
 // Try to get the actual DJ password from the DB (if this user owns the stream, show the source password instead)
 $isOwner = !empty($_SESSION['dj_user']['is_owner']);
 ?>
+
+<div class="dj-grid">
 
 <!-- Broadcaster Info -->
 <div class="card" style="border-color:rgba(0,191,255,.2)">
@@ -394,8 +414,6 @@ function togglePass(){var p=document.getElementById('bi-pass');if(p.textContent=
 function copyAll(){var t='Server: <?php echo addslashes($djHost); ?>\nPort: <?php echo $djPort + 2; ?>\nUsername: <?php echo addslashes($djUsername); ?>\nPassword: <?php echo $isOwner ? addslashes($djPass) : '<your DJ password>'; ?>\nFormat: MP3 <?php echo $station->bitrate ?? 128; ?>kbps';navigator.clipboard.writeText(t);var b=event.target;b.textContent='Copied All!';setTimeout(function(){b.textContent='📋 Copy All'},2000);}
 </script>
 
-<!-- Profile -->
-</div>
 </div>
 
 <!-- Banner -->
@@ -408,74 +426,7 @@ function copyAll(){var t='Server: <?php echo addslashes($djHost); ?>\nPort: <?ph
 </div>
 
 
-<!-- Song Requests -->
-<?php
-$reqs = $pdo->prepare("SELECT * FROM radio_requests WHERE stream_id = ? AND status = 'pending' ORDER BY created_at ASC");
-$reqs->execute([$_SESSION['dj_user']['stream_id']]);
-$requests = $reqs->fetchAll(PDO::FETCH_OBJ);
-?>
-<div class="card">
-<h3><i class="fas fa-music"></i> Song Requests (<?php echo count($requests); ?>)</h3>
-<?php if (empty($requests)): ?>
-<p style="color:#64748b;font-size:13px">No pending requests.</p>
-<?php else: ?>
-<div style="<?php echo count($requests) > 5 ? 'max-height:200px;overflow-y:auto' : ''; ?>">
-<?php foreach ($requests as $r): ?>
-<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">
-<div>
-<strong style="font-size:14px"><?php echo htmlspecialchars($r->artist . ' - ' . $r->title); ?></strong>
-<?php if ($r->guest_name): ?><div style="font-size:11px;color:#64748b">Requested by: <?php echo htmlspecialchars($r->guest_name); ?></div><?php endif; ?>
-<?php if ($r->message): ?><div style="font-size:11px;color:#94a3b8;font-style:italic">"<?php echo htmlspecialchars($r->message); ?>"</div><?php endif; ?>
-</div>
-<a href="/dj_panel.php?action=remove_request&req_id=<?php echo $r->id; ?>" class="btn" style="padding:4px 10px;font-size:11px;width:auto;background:rgba(248,113,113,.15);color:#f87171">✕ Remove</a>
-</div>
-<?php endforeach; ?>
-</div>
-<?php endif; ?>
-</div>
 
-<!-- Tools -->
-<div class="card">
-<h3><i class="fas fa-tools"></i> DJ Tools</h3>
-<a href="/dj_panel.php?action=download_playlist" class="btn" style="display:inline-flex;width:auto;padding:8px 16px;font-size:12px;margin-bottom:8px">📥 Download SAM Playlist (.lst)</a>
-<p style="font-size:11px;color:#64748b">Downloads a SAM Broadcaster compatible playlist file with all your tracks.</p>
-</div>
-
-<!-- My Schedule -->
-<?php
-$sId = $_SESSION['dj_user']['stream_id'] ?? 0;
-$djId = $_SESSION['dj_user']['id'] ?? 0;
-$schStmt = $pdo->prepare("SELECT * FROM radio_schedule WHERE stream_id = ? AND (dj_id = ? OR dj_id = 0 OR dj_id IS NULL) ORDER BY day_of_week, start_time");
-$schStmt->execute([$sId, $djId]);
-$mySchedule = $schStmt->fetchAll(PDO::FETCH_OBJ);
-$days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-?>
-<div class="card">
-<h3><i class="fas fa-calendar-alt"></i> My Schedule</h3>
-<form method="POST" action="/dj_panel.php?action=add_schedule" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-<input name="show_name" placeholder="Show name" required style="flex:1;min-width:100px;padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<select name="day_of_week" style="padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<?php foreach($days as $i=>$d): ?><option value="<?=$i?>"><?=$d?></option><?php endforeach; ?>
-</select>
-<input name="start_time" type="time" required style="padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<input name="end_time" type="time" required style="padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<button class="btn btn-primary" style="padding:7px 14px;font-size:11px;width:auto">Add Show</button>
-</form>
-<?php if (empty($mySchedule)): ?>
-<p style="color:#64748b;font-size:13px">No shows scheduled yet.</p>
-<?php else: ?>
-<table style="width:100%;border-collapse:collapse;font-size:12px">
-<tr style="border-bottom:1px solid rgba(255,255,255,.06)"><th style="padding:8px 6px;text-align:left;color:#64748b;font-weight:600">Show</th><th style="padding:8px 6px;text-align:left;color:#64748b;font-weight:600">Day</th><th style="padding:8px 6px;text-align:left;color:#64748b;font-weight:600">Time</th></tr>
-<?php foreach ($mySchedule as $sh): ?>
-<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
-<td style="padding:8px 6px"><?php echo htmlspecialchars($sh->show_name ?? 'Untitled'); ?></td>
-<td style="padding:8px 6px"><?php echo $days[$sh->day_of_week] ?? $sh->day_of_week; ?></td>
-<td style="padding:8px 6px"><?php echo htmlspecialchars($sh->start_time ?? '') . ' - ' . htmlspecialchars($sh->end_time ?? ''); ?></td>
-</tr>
-<?php endforeach; ?>
-</table>
-<?php endif; ?>
-</div>
 <?php
 // Get user's streams for kick feature
 $userId = $_SESSION['dj_user']['id'] ?? 0;
@@ -517,8 +468,84 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 <?php endforeach; ?>
 <?php endif; ?>
 </div>
+</div>
 
-<!-- Profile -->
+</div>
+</div>
+
+<div class="dj-panel" id="pn-schedule">
+<div class="dj-grid">
+<!-- My Schedule -->
+<?php
+$sId = $_SESSION['dj_user']['stream_id'] ?? 0;
+$djId = $_SESSION['dj_user']['id'] ?? 0;
+$schStmt = $pdo->prepare("SELECT * FROM radio_schedule WHERE stream_id = ? AND (dj_id = ? OR dj_id = 0 OR dj_id IS NULL) ORDER BY day_of_week, start_time");
+$schStmt->execute([$sId, $djId]);
+$mySchedule = $schStmt->fetchAll(PDO::FETCH_OBJ);
+$days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+?>
+<div class="card">
+<h3><i class="fas fa-calendar-alt"></i> My Schedule</h3>
+<form method="POST" action="/dj_panel.php?action=add_schedule" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+<input name="show_name" placeholder="Show name" required style="flex:1;min-width:100px;padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
+<select name="day_of_week" style="padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
+<?php foreach($days as $i=>$d): ?><option value="<?=$i?>"><?=$d?></option><?php endforeach; ?>
+</select>
+<input name="start_time" type="time" required style="padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
+<input name="end_time" type="time" required style="padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
+<button class="btn btn-primary" style="padding:7px 14px;font-size:11px;width:auto">Add Show</button>
+</form>
+<?php if (empty($mySchedule)): ?>
+<p style="color:#64748b;font-size:13px">No shows scheduled yet.</p>
+<?php else: ?>
+<table style="width:100%;border-collapse:collapse;font-size:12px">
+<tr style="border-bottom:1px solid rgba(255,255,255,.06)"><th style="padding:8px 6px;text-align:left;color:#64748b;font-weight:600">Show</th><th style="padding:8px 6px;text-align:left;color:#64748b;font-weight:600">Day</th><th style="padding:8px 6px;text-align:left;color:#64748b;font-weight:600">Time</th></tr>
+<?php foreach ($mySchedule as $sh): ?>
+<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+<td style="padding:8px 6px"><?php echo htmlspecialchars($sh->show_name ?? 'Untitled'); ?></td>
+<td style="padding:8px 6px"><?php echo $days[$sh->day_of_week] ?? $sh->day_of_week; ?></td>
+<td style="padding:8px 6px"><?php echo htmlspecialchars($sh->start_time ?? '') . ' - ' . htmlspecialchars($sh->end_time ?? ''); ?></td>
+</tr>
+<?php endforeach; ?>
+</table>
+<?php endif; ?>
+</div>
+</div>
+</div>
+
+<div class="dj-panel" id="pn-requests">
+<?php
+$reqs = $pdo->prepare("SELECT * FROM radio_requests WHERE stream_id = ? AND status = 'pending' ORDER BY created_at ASC");
+$reqs->execute([$_SESSION['dj_user']['stream_id']]);
+$requests = $reqs->fetchAll(PDO::FETCH_OBJ);
+?>
+<div class="dj-grid">
+<div class="card">
+<h3><i class="fas fa-music"></i> Song Requests (<?php echo count($requests); ?>)</h3>
+<?php if (empty($requests)): ?>
+<p style="color:#64748b;font-size:13px">No pending requests.</p>
+<?php else: ?>
+<?php foreach ($requests as $r): ?>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+<div><strong style="font-size:14px"><?php echo htmlspecialchars($r->artist . ' - ' . $r->title); ?></strong>
+<?php if ($r->guest_name): ?><div style="font-size:11px;color:#64748b">Requested by: <?php echo htmlspecialchars($r->guest_name); ?></div><?php endif; ?>
+<?php if ($r->message): ?><div style="font-size:11px;color:#94a3b8;font-style:italic">"<?php echo htmlspecialchars($r->message); ?>"</div><?php endif; ?>
+</div>
+<a href="/dj_panel.php?action=remove_request&req_id=<?php echo $r->id; ?>" class="btn" style="padding:4px 10px;font-size:11px;width:auto;background:rgba(248,113,113,.15);color:#f87171">✕ Remove</a>
+</div>
+<?php endforeach; ?>
+<?php endif; ?>
+</div>
+<div class="card">
+<h3><i class="fas fa-tools"></i> DJ Tools</h3>
+<a href="/dj_panel.php?action=download_playlist" class="btn" style="display:inline-flex;width:auto;padding:8px 16px;font-size:12px;margin-bottom:8px">📥 Download SAM Playlist (.lst)</a>
+<p style="font-size:11px;color:#64748b">Downloads a SAM Broadcaster compatible playlist file.</p>
+</div>
+</div>
+</div>
+
+<div class="dj-panel" id="pn-profile">
+<div class="dj-grid">
 <div class="card">
 <h3><i class="fas fa-user"></i> My Profile</h3>
 <div class="profile-section">
@@ -543,6 +570,32 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 </div>
 </div>
 <form method="POST" action="/dj_panel.php?action=save_profile" style="margin-top:16px">
+<div class="form-group"><label>Display Name</label><input name="name" value="<?php echo htmlspecialchars($djData->name ?? ''); ?>"></div>
+<div class="form-group"><label>Bio</label><textarea name="bio" rows="3"><?php echo htmlspecialchars($djData->bio ?? ''); ?></textarea></div>
+<div class="form-group"><label>Website</label><input name="website_url" value="<?php echo htmlspecialchars($djData->website_url ?? ''); ?>" placeholder="https://"></div>
+<button type="submit" class="btn btn-primary">Save Profile</button>
+</form>
+</div>
+</div>
+</div>
+
+<div class="dj-panel" id="pn-gallery">
+<div class="dj-grid">
+<div class="card">
+<h3><i class="fas fa-images"></i> Gallery</h3>
+<p style="color:#64748b;font-size:13px">Gallery feature coming soon. Upload photos and show clips here.</p>
+</div>
+</div>
+</div>
+
+<script>
+function sw(e,id){
+  document.querySelectorAll('.dj-tab').forEach(function(t){t.classList.remove('act')});
+  document.querySelectorAll('.dj-panel').forEach(function(p){p.classList.remove('act')});
+  e.currentTarget.classList.add('act');
+  document.getElementById('pn-'+id).classList.add('act');
+}
+</script>
 <div class="form-group"><label>Display Name</label><input name="name" value="<?php echo htmlspecialchars($djData->name ?? ''); ?>"></div>
 <div class="form-group"><label>Bio</label><textarea name="bio"><?php echo htmlspecialchars($djData->bio ?? ''); ?></textarea></div>
 <div class="form-group"><label>Website / Social Link</label><input name="website_url" value="<?php echo htmlspecialchars($djData->website_url ?? ''); ?>" placeholder="https://"></div>
