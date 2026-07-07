@@ -24,8 +24,8 @@ class RadioAutoDJPlayer
         @mkdir($this->autodjDir, 0755, true);
         $files = $this->scanMusicFiles();
         if (empty($files)) return false;
+        $port = $this->stream->port ?? 8000;
         $engine = $this->stream->engine ?? 'icecast';
-        $port = ($engine === 'shoutcast' || $engine === 'shoutcast2') ? ($this->stream->port + 3) : ($this->stream->port ?? 8000);
         $password = $this->stream->plain_password ?? ($this->stream->password ?? '');
         $bitrate = $this->stream->bitrate ?? 128;
         $mount = $this->stream->mount_point ?? '/stream';
