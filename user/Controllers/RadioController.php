@@ -251,6 +251,19 @@ class RadioController extends Controller
                         }
                     }
                 } catch (\Exception $e) {}
+                // Create DJ folder
+                try {
+                    $ss = $this->db->table('streaming_stations')->where('id', $realStationId)->first();
+                    if ($ss) {
+                        $hu = $this->db->table('hosting_users')->where('id', $ss->user_id)->first();
+                        if ($hu) {
+                            $djDir = "/home/{$hu->username}/radio/dj/{$username}";
+                            @mkdir($djDir, 0755, true);
+                            @mkdir($djDir . '/gallery', 0755, true);
+                            @chmod($djDir, 0755);
+                        }
+                    }
+                } catch (\Exception $e) {}
                 $_SESSION['success'] = "DJ '{$name}' created.";
             } catch (\Exception $e) { $_SESSION['error'] = 'Username already exists.'; }
         }
