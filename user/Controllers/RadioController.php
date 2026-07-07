@@ -455,9 +455,11 @@ class RadioController extends Controller
         $playlistId = isset($_POST['playlist_id']) ? (int)$_POST['playlist_id'] : null;
         $dir = $this->getPlaylistDir($station, $playlistId);
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
-        if (!empty($_FILES['file']['name'][0])) {
+        $source = $_FILES['files'] ?? $_FILES['file'] ?? null;
+        if ($source && !empty($source['name'][0])) {
             $count = 0;
-            foreach ((array)$_FILES['file']['name'] as $i => $name) {
+            foreach ((array)$source['name'] as $i => $name) {
+                if ($source['error'][$i] !== UPLOAD_ERR_OK) continue;
                 $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
                 if (in_array($ext, ['mp3', 'aac', 'ogg', 'flac', 'wav', 'm4a'])) {
                     $dest = $dir . '/' . basename($name);
@@ -478,6 +480,11 @@ class RadioController extends Controller
                         }
                     }
                 }
+            }
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'count' => $count]);
+                exit;
             }
             $_SESSION['success'] = "$count file(s) uploaded.";
         }
@@ -1163,3 +1170,4 @@ class RadioController extends Controller
         ]);
     }
 }
+
