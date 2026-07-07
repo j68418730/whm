@@ -33,7 +33,11 @@ class DesktopConnector {
 
         if (!apiKey || !apiUrl || !stationId) {
             this.logger.error('Missing required config: apiKey, apiUrl, stationId');
-            this.logger.info('Run: ph-connector configure');
+            this.logger.info('Run the connector again to enter setup.');
+            this.logger.info('Press any key to exit...');
+            process.stdin.setRawMode(true);
+            process.stdin.resume();
+            process.stdin.once('data', () => process.exit(0));
             return;
         }
 
@@ -161,8 +165,11 @@ if (args.includes('configure')) {
     updater.run().then(() => process.exit(0));
 } else {
     connector.start().catch((err) => {
-        console.error('Fatal error:', err);
-        process.exit(1);
+        console.error('Fatal error:', err.message || err);
+        console.log('Press any key to exit...');
+        process.stdin.setRawMode(true);
+        process.stdin.resume();
+        process.stdin.once('data', () => process.exit(1));
     });
 }
 
