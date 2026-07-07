@@ -220,6 +220,37 @@ if ($_FILES && $action === 'upload_avatar' && isset($_SESSION['dj_user'])) {
     $action = 'dashboard';
 }
 
+// ─── GALLERY UPLOAD ───
+if ($action === 'upload_gallery' && $_FILES && isset($_SESSION['dj_user'])) {
+    $allowed = ['jpg','jpeg','png','gif','webp','mp4','mov','avi'];
+    $ext = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
+    if (in_array($ext, $allowed) && $_FILES['file']['size'] < 20 * 1024 * 1024) {
+        $dir = '/var/www/radiohosting/storage/dj/' . $_SESSION['dj_user']['id'] . '/';
+        @mkdir($dir, 0755, true);
+        $name = 'gallery_' . bin2hex(random_bytes(8)) . '.' . $ext;
+        move_uploaded_file($_FILES['file']['tmp_name'], $dir . $name);
+        $urlPath = '/storage/dj/' . $_SESSION['dj_user']['id'] . '/' . $name;
+        $existing = $pdo->query("SELECT gallery FROM radio_djs WHERE id=" . (int)$_SESSION['dj_user']['id'])->fetchColumn();
+        $gallery = $existing ? json_decode($existing, true) : [];
+        $gallery[] = ['url' => $urlPath, 'type' => in_array($ext, ['mp4','mov','avi']) ? 'video' : 'image', 'uploaded_at' => date('Y-m-d H:i:s')];
+        $pdo->prepare("UPDATE radio_djs SET gallery=? WHERE id=?")->execute([json_encode($gallery), $_SESSION['dj_user']['id']]);
+        $success = 'File added to gallery.';
+    } else { $error = 'Invalid file. Max 20MB. Allowed: jpg, png, gif, webp, mp4, mov, avi.'; }
+    header('Location: /dj_panel.php?action=dashboard&tab=gallery');
+    exit;
+}
+
+// ─── GALLERY DELETE ───
+if ($action === 'delete_gallery' && isset($_GET['idx']) && isset($_SESSION['dj_user'])) {
+    $idx = (int)$_GET['idx'];
+    $existing = $pdo->query("SELECT gallery FROM radio_djs WHERE id=" . (int)$_SESSION['dj_user']['id'])->fetchColumn();
+    $gallery = $existing ? json_decode($existing, true) : [];
+    if (isset($gallery[$idx])) { array_splice($gallery, $idx, 1); }
+    $pdo->prepare("UPDATE radio_djs SET gallery=? WHERE id=?")->execute([json_encode($gallery), $_SESSION['dj_user']['id']]);
+    header('Location: /dj_panel.php?action=dashboard&tab=gallery');
+    exit;
+}
+
 // ─── REMOVE REQUEST ───
 if ($action === 'remove_request' && isset($_GET['req_id']) && isset($_SESSION['dj_user'])) {
     $reqId = (int)$_GET['req_id'];
@@ -471,6 +502,19 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 ?>
 </div>
 
+<!-- Banner Upload -->
+<div class="card" style="border-color:rgba(250,204,21,.15)">
+<h3 style="color:#facc15"><i class="fas fa-image"></i> Profile Banner</h3>
+<?php if ($djData->banner && file_exists($djData->banner)): ?>
+<img src="/<?php echo $djData->banner; ?>" style="width:100%;max-height:100px;object-fit:cover;border-radius:6px;margin-bottom:8px">
+<?php endif; ?>
+<form method="POST" enctype="multipart/form-data">
+<input type="hidden" name="action" value="upload_banner">
+<input type="file" name="file" accept="image/*" style="font-size:11px;color:#94a3b8;margin-bottom:6px">
+<button class="btn" style="padding:6px 14px;font-size:11px;width:auto;background:rgba(250,204,21,.12);color:#facc15">Upload Banner</button>
+</form>
+</div>
+
 <!-- Kick Stream -->
 <div class="card" style="border-color:rgba(248,113,113,.2)">
 <h3 style="color:#f87171"><i class="fas fa-ban"></i> Kick Source</h3>
@@ -692,8 +736,29 @@ function pf($k, $d=''){global $pd; return htmlspecialchars($pd[$k] ?? $d);}
 <div class="dj-panel" id="pn-gallery">
 <div class="dj-grid">
 <div class="card">
-<h3><i class="fas fa-images"></i> Gallery</h3>
-<p style="color:#64748b;font-size:13px">Gallery feature coming soon. Upload photos and show clips here.</p>
+<h3><i class="fas fa-images"></i> Gallery <span style="font-size:11px;color:#64748b;font-weight:400">Photos &amp; Clips</span></h3>
+<form method="POST" enctype="multipart/form-data" style="margin-bottom:12px;padding:12px;border:1px dashed rgba(0,140,255,.2);border-radius:8px;text-align:center">
+<input type="hidden" name="action" value="upload_gallery">
+<input type="file" name="file" style="display:inline-block;font-size:11px;color:#94a3b8">
+<button class="btn btn-primary" style="padding:6px 14px;font-size:11px;width:auto;margin-left:6px">Upload</button>
+<small style="display:block;color:#64748b;margin-top:4px;font-size:10px">JPG, PNG, GIF, WEBP, MP4, MOV — max 20MB</small>
+</form>
+<?php
+$galleryData = $djData->gallery ? json_decode($djData->gallery, true) : [];
+if (!empty($galleryData)): ?>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px">
+<?php foreach ($galleryData as $i=>$item): ?>
+<div style="position:relative;border-radius:6px;overflow:hidden;background:rgba(0,0,0,.3)">
+<?php if (($item['type']??'image') === 'video'): ?>
+<video src="<?php echo htmlspecialchars($item['url']); ?>" style="width:100%;height:80px;object-fit:cover"></video>
+<?php else: ?>
+<img src="<?php echo htmlspecialchars($item['url']); ?>" style="width:100%;height:80px;object-fit:cover">
+<?php endif; ?>
+<a href="/dj_panel.php?action=delete_gallery&idx=<?php echo $i; ?>" class="btn" style="position:absolute;top:2px;right:2px;padding:2px 6px;font-size:10px;width:auto;background:rgba(248,113,113,.8);color:#fff;border:none;border-radius:3px">✕</a>
+</div>
+<?php endforeach; ?>
+</div>
+<?php endif; ?>
 </div>
 </div>
 </div>
@@ -706,13 +771,5 @@ function sw(e,id){
   document.getElementById('pn-'+id).classList.add('act');
 }
 </script>
-<div class="form-group"><label>Display Name</label><input name="name" value="<?php echo htmlspecialchars($djData->name ?? ''); ?>"></div>
-<div class="form-group"><label>Bio</label><textarea name="bio"><?php echo htmlspecialchars($djData->bio ?? ''); ?></textarea></div>
-<div class="form-group"><label>Website / Social Link</label><input name="website_url" value="<?php echo htmlspecialchars($djData->website_url ?? ''); ?>" placeholder="https://"></div>
-<button type="submit" class="btn btn-primary">Save Profile</button>
-</form>
-</div>
-
-</div>
 </body></html>
 
