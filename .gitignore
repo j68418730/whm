@@ -35,3 +35,6 @@ verify_*.php
 *.sh
 cron_autodj.php
 update_dj_table.php
+
+# SQL dumps
+plugins/webbasesams/*.sql.gz
