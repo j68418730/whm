@@ -3,10 +3,15 @@
 const path = require('path');
 const fs = require('fs');
 const readline = require('readline');
+const os = require('os');
+
+// Use user's AppData folder for config (writable)
+const configDir = path.join(os.homedir(), '.planethosts');
+if (!fs.existsSync(configDir)) fs.mkdirSync(configDir, { recursive: true });
+const configPath = path.join(configDir, 'connector-config.json');
+const logPath = path.join(configDir, 'connector.log');
 
 process.chdir(path.dirname(__dirname));
-
-const configPath = path.join(process.cwd(), 'config.json');
 
 // First-run setup wizard
 if (!fs.existsSync(configPath)) {
@@ -15,6 +20,9 @@ if (!fs.existsSync(configPath)) {
     console.log('  ║      Planet Hosts Desktop Connector          ║');
     console.log('  ║         Setup Wizard                         ║');
     console.log('  ╚═══════════════════════════════════════════════╝');
+    console.log('');
+    console.log('  Configuration will be saved to:');
+    console.log('  ' + configPath);
     console.log('');
     
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
