@@ -1178,9 +1178,18 @@ class RadioController extends Controller
             }
         }
         return $this->view('Plugins.Radio.Views.user.radio.widgets', [
-            'streams' => $streams, 'station' => $station,
+            'streams' => $streams,             'station' => $station,
             'title' => 'Radio Widgets'
         ]);
+    }
+
+    public function studio()
+    {
+        if (!$this->auth->check()) { header('Location: /?login'); exit; }
+        // Redirect to DJ panel — Studio requires DJ authentication
+        $_SESSION['studio_redirect'] = true;
+        header('Location: /dj_panel.php');
+        exit;
     }
 }
 
