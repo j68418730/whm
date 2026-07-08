@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Planet Hosts Studio</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+<div style="position:absolute;top:8px;right:12px;display:flex;gap:4px;z-index:10">
+<button onclick="alert('Planet Hosts Studio v1.1.0\nProfessional broadcast software.\nMusic stays on your computer.')" style="padding:4px 10px;border-radius:4px;border:1px solid rgba(48,54,61,.3);background:rgba(13,17,23,.6);color:#8b949e;cursor:pointer;font-size:10px">ℹ About</button>
+</div>
+<div class="login-card">
+<div class="login-logo">PLANET HOSTS <span>STUDIO</span></div>
+<div class="login-sub">Sign in with your Planet Hosts account</div>
+<div class="login-djicon">🎧</div>
+<div class="fg"><label>Email / DJ Username</label><input id="lgEmail" placeholder="your@email.com or djusername"></div>
+<div class="fg"><label>Password</label><input id="lgPass" type="password" placeholder="Your password"></div>
+<div class="fg"><label>Bitrate</label><select id="lgBitrate"><option value="128">128 kbps</option><option value="192">192 kbps</option><option value="256">256 kbps</option><option value="320">320 kbps</option></select></div>
+<div class="login-error" id="loginError"></div>
+<button class="login-btn" onclick="doLogin()">Connect to Studio</button>
+</div>
+</div>
+
+<!-- MAIN -->
+<div id="appMain">
+
+<!-- MENU / TOOLBAR -->
+<div class="toolbar">
+<div class="toolbar-left">
+<button onclick="deck.play()" title="Play">▶ <span>Play</span></button>
+<button onclick="deck.stopAll()" title="Stop">⏹ <span>Stop</span></button>
+<button onclick="deck.pauseToggle()" title="Pause">⏸ <span>Pause</span></button>
+<button onclick="deck.nextTrack()" title="Next">⏭ <span>Next</span></button>
+<button onclick="deck.prevTrack()" title="Prev">⏮ <span>Prev</span></button>
+<span class="tb-sep"></span>
+<button id="micBtn" onclick="app.toggleMic()" title="Mic">🎤 <span>Mic</span></button>
+<button id="muteBtn" onclick="deck.toggleMute()" title="Mute">🔊 <span>Monitor</span></button>
+<button id="autodjBtn" onclick="app.toggleAutoDj()" title="AutoDJ">🤖 <span>AutoDJ</span></button>
+<button id="liveBtn" onclick="app.toggleStream()" class="btn-live">🔴 <span>Go Live</span></button>
+<span class="tb-sep"></span>
+<button onclick="stations.open()" title="Stations">📡 <span id="encCount">0</span></button>
+<button onclick="app.showAuxManager()" title="Aux Decks">🔔 <span>Aux</span></button>
+</div>
+<div class="toolbar-center">
+<span id="tbListeners">👥 0</span>
+<span id="tbStreamInfo" style="color:#64748b;font-size:13px">Offline</span>
+</div>
+<div class="toolbar-right">
+<span id="tbClock" style="font-family:monospace;font-size:18px;font-weight:700;color:#e0e0e0">00:00</span>
+<button onclick="app.logout()" title="Logout" style="margin-left:8px;padding:4px 8px;border-radius:3px;border:none;cursor:pointer;background:rgba(255,255,255,.03);color:#64748b;font-size:10px">🚪</button>
+</div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar" id="tabBar">
+<button class="tab-btn active" data-tab="dashboarda">🎚 Dashboard A</button>
+<button class="tab-btn" data-tab="dashboardb">📊 Dashboard B</button>
+<button class="tab-btn" data-tab="dashboardc">🎛 Dashboard C</button>
+<span class="tb-sep-v"></span>
+<button class="tab-btn" data-tab="crossfade">🎚 Crossfade</button>
+<button class="tab-btn" data-tab="encoders">📡 Encoders</button>
+<button class="tab-btn" data-tab="schedule">📅 Schedule</button>
+<button class="tab-btn" data-tab="events">📋 Events</button>
+<button class="tab-btn" data-tab="requests">🎵 Requests</button>
+<button class="tab-btn" data-tab="ai">🤖 AI</button>
+<span style="flex:1"></span>
+<div class="tab-actions">
+<button onclick="pipeline.toggle()" title="Audio Pipeline">🎛</button>
+<button onclick="document.getElementById('statsOverlay').style.display='flex'" title="Statistics">📊</button>
+<button onclick="app.toggleWidgetPalette()" title="Widgets">➕</button>
+</div>
+</div>
+
+<!-- CLOCK BAR -->
+<div class="clock-bar" id="clockBar">
+<div class="clock-cluster">
+<div class="clock-item primary"><span class="clock-val" id="clockLocal">00:00</span><span class="clock-tz">Local</span></div>
+<div class="clock-item" style="color:#58a6ff"><span class="clock-val" id="clockUtc">00:00</span><span class="clock-tz">UTC</span></div>
+</div>
+<button class="clock-add" onclick="app.addTimezone()">+ Timezone</button>
+<span style="flex:1"></span>
+<span id="clockUptime" style="font-size:10px;color:#475569;font-family:monospace">Stream: --:--:--</span>
+</div>
+
+<!-- DASHBOARD CONTAINER -->
+<div class="dash-container">
+
+<!-- DASHBOARD A: Broadcast (matches radiotest2.php) -->
+<div id="dashboardA" class="dashboard active">
+<div class="dash-a-grid">
+<div class="panel deck-wrap" id="panelDeckA"><div class="panel-hdr"><span><span class="grip">⠿</span>Deck A</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body">
+<div class="deck" id="deckA">
+<div class="deck-hdr"><span class="deck-label deck-a">DECK A</span><span class="deck-status" id="statusA">Stopped</span></div>
+<div class="deck-body">
+<div style="display:flex;gap:6px">
+<div class="deck-cover" id="coverA">🎵</div>
+<div style="flex:1"><div class="deck-title" id="titleA">No Track</div><div class="deck-artist" id="artistA">Drop a file or double-click in Library</div></div>
+</div>
+<div class="deck-meta"><span id="durationA">0:00</span><span id="bpmA"></span><span class="cue-marks"><span class="intro-mark" id="introA">I:--</span><span class="outro-mark" id="outroA">O:--</span></span></div>
+<div class="deck-hotcues" id="hotcuesA">
+<button class="cue-btn" onclick="deck.jumpCue('a',0)" oncontextmenu="deck.setCue('a',0)">C1</button>
+<button class="cue-btn" onclick="deck.jumpCue('a',1)" oncontextmenu="deck.setCue('a',1)">C2</button>
+<button class="cue-btn" onclick="deck.jumpCue('a',2)" oncontextmenu="deck.setCue('a',2)">C3</button>
+<button class="cue-btn" onclick="deck.jumpCue('a',3)" oncontextmenu="deck.setCue('a',3)">C4</button>
+<button class="cue-btn cue-set" onclick="deck.setIntro('a')">I</button>
+<button class="cue-btn cue-set" onclick="deck.setOutro('a')">O</button>
+</div>
+<div class="deck-waveform" id="waveformA"></div>
+<div class="deck-progress"><div class="deck-prog-bar" id="progA"></div></div>
+<div class="deck-time"><span id="curTimeA">0:00</span><span id="remTimeA">-0:00</span></div>
+<div class="deck-ctrls">
+<button onclick="deck.cue('a')">⏮</button>
+<button onclick="deck.prev('a')">⏪</button>
+<button class="btn-play" id="playA" onclick="deck.toggle('a')">▶</button>
+<button onclick="deck.stop('a')">⏹</button>
+<button onclick="deck.next('a')">⏭</button>
+<button id="monA" onclick="deck.toggleMonitor('a')" style="background:none;border:none;cursor:pointer;font-size:13px;color:#64748b">🎧</button>
+</div>
+<div class="deck-sliders">
+<div class="slider-group"><label>Vol</label><input type="range" class="vol-slider" id="volA" min="0" max="100" value="80"></div>
+<div class="slider-group"><label>Pos</label><input type="range" class="pos-slider" id="posA" min="0" max="100" value="0"></div>
+</div>
+<div class="deck-vu" id="vuA"></div>
+</div></div>
+</div></div>
+
+<div class="panel deck-wrap" id="panelDeckB"><div class="panel-hdr"><span><span class="grip">⠿</span>Deck B</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body">
+<div class="deck" id="deckB">
+<div class="deck-hdr"><span class="deck-label deck-b">DECK B</span><span class="deck-status" id="statusB">Stopped</span></div>
+<div class="deck-body">
+<div style="display:flex;gap:6px">
+<div class="deck-cover" id="coverB">🎵</div>
+<div style="flex:1"><div class="deck-title" id="titleB">No Track</div><div class="deck-artist" id="artistB">Drop a file or double-click in Library</div></div>
+</div>
+<div class="deck-meta"><span id="durationB">0:00</span><span id="bpmB"></span><span class="cue-marks"><span class="intro-mark" id="introB">I:--</span><span class="outro-mark" id="outroB">O:--</span></span></div>
+<div class="deck-hotcues" id="hotcuesB">
+<button class="cue-btn" onclick="deck.jumpCue('b',0)" oncontextmenu="deck.setCue('b',0)">C1</button>
+<button class="cue-btn" onclick="deck.jumpCue('b',1)" oncontextmenu="deck.setCue('b',1)">C2</button>
+<button class="cue-btn" onclick="deck.jumpCue('b',2)" oncontextmenu="deck.setCue('b',2)">C3</button>
+<button class="cue-btn" onclick="deck.jumpCue('b',3)" oncontextmenu="deck.setCue('b',3)">C4</button>
+<button class="cue-btn cue-set" onclick="deck.setIntro('b')">I</button>
+<button class="cue-btn cue-set" onclick="deck.setOutro('b')">O</button>
+</div>
+<div class="deck-waveform" id="waveformB"></div>
+<div class="deck-progress"><div class="deck-prog-bar" id="progB"></div></div>
+<div class="deck-time"><span id="curTimeB">0:00</span><span id="remTimeB">-0:00</span></div>
+<div class="deck-ctrls">
+<button onclick="deck.cue('b')">⏮</button>
+<button onclick="deck.prev('b')">⏪</button>
+<button class="btn-play btn-play-b" id="playB" onclick="deck.toggle('b')">▶</button>
+<button onclick="deck.stop('b')">⏹</button>
+<button onclick="deck.next('b')">⏭</button>
+<button id="monB" onclick="deck.toggleMonitor('b')" style="background:none;border:none;cursor:pointer;font-size:13px;color:#64748b">🎧</button>
+</div>
+<div class="deck-sliders">
+<div class="slider-group"><label>Vol</label><input type="range" class="vol-slider" id="volB" min="0" max="100" value="80"></div>
+<div class="slider-group"><label>Pos</label><input type="range" class="pos-slider" id="posB" min="0" max="100" value="0"></div>
+</div>
+<div class="deck-vu" id="vuB"></div>
+</div></div>
+</div></div>
+
+<div class="dash-a-right" id="dashARight">
+<div class="panel" id="panelVoice"><div class="panel-hdr"><span><span class="grip">⠿</span>Voice FX</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body voice-body">
+<div class="vx-row"><label>Mic</label><select id="micDevice" style="width:100%;padding:2px;border-radius:3px;border:1px solid rgba(48,54,61,.15);background:rgba(13,17,23,.4);color:#e6edf3;font-size:9px;outline:none"><option>Scanning...</option></select></div>
+<div class="vx-row"><label>Gain</label><input type="range" id="micGain" min="0" max="100" value="80"><span class="vx-val">80%</span></div>
+<div class="vx-row"><label>Duck</label><input type="range" id="duckLevel" min="0" max="100" value="30"><span class="vx-val">30%</span></div>
+<div class="vx-row"><label>Comp</label><input type="range" min="0" max="100" value="30"><span class="vx-val">30%</span></div>
+<div class="vx-row"><label>Gate</label><input type="range" min="0" max="100" value="20"><span class="vx-val">20%</span></div>
+<button class="vx-btn" id="pttBtn">🎤 PTT</button>
+<div style="font-size:8px;color:#475569;text-align:center;margin-top:2px" id="micStatus">Off</div>
+</div></div>
+
+<div class="panel" id="panelVolume"><div class="panel-hdr"><span><span class="grip">⠿</span>Volume</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body" style="padding:4px;display:flex;flex-direction:column;gap:3px;font-size:9px">
+<div class="vx-row"><label>Master</label><input type="range" value="75"><span class="vx-val">75%</span></div>
+<div class="vx-row"><label>Deck A</label><input type="range" value="80"><span class="vx-val">80%</span></div>
+<div class="vx-row"><label>Deck B</label><input type="range" value="70"><span class="vx-val">70%</span></div>
+</div></div>
+
+<div class="panel" id="panelClock"><div class="panel-hdr"><span><span class="grip">⠿</span>Clock</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body" style="padding:4px;display:flex;gap:8px;justify-content:center;align-items:center">
+<div style="text-align:center"><div style="font-size:16px;font-weight:700;font-family:monospace;color:#e6edf3" id="panelClockLocal">00:00</div><div style="font-size:7px;color:#475569">Local</div></div>
+<div style="text-align:center"><div style="font-size:16px;font-weight:700;font-family:monospace;color:#58a6ff" id="panelClockUtc">00:00</div><div style="font-size:7px;color:#475569">UTC</div></div>
+</div></div>
+
+<div class="panel" id="panelEncStatus"><div class="panel-hdr"><span><span class="grip">⠿</span>Stream</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body enc-body">
+<div class="ss-row"><span class="ss-l">Status</span><span class="ss-v" id="ssStatus">Offline</span></div>
+<div class="ss-row"><span class="ss-l">Listeners</span><span class="ss-v" id="ssListeners">0</span></div>
+<div class="ss-row"><span class="ss-l">Peak</span><span class="ss-v" id="ssPeak">0</span></div>
+<div class="ss-row"><span class="ss-l">Uptime</span><span class="ss-v" id="ssUptime">00:00:00</span></div>
+</div></div>
+</div>
+
+<div class="panel full" id="panelPlaylist"><div class="panel-hdr"><span><span class="grip">⠿</span>Playlist</span><span style="display:flex;align-items:center;gap:3px;font-size:8px"><span class="cat-btn active" data-cat="all" onclick="lib.setCategory('all')">All</span><span class="cat-btn" data-cat="music" onclick="lib.setCategory('music')">Music</span><span class="cat-btn" data-cat="jingles" onclick="lib.setCategory('jingles')">Jingles</span><input class="lib-search" id="libSearch" placeholder="Search..." style="width:120px;padding:2px 6px;border-radius:3px;border:1px solid rgba(48,54,61,.2);background:rgba(13,17,23,.4);color:#e6edf3;font-size:9px;outline:none"><button onclick="api.importFolder()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:10px">📂</button></span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div>
+<div class="panel-body"><div class="playlist-body">
+<div class="folder-tree" id="folderTree"></div>
+<div class="file-list" id="libBody"></div>
+<div class="playlist-sidebar">
+<div class="qs-panel"><div class="qs-hdr">Queue <span style="display:flex;gap:2px"><button onclick="app.clearQueue()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:8px">Clear</button><button onclick="app.shuffleQueue()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:8px">🔀</button></span></div><div class="queue-body" id="queueBody" style="flex:1;overflow-y:auto;padding:2px 4px"></div></div>
+<div class="qs-panel"><div class="qs-hdr">History</div><div class="hist-body" id="histBody" style="flex:1;overflow-y:auto;padding:2px 4px;font-size:9px"><div class="empty-msg">No tracks played</div></div></div>
+</div>
+</div></div></div>
+</div>
+</div>
+
+<!-- DASHBOARD B: Monitoring (matches radiotest2.php) -->
+<div id="dashboardB" class="dashboard">
+<div class="dashb-grid">
+<div class="panel" id="panelStats"><div class="panel-hdr"><span><span class="grip">⠿</span>Statistics</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body" style="padding:4px">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:4px">
+<div class="stat-card"><div class="stat-val" id="dbListeners">0</div><div class="stat-lbl">Current</div></div>
+<div class="stat-card"><div class="stat-val peak" id="dbPeak">0</div><div class="stat-lbl">Peak</div></div>
+</div>
+<div style="height:50px;background:rgba(13,17,23,.2);border-radius:4px;margin-bottom:4px;display:flex;align-items:flex-end;padding:0 4px" id="dbStatChart">
+<div style="flex:1;height:30%;background:#3fb950;border-radius:2px 2px 0 0;margin:0 1px"></div>
+<div style="flex:1;height:55%;background:#3fb950;border-radius:2px 2px 0 0;margin:0 1px"></div>
+<div style="flex:1;height:40%;background:#d29922;border-radius:2px 2px 0 0;margin:0 1px"></div>
+<div style="flex:1;height:70%;background:#3fb950;border-radius:2px 2px 0 0;margin:0 1px"></div>
+<div style="flex:1;height:45%;background:#3fb950;border-radius:2px 2px 0 0;margin:0 1px"></div>
+</div>
+<div style="display:flex;justify-content:space-between;font-size:8px;color:#475569"><span>Bandwidth: --</span><span>Avg: --</span></div>
+</div></div>
+
+<div class="panel" id="panelEncoders"><div class="panel-hdr"><span><span class="grip">⠿</span>Encoders</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body" id="dbEncoders" style="padding:4px;font-size:9px"><div class="empty-msg">No encoders</div></div></div>
+
+<div class="panel" id="panelRequests"><div class="panel-hdr"><span><span class="grip">⠿</span>Requests</span><span style="display:flex;align-items:center;gap:4px"><span style="font-size:9px;color:#58a6ff" id="reqCount">0</span><span id="reqUnavailBadge" style="display:none;background:#f85149;color:#fff;font-size:7px;padding:1px 5px;border-radius:8px;font-weight:700">0</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></span></div><div class="panel-body" style="padding:4px;font-size:9px;display:flex;flex-direction:column;gap:4px">
+<div style="display:flex;align-items:center;gap:4px;padding:2px 4px;background:rgba(13,17,23,.3);border-radius:4px">
+<span style="color:#8b949e;font-size:8px">⏱ Auto-queue after</span>
+<input type="number" id="reqTimerInput" value="5" min="0" max="60" style="width:32px;padding:1px 3px;border-radius:3px;border:1px solid rgba(48,54,61,.2);background:rgba(13,17,23,.4);color:#e6edf3;font-size:9px;text-align:center;outline:none" onchange="app.requestTimerMin=parseFloat(this.value)||5">
+<span style="color:#8b949e;font-size:8px">min</span>
+</div>
+<div class="req-body" id="reqBody" style="flex:1;overflow-y:auto;max-height:120px"><div class="empty-msg">No requests</div></div>
+<div style="border-top:1px solid rgba(248,81,73,.12);padding-top:3px;margin-top:2px">
+<div style="display:flex;align-items:center;gap:4px;padding:1px 4px"><span style="color:#f85149;font-size:8px">●</span><span style="color:#f85149;font-size:8px;font-weight:600">Not in Library</span></div>
+<div class="req-unavail-body" id="reqUnavailBody" style="max-height:80px;overflow-y:auto"><div class="empty-msg" style="color:#64748b">No unavailable requests</div></div>
+</div>
+</div></div>
+
+<div class="panel" id="panelEvents"><div class="panel-hdr"><span><span class="grip">⠿</span>Event Log</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body event-body" id="eventBody" style="padding:4px;font-family:monospace;font-size:8px;color:#8b949e;overflow:auto"><div class="empty-msg">No events</div></div></div>
+
+<div class="panel" id="panelScheduler"><div class="panel-hdr"><span><span class="grip">⠿</span>Scheduler</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body sched-body" id="schedBody" style="padding:4px"><div class="empty-msg">Loading...</div></div></div>
+
+<div class="panel" id="panelFtp"><div class="panel-hdr"><span><span class="grip">⠿</span>FTP Log</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body" style="padding:4px;font-size:8px;color:#475569;font-family:monospace" id="ftpLogBody"><div class="empty-msg">No FTP activity</div></div></div>
+
+<div class="panel full" id="panelAutoDj"><div class="panel-hdr"><span><span class="grip">⠿</span>AutoDJ</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body autodj-body" id="autodjBody" style="padding:4px"><div class="empty-msg">Loading...</div></div></div>
+</div>
+</div>
+
+<!-- DASHBOARD C: A + Fade Control (matches radiotest2.php) -->
+<div id="dashboardC" class="dashboard">
+<div class="dash-a-grid">
+<div class="panel deck-wrap"><div class="panel-hdr"><span><span class="grip">⠿</span>Deck A</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body">
+<div class="deck">
+<div class="deck-hdr"><span class="deck-label deck-a">DECK A</span><span id="statusC1" class="deck-status">Stopped</span></div>
+<div class="deck-body">
+<div style="display:flex;gap:6px"><div class="deck-cover" id="coverC1">🎵</div>
+<div style="flex:1"><div class="deck-title" id="titleC1">No Track</div><div class="deck-artist" id="artistC1">Drop a file</div></div></div>
+<div class="deck-hotcues" id="hotcuesC1">
+<button class="cue-btn" onclick="deck.jumpCue('a',0)">C1</button>
+<button class="cue-btn" onclick="deck.jumpCue('a',1)">C2</button>
+<button class="cue-btn" onclick="deck.jumpCue('a',2)">C3</button>
+<button class="cue-btn" onclick="deck.jumpCue('a',3)">C4</button>
+</div>
+<div class="deck-waveform" id="waveformC1"></div>
+<div class="deck-progress"><div class="deck-prog-bar" id="progC1"></div></div>
+<div class="deck-time"><span id="curTimeC1">0:00</span><span id="remTimeC1">-0:00</span></div>
+<div class="deck-ctrls">
+<button onclick="deck.cue('a')">⏮</button><button onclick="deck.prev('a')">⏪</button>
+<button class="btn-play" onclick="deck.toggle('a')">▶</button>
+<button onclick="deck.stop('a')">⏹</button><button onclick="deck.next('a')">⏭</button>
+</div>
+</div></div>
+</div></div>
+
+<div class="panel deck-wrap"><div class="panel-hdr"><span><span class="grip">⠿</span>Deck B</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body">
+<div class="deck">
+<div class="deck-hdr"><span class="deck-label deck-b">DECK B</span><span id="statusC2" class="deck-status">Stopped</span></div>
+<div class="deck-body">
+<div style="display:flex;gap:6px"><div class="deck-cover" id="coverC2">🎵</div>
+<div style="flex:1"><div class="deck-title" id="titleC2">No Track</div><div class="deck-artist" id="artistC2">Drop a file</div></div></div>
+<div class="deck-hotcues" id="hotcuesC2">
+<button class="cue-btn" onclick="deck.jumpCue('b',0)">C1</button>
+<button class="cue-btn" onclick="deck.jumpCue('b',1)">C2</button>
+<button class="cue-btn" onclick="deck.jumpCue('b',2)">C3</button>
+<button class="cue-btn" onclick="deck.jumpCue('b',3)">C4</button>
+</div>
+<div class="deck-waveform" id="waveformC2"></div>
+<div class="deck-progress"><div class="deck-prog-bar" id="progC2"></div></div>
+<div class="deck-time"><span id="curTimeC2">0:00</span><span id="remTimeC2">-0:00</span></div>
+<div class="deck-ctrls">
+<button onclick="deck.cue('b')">⏮</button><button onclick="deck.prev('b')">⏪</button>
+<button class="btn-play btn-play-b" onclick="deck.toggle('b')">▶</button>
+<button onclick="deck.stop('b')">⏹</button><button onclick="deck.next('b')">⏭</button>
+</div>
+</div></div>
+</div></div>
+
+<div class="dash-a-right">
+<div class="panel"><div class="panel-hdr"><span><span class="grip">⠿</span>Voice FX</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body voice-body">
+<div class="vx-row"><label>Gain</label><input type="range" value="80"><span class="vx-val">80%</span></div>
+<div class="vx-row"><label>Duck</label><input type="range" value="30"><span class="vx-val">30%</span></div>
+<button class="vx-btn">🎤 PTT</button>
+</div></div>
+<div class="panel"><div class="panel-hdr"><span><span class="grip">⠿</span>Volume</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body" style="padding:4px;font-size:9px">
+<div class="vx-row"><label>Master</label><input type="range" value="75"><span class="vx-val">75%</span></div>
+<div class="vx-row"><label>Deck A</label><input type="range" value="80"><span class="vx-val">80%</span></div>
+<div class="vx-row"><label>Deck B</label><input type="range" value="70"><span class="vx-val">70%</span></div>
+</div></div>
+<div class="panel" id="panelFadeControl"><div class="panel-hdr"><span><span class="grip">⠿</span>Fade Control</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body" style="padding:4px;font-size:9px">
+<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px"><span style="color:#58a6ff">A</span><input type="range" id="crossfader" min="0" max="100" value="50" style="flex:1;height:3px;-webkit-appearance:none;background:linear-gradient(90deg,#58a6ff,#a855f7);border-radius:2px;outline:none"><span style="color:#a855f7">B</span></div>
+<div style="display:flex;justify-content:space-between;color:#475569"><span>Fade: <span id="cfLabel">3</span>s</span><span id="cfMode">Cosine</span></div>
+</div></div>
+</div>
+
+<div class="panel full" style="grid-column:1/-1"><div class="panel-hdr"><span><span class="grip">⠿</span>Playlist</span><span class="win-btns"><span class="win-min">─</span><span class="win-max">□</span><span class="win-close">✕</span></span></div><div class="panel-body"><div class="playlist-body">
+<div class="folder-tree"></div>
+<div class="file-list" style="flex:1;overflow:auto;padding:2px"><div class="empty-msg">Use Dashboard A for library browser</div></div>
+<div class="playlist-sidebar">
+<div class="qs-panel"><div class="qs-hdr">Queue</div><div class="queue-body" id="queueBodyC" style="flex:1;overflow-y:auto;padding:2px 4px;font-size:9px;color:#8b949e"><div class="empty-msg">Empty</div></div></div>
+<div class="qs-panel"><div class="qs-hdr">History</div><div style="flex:1;overflow-y:auto;padding:2px 4px;font-size:8px;color:#475569" id="histBodyC"></div></div>
+</div>
+</div></div></div>
+</div>
+</div>
+
+</div><!-- /dash-container -->
+
+<!-- CROSSFADE ROW (shared across dashboards that show it) -->
+<div class="crossfade-row" id="crossfadeRow" style="display:none">
+<label class="deck-a">A</label>
+<input type="range" id="crossfaderRow" min="0" max="100" value="50">
+<label class="deck-b">B</label>
+<label style="margin-left:12px;font-size:10px;color:#64748b">Fade</label>
+<input type="range" id="crossfadeSlider" min="0" max="10" value="3" step="0.5" style="width:50px">
+<span id="crossfadeLabel" style="font-size:10px;color:#8b949e;min-width:20px">3s</span>
+<select id="xfMode" style="margin-left:6px;padding:2px 4px;border-radius:3px;border:1px solid rgba(48,54,61,.3);background:rgba(13,17,23,.6);color:#8b949e;font-size:9px;outline:none">
+<option value="fixed">Fixed</option><option value="cosine" selected>Cosine</option><option value="smart">Smart</option><option value="threshold">Threshold</option>
+</select>
+<button onclick="crossfade.showSettings()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:12px;padding:0 4px">⚙</button>
+<button id="recordBtn" onclick="app.toggleRecord()" style="margin-left:auto;padding:3px 10px;border-radius:3px;border:none;font-size:10px;cursor:pointer;background:rgba(248,81,73,.1);color:#f85149">🔴 Rec</button>
+</div>
+
+<!-- Status Bar -->
+<div class="statusbar">
+<span id="statusSongs">0 songs</span>
+<span id="statusFolders">0 folders</span>
+<span id="statusUptime">Session: 00:00</span>
+<span id="statusStream"></span>
+</div>
+
+</div><!-- /appMain -->
+
+<!-- OVERLAYS -->
+<div id="shortcutsOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center">
+<div style="background:#1c2128;border:1px solid rgba(48,54,61,.6);border-radius:12px;padding:24px;max-width:400px;width:90%">
+<h2 style="font-size:16px;margin-bottom:12px">⌨ Keyboard Shortcuts</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px">
+<span><kbd style="background:rgba(48,54,61,.4);padding:2px 6px;border-radius:3px;font-size:11px">Space</kbd></span><span>Play/Pause active deck</span>
+<span><kbd style="background:rgba(48,54,61,.4);padding:2px 6px;border-radius:3px;font-size:11px">Z</kbd></span><span>Cue Deck A</span>
+<span><kbd style="background:rgba(48,54,61,.4);padding:2px 6px;border-radius:3px;font-size:11px">X</kbd></span><span>Toggle Deck A</span>
+<span><kbd style="background:rgba(48,54,61,.4);padding:2px 6px;border-radius:3px;font-size:11px">C</kbd></span><span>Cue Deck B</span>
+<span><kbd style="background:rgba(48,54,61,.4);padding:2px 6px;border-radius:3px;font-size:11px">V</kbd></span><span>Toggle Deck B</span>
+<span><kbd style="background:rgba(48,54,61,.4);padding:2px 6px;border-radius:3px;font-size:11px">~</kbd></span><span>Push To Talk</span>
+<span><kbd style="background:rgba(48,54,61,.4);padding:2px 6px;border-radius:3px;font-size:11px">?</kbd></span><span>Show this help</span>
+</div>
+<button onclick="document.getElementById('shortcutsOverlay').style.display='none'" style="margin-top:12px;width:100%;padding:7px;border-radius:5px;border:none;background:rgba(0,140,255,.1);color:#008cff;font-weight:600;cursor:pointer;font-size:12px">Close</button>
+</div>
+</div>
+
+<div id="pipelineOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center">
+<div style="background:#1c2128;border:1px solid rgba(48,54,61,.6);border-radius:12px;padding:24px;max-width:600px;width:90%">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h2 style="font-size:16px">🎛 Audio Pipeline</h2><button onclick="document.getElementById('pipelineOverlay').style.display='none'" style="background:none;border:none;color:#8b949e;cursor:pointer;font-size:16px">✕</button></div>
+<div class="pipe-flow">
+<div class="pipe-stage"><div class="pipe-label">Deck A</div><div class="pipe-vu" id="pipeDeckA"><div class="pipe-fill" style="width:0%"></div></div></div>
+<div class="pipe-arrow">→</div>
+<div class="pipe-stage"><div class="pipe-label">Deck B</div><div class="pipe-vu" id="pipeDeckB"><div class="pipe-fill" style="width:0%"></div></div></div>
+<div class="pipe-arrow">→</div>
+<div class="pipe-stage"><div class="pipe-label">Mixer</div><div class="pipe-vu" id="pipeMixer"><div class="pipe-fill" style="width:0%"></div></div></div>
+<div class="pipe-arrow">→</div>
+<div class="pipe-stage"><div class="pipe-label">EQ</div><div class="pipe-vu" id="pipeEq"><div class="pipe-fill" style="width:0%"></div></div></div>
+<div class="pipe-arrow">→</div>
+<div class="pipe-stage"><div class="pipe-label">Comp</div><div class="pipe-vu" id="pipeComp"><div class="pipe-fill" style="width:0%"></div></div></div>
+<div class="pipe-arrow">→</div>
+<div class="pipe-stage"><div class="pipe-label">Limiter</div><div class="pipe-vu" id="pipeLimiter"><div class="pipe-fill" style="width:0%"></div></div></div>
+<div class="pipe-arrow">→</div>
+<div class="pipe-stage"><div class="pipe-label">Encoder</div><div class="pipe-vu" id="pipeEncoder"><div class="pipe-fill" style="width:0%"></div></div></div>
+<div class="pipe-arrow">→</div>
+<div class="pipe-stage pipe-out"><div class="pipe-label">📡 Stream</div><div class="pipe-vu" id="pipeStream"><div class="pipe-fill" style="width:0%"></div></div></div>
+</div>
+<div class="pipe-details" id="pipeDetails" style="margin-top:10px"></div>
+<button onclick="document.getElementById('pipelineOverlay').style.display='none'" style="margin-top:10px;width:100%;padding:7px;border-radius:5px;border:none;background:rgba(255,255,255,.04);color:#8b949e;cursor:pointer;font-size:12px">Close</button>
+</div>
+</div>
+
+<div id="statsOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center">
+<div style="background:#1c2128;border:1px solid rgba(48,54,61,.6);border-radius:12px;padding:24px;max-width:400px;width:90%">
+<h2 style="font-size:16px;margin-bottom:10px">📊 Stream Statistics</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+<div style="background:rgba(13,17,23,.4);border-radius:6px;padding:8px;text-align:center"><div style="font-size:9px;color:#64748b;text-transform:uppercase">Current</div><div style="font-size:20px;font-weight:700;color:#3fb950" id="statCurrent">0</div></div>
+<div style="background:rgba(13,17,23,.4);border-radius:6px;padding:8px;text-align:center"><div style="font-size:9px;color:#64748b;text-transform:uppercase">Peak</div><div style="font-size:20px;font-weight:700;color:#d29922" id="statPeak">0</div></div>
+<div style="background:rgba(13,17,23,.4);border-radius:6px;padding:8px;text-align:center"><div style="font-size:9px;color:#64748b;text-transform:uppercase">Bitrate</div><div style="font-size:20px;font-weight:700;color:#58a6ff" id="statBitrate">128</div></div>
+<div style="background:rgba(13,17,23,.4);border-radius:6px;padding:8px;text-align:center"><div style="font-size:9px;color:#64748b;text-transform:uppercase">Uptime</div><div style="font-size:16px;font-weight:700;color:#c9d1d9" id="statUptime">00:00</div></div>
+<div style="grid-column:span 2;background:rgba(13,17,23,.4);border-radius:6px;padding:8px;text-align:center"><div style="font-size:9px;color:#64748b;text-transform:uppercase">Now Playing</div><div style="font-size:13px;font-weight:600;color:#c9d1d9" id="statNowPlaying">—</div></div>
+</div>
+<button onclick="document.getElementById('statsOverlay').style.display='none'" style="margin-top:10px;width:100%;padding:7px;border-radius:5px;border:none;background:rgba(255,255,255,.04);color:#8b949e;cursor:pointer;font-size:12px">Close</button>
+</div>
+</div>
+
+<div id="stationsManager" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center">
+<div style="background:#1c2128;border:1px solid rgba(48,54,61,.6);border-radius:12px;padding:24px;max-width:480px;width:90%;max-height:80vh;overflow-y:auto">
+<h2 style="font-size:16px;margin-bottom:4px">📡 Stations / Encoders</h2>
+<p style="font-size:11px;color:#64748b;margin-bottom:10px">Add all your stations here. When you Go Live, all enabled stations will broadcast simultaneously.</p>
+<div id="stationList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px"></div>
+<button onclick="stations.showForm()" style="padding:6px 12px;border-radius:4px;border:none;background:rgba(0,140,255,.1);color:#008cff;font-size:11px;cursor:pointer;font-weight:600">+ Add Station</button>
+<div id="stationForm" style="display:none;margin-top:10px;background:rgba(13,17,23,.6);border:1px solid rgba(48,54,61,.3);border-radius:8px;padding:12px">
+<h3 id="sfTitle" style="font-size:13px;margin-bottom:6px">New Station</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+<div style="grid-column:span 2"><input id="sfName" placeholder="Station name" style="width:100%;padding:5px 8px;border-radius:4px;border:1px solid rgba(48,54,61,.4);background:rgba(13,17,23,.6);color:#e6edf3;font-size:12px;outline:none"></div>
+<div><input id="sfHost" placeholder="Server" style="width:100%;padding:5px 8px;border-radius:4px;border:1px solid rgba(48,54,61,.4);background:rgba(13,17,23,.6);color:#e6edf3;font-size:12px;outline:none"></div>
+<div><input id="sfPort" placeholder="Port" value="9002" style="width:100%;padding:5px 8px;border-radius:4px;border:1px solid rgba(48,54,61,.4);background:rgba(13,17,23,.6);color:#e6edf3;font-size:12px;outline:none"></div>
+<div><input id="sfUser" placeholder="DJ Username" style="width:100%;padding:5px 8px;border-radius:4px;border:1px solid rgba(48,54,61,.4);background:rgba(13,17,23,.6);color:#e6edf3;font-size:12px;outline:none"></div>
+<div><input id="sfPass" type="password" placeholder="Password" style="width:100%;padding:5px 8px;border-radius:4px;border:1px solid rgba(48,54,61,.4);background:rgba(13,17,23,.6);color:#e6edf3;font-size:12px;outline:none"></div>
+<div><select id="sfBitrate" style="width:100%;padding:5px;border-radius:4px;border:1px solid rgba(48,54,61,.4);background:rgba(13,17,23,.6);color:#e6edf3;font-size:12px;outline:none"><option value="128">128k</option><option value="192">192k</option><option value="256">256k</option><option value="320">320k</option></select></div>
+</div>
+<div style="display:flex;gap:6px;margin-top:6px">
+<button onclick="stations.saveStation()" style="flex:1;padding:6px;border-radius:4px;border:none;background:linear-gradient(135deg,#008cff,#005ec4);color:#fff;font-weight:600;cursor:pointer;font-size:11px">Save</button>
+<button onclick="stations.hideForm()" style="flex:1;padding:6px;border-radius:4px;border:none;background:rgba(255,255,255,.04);color:#8b949e;cursor:pointer;font-size:11px">Cancel</button>
+</div>
+</div>
+<button onclick="document.getElementById('stationsManager').style.display='none'" style="margin-top:6px;width:100%;padding:6px;border-radius:4px;border:none;background:rgba(255,255,255,.04);color:#8b949e;cursor:pointer;font-size:11px">Close</button>
+</div>
+</div>
+
+<div id="xfSettings" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center">
+<div style="background:#1c2128;border:1px solid rgba(48,54,61,.6);border-radius:12px;padding:24px;max-width:360px;width:90%">
+<h2 style="font-size:15px;margin-bottom:10px">🎚 Crossfade Engine</h2>
+<div style="display:flex;flex-direction:column;gap:7px">
+<div><label style="font-size:11px;color:#8b949e;display:block;margin-bottom:2px">Mode</label>
+<select id="xfModeSetting" style="width:100%;padding:5px;border-radius:4px;border:1px solid rgba(48,54,61,.4);background:rgba(13,17,23,.6);color:#e6edf3;font-size:12px;outline:none">
+<option value="fixed">Fixed Time</option><option value="cosine">Cosine</option><option value="smart">Smart</option><option value="threshold">Threshold</option></select></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+<div><label style="font-size:11px;color:#8b949e">Fade In (s)</label><input id="xfFadeIn" type="number" value="2" min="0" max="10" step="0.5" style="width:100%;padding:5px;border-radius:4px;border:1px solid rgba(48,54,61,.4);background:rgba(13,17,23,.6);color:#e6edf3;font-size:12px;outline:none"></div>
+<div><label style="font-size:11px;color:#8b949e">Fade Out (s)</label><input id="xfFadeOut" type="number" value="3" min="0" max="10" step="0.5" style="width:100%;padding:5px;border-radius:4px;border:1px solid rgba(48,54,61,.4);background:rgba(13,17,23,.6);color:#e6edf3;font-size:12px;outline:none"></div>
+<div><label style="font-size:11px;color:#8b949e">Threshold (%)</label><input id="xfThreshold" type="number" value="20" min="0" max="100" style="width:100%;padding:5px;border-radius:4px;border:1px solid rgba(48,54,61,.4);background:rgba(13,17,23,.6);color:#e6edf3;font-size:12px;outline:none"></div>
+<div><label style="font-size:11px;color:#8b949e">Curve</label>
+<select id="xfCurve" style="width:100%;padding:5px;border-radius:4px;border:1px solid rgba(48,54,61,.4);background:rgba(13,17,23,.6);color:#e6edf3;font-size:12px;outline:none">
+<option value="linear">Linear</option><option value="cosine" selected>Cosine</option><option value="log">Logarithmic</option><option value="expo">Exponential</option></select></div>
+</div>
+<div style="display:flex;gap:4px;margin-top:4px;font-size:10px;color:#475569">
+<label><input type="checkbox" id="xfBeatMatch" checked> Beat match</label>
+<label><input type="checkbox" id="xfDetectSilence" checked> Silence detection</label>
+</div>
+</div>
+<div style="display:flex;gap:6px;margin-top:10px">
+<button onclick="crossfade.save()" style="flex:1;padding:7px;border-radius:5px;border:none;background:linear-gradient(135deg,#008cff,#005ec4);color:#fff;font-weight:600;cursor:pointer;font-size:11px">Save</button>
+<button onclick="document.getElementById('xfSettings').style.display='none'" style="flex:1;padding:7px;border-radius:5px;border:none;background:rgba(255,255,255,.04);color:#8b949e;cursor:pointer;font-size:11px">Close</button>
+</div>
+</div>
+</div>
+
+<div id="auxManager" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center">
+<div style="background:#1c2128;border:1px solid rgba(48,54,61,.6);border-radius:12px;padding:24px;max-width:400px;width:90%">
+<h2 style="font-size:16px;margin-bottom:10px">🔔 Auxiliary Deck Folders</h2>
+<p style="font-size:12px;color:#64748b;margin-bottom:12px">Each aux deck plays random audio files from its folder.</p>
+<div id="auxFolderList" style="display:flex;flex-direction:column;gap:6px"></div>
+<button onclick="document.getElementById('auxManager').style.display='none'" style="margin-top:10px;width:100%;padding:7px;border-radius:5px;border:none;background:rgba(255,255,255,.04);color:#8b949e;cursor:pointer;font-size:12px">Close</button>
+</div>
+</div>
+
+<div id="metaDialog" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center">
+<div style="background:#1c2128;border:1px solid rgba(48,54,61,.6);border-radius:12px;padding:24px;max-width:380px;width:90%">
+<h2 style="font-size:15px;margin-bottom:10px">📝 Edit Metadata</h2>
+<div id="metaFields" style="display:flex;flex-direction:column;gap:6px">
+<input id="metaTitle" placeholder="Title" style="padding:7px 10px;border-radius:5px;border:1px solid rgba(48,54,61,.4);background:rgba(13,17,23,.6);color:#e6edf3;font-size:13px;outline:none">
+<input id="metaArtist" placeholder="Artist" style="padding:7px 10px;border-radius:5px;border:1px solid rgba(48,54,61,.4);background:rgba(13,17,23,.6);color:#e6edf3;font-size:13px;outline:none">
+<input id="metaAlbum" placeholder="Album" style="padding:7px 10px;border-radius:5px;border:1px solid rgba(48,54,61,.4);background:rgba(13,17,23,.6);color:#e6edf3;font-size:13px;outline:none">
+</div>
+<div style="display:flex;gap:6px;margin-top:10px">
+<button onclick="lib.saveMeta()" style="flex:1;padding:8px;border-radius:5px;border:none;background:linear-gradient(135deg,#008cff,#005ec4);color:#fff;font-weight:600;cursor:pointer;font-size:12px">Save</button>
+<button onclick="document.getElementById('metaDialog').style.display='none'" style="flex:1;padding:8px;border-radius:5px;border:none;background:rgba(255,255,255,.04);color:#8b949e;cursor:pointer;font-size:12px">Cancel</button>
+</div>
+</div>
+</div>
+
+<!-- WIDGET PALETTE -->
+<div id="widgetPalette" class="widget-palette" style="display:none">
+<h3 style="font-size:12px;color:#8b949e;padding:8px 12px 4px;margin:0">Toggle Widgets</h3>
+<div class="widget-list" id="widgetList"></div>
+</div>
+
+<script src="login.js"></script>
+<script src="app.js"></script>
+<script src="deck.js"></script>
+<script src="library.js"></script>
+<script src="queue.js"></script>
+<script src="streaming.js"></script>
+<script src="pipeline.js"></script>
+<script src="eventlog.js"></script>
+<script src="crossfade.js"></script>
+<script src="stations.js"></script>
+</body>
+</html>
