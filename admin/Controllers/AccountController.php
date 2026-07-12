@@ -78,6 +78,7 @@ class AccountController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) {
             header('Location: /admin/login'); exit;
         }
+        $adminId = $this->auth->user()->id;
         $username = strtolower(preg_replace('/[^a-z0-9]/', '', $_POST['username'] ?? ''));
         $domain = strtolower(trim($_POST['domain'] ?? ''));
         $email = trim($_POST['email'] ?? '');
@@ -97,9 +98,10 @@ class AccountController extends Controller
             header('Location: /admin/account/create'); exit;
         }
 
-        $serverIp = 'planet-hosts.com';
+        $serverIp = '15.204.114.226';
         $homeDir = "/home/{$username}";
 
+        // Insert with pending status — account is NOT active until provisioning completes
         $userId = $this->db->table('hosting_users')->insertGetId([
             'reseller_id' => 1,
             'package_id' => $packageId ?: null,
@@ -111,30 +113,43 @@ class AccountController extends Controller
             'php_version' => $_POST['php_version'] ?? '',
             'first_name' => $_POST['first_name'] ?? '',
             'last_name' => $_POST['last_name'] ?? '',
-            'status' => 'active',
+            'status' => 'pending',
             'nameserver1' => 'ns1.planet-hosts.com',
             'nameserver2' => 'ns2.planet-hosts.com',
         ]);
 
-        // --- Provision via background script (runs as root via sudo) ---
+        // Log activity
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        try {
+            $this->db->table('activity_logs')->insert([
+                'account_id' => $userId,
+                'admin_id' => $adminId,
+                'action' => 'provision_started',
+                'details' => "Started provisioning for {$username} ({$domain})",
+                'ip_address' => $ip,
+            ]);
+        } catch (\Exception $e) {}
+
+        // --- Provision via unified script (runs all steps sequentially) ---
         $escUser = escapeshellarg($username);
         $escDomain = escapeshellarg($domain);
         $escHome = escapeshellarg($homeDir);
         $escPass = escapeshellarg($password);
-        @exec("timeout 30 sudo /var/www/radiohosting/provision.sh {$escUser} {$escDomain} {$escHome} {$escPass} 2>/dev/null >/dev/null &");
 
-        // --- Create Apache vhost ---
-        $vhostContent = "<VirtualHost *:80>\n    ServerAdmin webmaster@{$domain}\n    ServerName {$domain}\n    ServerAlias www.{$domain}\n    DocumentRoot {$homeDir}/public_html\n    <Directory {$homeDir}/public_html>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n        DirectoryIndex index.php index.html\n    </Directory>\n    ErrorLog /var/log/apache2/{$domain}_error.log\n    CustomLog /var/log/apache2/{$domain}_access.log combined\n</VirtualHost>";
-        @exec("sudo bash -c 'cat > /etc/apache2/sites-available/{$username}.conf << VHOST\n{$vhostContent}\nVHOST' 2>/dev/null");
-        @exec("sudo a2ensite {$username}.conf 2>/dev/null >/dev/null");
-
-        // --- Auto-SSL via certbot in background ---
-        @exec("sudo /var/www/radiohosting/auto_ssl.sh {$escUser} {$escDomain} {$escHome} 2>/dev/null >/dev/null &");
-
-        @exec("sudo systemctl reload apache2 2>/dev/null >/dev/null &");
+        // Run provision in background with 120s timeout
+        @exec("timeout 120 sudo /var/www/radiohosting/provision.sh provision {$escUser} {$escDomain} {$escHome} {$escPass} {$packageId} 2>/dev/null >/dev/null &");
 
         // --- Create domain record ---
-        try { $this->db->table('domains')->insertGetId(['account_id' => $userId, 'domain' => $domain, 'type' => 'main', 'document_root' => "{$homeDir}/public_html", 'ip' => $serverIp, 'status' => 'active']); } catch (\Exception $e) {}
+        try {
+            $this->db->table('domains')->insertGetId([
+                'account_id' => $userId,
+                'domain' => $domain,
+                'type' => 'main',
+                'document_root' => "{$homeDir}/public_html",
+                'ip' => $serverIp,
+                'status' => 'active',
+            ]);
+        } catch (\Exception $e) {}
 
         $nsList = [];
         try { $nsList = $this->db->table('dns_nameservers')->get() ?: []; } catch (\Exception $e) {}
@@ -147,8 +162,29 @@ class AccountController extends Controller
             'package_id' => $packageId,
             'home_dir' => $homeDir,
             'nameservers' => $nsList,
+            'status' => 'pending',
         ];
         header('Location: /admin/account/summary/' . $userId);
+        exit;
+    }
+
+    public function provisionStatus($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) {
+            header('Content-Type: application/json'); echo json_encode(['error' => 'Unauthorized']); exit;
+        }
+        $account = $this->db->table('hosting_users')->where('id', $id)->first();
+        if (!$account) {
+            header('Content-Type: application/json'); echo json_encode(['error' => 'Not found']); exit;
+        }
+        $u = escapeshellarg($account->username);
+        $output = @exec("sudo /var/www/radiohosting/provision.sh status {$u} '' '' 2>/dev/null");
+        header('Content-Type: application/json');
+        echo json_encode([
+            'status' => $output ?: $account->status,
+            'provision_step' => $account->provision_step,
+            'db_status' => $account->status,
+        ]);
         exit;
     }
 
@@ -277,8 +313,27 @@ class AccountController extends Controller
     public function suspend($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $this->db->table('hosting_users')->where('id', $id)->update(['status' => 'suspended']);
-        $_SESSION['success_message'] = 'Account suspended.';
+        $account = $this->db->table('hosting_users')->where('id', $id)->first();
+        if (!$account) { $_SESSION['error_message'] = 'Account not found.'; $this->response->redirect('/admin/account'); exit; }
+        $adminId = $this->auth->user()->id;
+        $u = escapeshellarg($account->username);
+        $d = escapeshellarg($account->domain);
+        $h = escapeshellarg("/home/{$account->username}");
+        @exec("sudo /var/www/radiohosting/provision.sh suspend {$u} {$d} {$h} 2>/dev/null >/dev/null &");
+        $this->db->table('hosting_users')->where('id', $id)->update([
+            'status' => 'suspended',
+            'suspended_at' => date('Y-m-d H:i:s'),
+            'suspended_by' => $adminId,
+        ]);
+        try {
+            $this->db->table('activity_logs')->insert([
+                'account_id' => $id, 'admin_id' => $adminId,
+                'action' => 'suspended',
+                'details' => "Account {$account->username} suspended",
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
+            ]);
+        } catch (\Exception $e) {}
+        $_SESSION['success_message'] = "Account '{$account->username}' suspended.";
         $this->response->redirect('/admin/account');
         exit;
     }
@@ -286,8 +341,27 @@ class AccountController extends Controller
     public function unsuspend($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $this->db->table('hosting_users')->where('id', $id)->update(['status' => 'active']);
-        $_SESSION['success_message'] = 'Account unsuspended.';
+        $account = $this->db->table('hosting_users')->where('id', $id)->first();
+        if (!$account) { $_SESSION['error_message'] = 'Account not found.'; $this->response->redirect('/admin/account'); exit; }
+        $adminId = $this->auth->user()->id;
+        $u = escapeshellarg($account->username);
+        $d = escapeshellarg($account->domain);
+        $h = escapeshellarg("/home/{$account->username}");
+        @exec("sudo /var/www/radiohosting/provision.sh unsuspend {$u} {$d} {$h} 2>/dev/null >/dev/null &");
+        $this->db->table('hosting_users')->where('id', $id)->update([
+            'status' => 'completed',
+            'suspended_at' => null,
+            'suspended_by' => null,
+        ]);
+        try {
+            $this->db->table('activity_logs')->insert([
+                'account_id' => $id, 'admin_id' => $adminId,
+                'action' => 'unsuspended',
+                'details' => "Account {$account->username} unsuspended",
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
+            ]);
+        } catch (\Exception $e) {}
+        $_SESSION['success_message'] = "Account '{$account->username}' unsuspended.";
         $this->response->redirect('/admin/account');
         exit;
     }
@@ -328,17 +402,35 @@ class AccountController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $account = $this->db->table('hosting_users')->where('id', $id)->first();
-        if ($account) {
-            $u = $account->username;
-            @exec("sudo rm -rf /home/{$u} /etc/apache2/sites-available/{$u}.conf /etc/apache2/sites-available/{$u}-ssl.conf /etc/apache2/sites-enabled/{$u}.conf /etc/apache2/sites-enabled/{$u}-ssl.conf 2>/dev/null >/dev/null &");
-            try {
-                $this->db->table('domains')->where('account_id', $id)->delete();
-            } catch (\Exception $e) {}
+        if (!$account) { $_SESSION['error_message'] = 'Account not found.'; $this->response->redirect('/admin/account'); exit; }
+        $adminId = $this->auth->user()->id;
+        $u = escapeshellarg($account->username);
+        $d = escapeshellarg($account->domain);
+        $h = escapeshellarg("/home/{$account->username}");
+        @exec("sudo /var/www/radiohosting/provision.sh terminate {$u} {$d} {$h} 2>/dev/null >/dev/null &");
+        try {
+            $this->db->table('domains')->where('account_id', $id)->delete();
+            $this->db->table('backup_settings')->where('account_id', $id)->delete();
+            $this->db->table('activity_logs')->where('account_id', $id)->delete();
             if (!empty($account->ip)) {
-                try { $this->db->table('server_ips')->where('assigned_to', $u)->update(['assigned_to' => null]); } catch (\Exception $e) {}
+                try { $this->db->table('server_ips')->where('assigned_to', $account->username)->update(['assigned_to' => null]); } catch (\Exception $e) {}
             }
-        }
-        $this->db->table('hosting_users')->where('id', $id)->update(['status' => 'terminated']);
+        } catch (\Exception $e) {}
+        $this->db->table('hosting_users')->where('id', $id)->update([
+            'status' => 'terminated',
+            'provision_step' => null,
+            'database_name' => null,
+            'database_user' => null,
+            'database_password' => null,
+        ]);
+        try {
+            $this->db->table('activity_logs')->insert([
+                'account_id' => $id, 'admin_id' => $adminId,
+                'action' => 'terminated',
+                'details' => "Account {$account->username} terminated with all data removed",
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
+            ]);
+        } catch (\Exception $e) {}
         $_SESSION['success_message'] = "Account '{$account->username}' terminated.";
         $this->response->redirect('/admin/account');
         exit;
@@ -470,19 +562,33 @@ class AccountController extends Controller
             }
             $_SESSION['error_message'] = 'Account not found.'; $this->response->redirect('/admin/account'); exit;
         }
-        
-        $u = $account->username;
-        @exec("sudo rm -rf /home/{$u} /etc/apache2/sites-available/{$u}.conf /etc/apache2/sites-available/{$u}-ssl.conf /etc/apache2/sites-enabled/{$u}.conf /etc/apache2/sites-enabled/{$u}-ssl.conf 2>/dev/null >/dev/null &");
+
+        $adminId = $this->auth->user()->id;
+        $u = escapeshellarg($account->username);
+        $d = escapeshellarg($account->domain);
+        $h = escapeshellarg("/home/{$account->username}");
+        @exec("sudo /var/www/radiohosting/provision.sh terminate {$u} {$d} {$h} 2>/dev/null >/dev/null &");
         try {
             $this->db->table('domains')->where('account_id', $id)->delete();
+            $this->db->table('backup_settings')->where('account_id', $id)->delete();
+            $this->db->table('activity_logs')->where('account_id', $id)->delete();
             $this->db->table('hosting_users')->where('id', $id)->delete();
         } catch (\Exception $e) {}
-        
+
+        try {
+            $this->db->table('activity_logs')->insert([
+                'account_id' => $id, 'admin_id' => $adminId,
+                'action' => 'deleted',
+                'details' => "Account {$account->username} permanently deleted",
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
+            ]);
+        } catch (\Exception $e) {}
+
         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-            header('Content-Type: application/json'); echo json_encode(['success' => true, 'message' => "Account '{$u}' permanently deleted."]); exit;
+            header('Content-Type: application/json'); echo json_encode(['success' => true, 'message' => "Account '{$account->username}' permanently deleted."]); exit;
         }
-        
-        $_SESSION['success_message'] = "Account '{$u}' permanently deleted with all data.";
+
+        $_SESSION['success_message'] = "Account '{$account->username}' permanently deleted with all data.";
         $this->response->redirect('/admin/account');
     }
 
