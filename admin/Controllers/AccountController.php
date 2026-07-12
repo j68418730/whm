@@ -127,6 +127,10 @@ class AccountController extends Controller
         $vhostContent = "<VirtualHost *:80>\n    ServerAdmin webmaster@{$domain}\n    ServerName {$domain}\n    ServerAlias www.{$domain}\n    DocumentRoot {$homeDir}/public_html\n    <Directory {$homeDir}/public_html>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n        DirectoryIndex index.php index.html\n    </Directory>\n    ErrorLog /var/log/apache2/{$domain}_error.log\n    CustomLog /var/log/apache2/{$domain}_access.log combined\n</VirtualHost>";
         @exec("sudo bash -c 'cat > /etc/apache2/sites-available/{$username}.conf << VHOST\n{$vhostContent}\nVHOST' 2>/dev/null");
         @exec("sudo a2ensite {$username}.conf 2>/dev/null >/dev/null");
+
+        // --- Auto-SSL via certbot in background ---
+        @exec("sudo /var/www/radiohosting/auto_ssl.sh {$escUser} {$escDomain} {$escHome} 2>/dev/null >/dev/null &");
+
         @exec("sudo systemctl reload apache2 2>/dev/null >/dev/null &");
 
         // --- Create domain record ---
