@@ -592,5 +592,55 @@ class AccountController extends Controller
         $this->response->redirect('/admin/account');
     }
 
+    public function backup($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $account = $this->db->table('hosting_users')->where('id', $id)->first();
+        if (!$account) { $_SESSION['error_message'] = 'Account not found.'; $this->response->redirect('/admin/account'); exit; }
+
+        $action = $this->request->get('action', 'run');
+        $u = escapeshellarg($account->username);
+        $d = escapeshellarg($account->domain);
+
+        if ($action === 'run') {
+            @exec("sudo /var/www/radiohosting/backup.sh run 2>/dev/null >/dev/null &");
+            $_SESSION['success_message'] = "Backup started for {$account->username}.";
+        } elseif ($action === 'restore') {
+            $file = escapeshellarg($this->request->get('file', ''));
+            if ($file) {
+                @exec("sudo /var/www/radiohosting/backup.sh restore {$u} {$file} 2>/dev/null >/dev/null &");
+                $_SESSION['success_message'] = "Restore started for {$account->username}.";
+            } else {
+                $_SESSION['error_message'] = 'No backup file specified.';
+            }
+        } elseif ($action === 'list') {
+            $output = @exec("sudo /var/www/radiohosting/backup.sh list {$u} 2>/dev/null");
+            header('Content-Type: application/json');
+            echo json_encode(['backups' => explode("\n", trim($output))]);
+            exit;
+        }
+        $this->response->redirect('/admin/account/show/' . $id);
+        exit;
+    }
+
+    public function monitorAlerts($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) {
+            header('Content-Type: application/json'); echo json_encode(['error' => 'Unauthorized']); exit;
+        }
+        $alertFile = '/var/log/radiohosting/monitor/alerts.json';
+        if (file_exists($alertFile)) {
+            $alerts = json_decode(file_get_contents($alertFile), true);
+            $accountAlerts = array_filter($alerts['alerts'] ?? [], function($a) use ($id) {
+                return $a['account_id'] == $id;
+            });
+            header('Content-Type: application/json');
+            echo json_encode(array_values($accountAlerts));
+        } else {
+            header('Content-Type: application/json'); echo json_encode([]);
+        }
+        exit;
+    }
+
 }
 
