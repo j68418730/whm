@@ -1,54 +1,55 @@
 <style>
 .wizard-wrap{max-width:800px;margin:0 auto}
-.wizard-header{text-align:center;padding:30px 20px;background:linear-gradient(135deg,rgba(0,140,255,.08),rgba(168,85,247,.05));border-radius:12px;margin-bottom:20px;border:1px solid rgba(0,191,255,.1)}
-.wizard-header h1{font-size:22px;font-weight:700;color:#e0e0e0;margin:0 0 6px}
+.wizard-header{text-align:center;padding:30px 20px;background:linear-gradient(135deg,rgba(0,140,255,.08),rgba(168,85,247,.05));border:1px solid rgba(0,191,255,.1);border-radius:14px;margin-bottom:20px}
+.wizard-header h1{font-size:22px;font-weight:700;color:#e0e0e0;margin:0 0 6px;font-family:Orbitron,sans-serif}
 .wizard-header p{font-size:12px;color:#64748b;margin:0}
-.wizard-progress{display:flex;gap:2px;margin-bottom:24px;background:rgba(8,16,28,.6);border-radius:8px;padding:4px;overflow-x:auto}
-.wizard-progress .step{flex:1;text-align:center;padding:6px 4px;border-radius:6px;font-size:9px;color:#64748b;white-space:nowrap;min-width:50px}
-.wizard-progress .step.active{background:rgba(0,140,255,.2);color:#0A84FF;font-weight:600}
-.wizard-progress .step.done{color:#00C853}
-.wizard-card{background:rgba(8,16,28,.6);border:1px solid rgba(255,255,255,.04);border-radius:10px;padding:24px;margin-bottom:16px}
+.wizard-progress{display:flex;gap:2px;margin-bottom:24px;background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.08);border-radius:10px;padding:4px;overflow-x:auto}
+.wizard-progress .step{flex:1;text-align:center;padding:7px 4px;border-radius:7px;font-size:9px;color:#64748b;white-space:nowrap;min-width:50px;font-weight:500}
+.wizard-progress .step.active{background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff;font-weight:600}
+.wizard-progress .step.done{color:#4ade80}
+.wizard-card{background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.08);border-radius:12px;padding:24px;margin-bottom:16px}
+.wizard-card:hover{border-color:rgba(0,191,255,.15)}
 .wizard-card h2{font-size:16px;font-weight:600;color:#e0e0e0;margin:0 0 4px}
 .wizard-card .desc{font-size:11px;color:#64748b;margin-bottom:16px}
 .form-group{margin-bottom:14px}
 .form-group label{display:block;font-size:11px;color:#94a3b8;margin-bottom:4px;font-weight:500}
 .form-group .hint{font-size:10px;color:#64748b;margin-top:3px}
-.inp{padding:8px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:13px;outline:none;width:100%;box-sizing:border-box}
-.inp:focus{border-color:rgba(0,140,255,.4)}
+.inp{padding:8px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:13px;outline:none;width:100%;box-sizing:border-box;transition:border-color .15s}
+.inp:focus{border-color:#0A84FF;box-shadow:0 0 0 2px rgba(0,140,255,.1)}
 .inp-sm{padding:6px 8px;font-size:12px}
 select.inp{color:#e0e0e0;cursor:pointer}
 select.inp option{background:#0a0e1a;color:#e0e0e0}
 textarea.inp{resize:vertical;min-height:60px}
-.btn{padding:10px 24px;border-radius:8px;font-size:13px;font-weight:500;border:none;cursor:pointer;transition:.15s;text-decoration:none;display:inline-block}
-.btn-primary{background:rgba(0,140,255,.2);color:#0A84FF}
-.btn-primary:hover{background:rgba(0,140,255,.3)}
-.btn-secondary{background:rgba(255,255,255,.06);color:#94a3b8}
-.btn-secondary:hover{background:rgba(255,255,255,.1)}
-.btn-success{background:rgba(0,200,83,.15);color:#00C853}
-.btn-success:hover{background:rgba(0,200,83,.25)}
+.btn{padding:10px 24px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:.15s;text-decoration:none;display:inline-block;font-family:Inter,sans-serif}
+.btn-primary{background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 0 14px rgba(0,140,255,.25)}
+.btn-secondary{background:rgba(255,255,255,.06);color:#94a3b8;border:1px solid rgba(255,255,255,.08)}
+.btn-secondary:hover{background:rgba(255,255,255,.1);color:#e0e0e0}
+.btn-success{background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.2)}
+.btn-success:hover{background:rgba(74,222,128,.25)}
 .wizard-nav{display:flex;justify-content:space-between;margin-top:20px;gap:10px}
 .radio-group{display:flex;gap:10px;flex-wrap:wrap}
-.radio-group label{display:flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(0,0,0,.3);border-radius:8px;border:1px solid rgba(255,255,255,.06);cursor:pointer;font-size:12px;color:#c0c0c0;transition:.1s}
-.radio-group label:hover{border-color:rgba(0,140,255,.2);color:#e0e0e0}
+.radio-group label{display:flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(0,0,0,.3);border:1px solid rgba(0,191,255,.06);border-radius:8px;cursor:pointer;font-size:12px;color:#c0c0c0;transition:.15s}
+.radio-group label:hover{border-color:rgba(0,140,255,.25);color:#e0e0e0}
 .radio-group input:checked+span{color:#0A84FF}
 .radio-group input[type=radio]{accent-color:#0A84FF}
 .check-group{display:flex;flex-wrap:wrap;gap:8px}
-.check-group label{display:flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(0,0,0,.3);border-radius:6px;font-size:11px;color:#c0c0c0;cursor:pointer}
-.check-group label:hover{color:#e0e0e0}
+.check-group label{display:flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(0,0,0,.3);border:1px solid rgba(0,191,255,.05);border-radius:6px;font-size:11px;color:#c0c0c0;cursor:pointer}
+.check-group label:hover{color:#e0e0e0;border-color:rgba(0,140,255,.15)}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.upload-area{border:2px dashed rgba(0,140,255,.2);border-radius:10px;padding:40px;text-align:center;color:#64748b;cursor:pointer;transition:.15s}
-.upload-area:hover{border-color:rgba(0,140,255,.4);color:#94a3b8}
+.upload-area{border:2px dashed rgba(0,140,255,.2);border-radius:12px;padding:40px;text-align:center;color:#64748b;cursor:pointer;transition:.2s;background:rgba(0,0,0,.15)}
+.upload-area:hover{border-color:rgba(0,140,255,.4);background:rgba(0,140,255,.05);color:#94a3b8}
 .feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.feature-item{padding:12px;background:rgba(0,0,0,.3);border-radius:8px;text-align:center}
+.feature-item{padding:14px;background:rgba(0,0,0,.3);border:1px solid rgba(0,191,255,.05);border-radius:10px;text-align:center}
 .feature-item .icon{font-size:28px;margin-bottom:4px;opacity:.6}
 .feature-item .label{font-size:11px;color:#c0c0c0}
 </style>
 <?php $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; ?>
 <div class="wizard-wrap">
-<div class="wizard-header"><h1><?=$step===1?'Welcome to AutoDJ Setup':($step===15?'Setup Complete!':'AutoDJ Setup - Step '.$step.'/15')?></h1><p>Planet Hosts AutoDJ Configuration Wizard</p></div>
+<div class="wizard-header"><h1><?=$step===1?'Welcome to AutoDJ Setup':($step===14?'Setup Complete!':'AutoDJ Setup - Step '.$step.'/14')?></h1><p>Planet Hosts AutoDJ Configuration Wizard</p></div>
 <div class="wizard-progress">
-<?php for($i=1;$i<=15;$i++): $cls = $i==$step?'active':($i<$step?'done':''); ?>
+<?php for($i=1;$i<=14;$i++): $cls = $i==$step?'active':($i<$step?'done':''); ?>
 <div class="step <?=$cls?>"><?=$i<=9?'0':''?><?=$i?></div>
 <?php endfor; ?>
 </div>
@@ -148,29 +149,33 @@ textarea.inp{resize:vertical;min-height:60px}
 
 <?php elseif ($step === 6): ?>
 <div class="wizard-card">
-<h2>Music Library</h2>
-<div class="desc">Upload your music or import from folders</div>
-<div class="upload-area" onclick="document.getElementById('music-upload').click()">Click to upload or drag &amp; drop<br><span style="font-size:10px">MP3, AAC, FLAC, OGG, WAV supported</span></div>
-<input id="music-upload" type="file" name="music_files[]" multiple accept=".mp3,.aac,.flac,.ogg,.wav" style="display:none">
-<div class="hint" style="margin-top:8px">You can also upload ZIP archives for bulk import</div>
-</div>
-<div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
-
-<?php elseif ($step === 7): ?>
-<div class="wizard-card">
 <h2>Playlist</h2>
-<div class="desc">Create playlists for your station</div>
+<div class="desc">Select which playlists to use for your station</div>
+<?php if (!empty($playlists)): ?>
+<div style="margin-bottom:14px">
+<label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:6px">Existing Playlists</label>
+<div class="grid-2">
+<?php foreach ($playlists as $p): ?>
+<label style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(0,0,0,.3);border:1px solid rgba(0,191,255,.06);border-radius:8px;font-size:12px;color:#c0c0c0;cursor:pointer">
+<input type="checkbox" name="playlist_ids[]" value="<?=$p->id?>" checked> <span><?=htmlspecialchars($p->name)?></span></label>
+<?php endforeach; ?>
+</div>
+</div>
+<div style="border-top:1px solid rgba(255,255,255,.06);padding-top:14px;margin-bottom:10px">
+<label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:6px">Create New Playlists</label>
+<?php endif; ?>
 <div class="grid-2">
 <?php foreach(['Morning','Afternoon','Evening','Night','Weekend','Holiday','Emergency','Default'] as $pl): ?>
-<label style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(0,0,0,.3);border-radius:8px;font-size:12px;color:#c0c0c0;cursor:pointer">
+<label style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.05);border-radius:8px;font-size:12px;color:#c0c0c0;cursor:pointer">
 <input type="checkbox" name="preset_playlists[]" value="<?=$pl?>"> <span><?=$pl?></span></label>
 <?php endforeach; ?>
 </div>
 <div class="form-group" style="margin-top:12px"><label>Custom Playlist Name</label><input class="inp" name="custom_playlist" placeholder="Enter custom playlist name"></div>
 </div>
+</div>
 <div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
 
-<?php elseif ($step === 8): ?>
+<?php elseif ($step === 7): ?>
 <div class="wizard-card">
 <h2>Rotation Rules</h2>
 <div class="desc">Control how often songs repeat</div>
@@ -187,7 +192,7 @@ textarea.inp{resize:vertical;min-height:60px}
 </div>
 <div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
 
-<?php elseif ($step === 9): ?>
+<?php elseif ($step === 8): ?>
 <div class="wizard-card">
 <h2>DJ Override</h2>
 <div class="desc">Configure live DJ integration</div>
@@ -202,7 +207,7 @@ textarea.inp{resize:vertical;min-height:60px}
 </div>
 <div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
 
-<?php elseif ($step === 10): ?>
+<?php elseif ($step === 9): ?>
 <div class="wizard-card">
 <h2>Jingles</h2>
 <div class="desc">Configure station IDs, sweepers, and promos</div>
@@ -224,20 +229,31 @@ textarea.inp{resize:vertical;min-height:60px}
 </div>
 <div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
 
-<?php elseif ($step === 11): ?>
+<?php elseif ($step === 10): ?>
 <div class="wizard-card">
 <h2>Advertisements</h2>
 <div class="desc">Configure ad insertion</div>
-<div class="check-group" style="margin-bottom:12px"><label><input type="checkbox" name="ads_enabled" value="1" <?=$config->ads_enabled?'checked':''?>> <span>Enable Ads</span></label></div>
+<div class="check-group" style="margin-bottom:12px"><label><input type="checkbox" name="ads_enabled" value="1" onchange="document.getElementById('ads-settings').style.display=this.checked?'block':'none'" <?=$config->ads_enabled?'checked':''?>> <span>Enable Ads</span></label></div>
+<div id="ads-settings" style="<?=$config->ads_enabled?'':'display:none'?>">
 <div class="grid-2">
 <div class="form-group"><label>Max Ads Per Hour</label><select class="inp" name="max_ads_per_hour"><option value="1" <?=$config->max_ads_per_hour==1?'selected':''?>>1</option><option value="2" <?=$config->max_ads_per_hour==2?'selected':''?>>2</option><option value="3" <?=$config->max_ads_per_hour==3?'selected':''?>>3</option><option value="4" <?=$config->max_ads_per_hour==4?'selected':''?>>4</option><option value="6" <?=$config->max_ads_per_hour==6?'selected':''?>>6</option><option value="8" <?=$config->max_ads_per_hour==8?'selected':''?>>8</option></select></div>
-<div class="upload-area" style="padding:20px" onclick="document.getElementById('ad-upload').click()">Upload Ads</div>
+<div class="form-group"><label>Ad Playlist</label>
+<select class="inp" name="ads_playlist_id">
+<option value="">-- Use main playlist --</option>
+<?php foreach ($playlists as $p): ?>
+<option value="<?=$p->id?>" <?=($config->ads_playlist_id??'')==$p->id?'selected':''?>><?=htmlspecialchars($p->name)?></option>
+<?php endforeach; ?>
+</select>
+<div class="hint">Choose a playlist with ad audio files, or leave to mix ads from your main music</div>
+</div>
+</div>
+<div class="upload-area" style="padding:20px;margin-top:8px" onclick="document.getElementById('ad-upload').click()">Upload Ad Audio Files<br><span style="font-size:10px">MP3, AAC, OGG</span></div>
 <input id="ad-upload" type="file" name="ads[]" multiple accept="audio/*" style="display:none">
 </div>
 </div>
 <div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
 
-<?php elseif ($step === 12): ?>
+<?php elseif ($step === 11): ?>
 <div class="wizard-card">
 <h2>Song Requests</h2>
 <div class="desc">Configure listener song requests</div>
@@ -250,7 +266,7 @@ textarea.inp{resize:vertical;min-height:60px}
 </div>
 <div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
 
-<?php elseif ($step === 13): ?>
+<?php elseif ($step === 12): ?>
 <div class="wizard-card">
 <h2>Metadata</h2>
 <div class="desc">Configure now-playing metadata</div>
@@ -264,29 +280,21 @@ textarea.inp{resize:vertical;min-height:60px}
 </div>
 <div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
 
-<?php elseif ($step === 14): ?>
+<?php elseif ($step === 13): ?>
 <div class="wizard-card">
-<h2>Backup</h2>
-<div class="desc">Configure automatic backups</div>
+<h2>Backup <span style="font-size:11px;color:#64748b;font-weight:400">(optional)</span></h2>
+<div class="desc">Configure automatic backups — skip if not needed</div>
 <div class="form-group"><label>Backup Frequency</label>
 <select class="inp" name="backup_frequency">
+<option value="never" <?=$config->backup_frequency==='never'?'selected':''?>>No automatic backups</option>
 <option value="daily" <?=$config->backup_frequency==='daily'?'selected':''?>>Daily</option>
 <option value="weekly" <?=$config->backup_frequency==='weekly'?'selected':''?>>Weekly</option>
 <option value="monthly" <?=$config->backup_frequency==='monthly'?'selected':''?>>Monthly</option>
-<option value="never" <?=$config->backup_frequency==='never'?'selected':''?>>Never</option>
-</select></div>
-<div class="form-group"><label>Cloud Backup</label>
-<select class="inp" name="cloud_backup">
-<option value="" <?=!$config->cloud_backup?'selected':''?>>None</option>
-<option value="google_drive" <?=$config->cloud_backup==='google_drive'?'selected':''?>>Google Drive</option>
-<option value="dropbox" <?=$config->cloud_backup==='dropbox'?'selected':''?>>Dropbox</option>
-<option value="onedrive" <?=$config->cloud_backup==='onedrive'?'selected':''?>>OneDrive</option>
-<option value="s3" <?=$config->cloud_backup==='s3'?'selected':''?>>Amazon S3</option>
 </select></div>
 </div>
-<div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
+<div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Complete &raquo;</button></div>
 
-<?php elseif ($step === 15): ?>
+<?php elseif ($step === 14): ?>
 <div class="wizard-card">
 <h2>Setup Complete!</h2>
 <div class="desc">Your AutoDJ is ready to go</div>

@@ -24,6 +24,9 @@ if ! id "$USERNAME" &>/dev/null; then
     fi
 fi
 
+# Add to www-data group for FTP/web permissions
+usermod -a -G www-data "$USERNAME" 2>/dev/null || true
+
 # Ensure home directory exists
 mkdir -p "$HOMEDIR"
 

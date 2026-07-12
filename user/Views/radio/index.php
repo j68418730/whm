@@ -6,73 +6,79 @@ $isIces = ($station->server_type ?? 'icecast') === 'icecast';
 $listenUrl = $isIces ? "http://{$_SERVER['HTTP_HOST']}:$station->port$station->mount" : "http://{$_SERVER['HTTP_HOST']}:$station->port";
 ?>
 <style>
-.nav-pills{display:flex;gap:2px;flex-wrap:wrap;margin-bottom:14px;background:rgba(8,16,28,.6);border-radius:8px;padding:3px;max-height:200px;overflow-y:auto}
-.nav-pills a{padding:6px 12px;border-radius:6px;font-size:11px;text-decoration:none;color:#94a3b8;transition:.1s;white-space:nowrap}
+.nav-pills{display:flex;gap:2px;flex-wrap:wrap;margin-bottom:14px;background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.08);border-radius:10px;padding:4px;max-height:200px;overflow-y:auto}
+.nav-pills a{padding:7px 14px;border-radius:7px;font-size:11px;text-decoration:none;color:#94a3b8;transition:.15s;white-space:nowrap;font-weight:500}
 .nav-pills a:hover{color:#e0e0e0;background:rgba(255,255,255,.04)}
-.nav-pills a.active{color:#fff;background:rgba(0,140,255,.2)}
+.nav-pills a.active{color:#fff;background:linear-gradient(135deg,#008cff,#3bb8ff);box-shadow:0 0 12px rgba(0,140,255,.2)}
 .tab{display:none}
 .tab.active{display:block}
 .top-bar{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
-.top-bar .page-title{font-size:20px;font-weight:700;color:#e0e0e0}
+.top-bar .page-title{font-size:20px;font-weight:700;color:#e0e0e0;font-family:Orbitron,sans-serif;letter-spacing:.5px}
 .top-bar .breadcrumb{font-size:11px;color:#64748b;display:flex;align-items:center;gap:4px;margin-bottom:2px}
 .top-bar .breadcrumb a{color:#64748b;text-decoration:none}
 .top-bar .breadcrumb a:hover{color:#0A84FF}
-.nowplaying-bar{display:flex;align-items:center;gap:14px;padding:14px;background:linear-gradient(135deg,rgba(0,140,255,.06),rgba(168,85,247,.04));border:1px solid rgba(0,191,255,.1);border-radius:12px;margin-bottom:16px}
+.nowplaying-bar{display:flex;align-items:center;gap:14px;padding:14px 20px;background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.1);border-radius:12px;margin-bottom:16px}
 .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
-.stat-box{text-align:center;padding:14px;background:rgba(8,16,28,.6);border-radius:8px}
+.stat-box{text-align:center;padding:14px;background:rgba(0,0,0,.3);border-radius:8px}
 .stat-box .num{font-size:22px;font-weight:700}
 .stat-box .lbl{font-size:10px;color:#64748b;margin-top:2px}
-.upload-zone{border:2px dashed rgba(0,140,255,.2);border-radius:10px;padding:30px;text-align:center;color:#64748b;font-size:12px;cursor:pointer;transition:.15s;margin-bottom:10px}
-.upload-zone:hover{border-color:rgba(0,140,255,.4);background:rgba(0,140,255,.03);color:#94a3b8}
-.file-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.upload-zone{border:2px dashed rgba(0,140,255,.2);border-radius:12px;padding:36px;text-align:center;color:#64748b;font-size:12px;cursor:pointer;transition:.2s;margin-bottom:10px;background:rgba(0,0,0,.15)}
+.upload-zone:hover{border-color:rgba(0,140,255,.4);background:rgba(0,140,255,.05);color:#94a3b8}
+.upload-zone.drag-over{border-color:#008cff;background:rgba(0,140,255,.08)}
+.file-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
 .color-picker-wrap{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .color-picker-wrap input[type=color]{width:36px;height:36px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);cursor:pointer;padding:2px}
 .color-picker-wrap .hex{font-size:11px;color:#94a3b8;font-family:monospace}
-.inp{padding:6px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px;outline:none;width:100%;box-sizing:border-box}
-.inp:focus{border-color:rgba(0,140,255,.3)}
-.inp-sm{padding:4px 6px;font-size:10px}
+.inp{padding:8px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px;outline:none;width:100%;box-sizing:border-box;transition:border-color .15s}
+.inp:focus{border-color:#0A84FF;box-shadow:0 0 0 2px rgba(0,140,255,.1)}
+.inp-sm{padding:5px 8px;font-size:11px}
 select.inp{color:#e0e0e0;cursor:pointer}
 select.inp option{background:#0a0e1a;color:#e0e0e0}
-.station-selector{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 14px;background:rgba(8,16,28,.6);border-radius:8px;font-size:12px}
-.station-selector select{padding:4px 8px;border-radius:5px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px;outline:none;min-width:200px}
-.card{background:rgba(8,16,28,.6);border:1px solid rgba(255,255,255,.04);border-radius:10px;padding:16px;margin-bottom:12px}
+.station-selector{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:12px 16px;background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.08);border-radius:10px;font-size:12px}
+.station-selector select{padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px;outline:none;min-width:200px}
+.station-selector select:focus{border-color:#0A84FF}
+.card{background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.08);border-radius:12px;padding:18px 20px;margin-bottom:14px}
+.card:hover{border-color:rgba(0,191,255,.15)}
 .card h3{font-size:13px;font-weight:600;color:#e0e0e0;margin:0 0 12px 0}
 .card .hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:12px}
-.stat-card{padding:14px;background:rgba(0,0,0,.3);border-radius:8px;text-align:center}
-.stat-card .sv{font-size:20px;font-weight:700;color:#e0e0e0}
-.stat-card .sl{font-size:10px;color:#64748b;margin-top:2px}
-.btn{padding:6px 14px;border-radius:6px;font-size:11px;font-weight:500;border:none;cursor:pointer;transition:.1s;text-decoration:none;display:inline-block}
-.btn-sm{padding:4px 10px;font-size:10px}
-.btn-primary{background:rgba(0,140,255,.2);color:#0A84FF}
-.btn-primary:hover{background:rgba(0,140,255,.3)}
-.btn-success{background:rgba(0,200,83,.15);color:#00C853}
-.btn-success:hover{background:rgba(0,200,83,.25)}
-.btn-danger{background:rgba(255,68,68,.15);color:#ff4444}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:14px}
+.stat-card{background:rgba(0,0,0,.3);border:1px solid rgba(0,191,255,.06);border-radius:10px;padding:18px 14px;text-align:center}
+.stat-card .sv{font-size:22px;font-weight:700;color:#e0e0e0}
+.stat-card .sl{font-size:10px;color:#64748b;margin-top:3px;text-transform:uppercase;letter-spacing:.3px}
+.btn{padding:7px 16px;border-radius:7px;font-size:11px;font-weight:600;border:none;cursor:pointer;transition:.15s;text-decoration:none;display:inline-block;font-family:Inter,sans-serif}
+.btn-sm{padding:5px 12px;font-size:10px;border-radius:6px}
+.btn-primary{background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 0 14px rgba(0,140,255,.25)}
+.btn-success{background:rgba(0,200,83,.15);color:#00C853;border:1px solid rgba(0,200,83,.2)}
+.btn-success:hover{background:rgba(0,200,83,.25);border-color:rgba(0,200,83,.35)}
+.btn-danger{background:rgba(255,68,68,.15);color:#ff4444;border:1px solid rgba(255,68,68,.2)}
 .btn-danger:hover{background:rgba(255,68,68,.25)}
-.btn-warning{background:rgba(255,193,7,.15);color:#ffc107}
+.btn-warning{background:rgba(255,193,7,.15);color:#ffc107;border:1px solid rgba(255,193,7,.2)}
 .btn-warning:hover{background:rgba(255,193,7,.25)}
-.btn-secondary{background:rgba(255,255,255,.06);color:#94a3b8}
-.btn-secondary:hover{background:rgba(255,255,255,.1)}
-.status-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600}
-.status-running{background:rgba(0,200,83,.15);color:#00C853}
-.status-stopped{background:rgba(255,68,68,.12);color:#ff4444}
-.status-starting{background:rgba(255,193,7,.15);color:#ffc107}
+.btn-secondary{background:rgba(255,255,255,.06);color:#94a3b8;border:1px solid rgba(255,255,255,.08)}
+.btn-secondary:hover{background:rgba(255,255,255,.1);color:#e0e0e0}
+.status-badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.status-running{background:rgba(74,222,128,.12);color:#4ade80}
+.status-stopped{background:rgba(248,113,113,.12);color:#f87171}
+.status-starting{background:rgba(250,204,21,.12);color:#facc15}
 .msg{padding:8px 12px;border-radius:6px;font-size:11px;margin-bottom:10px;display:none}
-.msg-success{display:block;background:rgba(0,200,83,.1);color:#00C853;border:1px solid rgba(0,200,83,.15)}
-.msg-error{display:block;background:rgba(255,68,68,.1);color:#ff4444;border:1px solid rgba(255,68,68,.15)}
-.empty-state{padding:30px;text-align:center;color:#64748b;font-size:12px}
-.progress-bar{height:4px;border-radius:2px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:6px}
-.progress-bar .fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#0A84FF,#5856D6);transition:width .3s}
-table{width:100%;border-collapse:collapse;font-size:11px}
-th{padding:8px 6px;text-align:left;font-weight:600;color:#64748b;border-bottom:1px solid rgba(255,255,255,.06)}
-td{padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.04);color:#c0c0c0}
-tr:hover td{background:rgba(255,255,255,.02)}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.msg-success{display:block;background:rgba(74,222,128,.08);color:#4ade80;border:1px solid rgba(74,222,128,.15)}
+.msg-error{display:block;background:rgba(248,113,113,.08);color:#f87171;border:1px solid rgba(248,113,113,.15)}
+.empty-state{padding:36px;text-align:center;color:#64748b;font-size:12px}
+.progress-bar{height:4px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:6px}
+.progress-bar .fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#0A84FF,#5856D6);transition:width .3s}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:9px 10px;text-align:left;font-weight:600;color:#64748b;border-bottom:1px solid rgba(255,255,255,.06);font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.04);color:#cbd5e1}
+tr:hover td{background:rgba(0,191,255,.02)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px}
 .form-group{margin-bottom:10px}
-.form-group label{display:block;font-size:10px;color:#64748b;margin-bottom:3px;font-weight:500}
+.form-group label{display:block;font-size:10px;color:#64748b;margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:.3px}
 .actions{display:flex;gap:4px;flex-wrap:wrap}
+.check-group{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.check-group label{display:flex;align-items:center;gap:6px;font-size:11px;color:#94a3b8;cursor:pointer}
+.check-group input[type=checkbox]{width:14px;height:14px;accent-color:#0A84FF;cursor:pointer}
 </style>
 <div class="top-bar"><div><div class="breadcrumb"><a href="/user">Dashboard</a> &raquo; <span>Radio</span></div><div class="page-title">Radio Dashboard</div></div><?php if (empty($stations)): ?><a href="/user/radio/setup" class="btn btn-primary">Create Station</a><?php endif; ?></div>
 <?php if (isset($_SESSION['success'])): ?><div class="msg msg-success"><?=$_SESSION['success']; unset($_SESSION['success']); ?></div><?php endif; ?>
@@ -104,7 +110,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div style="font-size:10px;color:#64748b">Disk</div>
     <div style="font-size:14px;font-weight:700;color:#e0e0e0"><?=$diskUsedFormatted?> / <?=$diskTotalFormatted?></div>
     <?php $pct = $diskTotal > 0 ? min(100, round($diskUsed/$diskTotal*100)) : 0; ?>
-    <div class="progress-bar" style="width:100px"><div class="fill" style="width:<?=$pct?>%"></div></div>
+    <div class="progress-bar" style="max-width:120px"><div class="fill" style="width:<?=$pct?>%"></div></div>
   </div>
 </div>
 <div class="nav-pills">
@@ -172,8 +178,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <input type="hidden" name="station_id" value="<?=$stationId?>">
     <div class="form-row"><div class="form-group"><label>Username</label><input class="inp inp-sm" name="username" required></div><div class="form-group"><label>Password</label><input class="inp inp-sm" type="password" name="password" required></div></div>
     <div class="form-row"><div class="form-group"><label>Display Name</label><input class="inp inp-sm" name="name"></div><div class="form-group"><label>Email</label><input class="inp inp-sm" type="email" name="email"></div></div>
-    <div class="form-group"><label>Bio</label><textarea class="inp inp-sm" name="bio" rows="2"></textarea></div>
-    <div class="form-group"><label>Genres</label><input class="inp inp-sm" name="genres" placeholder="Rock, Pop, Jazz"></div>
+    <div class="form-group"><label>Bio</label><textarea class="inp inp-sm" name="bio" rows="2" placeholder="Optional bio for the DJ"></textarea></div>
     <button class="btn btn-sm btn-primary">Add DJ</button>
   </form></div>
 </div>
@@ -247,8 +252,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <?php foreach ($playlistItems as $item): ?>
     <tr>
       <td><?=htmlspecialchars($item->title??'')?></td><td><?=htmlspecialchars($item->artist??'')?></td>
-      <td style="font-size:10px;color:#64748b"><?=htmlspecialchars(basename($item->file??''))?></td>
-      <td><?=$item->duration?gmdate('i:s',$item->duration):'-'?></td><td><?=$item->sort_order??0?></td>
+      <td style="font-size:10px;color:#64748b"><?=htmlspecialchars(basename($item->file_path??''))?></td>
+      <td><?=$item->duration?gmdate('i:s',$item->duration):'-'?></td><td><?=$item->position??0?></td>
       <td class="actions"><a href="/user/radio/playlist/remove-song/<?=$item->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Remove?')">Remove</a></td>
     </tr>
     <?php endforeach; ?>
@@ -286,21 +291,21 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div style="font-size:12px;color:#0A84FF;padding:6px 0 0 8px">Playlist: <?=htmlspecialchars($selPlName)?></div>
     <?php endif; ?>
   </div>
-  <div id="uploadZone" class="upload-zone" style="cursor:pointer;border:2px dashed rgba(0,191,255,.2);border-radius:10px;padding:30px;text-align:center;transition:.3s;background:rgba(0,0,0,.2)" ontouchend="document.getElementById('media-input').click()">Drop files here or click to browse (mp3, aac, ogg, flac, wav, m4a)</div>
+  <div id="uploadZone" class="upload-zone" onclick="document.getElementById('media-input').click()">Drop files here or click to browse (mp3, aac, ogg, flac, wav, m4a)</div>
   <input id="media-input" type="file" name="files[]" multiple accept=".mp3,.aac,.ogg,.flac,.wav,.m4a" style="display:none">
   <div id="uploadQueue" style="margin-top:8px;font-size:11px;color:#94a3b8"></div>
-  <div id="uploadProgress" style="display:none;margin-top:8px;background:rgba(0,0,0,.3);border-radius:6px;overflow:hidden;height:6px"><div id="uploadProgressBar" style="width:0;height:100%;background:linear-gradient(90deg,#008cff,#3bb8ff);transition:width .3s"></div></div>
+  <div id="uploadProgress" style="display:none;margin-top:10px;background:rgba(0,0,0,.3);border-radius:6px;overflow:hidden;height:6px"><div id="uploadProgressBar" style="width:0;height:100%;background:linear-gradient(90deg,#008cff,#3bb8ff);transition:width .3s;border-radius:6px"></div></div>
   <div id="uploadStatus" style="margin-top:6px;font-size:10px;color:#64748b;text-align:center"></div>
   <button id="uploadBtn" class="btn btn-sm btn-primary" style="margin-top:8px;display:none" onclick="startUpload()">Upload <span id="uploadCount"></span></button>
   <?php if (empty($mediaFiles)): ?><div class="empty-state" style="margin-top:10px">No media files<?=$mPlId?' in this playlist':''?></div>
   <?php else: ?>
-  <div class="file-grid" style="margin-top:10px">
+  <div class="file-grid" style="margin-top:12px">
     <?php foreach ($mediaFiles as $f): ?>
-    <div style="padding:10px;background:rgba(0,0,0,.3);border-radius:8px;text-align:center">
-      <div style="font-size:28px;margin-bottom:4px;opacity:.5">&#9835;</div>
-      <div style="font-size:10px;color:#c0c0c0;word-break:break-all"><?=htmlspecialchars($f)?></div>
+    <div style="padding:14px 10px;background:rgba(0,0,0,.3);border:1px solid rgba(0,191,255,.06);border-radius:10px;text-align:center">
+      <div style="font-size:30px;margin-bottom:6px;opacity:.4;color:#0A84FF">&#9835;</div>
+      <div style="font-size:11px;color:#c0c0c0;word-break:break-all;line-height:1.3"><?=htmlspecialchars($f)?></div>
       <div style="margin-top:6px;font-size:10px;color:#64748b"><?=round(filesize('/home/'.$station->username.'/radio/musicdatabase'.($mPlId?'/playlist_'.$mPlId:'').'/'.$f)/1024,1)?> KB</div>
-      <div style="margin-top:6px"><a href="/user/radio/media/delete?file=<?=urlencode($f)?>&playlist_id=<?=$mPlId?>&station_id=<?=$stationId?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></div>
+      <div style="margin-top:8px"><a href="/user/radio/media/delete?file=<?=urlencode($f)?>&playlist_id=<?=$mPlId?>&station_id=<?=$stationId?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></div>
     </div>
     <?php endforeach; ?>
   </div>
@@ -309,10 +314,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </div>
 <div class="tab <?=$tab==='autodj'?'active':''?>">
 <?php if (!$autodjCfg || !$autodjCfg->wizard_completed): ?>
-<div class="card" style="text-align:center;padding:40px">
-<div style="font-size:50px;margin-bottom:10px">&#9881;</div>
-<div style="font-size:15px;color:#c0c0c0;margin-bottom:4px">AutoDJ Not Configured</div>
-<div style="font-size:11px;color:#64748b;margin-bottom:14px">Complete the setup wizard to configure AutoDJ settings, playlists, and rotation rules</div>
+<div class="card" style="text-align:center;padding:48px 40px;border:1px dashed rgba(0,191,255,.12)">
+<div style="font-size:48px;margin-bottom:12px;opacity:.5">&#9881;</div>
+<div style="font-size:16px;color:#c0c0c0;margin-bottom:6px">AutoDJ Not Configured</div>
+<div style="font-size:12px;color:#64748b;margin-bottom:18px;max-width:360px;margin-left:auto;margin-right:auto">Complete the setup wizard to configure AutoDJ settings, playlists, and rotation rules for automated broadcasting</div>
 <a href="/user/radio/autodj/setup?station_id=<?=$stationId?>" class="btn btn-primary">Start Setup Wizard</a>
 </div>
 <?php else: ?>
@@ -424,16 +429,16 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </table></div>
 </div>
 <div class="tab <?=$adTab==='ai'?'active':''?>">
-<div class="card"><div class="hdr"><h3>AI AutoDJ Assistant</h3><span style="font-size:10px;color:#64748b">Powered by OpenAI</span></div>
-<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:12px;margin-bottom:12px;max-height:300px;overflow-y:auto" id="aiChat">
-<div style="padding:8px 12px;margin-bottom:6px;background:rgba(168,85,247,.08);border-radius:8px;font-size:11px;color:#94a3b8">Hello! I'm your AI AutoDJ assistant. Ask me to create playlists, configure rotation rules, schedule music, or optimize your station.<br><br>Try: "Create a classic rock playlist with no artist repeating within 2 hours" or "Schedule Christmas music from December 1st"</div>
+  <div class="card"><div class="hdr"><h3>AI AutoDJ Assistant</h3><span style="font-size:10px;color:#64748b">Powered by OpenAI</span></div>
+  <div style="background:rgba(0,0,0,.3);border:1px solid rgba(0,191,255,.06);border-radius:10px;padding:12px;margin-bottom:12px;max-height:300px;overflow-y:auto" id="aiChat">
+  <div style="padding:8px 12px;margin-bottom:6px;background:rgba(168,85,247,.08);border-radius:8px;font-size:11px;color:#94a3b8;line-height:1.5">Hello! I'm your AI AutoDJ assistant. Ask me to create playlists, configure rotation rules, schedule music, or optimize your station.<br><br>Try: "Create a classic rock playlist with no artist repeating within 2 hours" or "Schedule Christmas music from December 1st"</div>
 </div>
 <div style="display:flex;gap:6px">
 <input class="inp inp-sm" id="aiQuestion" placeholder="Ask the AI AutoDJ assistant..." style="flex:1" onkeydown="if(event.key==='Enter')askAI()">
 <button class="btn btn-sm btn-primary" onclick="askAI()">Ask</button>
 </div>
 </div>
-<div class="card" id="aiSuggestions" style="display:none"><h3>AI Suggestion</h3><div id="aiAnswer" style="font-size:12px;color:#c0c0c0;white-space:pre-wrap"></div></div>
+  <div class="card" id="aiSuggestions" style="display:none"><h3>AI Suggestion</h3><div id="aiAnswer" style="font-size:12px;color:#cbd5e1;white-space:pre-wrap;line-height:1.6"></div></div>
 </div>
 <?php endif; ?>
 </div>
@@ -475,12 +480,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div class="form-group"><label>Discord</label><input class="inp inp-sm" name="brand_social_discord" value="<?=htmlspecialchars($branding->brand_social_discord??'')?>"></div>
       </div>
     </div>
-    <h4 style="font-size:11px;color:#94a3b8;margin:12px 0 8px 0">Images</h4>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">
-      <div class="form-group"><label>Logo</label><input type="file" name="brand_logo" accept="image/*" class="inp inp-sm" style="padding:3px"></div>
-      <div class="form-group"><label>Banner</label><input type="file" name="brand_banner" accept="image/*" class="inp inp-sm" style="padding:3px"></div>
-      <div class="form-group"><label>Player BG</label><input type="file" name="brand_player_bg_img" accept="image/*" class="inp inp-sm" style="padding:3px"></div>
-      <div class="form-group"><label>Default Art</label><input type="file" name="brand_default_art" accept="image/*" class="inp inp-sm" style="padding:3px"></div>
+    <h4 style="font-size:11px;color:#94a3b8;margin:14px 0 8px 0">Images</h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
+      <div class="form-group"><label>Logo</label><input type="file" name="brand_logo" accept="image/*" class="inp inp-sm" style="padding:4px"></div>
+      <div class="form-group"><label>Banner</label><input type="file" name="brand_banner" accept="image/*" class="inp inp-sm" style="padding:4px"></div>
+      <div class="form-group"><label>Player BG</label><input type="file" name="brand_player_bg_img" accept="image/*" class="inp inp-sm" style="padding:4px"></div>
+      <div class="form-group"><label>Default Art</label><input type="file" name="brand_default_art" accept="image/*" class="inp inp-sm" style="padding:4px"></div>
     </div>
     <button class="btn btn-sm btn-primary" style="margin-top:10px">Save Branding</button>
   </form></div>
@@ -519,13 +524,13 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </table></div>
 </div>
 <div class="tab <?=$tab==='backups'?'active':''?>">
-  <div class="card"><div class="hdr"><h3>Backups</h3><a href="/user/radio/backup/create" class="btn btn-sm btn-primary">Create Backup</a></div>
+  <div class="card"><div class="hdr"><h3>Backups</h3><a href="/user/radio/backup/create" class="btn btn-sm btn-primary">+ Create Backup</a></div>
   <?php if (empty($backups)): ?><div class="empty-state">No backups yet</div>
   <?php else: ?>
   <table><tr><th>File</th><th>Size</th><th>Date</th><th>Actions</th></tr>
-    <?php foreach ($backups as $bk): $bn = basename($bk); ?>
+    <?php foreach ($backups as $bk): $bn = basename($bk); $sz = filesize($bk); $szFmt = $sz > 1048576 ? round($sz/1048576,1).' MB' : round($sz/1024,1).' KB'; ?>
     <tr>
-      <td><?=htmlspecialchars($bn)?></td><td><?=round(filesize($bk)/1048576,1)?> MB</td><td><?=date('Y-m-d H:i',filemtime($bk))?></td>
+      <td style="font-family:monospace;font-size:11px"><?=htmlspecialchars($bn)?></td><td><?=$szFmt?></td><td style="color:#64748b"><?=date('Y-m-d H:i',filemtime($bk))?></td>
       <td class="actions"><a href="/user/radio/backup/download?file=<?=urlencode($bn)?>" class="btn btn-sm btn-success">Download</a><a href="/user/radio/backup/delete?file=<?=urlencode($bn)?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></td>
     </tr>
     <?php endforeach; ?>
@@ -534,9 +539,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </div>
 </div>
 <?php elseif (empty($stations)): ?>
-<div class="card"><div class="empty-state"><div style="font-size:40px;margin-bottom:10px">&#127926;</div><div style="font-size:14px;color:#c0c0c0;margin-bottom:6px">No radio stations found</div><div style="font-size:11px;color:#64748b;margin-bottom:14px">Create your first station</div><a href="/user/radio/setup" class="btn btn-primary">Create Station</a></div></div>
+<div class="card"><div class="empty-state"><div style="font-size:48px;margin-bottom:12px;opacity:.6">&#9835;</div><div style="font-size:16px;color:#c0c0c0;margin-bottom:6px">No radio stations found</div><div style="font-size:12px;color:#64748b;margin-bottom:16px">Create your first streaming station to get started</div><a href="/user/radio/setup" class="btn btn-primary">Create Station</a></div></div>
 <?php else: ?>
-<div class="card"><div class="empty-state"><div style="font-size:40px;margin-bottom:10px">&#9888;</div><div style="font-size:14px;color:#c0c0c0">No station selected</div></div></div>
+<div class="card"><div class="empty-state"><div style="font-size:48px;margin-bottom:12px;opacity:.4">&#9835;</div><div style="font-size:16px;color:#c0c0c0">No station selected</div><div style="font-size:12px;color:#64748b;margin-top:4px">Select a station from the dropdown above</div></div></div>
 <?php endif; ?>
 <script>
 function getTab(){return new URLSearchParams(window.location.search).get('tab')||'overview';}
@@ -544,11 +549,11 @@ function searchSongs(q){document.querySelectorAll('.song-row').forEach(function(
 function askAI(){var q=document.getElementById('aiQuestion');if(!q.value.trim())return;var chat=document.getElementById('aiChat');var msg=document.createElement('div');msg.style.cssText='padding:8px 12px;margin-bottom:6px;background:rgba(0,140,255,.08);border-radius:8px;font-size:11px;color:#e0e0e0';msg.textContent=q.value;chat.appendChild(msg);chat.scrollTop=chat.scrollHeight;var sug=document.getElementById('aiSuggestions');sug.style.display='block';document.getElementById('aiAnswer').textContent='Thinking...';var x=new XMLHttpRequest();x.open('POST','/user/radio/autodj/ai-ask',true);x.setRequestHeader('Content-Type','application/x-www-form-urlencoded');x.onload=function(){try{var r=JSON.parse(x.responseText);document.getElementById('aiAnswer').textContent=r.answer||'Error: '+(r.error||'Unknown');var resp=document.createElement('div');resp.style.cssText='padding:8px 12px;margin-bottom:6px;background:rgba(168,85,247,.08);border-radius:8px;font-size:11px;color:#94a3b8;white-space:pre-wrap';resp.textContent=r.answer||r.error;chat.appendChild(resp);chat.scrollTop=chat.scrollHeight;}catch(e){document.getElementById('aiAnswer').textContent='Error processing response'}};x.send('question='+encodeURIComponent(q.value)+'&station_id=<?=$stationId?>');q.value='';}
 var _queue=[],_playlistId=<?=$mPlId?:'null'?>;_playlistId=_playlistId||'',_csrf='<?=$_csrf_token??''?>';
 var _z=document.getElementById('uploadZone'),_inp=document.getElementById('media-input'),_q=document.getElementById('uploadQueue'),_p=document.getElementById('uploadProgress'),_pb=document.getElementById('uploadProgressBar'),_ps=document.getElementById('uploadStatus'),_btn=document.getElementById('uploadBtn'),_cnt=document.getElementById('uploadCount');
-['dragenter','dragover'].forEach(function(e){_z.addEventListener(e,function(ev){ev.preventDefault();_z.style.borderColor='#008cff';_z.style.background='rgba(0,140,255,.08)';});});
-['dragleave','drop'].forEach(function(e){_z.addEventListener(e,function(ev){ev.preventDefault();_z.style.borderColor='rgba(0,191,255,.2)';_z.style.background='rgba(0,0,0,.2)';});});
+['dragenter','dragover'].forEach(function(e){_z.addEventListener(e,function(ev){ev.preventDefault();_z.classList.add('drag-over');});});
+['dragleave','drop'].forEach(function(e){_z.addEventListener(e,function(ev){ev.preventDefault();_z.classList.remove('drag-over');});});
 _z.addEventListener('drop',function(ev){ev.preventDefault();handleFiles(ev.dataTransfer.files);});
 _inp.addEventListener('change',function(){handleFiles(this.files);});
 function handleFiles(files){for(var i=0;i<files.length;i++){var f=files[i];var ext=f.name.split('.').pop().toLowerCase();if(['mp3','aac','ogg','flac','wav','m4a'].indexOf(ext)<0)continue;_queue.push(f);}renderQueue();}
 function renderQueue(){_q.innerHTML='';if(!_queue.length){_btn.style.display='none';return;}_btn.style.display='inline-block';_cnt.textContent=_queue.length+' file(s)';for(var i=0;i<_queue.length;i++){var d=document.createElement('div');d.style.cssText='padding:4px 8px;margin:2px 0;background:rgba(0,0,0,.2);border-radius:4px';d.textContent=_queue[i].name+' ('+Math.round(_queue[i].size/1024)+' KB)';_q.appendChild(d);}}
-function startUpload(){if(!_queue.length)return;_btn.disabled=true;_btn.textContent='Uploading...';_p.style.display='block';_pb.style.width='0';_ps.textContent='';var i=0;var total=_queue.length;function uploadNext(){if(i>=total){_ps.textContent='All files uploaded!';_btn.textContent='Done';setTimeout(function(){location.reload();},1000);return;}var fd=new FormData();fd.append('playlist_id',_playlistId);fd.append('_csrf_token',_csrf);fd.append('files[]',_queue[i]);var x=new XMLHttpRequest();x.open('POST','/user/radio/media/upload',true);x.setRequestHeader('X-CSRF-Token',_csrf);x.upload.onprogress=function(ev){if(ev.lengthComputable){var pct=Math.round(((i+ev.loaded/ev.total)/total)*100);_pb.style.width=pct+'%';_ps.textContent='Uploading '+_queue[i].name+' ('+Math.round(ev.loaded/ev.total*100)+'%)';}};x.onload=function(){if(x.status===200){i++;uploadNext();}else{_ps.textContent='Failed: '+_queue[i].name;_btn.disabled=false;}};x.send(fd);}uploadNext();}
+function startUpload(){if(!_queue.length)return;_btn.disabled=true;_btn.textContent='Uploading...';_p.style.display='block';_pb.style.width='0';_ps.textContent='';var i=0;var total=_queue.length;var errs=[];function uploadNext(){if(i>=total){var m='All files uploaded!';if(errs.length)m+=' | Errors: '+errs.join(', ');_ps.textContent=m;_btn.textContent='Done';_btn.disabled=false;setTimeout(function(){location.reload();},1500);return;}var fd=new FormData();fd.append('playlist_id',_playlistId);fd.append('_csrf_token',_csrf);fd.append('files[]',_queue[i]);var x=new XMLHttpRequest();x.open('POST','/user/radio/media/upload',true);x.setRequestHeader('X-CSRF-Token',_csrf);x.upload.onprogress=function(ev){if(ev.lengthComputable){var pct=Math.round(((i+ev.loaded/ev.total)/total)*100);_pb.style.width=pct+'%';_ps.textContent='Uploading '+_queue[i].name+' ('+Math.round(ev.loaded/ev.total*100)+'%)';}};x.onload=function(){try{var r=JSON.parse(x.responseText);if(r.errors&&r.errors.length)errs=errs.concat(r.errors);}catch(e){}i++;uploadNext();};x.onerror=function(){errs.push(_queue[i].name+' failed');i++;uploadNext();};x.send(fd);}uploadNext();}
 </script>
