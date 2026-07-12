@@ -349,7 +349,7 @@ class AccountController extends Controller
         $h = escapeshellarg("/home/{$account->username}");
         @exec("sudo /var/www/radiohosting/provision.sh unsuspend {$u} {$d} {$h} 2>/dev/null >/dev/null &");
         $this->db->table('hosting_users')->where('id', $id)->update([
-            'status' => 'completed',
+            'status' => 'active',
             'suspended_at' => null,
             'suspended_by' => null,
         ]);
