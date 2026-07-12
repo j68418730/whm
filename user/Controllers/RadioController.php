@@ -360,23 +360,37 @@ class RadioController extends Controller
         $dir = $this->getPlaylistDir($station, $playlistId);
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
         $source = $_FILES['files'] ?? $_FILES['file'] ?? null;
+        $errors = []; $count = 0;
         if ($source && !empty($source['name'][0])) {
-            $count = 0;
             foreach ((array)$source['name'] as $i => $name) {
-                if ($source['error'][$i] !== UPLOAD_ERR_OK) continue;
+                if ($source['error'][$i] !== UPLOAD_ERR_OK) {
+                    if ($source['error'][$i] === UPLOAD_ERR_INI_SIZE || $source['error'][$i] === UPLOAD_ERR_FORM_SIZE) {
+                        $errors[] = "$name exceeds maximum file size (128MB)";
+                    } else {
+                        $errors[] = "$name upload error (code {$source['error'][$i]})";
+                    }
+                    continue;
+                }
                 $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-                if (in_array($ext, ['mp3', 'aac', 'ogg', 'flac', 'wav', 'm4a'])) {
-                    $dest = $dir . '/' . basename($name);
-                    if (move_uploaded_file($source['tmp_name'][$i], $dest)) $count++;
+                if (!in_array($ext, ['mp3', 'aac', 'ogg', 'flac', 'wav', 'm4a'])) {
+                    $errors[] = "$name: invalid format ($ext)";
+                    continue;
+                }
+                $dest = $dir . '/' . basename($name);
+                if (move_uploaded_file($source['tmp_name'][$i], $dest)) {
+                    $count++;
+                } else {
+                    $errors[] = "$name: failed to save";
                 }
             }
-            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-                header('Content-Type: application/json');
-                echo json_encode(['success' => true, 'count' => $count]);
-                exit;
-            }
-            $_SESSION['success'] = "$count file(s) uploaded.";
         }
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'count' => $count, 'errors' => $errors]);
+            exit;
+        }
+        if ($count > 0) $_SESSION['success'] = "$count file(s) uploaded.";
+        if (!empty($errors)) $_SESSION['error'] = implode('; ', $errors);
         $qs = $playlistId ? '&playlist_id=' . $playlistId : '';
         $tab = $playlistId ? 'playlists' : 'media';
         header('Location: /user/radio?tab=' . $tab . $qs . '&station_id=' . $station->id); exit;
@@ -663,7 +677,7 @@ class RadioController extends Controller
         $cfg = $this->getAutodjConfig($sid);
         $step = (int)($_GET['step'] ?? $cfg->wizard_step + 1);
         if ($step < 1) $step = 1;
-        if ($step > 15) $step = 15;
+        if ($step > 14) $step = 14;
         if ($_POST) {
             $allowed = [
                 'station_name','station_description','genre','language','country','timezone',
@@ -672,8 +686,8 @@ class RadioController extends Controller
                 'crossfade_time','normalize_audio','replaygain','silence_detection','remove_duplicates',
                 'max_artist_repeat','max_song_repeat','max_album_repeat','shuffle_enabled',
                 'weight_new_songs','weight_favorites','allow_live_djs','auto_switch_dj',
-                'fallback_autodj','reconnect_time','jingles_enabled','jingle_play_every',
-                'jingle_position','ads_enabled','max_ads_per_hour','requests_enabled',
+                'fallback_autodj','reconnect_time',                'jingles_enabled','jingle_play_every',
+                'jingle_position','ads_enabled','max_ads_per_hour','ads_playlist_id','requests_enabled',
                 'request_delay','max_requests_per_listener','metadata_update','backup_frequency','cloud_backup',
             ];
             $data = ['station_id' => $sid, 'wizard_step' => $step];
@@ -682,7 +696,7 @@ class RadioController extends Controller
                     $data[$f] = is_numeric($_POST[$f]) ? (int)$_POST[$f] : $_POST[$f];
                 }
             }
-            $data['wizard_completed'] = ($step >= 15) ? 1 : 0;
+            $data['wizard_completed'] = ($step >= 14) ? 1 : 0;
             try {
                 $existing = $this->db->table('radio_autodj_config')->where('station_id', $sid)->first();
                 if ($existing) {
@@ -690,7 +704,7 @@ class RadioController extends Controller
                 } else {
                     $this->db->table('radio_autodj_config')->insertGetId($data);
                 }
-                if ($step >= 15) {
+                if ($step >= 14) {
                     $this->db->table('radio_stations')->where('id', $sid)->update([
                         'autodj_enabled' => (int)($_POST['autodj_enabled'] ?? 0),
                         'requests_enabled' => (int)($_POST['requests_enabled'] ?? 1),
@@ -705,8 +719,11 @@ class RadioController extends Controller
             } catch (\Exception $e) { $_SESSION['error'] = 'Save failed.'; }
             header('Location: /user/radio/autodj/setup?step=' . ($step + 1) . '&station_id=' . $sid); exit;
         }
+        $playlists = [];
+        try { $playlists = $this->db->table('radio_playlists')->where('stream_id', $station->streaming_id ?? $sid % 10000)->get() ?: []; } catch (\Exception $e) {}
         return $this->view('user.radio.autodj_setup', [
-            'station' => $station, 'config' => $cfg, 'step' => $step, 'title' => 'AutoDJ Setup Wizard'
+            'station' => $station, 'config' => $cfg, 'step' => $step,
+            'playlists' => $playlists, 'title' => 'AutoDJ Setup Wizard'
         ]);
     }
 
