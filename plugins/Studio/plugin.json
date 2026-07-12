@@ -1,0 +1,1 @@
+{"name":"Studio","version":"1.0","author":"Planet-Hosts","description":"Planet Hosts Studio — modern browser-based broadcasting interface. Integrates with existing Streaming plugin.","routes":"routes.php","controllers":"Controllers","views":"Views","services":"Services","entry":"StudioPlugin.php"}

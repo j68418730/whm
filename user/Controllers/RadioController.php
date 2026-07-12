@@ -114,6 +114,9 @@ class RadioController extends Controller
             try { $autodjCats = $this->db->table('radio_autodj_categories')->where('station_id', $sid)->orderBy('sort_order')->get() ?: []; } catch (\Exception $e) {}
             try { $autodjLogs = $this->db->table('radio_autodj_logs')->where('station_id', $sid)->orderBy('created_at', 'desc')->limit(20)->get() ?: []; } catch (\Exception $e) {}
 
+            $applications = [];
+            try { $applications = $this->db->table('radio_dj_applications')->where('stream_id', $realStationId)->orderBy('created_at', 'desc')->get() ?: []; } catch (\Exception $e) {}
+
             $selectedPlaylist = isset($_GET['playlist_id']) ? (int)$_GET['playlist_id'] : null;
             if ($selectedPlaylist) {
                 try { $playlistItems = $this->db->table('radio_playlist_items')->where('playlist_id', $selectedPlaylist)->get() ?: []; } catch (\Exception $e) {}
@@ -148,6 +151,7 @@ class RadioController extends Controller
             'mounts' => $mounts, 'branding' => $branding, 'backups' => $backups,
             'mediaFiles' => $mediaFiles, 'playlistItems' => $playlistItems,
             'autodjCfg' => $autodjCfg, 'autodjCats' => $autodjCats, 'autodjLogs' => $autodjLogs,
+            'applications' => $applications,
             'diskUsed' => $diskUsed ?? 0, 'diskTotal' => $diskTotal ?? 0,
             'diskUsedFormatted' => $diskUsedFormatted ?? '0 MB',
             'diskTotalFormatted' => $diskTotalFormatted ?? '10 GB',
@@ -158,9 +162,17 @@ class RadioController extends Controller
     public function start($id)
     {
         if ($this->auth->check()) {
-            @exec("sudo systemctl start icecast@{$id} 2>/dev/null >/dev/null &");
+            $realId = $id % 10000;
+            $station = $this->db->table('streaming_stations')->where('id', $realId)->first();
+            $engine = $station ? $station->engine : 'icecast';
+            if ($engine === 'icecast') {
+                @exec("sudo systemctl start icecast@{$realId} 2>/dev/null >/dev/null &");
+            } else {
+                $config = $station->config_path ?? "/home/{$station->user_id}/stations/{$station->port}/sc_serv.conf";
+                @exec("sudo nohup /opt/planethosts/shoutcast/sc_serv {$config} > /dev/null 2>&1 &");
+            }
             try { $this->db->table('radio_stations')->where('id', $id)->update(['status' => 'starting']); } catch (\Exception $e) {}
-            try { $this->db->table('streaming_stations')->where('id', $id % 10000)->update(['status' => 'starting']); } catch (\Exception $e) {}
+            try { $this->db->table('streaming_stations')->where('id', $realId)->update(['status' => 'running']); } catch (\Exception $e) {}
         }
         header('Location: /user/radio?station_id=' . $id); exit;
     }
@@ -168,9 +180,16 @@ class RadioController extends Controller
     public function stop($id)
     {
         if ($this->auth->check()) {
-            @exec("sudo systemctl stop icecast@{$id} 2>/dev/null >/dev/null &");
+            $realId = $id % 10000;
+            $station = $this->db->table('streaming_stations')->where('id', $realId)->first();
+            $engine = $station ? $station->engine : 'icecast';
+            if ($engine === 'icecast') {
+                @exec("sudo systemctl stop icecast@{$realId} 2>/dev/null >/dev/null &");
+            } else {
+                @exec("sudo pkill -f \"sc_serv.*{$station->port}\" 2>/dev/null");
+            }
             try { $this->db->table('radio_stations')->where('id', $id)->update(['status' => 'stopped']); } catch (\Exception $e) {}
-            try { $this->db->table('streaming_stations')->where('id', $id % 10000)->update(['status' => 'stopped']); } catch (\Exception $e) {}
+            try { $this->db->table('streaming_stations')->where('id', $realId)->update(['status' => 'stopped']); } catch (\Exception $e) {}
         }
         header('Location: /user/radio?station_id=' . $id); exit;
     }
@@ -178,9 +197,19 @@ class RadioController extends Controller
     public function restart($id)
     {
         if ($this->auth->check()) {
-            @exec("sudo systemctl restart icecast@{$id} 2>/dev/null >/dev/null &");
+            $realId = $id % 10000;
+            $station = $this->db->table('streaming_stations')->where('id', $realId)->first();
+            $engine = $station ? $station->engine : 'icecast';
+            if ($engine === 'icecast') {
+                @exec("sudo systemctl restart icecast@{$realId} 2>/dev/null >/dev/null &");
+            } else {
+                @exec("sudo pkill -f \"sc_serv.*{$station->port}\" 2>/dev/null");
+                sleep(1);
+                $config = $station->config_path ?? "/home/{$station->user_id}/stations/{$station->port}/sc_serv.conf";
+                @exec("sudo nohup /opt/planethosts/shoutcast/sc_serv {$config} > /dev/null 2>&1 &");
+            }
             try { $this->db->table('radio_stations')->where('id', $id)->update(['status' => 'starting']); } catch (\Exception $e) {}
-            try { $this->db->table('streaming_stations')->where('id', $id % 10000)->update(['status' => 'starting']); } catch (\Exception $e) {}
+            try { $this->db->table('streaming_stations')->where('id', $realId)->update(['status' => 'running']); } catch (\Exception $e) {}
         }
         header('Location: /user/radio?station_id=' . $id); exit;
     }
@@ -193,6 +222,7 @@ class RadioController extends Controller
         $username = strtolower(preg_replace('/[^a-z0-9]/', '', $_POST['username'] ?? ''));
         $password = $_POST['password'] ?? '';
         $name = $_POST['name'] ?? $username;
+        $role = $_POST['role'] ?? 'dj';
         if ($username && $password) {
             try {
                 $realStationId = $station->streaming_id ?? $station->id;
@@ -200,8 +230,40 @@ class RadioController extends Controller
                     'stream_id' => $realStationId, 'username' => $username,
                     'password' => password_hash($password, PASSWORD_DEFAULT),
                     'name' => $name, 'email' => $_POST['email'] ?? '',
-                    'bio' => $_POST['bio'] ?? '', 'status' => 'active'
+                    'bio' => $_POST['bio'] ?? '', 'status' => 'active',
+                    'role' => $role,
                 ]);
+                // Also add to chatbox users
+                try {
+                    $ss = $this->db->table('streaming_stations')->where('id', $realStationId)->first();
+                    if ($ss) {
+                        $tenant = $this->db->table('chatbox_tenants')->where('hosting_user_id', $ss->user_id)->first();
+                        if ($tenant) {
+                            $existing = $this->db->table('chatbox_users')->where('tenant_id', $tenant->id)->where('username', $username)->first();
+                            if (!$existing) {
+                                $this->db->table('chatbox_users')->insertGetId([
+                                    'tenant_id' => $tenant->id, 'username' => $username,
+                                    'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+                                    'display_name' => $name, 'role' => $role === 'mod' ? 'mod' : 'member',
+                                    'email' => $_POST['email'] ?? '', 'created_at' => date('Y-m-d H:i:s'),
+                                ]);
+                            }
+                        }
+                    }
+                } catch (\Exception $e) {}
+                // Create DJ folder
+                try {
+                    $ss = $this->db->table('streaming_stations')->where('id', $realStationId)->first();
+                    if ($ss) {
+                        $hu = $this->db->table('hosting_users')->where('id', $ss->user_id)->first();
+                        if ($hu) {
+                            $djDir = "/home/{$hu->username}/radio/dj/{$username}";
+                            @mkdir($djDir, 0755, true);
+                            @mkdir($djDir . '/gallery', 0755, true);
+                            @chmod($djDir, 0755);
+                        }
+                    }
+                } catch (\Exception $e) {}
                 $_SESSION['success'] = "DJ '{$name}' created.";
             } catch (\Exception $e) { $_SESSION['error'] = 'Username already exists.'; }
         }
@@ -212,7 +274,54 @@ class RadioController extends Controller
     {
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
-        if ($station) { $this->db->table('radio_djs')->where('id', $id)->where('stream_id', $station->streaming_id ?? $station->id)->delete(); $_SESSION['success'] = 'DJ deleted.'; }
+        if ($station) {
+            $dj = $this->db->table('radio_djs')->where('id', $id)->where('stream_id', $station->streaming_id ?? $station->id)->first();
+            if ($dj) {
+                // Remove from chatbox
+                try {
+                    $ss = $this->db->table('streaming_stations')->where('id', $station->streaming_id ?? $station->id)->first();
+                    if ($ss) {
+                        $tenant = $this->db->table('chatbox_tenants')->where('hosting_user_id', $ss->user_id)->first();
+                        if ($tenant) $this->db->table('chatbox_users')->where('tenant_id', $tenant->id)->where('username', $dj->username)->delete();
+                    }
+                } catch (\Exception $e) {}
+                $this->db->table('radio_djs')->where('id', $id)->delete();
+            }
+            $_SESSION['success'] = 'DJ deleted.';
+        }
+        header('Location: /user/radio?tab=djs&station_id=' . ($station->id ?? '')); exit;
+    }
+
+    public function updateDj($id)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $update = [];
+        if ($u = trim($_POST['username'] ?? '')) $update['username'] = $u;
+        if ($p = trim($_POST['password'] ?? '')) $update['password'] = password_hash($p, PASSWORD_DEFAULT);
+        if (isset($_POST['name'])) $update['name'] = trim($_POST['name']);
+        if (isset($_POST['email'])) $update['email'] = trim($_POST['email']);
+        if (isset($_POST['bio'])) $update['bio'] = trim($_POST['bio']);
+        if (isset($_POST['role'])) $update['role'] = $_POST['role'];
+        if (!empty($update)) {
+            try {
+                $this->db->table('radio_djs')->where('id', $id)->where('stream_id', $station->streaming_id ?? $station->id)->update($update);
+                // Sync chatbox role
+                try {
+                    $dj = $this->db->table('radio_djs')->where('id', $id)->first();
+                    $ss = $this->db->table('streaming_stations')->where('id', $station->streaming_id ?? $station->id)->first();
+                    if ($dj && $ss) {
+                        $tenant = $this->db->table('chatbox_tenants')->where('hosting_user_id', $ss->user_id)->first();
+                        if ($tenant) {
+                            $chatRole = ($dj->role ?? 'dj') === 'mod' ? 'mod' : 'member';
+                            $this->db->table('chatbox_users')->where('tenant_id', $tenant->id)->where('username', $dj->username)->update(['role' => $chatRole]);
+                        }
+                    }
+                } catch (\Exception $e) {}
+                $_SESSION['success'] = 'DJ updated.';
+            } catch (\Exception $e) { $_SESSION['error'] = 'Update failed.'; }
+        }
         header('Location: /user/radio?tab=djs&station_id=' . ($station->id ?? '')); exit;
     }
 
@@ -360,37 +469,38 @@ class RadioController extends Controller
         $dir = $this->getPlaylistDir($station, $playlistId);
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
         $source = $_FILES['files'] ?? $_FILES['file'] ?? null;
-        $errors = []; $count = 0;
         if ($source && !empty($source['name'][0])) {
+            $count = 0;
             foreach ((array)$source['name'] as $i => $name) {
-                if ($source['error'][$i] !== UPLOAD_ERR_OK) {
-                    if ($source['error'][$i] === UPLOAD_ERR_INI_SIZE || $source['error'][$i] === UPLOAD_ERR_FORM_SIZE) {
-                        $errors[] = "$name exceeds maximum file size (128MB)";
-                    } else {
-                        $errors[] = "$name upload error (code {$source['error'][$i]})";
-                    }
-                    continue;
-                }
+                if ($source['error'][$i] !== UPLOAD_ERR_OK) continue;
                 $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-                if (!in_array($ext, ['mp3', 'aac', 'ogg', 'flac', 'wav', 'm4a'])) {
-                    $errors[] = "$name: invalid format ($ext)";
-                    continue;
-                }
-                $dest = $dir . '/' . basename($name);
-                if (move_uploaded_file($source['tmp_name'][$i], $dest)) {
-                    $count++;
-                } else {
-                    $errors[] = "$name: failed to save";
+                if (in_array($ext, ['mp3', 'aac', 'ogg', 'flac', 'wav', 'm4a'])) {
+                    $dest = $dir . '/' . basename($name);
+                    if (move_uploaded_file($_FILES['file']['tmp_name'][$i], $dest)) {
+                        $count++;
+                        if ($playlistId) {
+                            $title = pathinfo($name, PATHINFO_FILENAME);
+                            $artist = '';
+                            $parts = explode(' - ', $title, 2);
+                            if (count($parts) === 2) { $artist = trim($parts[0]); $title = trim($parts[1]); }
+                            try {
+                                $this->db->table('radio_playlist_items')->insertGetId([
+                                    'playlist_id' => $playlistId, 'title' => $title,
+                                    'artist' => $artist, 'file_path' => $dest,
+                                    'duration' => 0, 'position' => 0,
+                                ]);
+                            } catch (\Exception $e) {}
+                        }
+                    }
                 }
             }
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'count' => $count]);
+                exit;
+            }
+            $_SESSION['success'] = "$count file(s) uploaded.";
         }
-        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => true, 'count' => $count, 'errors' => $errors]);
-            exit;
-        }
-        if ($count > 0) $_SESSION['success'] = "$count file(s) uploaded.";
-        if (!empty($errors)) $_SESSION['error'] = implode('; ', $errors);
         $qs = $playlistId ? '&playlist_id=' . $playlistId : '';
         $tab = $playlistId ? 'playlists' : 'media';
         header('Location: /user/radio?tab=' . $tab . $qs . '&station_id=' . $station->id); exit;
@@ -528,7 +638,15 @@ class RadioController extends Controller
         $allowed = ['autodj_crossfade', 'autodj_schedule', 'autodj_dj_handoff', 'autodj_auto_resume'];
         $update = [];
         foreach ($allowed as $f) { if (isset($_POST[$f])) $update[$f] = $_POST[$f]; }
-        try { $this->db->table('radio_stations')->where('id', $station->id)->update($update); $_SESSION['success'] = 'AutoDJ settings saved!'; } catch (\Exception $e) { $_SESSION['error'] = 'Failed to save.'; }
+        try { $this->db->table('radio_stations')->where('id', $station->id)->update($update); } catch (\Exception $e) {}
+        if (isset($_POST['playlist_ids'])) {
+            $plIds = array_map('intval', (array)$_POST['playlist_ids']);
+            try {
+                $cfg = $this->db->table('radio_autodj_config')->where('station_id', $station->id)->first();
+                if ($cfg) $this->db->table('radio_autodj_config')->where('station_id', $station->id)->update(['playlist_ids' => json_encode($plIds)]);
+            } catch (\Exception $e) {}
+        }
+        $_SESSION['success'] = 'AutoDJ settings saved!';
         header('Location: /user/radio?tab=autodj&station_id=' . $station->id); exit;
     }
 
@@ -546,23 +664,70 @@ class RadioController extends Controller
     public function startAutodj($id)
     {
         if (!$this->auth->check()) exit;
-        $this->db->table('radio_stations')->where('id', $id)->update(['autodj_status' => 'running', 'autodj_enabled' => 1]);
-        $this->db->table('streaming_stations')->where('id', $id % 10000)->update(['autodj_enabled' => 1, 'status' => 'running']);
+        $realId = $id % 10000;
+        $stream = $this->db->table('streaming_stations')->where('id', $realId)->first();
+        $ok = false;
+        if ($stream) {
+            $hosting = $this->db->table('hosting_users')->where('id', $stream->user_id)->first();
+            $username = $hosting ? $hosting->username : 'unknown';
+            $playlistIds = [];
+            try {
+                $cfg = $this->db->table('radio_autodj_config')->where('station_id', $id)->first();
+                if ($cfg && !empty($cfg->playlist_ids)) $playlistIds = json_decode($cfg->playlist_ids, true) ?: [];
+            } catch (\Exception $e) {}
+            $player = new \Services\RadioAutoDJPlayer($stream, $username, $playlistIds);
+            $ok = $player->start();
+            $this->db->table('streaming_stations')->where('id', $realId)->update([
+                'autodj_enabled' => $ok ? 1 : 0
+            ]);
+            try {
+                $cfg = $this->db->table('radio_autodj_config')->where('station_id', $id)->first();
+                if ($cfg) $this->db->table('radio_autodj_config')->where('station_id', $id)->update(['autodj_enabled' => $ok ? 1 : 0]);
+            } catch (\Exception $e) {}
+        }
+        $this->db->table('radio_stations')->where('id', $id)->update(['autodj_status' => $ok ? 'running' : 'error', 'autodj_enabled' => $ok ? 1 : 0]);
         header('Location: /user/radio?tab=autodj&station_id=' . $id); exit;
     }
 
     public function stopAutodj($id)
     {
         if (!$this->auth->check()) exit;
+        $realId = $id % 10000;
+        $stream = $this->db->table('streaming_stations')->where('id', $realId)->first();
+        if ($stream) {
+            $hosting = $this->db->table('hosting_users')->where('id', $stream->user_id)->first();
+            $username = $hosting ? $hosting->username : 'unknown';
+            $player = new \Services\RadioAutoDJPlayer($stream, $username);
+            $player->stop();
+            $this->db->table('streaming_stations')->where('id', $realId)->update(['autodj_enabled' => 0]);
+            try {
+                $cfg = $this->db->table('radio_autodj_config')->where('station_id', $id)->first();
+                if ($cfg) $this->db->table('radio_autodj_config')->where('station_id', $id)->update(['autodj_enabled' => 0]);
+            } catch (\Exception $e) {}
+        }
         $this->db->table('radio_stations')->where('id', $id)->update(['autodj_status' => 'stopped']);
-        $this->db->table('streaming_stations')->where('id', $id % 10000)->update(['autodj_enabled' => 0]);
         header('Location: /user/radio?tab=autodj&station_id=' . $id); exit;
     }
 
     public function restartAutodj($id)
     {
         if (!$this->auth->check()) exit;
-        $this->db->table('radio_stations')->where('id', $id)->update(['autodj_status' => 'restarting']);
+        $realId = $id % 10000;
+        $stream = $this->db->table('streaming_stations')->where('id', $realId)->first();
+        if ($stream) {
+            $hosting = $this->db->table('hosting_users')->where('id', $stream->user_id)->first();
+            $username = $hosting ? $hosting->username : 'unknown';
+            $player = new \Services\RadioAutoDJPlayer($stream, $username);
+            $player->stop();
+            usleep(500000);
+            $ok = $player->start();
+            $this->db->table('streaming_stations')->where('id', $realId)->update(['autodj_enabled' => $ok ? 1 : 0]);
+            try {
+                $cfg = $this->db->table('radio_autodj_config')->where('station_id', $id)->first();
+                if ($cfg) $this->db->table('radio_autodj_config')->where('station_id', $id)->update(['autodj_enabled' => $ok ? 1 : 0]);
+            } catch (\Exception $e) {}
+            $this->db->table('radio_stations')->where('id', $id)->update(['autodj_status' => $ok ? 'running' : 'error']);
+        }
         header('Location: /user/radio?tab=autodj&station_id=' . $id); exit;
     }
 
@@ -610,6 +775,61 @@ class RadioController extends Controller
 
     public function djLogout() { unset($_SESSION['dj_user']); header('Location: /dj/login'); exit; }
 
+    public function djApply()
+    {
+        header('Content-Type: text/html; charset=utf-8');
+        $streamId = (int)($_POST['stream_id'] ?? 0);
+        if (!$streamId) { header('Location: /radio/apply.php?error=No+stream+specified'); exit; }
+        $data = [
+            'stream_id' => $streamId,
+            'name' => trim(($_POST['first_name'] ?? '') . ' ' . ($_POST['last_name'] ?? '')),
+            'email' => trim($_POST['email'] ?? ''),
+            'phone' => trim($_POST['phone'] ?? ''),
+            'bio' => trim($_POST['bio'] ?? ''),
+            'why_you' => trim($_POST['why_you'] ?? ''),
+            'experience' => trim($_POST['experience'] ?? ''),
+        ];
+        try {
+            $this->db->table('radio_dj_applications')->insertGetId($data);
+            $_SESSION['success'] = 'Application submitted! We\'ll review it and get back to you.';
+            header('Location: /radio/apply.php?stream=' . $streamId . '&success=' . urlencode('Application submitted successfully!'));
+        } catch (\Exception $e) {
+            header('Location: /radio/apply.php?stream=' . $streamId . '&error=' . urlencode('Failed to submit application.'));
+        }
+        exit;
+    }
+
+    public function djApprove($id)
+    {
+        if (!$this->auth->check()) exit;
+        $app = $this->db->table('radio_dj_applications')->where('id', $id)->first();
+        if (!$app) { $_SESSION['error'] = 'Application not found.'; header('Location: /user/radio?tab=applications'); exit; }
+        $stream = $this->db->table('streaming_stations')->where('id', $app->stream_id)->first();
+        if (!$stream) { $_SESSION['error'] = 'Stream not found.'; header('Location: /user/radio?tab=applications'); exit; }
+        $username = strtolower(preg_replace('/[^a-z0-9]/', '', explode(' ', $app->name)[0])) . '_dj';
+        $password = bin2hex(random_bytes(6));
+        $count = 1;
+        while ($this->db->table('radio_djs')->where('username', $username)->first()) { $username = strtolower(preg_replace('/[^a-z0-9]/', '', explode(' ', $app->name)[0])) . '_dj' . ($count++); }
+        try {
+            $this->db->table('radio_djs')->insertGetId([
+                'stream_id' => $app->stream_id, 'username' => $username,
+                'password' => password_hash($password, PASSWORD_DEFAULT),
+                'name' => $app->name, 'email' => $app->email, 'status' => 'active', 'role' => 'dj',
+            ]);
+            $this->db->table('radio_dj_applications')->where('id', $id)->update(['status' => 'approved']);
+            $_SESSION['success'] = "DJ '{$app->name}' approved! Username: {$username}, Password: {$password}";
+        } catch (\Exception $e) { $_SESSION['error'] = 'Failed to approve: ' . $e->getMessage(); }
+        header('Location: /user/radio?tab=applications&station_id=' . (10000 + $app->stream_id)); exit;
+    }
+
+    public function djReject($id)
+    {
+        if (!$this->auth->check()) exit;
+        $this->db->table('radio_dj_applications')->where('id', $id)->update(['status' => 'rejected']);
+        $_SESSION['success'] = 'Application rejected.';
+        header('Location: /user/radio?tab=applications'); exit;
+    }
+
     public function setup()
     {
         if (!$this->auth->check()) exit;
@@ -632,14 +852,50 @@ class RadioController extends Controller
         header('Content-Type: application/json');
         if (!$this->auth->check()) { echo json_encode(['error' => 'Unauthorized']); exit; }
         $id = (int)($_POST['station_id'] ?? 0);
-        $s = $this->db->table('radio_stations')->where('id', $id)->first();
+        $realId = $id % 10000;
+        $s = $this->db->table('streaming_stations')->where('id', $realId)->first();
         if (!$s) { echo json_encode(['error' => 'Not found']); exit; }
-        $ch = curl_init("http://localhost:{$s->port}/admin/killsource?mount={$s->mount}");
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_USERPWD => "admin:{$s->admin_password}", CURLOPT_TIMEOUT => 5]);
-        curl_exec($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        echo json_encode($code === 200 ? ['success' => true] : ['error' => "HTTP $code"]);
+        $engine = strtolower($s->engine ?? $s->server_type ?? 'icecast');
+        $code = 0;
+        $method = '';
+        if ($engine === 'icecast') {
+            $url = "http://localhost:{$s->port}/admin/killsource?mount={$s->mount_point}";
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_USERPWD => "admin:{$s->admin_password}", CURLOPT_TIMEOUT => 5]);
+            curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            $method = 'icecast_admin';
+        } elseif (in_array($engine, ['shoutcast2', 'shoutcast'])) {
+            // SHOUTcast v2: admin.cgi?mode=kicksrc&sid=1
+            $url = "http://localhost:{$s->port}/admin.cgi?mode=kicksrc&sid=1";
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_USERPWD => "admin:{$s->admin_password}", CURLOPT_TIMEOUT => 5]);
+            curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            $method = 'shoutcast2_admin';
+        } else {
+            // SHOUTcast v1: admin.cgi?pass=adminpass&mode=kicksrc
+            $url = "http://localhost:{$s->port}/admin.cgi?pass={$s->admin_password}&mode=kicksrc";
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 5]);
+            curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            $method = 'shoutcast1_legacy';
+        }
+        $this->stopAutodj($id);
+        // Log the kick
+        $user = $this->auth->user();
+        $kickedBy = $user->name ?? $user->email ?? 'unknown';
+        try {
+            $this->db->table('radio_kick_log')->insertGetId([
+                'stream_id' => $realId, 'kicked_by' => $kickedBy,
+                'engine' => $engine, 'method' => $method,
+            ]);
+        } catch (\Exception $e) {}
+        echo json_encode(['success' => true, 'method' => $method, 'engine' => $engine, 'kicked_by' => $kickedBy]);
         exit;
     }
 
@@ -677,7 +933,7 @@ class RadioController extends Controller
         $cfg = $this->getAutodjConfig($sid);
         $step = (int)($_GET['step'] ?? $cfg->wizard_step + 1);
         if ($step < 1) $step = 1;
-        if ($step > 14) $step = 14;
+        if ($step > 12) $step = 12;
         if ($_POST) {
             $allowed = [
                 'station_name','station_description','genre','language','country','timezone',
@@ -686,9 +942,9 @@ class RadioController extends Controller
                 'crossfade_time','normalize_audio','replaygain','silence_detection','remove_duplicates',
                 'max_artist_repeat','max_song_repeat','max_album_repeat','shuffle_enabled',
                 'weight_new_songs','weight_favorites','allow_live_djs','auto_switch_dj',
-                'fallback_autodj','reconnect_time',                'jingles_enabled','jingle_play_every',
-                'jingle_position','ads_enabled','max_ads_per_hour','ads_playlist_id','requests_enabled',
-                'request_delay','max_requests_per_listener','metadata_update','backup_frequency','cloud_backup',
+                'fallback_autodj','reconnect_time','jingles_enabled','jingle_play_every',
+                'jingle_position','ads_enabled','max_ads_per_hour','requests_enabled',
+                'request_delay','max_requests_per_listener','metadata_update',
             ];
             $data = ['station_id' => $sid, 'wizard_step' => $step];
             foreach ($allowed as $f) {
@@ -696,7 +952,7 @@ class RadioController extends Controller
                     $data[$f] = is_numeric($_POST[$f]) ? (int)$_POST[$f] : $_POST[$f];
                 }
             }
-            $data['wizard_completed'] = ($step >= 14) ? 1 : 0;
+            $data['wizard_completed'] = ($step >= 12) ? 1 : 0;
             try {
                 $existing = $this->db->table('radio_autodj_config')->where('station_id', $sid)->first();
                 if ($existing) {
@@ -704,8 +960,8 @@ class RadioController extends Controller
                 } else {
                     $this->db->table('radio_autodj_config')->insertGetId($data);
                 }
-                if ($step >= 14) {
-                    $this->db->table('radio_stations')->where('id', $sid)->update([
+                if ($step >= 12) {
+                    $this->db->table('radio_streams')->where('id', $sid % 10000)->update([
                         'autodj_enabled' => (int)($_POST['autodj_enabled'] ?? 0),
                         'requests_enabled' => (int)($_POST['requests_enabled'] ?? 1),
                     ]);
@@ -719,11 +975,8 @@ class RadioController extends Controller
             } catch (\Exception $e) { $_SESSION['error'] = 'Save failed.'; }
             header('Location: /user/radio/autodj/setup?step=' . ($step + 1) . '&station_id=' . $sid); exit;
         }
-        $playlists = [];
-        try { $playlists = $this->db->table('radio_playlists')->where('stream_id', $station->streaming_id ?? $sid % 10000)->get() ?: []; } catch (\Exception $e) {}
         return $this->view('user.radio.autodj_setup', [
-            'station' => $station, 'config' => $cfg, 'step' => $step,
-            'playlists' => $playlists, 'title' => 'AutoDJ Setup Wizard'
+            'station' => $station, 'config' => $cfg, 'step' => $step, 'title' => 'AutoDJ Setup Wizard'
         ]);
     }
 
@@ -912,4 +1165,22 @@ class RadioController extends Controller
         } catch (\Exception $e) { echo json_encode([]); }
         exit;
     }
+
+    public function widgets()
+    {
+        if (!$this->auth->check()) { header('Location: /?login'); exit; }
+        $streams = $this->getStations();
+        $sid = isset($_GET['station_id']) ? (int)$_GET['station_id'] : null;
+        $station = null;
+        if ($sid) {
+            foreach ($streams as $s) {
+                if ($s->id == $sid) { $station = $s; break; }
+            }
+        }
+        return $this->view('Plugins.Radio.Views.user.radio.widgets', [
+            'streams' => $streams, 'station' => $station,
+            'title' => 'Radio Widgets'
+        ]);
+    }
 }
+

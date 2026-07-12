@@ -1,0 +1,31 @@
+{
+  "name": "planet-hosts-connector",
+  "version": "1.0.0",
+  "description": "Planet Hosts Studio Desktop Connector — local audio integration, folder watching, metadata reading, and streaming",
+  "main": "index.js",
+  "bin": {
+    "ph-connector": "./bin/ph-connector.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "install-service": "node bin/install-service.js",
+    "watch": "node lib/watcher.js",
+    "update": "node lib/updater.js"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "musicmetadata": "^2.0.0",
+    "node-id3": "^0.2.6",
+    "ws": "^8.16.0",
+    "node-fetch": "^2.7.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "form-data": "^4.0.0",
+    "winston": "^3.11.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "os": ["win32", "linux", "darwin"],
+  "author": "Planet-Hosts",
+  "license": "Proprietary"
+}

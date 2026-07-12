@@ -160,8 +160,12 @@ $router->get('/user/apps/python/start/{id}', 'User\Controllers\AppsController@py
 $router->get('/user/apps/python/stop/{id}', 'User\Controllers\AppsController@pythonStop');
 $router->get('/user/apps/python/delete/{id}', 'User\Controllers\AppsController@pythonDelete');
 // Radio routes (actions using station_id query param)
+$router->post('/user/radio/dj/apply', 'User\Controllers\RadioController@djApply');
+$router->get('/user/radio/dj/approve/{id}', 'User\Controllers\RadioController@djApprove');
+$router->get('/user/radio/dj/reject/{id}', 'User\Controllers\RadioController@djReject');
 $router->get('/user/radio/dj/create', 'User\Controllers\RadioController@createDj');
 $router->post('/user/radio/dj/create', 'User\Controllers\RadioController@createDj');
+$router->post('/user/radio/dj/update/{id}', 'User\Controllers\RadioController@updateDj');
 $router->get('/user/radio/dj/delete/{id}', 'User\Controllers\RadioController@deleteDj');
 $router->get('/user/radio/dj/toggle/{id}', 'User\Controllers\RadioController@toggleDj');
 $router->post('/user/radio/schedule/add', 'User\Controllers\RadioController@addSchedule');
@@ -193,6 +197,7 @@ $router->post('/user/radio/autodj/category/add', 'User\Controllers\RadioControll
 $router->get('/user/radio/autodj/category/delete/{id}', 'User\Controllers\RadioController@autodjDeleteCategory');
 $router->post('/user/radio/autodj/add-log', 'User\Controllers\RadioController@autodjAddLog');
 $router->get('/user/radio/autodj/clear-logs', 'User\Controllers\RadioController@autodjClearLogs');
+$router->get('/user/radio/widgets', 'User\Controllers\RadioController@widgets');
 // Chat routes
 $router->post('/chat/start', 'User\Controllers\ChatController@start');
 $router->get('/chat/poll/{sessionId}', 'User\Controllers\ChatController@poll');

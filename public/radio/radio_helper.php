@@ -39,12 +39,18 @@ function radio_stream_url(stdClass $stream): string
 {
     $host = 'planet-hosts.com';
     $port = (int)($stream->port ?? 8000);
+    $proto = !empty($stream->ssl_enabled) ? 'https' : 'http';
     if (radio_is_icecast($stream)) {
         $mount = $stream->mount_point ?? '/live';
         if (!str_starts_with($mount, '/')) $mount = "/{$mount}";
-        return "http://{$host}:{$port}{$mount}";
+        return "{$proto}://{$host}:{$port}{$mount}";
     }
-    return "http://{$host}:{$port}/;stream.nsv";
+    return "{$proto}://{$host}:{$port}/;stream.nsv";
+}
+
+function radio_ssl_stream_url(int $streamId): string
+{
+    return "https://planet-hosts.com:2083/radio/stream-proxy.php?stream={$streamId}";
 }
 
 function radio_fetch_stats(stdClass $stream): array
@@ -108,7 +114,7 @@ function radio_fetch_shoutcast_stats(stdClass $stream, array $d): array
     $d['listeners'] = (int)($stats->CURRENTLISTENERS ?? $d['listeners']);
     $d['peak'] = (int)($stats->PEAKLISTENERS ?? $d['peak']);
     $d['bitrate'] = (int)($stats->BITRATE ?? $d['bitrate']);
-    $d['song'] = (string)($stats->SONGTITLE ?? $d['song']);
+    $d['song'] = (string)$stats->SONGTITLE ?: $d['song'];
     $d['status'] = true;
     $d['uptime'] = (string)($stats->SERVERUPTIME ?? $d['uptime']);
     if ($d['song'] && !$d['artist']) {
