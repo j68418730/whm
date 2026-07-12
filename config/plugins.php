@@ -16,6 +16,9 @@ return [
         // Radio streaming (Icecast, SHOUTcast, AutoDJ, transcoding)
         \Plugins\Radio\RadioPlugin::class,
 
+        // Planet Hosts Studio (broadcasting interface)
+        \Plugins\Studio\StudioPlugin::class,
+
         // Game Servers (CS2, TF2, MC, etc.)
         \Plugins\GameServers\GameServersPlugin::class,
 
