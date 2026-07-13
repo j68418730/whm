@@ -162,17 +162,17 @@ systemctl enable --now nginx 2>/dev/null || true
 # Install SHOUTcast DNAS v2
 log "SHOUTCAST" "install" "RUNNING" "Installing SHOUTcast DNAS"
 if [ -f "$SCRIPT_DIR/sc_serv2_linux_x64-latest.tar.gz" ]; then
-    mkdir -p /usr/local/shoutcast /var/log/shoutcast
-    tar xzf "$SCRIPT_DIR/sc_serv2_linux_x64-latest.tar.gz" -C /usr/local/shoutcast 2>/dev/null
-    chmod 755 /usr/local/shoutcast/sc_serv 2>/dev/null
-    cat > /usr/local/shoutcast/sc_serv.conf << "SCEOF"
+    mkdir -p /opt/planethosts/shoutcast /var/log/shoutcast
+    tar xzf "$SCRIPT_DIR/sc_serv2_linux_x64-latest.tar.gz" -C /opt/planethosts/shoutcast 2>/dev/null
+    chmod 755 /opt/planethosts/shoutcast/sc_serv 2>/dev/null
+    cat > /opt/planethosts/shoutcast/sc_serv.conf << "SCEOF"
 serveradmin=admin@planet-hosts.com
 adminpassword=ShoutcastAdmin171
 password=Shoutcast171
 portbase=8000
 logfile=/var/log/shoutcast/sc_serv.log
 w3clog=/var/log/shoutcast/sc_w3c.log
-banfile=/usr/local/shoutcast/sc_serv.ban
+banfile=/opt/planethosts/shoutcast/sc_serv.ban
 ripfile=/var/log/shoutcast/sc_rip.log
 maxuser=100
 SCEOF
@@ -184,8 +184,8 @@ After=network.target
 Type=simple
 User=nobody
 Group=nogroup
-WorkingDirectory=/usr/local/shoutcast
-ExecStart=/usr/local/shoutcast/sc_serv /usr/local/shoutcast/sc_serv.conf
+WorkingDirectory=/opt/planethosts/shoutcast
+ExecStart=/opt/planethosts/shoutcast/sc_serv /opt/planethosts/shoutcast/sc_serv.conf
 Restart=on-failure
 RestartSec=10
 [Install]
@@ -204,14 +204,14 @@ if [ -f "$SCRIPT_DIR/sc_serv1_linux_x86-latest.tar.gz" ] || [ -f "$SCRIPT_DIR/sc
     dpkg --add-architecture i386 2>/dev/null || true
     apt update -qq 2>/dev/null
     apt install -y -qq libc6:i386 libstdc++6:i386 2>/dev/null || true
-    mkdir -p /usr/local/shoutcast/v1 /var/log/shoutcast/v1
+    mkdir -p /opt/planethosts/shoutcast1 /var/log/shoutcast/v1
     if [ -f "$SCRIPT_DIR/sc_serv1_linux_x86-latest.tar.gz" ]; then
-        tar xzf "$SCRIPT_DIR/sc_serv1_linux_x86-latest.tar.gz" -C /usr/local/shoutcast/v1 2>/dev/null
+        tar xzf "$SCRIPT_DIR/sc_serv1_linux_x86-latest.tar.gz" -C /opt/planethosts/shoutcast1 2>/dev/null
     else
-        cp "$SCRIPT_DIR/sc_serv1" /usr/local/shoutcast/v1/sc_serv 2>/dev/null
+        cp "$SCRIPT_DIR/sc_serv1" /opt/planethosts/shoutcast1/sc_serv 2>/dev/null
     fi
-    chmod +x /usr/local/shoutcast/v1/sc_serv 2>/dev/null
-    cat > /usr/local/shoutcast/v1/sc_serv.conf << 'SC1EOF'
+    chmod +x /opt/planethosts/shoutcast1/sc_serv 2>/dev/null
+    cat > /opt/planethosts/shoutcast1/sc_serv.conf << 'SC1EOF'
 MaxUser=500
 Password=planethosts
 PortBase=11000
@@ -232,10 +232,10 @@ After=network.target
 Type=simple
 User=nobody
 Group=nogroup
-ExecStart=/usr/local/shoutcast/v1/sc_serv /usr/local/shoutcast/v1/sc_serv.conf
+ExecStart=/opt/planethosts/shoutcast1/sc_serv /opt/planethosts/shoutcast1/sc_serv.conf
 Restart=on-failure
 RestartSec=5
-WorkingDirectory=/usr/local/shoutcast/v1
+WorkingDirectory=/opt/planethosts/shoutcast1
 
 [Install]
 WantedBy=multi-user.target
