@@ -89,4 +89,9 @@ class Request
         }
         return null;
     }
+
+    public function files($key = null)
+    {
+        return $key === null ? $_FILES : ($_FILES[$key] ?? null);
+    }
 }

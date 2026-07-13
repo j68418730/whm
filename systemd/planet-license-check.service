@@ -1,0 +1,8 @@
+[Unit]
+Description=Planet Hosts License Validation Check
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/php /var/www/radiohosting/scripts/license_check.php
+User=root

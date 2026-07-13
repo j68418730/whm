@@ -1,0 +1,11 @@
+[Unit]
+Description=Planet Hosts License Validation - Every 6 Hours
+Requires=planet-license-check.service
+
+[Timer]
+OnCalendar=*-*-* 00,06,12,18:00:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target
