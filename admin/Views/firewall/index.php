@@ -108,41 +108,37 @@
 <!-- Common Ports Reference -->
 <div class="card">
 <h3 style="color:var(--accent);margin-bottom:12px">Common Ports Reference</h3>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:2px;font-size:13px">
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;font-size:12px">
 <?php
 $ports = [
-    '🌐 Core Web' => [['80','HTTP'],['443','HTTPS']],
-    '🔐 SSH' => [['22','SSH']],
-    '📁 FTP' => [['20','FTP Data'],['21','FTP Control'],['30000-50000','Passive FTP Range']],
-    '🌍 DNS' => [['53/TCP','DNS'],['53/UDP','DNS']],
-    '📧 SMTP Email' => [['25','SMTP'],['26','Alt SMTP'],['465','SMTPS'],['587','Submission']],
-    '📨 POP3' => [['110','POP3'],['995','POP3S']],
-    '📬 IMAP' => [['143','IMAP'],['993','IMAPS']],
-    '🗄️ MySQL' => [['3306','MySQL/MariaDB']],
-    '📦 Redis' => [['6379','Redis']],
-    '🐳 Docker' => [['2375','Docker API'],['2376','Docker TLS']],
-    '📡 Icecast' => [['8000','Stream'],['8001','Admin']],
-    '🎙️ Streaming' => [['8000-8999','Streaming Ports']],
-    '🖥️ Admin Panels' => [['8080','Alt HTTP'],['8443','Admin HTTPS'],['9443','Secure Admin']],
-    '🎮 Node.js' => [['3000','Node.js Dev']],
-    '⚡ Vite' => [['5173','Vite Dev']],
-    '🔌 WebSocket' => [['6001','Laravel Echo']],
-    '🛡️ Security' => [['1514','Syslog'],['1515','Syslog TLS']],
-    '⏰ NTP' => [['123','NTP']],
-    '📊 Monitoring' => [['9100','Node Exporter']],
-    '🗃️ MongoDB' => [['27017','MongoDB']],
-    '🔍 Elasticsearch' => [['9200','Elasticsearch HTTP'],['9300','Elasticsearch Cluster']],
-    '☸️ Kubernetes' => [['6443','Kubernetes API']],
-    '🖥️ VNC' => [['5900-5999','VNC']],
-    '💻 RDP' => [['3389','Remote Desktop']],
+    '🌐 HTTP' => ['80','443'],
+    '🔐 SSH' => ['22'],
+    '📁 FTP' => ['20','21'],
+    '🌍 DNS' => ['53'],
+    '📧 SMTP' => ['25','465','587'],
+    '📨 POP3' => ['110','995'],
+    '📬 IMAP' => ['143','993'],
+    '🗄️ MySQL' => ['3306'],
+    '📦 Redis' => ['6379'],
+    '🐳 Docker' => ['2375','2376'],
+    '📡 Icecast' => ['8000','8001'],
+    '🎙️ SHOUTcast' => ['11000-13999'],
+    '🖥️ Panel' => ['2082','2083','2087','2096'],
+    '🎮 Node' => ['3000'],
+    '🔌 WS' => ['6001'],
+    '⏰ NTP' => ['123'],
+    '💻 RDP' => ['3389'],
+    '🖥️ VNC' => ['5900-5999'],
 ];
 foreach ($ports as $group => $items): ?>
-<div style="padding:6px 0"><strong style="color:var(--accent);font-size:12px"><?php echo $group; ?></strong>
+<div style="background:rgba(255,255,255,.03);border-radius:8px;padding:10px;border:1px solid rgba(255,255,255,.04)">
+<div style="font-weight:600;color:var(--accent);margin-bottom:6px;font-size:11px"><?php echo $group; ?></div>
+<div style="display:flex;flex-wrap:wrap;gap:4px">
 <?php foreach ($items as $p): ?>
-<div style="display:flex;justify-content:space-between;padding:2px 8px;color:var(--text-secondary);font-size:12px">
-<span><?php echo $p[0]; ?></span><span><?php echo $p[1]; ?></span>
+<span style="background:rgba(0,191,255,.08);color:#60a5fa;padding:2px 6px;border-radius:4px;font-family:monospace;font-size:11px"><?php echo $p; ?></span>
+<?php endforeach; ?>
 </div>
-<?php endforeach; ?></div>
+</div>
 <?php endforeach; ?>
 </div>
 </div>

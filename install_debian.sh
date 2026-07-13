@@ -198,7 +198,87 @@ else
     log "SHOUTCAST" "install" "SKIP" "sc_serv2_linux_x64-latest.tar.gz not found in script dir"
 fi
 
+# Install SHOUTcast DNAS v1 (32-bit)
+log "SHOUTCAST" "install" "RUNNING" "Installing SHOUTcast DNAS v1"
+if [ -f "$SCRIPT_DIR/sc_serv1_linux_x86-latest.tar.gz" ] || [ -f "$SCRIPT_DIR/sc_serv1" ]; then
+    dpkg --add-architecture i386 2>/dev/null || true
+    apt update -qq 2>/dev/null
+    apt install -y -qq libc6:i386 libstdc++6:i386 2>/dev/null || true
+    mkdir -p /usr/local/shoutcast/v1 /var/log/shoutcast/v1
+    if [ -f "$SCRIPT_DIR/sc_serv1_linux_x86-latest.tar.gz" ]; then
+        tar xzf "$SCRIPT_DIR/sc_serv1_linux_x86-latest.tar.gz" -C /usr/local/shoutcast/v1 2>/dev/null
+    else
+        cp "$SCRIPT_DIR/sc_serv1" /usr/local/shoutcast/v1/sc_serv 2>/dev/null
+    fi
+    chmod +x /usr/local/shoutcast/v1/sc_serv 2>/dev/null
+    cat > /usr/local/shoutcast/v1/sc_serv.conf << 'SC1EOF'
+MaxUser=500
+Password=planethosts
+PortBase=11000
+SrcIP=ANY
+DestIP=ANY
+PublicServer=default
+LogFile=/var/log/shoutcast/v1.log
+W3CEnable=Yes
+AutoDumpUsers=0
+AutoDumpSourceTime=60
+SC1EOF
+    cat > /etc/systemd/system/shoutcast-v1.service << 'UNIT'
+[Unit]
+Description=SHOUTcast DNAS v1 Streaming Server
+After=network.target
+
+[Service]
+Type=simple
+User=nobody
+Group=nogroup
+ExecStart=/usr/local/shoutcast/v1/sc_serv /usr/local/shoutcast/v1/sc_serv.conf
+Restart=on-failure
+RestartSec=5
+WorkingDirectory=/usr/local/shoutcast/v1
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+    systemctl daemon-reload
+    systemctl enable --now shoutcast-v1 2>/dev/null || true
+    log "SHOUTCAST" "install" "OK" "SHOUTcast v1 installed on port 11000"
+else
+    log "SHOUTCAST" "install" "SKIP" "SHOUTcast v1 binary not found in script dir"
+fi
+
 install_optional "Liquidsoap" liquidsoap && LIQUIDSOAP_INSTALLED=1
+# Liquidsoap systemd service
+if command -v liquidsoap >/dev/null 2>&1; then
+    mkdir -p /etc/liquidsoap /var/log/liquidsoap /var/run/liquidsoap
+    cat > /etc/liquidsoap/main.liq << 'LSEQ'
+# Liquidsoap placeholder - stations add their own scripts dynamically
+output.dummy(blank())
+LSEQ
+    cat > /etc/systemd/system/liquidsoap.service << 'LSEOF'
+[Unit]
+Description=Liquidsoap AutoDJ Streaming Engine
+Documentation=http://liquidsoap.info
+After=network.target sound.target
+
+[Service]
+Type=simple
+User=nobody
+Group=nogroup
+ExecStart=/usr/bin/liquidsoap --no-stdlib /etc/liquidsoap/main.liq
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:/var/log/liquidsoap/liquidsoap.log
+StandardError=append:/var/log/liquidsoap/liquidsoap.log
+
+[Install]
+WantedBy=multi-user.target
+LSEOF
+    systemctl daemon-reload
+    systemctl enable --now liquidsoap 2>/dev/null || true
+    log "LIQUIDSOAP" "service" "OK" "Liquidsoap systemd service created"
+fi
 install_optional "ezstream" ezstream-ffmpeg && EZSTREAM_INSTALLED=1
 install_optional "FFmpeg" ffmpeg && FFMPEG_INSTALLED=1
 log "MEDIA" "install" "OK" "Streaming stack installed"
@@ -243,16 +323,89 @@ iptables -A INPUT -p tcp --dport 443 -m connlimit --connlimit-above 50 -j DROP 2
 iptables-save > /etc/iptables.rules 2>/dev/null
 log "SECURITY" "iptables" "OK" "DDoS rules applied"
 
-# Fail2Ban radio jails
+# Fail2Ban radio jails + planet-* jails
 cat > /etc/fail2ban/jail.local << "JAIL"
 [DEFAULT]
-bantime = 3600; findtime = 600; maxretry = 5
+bantime = 3600
+findtime = 600
+maxretry = 5
+ignoreip = 127.0.0.1/8 ::1
+
 [sshd]
-enabled = true; port = 22; maxretry = 3
+enabled = true
+port = 22
+maxretry = 3
+
 [radio-auth]
-enabled = true; logpath = /var/log/radiohosting/radio_auth.log; port = 8000:8100; maxretry = 5
+enabled = true
+logpath = /var/log/radiohosting/radio_auth.log
+port = 8000:8100
+maxretry = 5
+
 [radio-icecast]
-enabled = true; logpath = /var/log/icecast2/error.log; port = 8000:8100; maxretry = 10; findtime = 120; bantime = 600
+enabled = true
+logpath = /var/log/icecast2/error.log
+port = 8000:8100
+maxretry = 10
+findtime = 120
+bantime = 600
+
+[planet-ssh]
+enabled = true
+port = ssh
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = 3
+bantime = 3600
+
+[planet-postfix]
+enabled = true
+port = smtp,ssmtp
+filter = postfix
+logpath = /var/log/mail.log
+maxretry = 5
+bantime = 7200
+
+[planet-dovecot]
+enabled = true
+port = pop3,pop3s,imap,imaps
+filter = dovecot
+logpath = /var/log/mail.log
+maxretry = 5
+bantime = 3600
+
+[planet-apache]
+enabled = true
+port = http,https
+filter = apache-auth
+logpath = /var/log/apache2/error.log
+maxretry = 5
+bantime = 7200
+
+[planet-apache-badbots]
+enabled = true
+port = http,https
+filter = apache-badbots
+logpath = /var/log/apache2/access.log
+maxretry = 1
+bantime = 86400
+
+[planet-apache-overload]
+enabled = true
+port = http,https
+filter = apache-noscript
+logpath = /var/log/apache2/error.log
+maxretry = 10
+findtime = 120
+bantime = 600
+
+[planet-php-url-fopen]
+enabled = true
+port = http,https
+filter = php-url-fopen
+logpath = /var/log/apache2/access.log
+maxretry = 3
+bantime = 3600
 JAIL
 systemctl restart fail2ban 2>/dev/null || true
 
@@ -518,13 +671,23 @@ systemctl enable --now firewalld 2>/dev/null || true
 if systemctl is-active firewalld >/dev/null 2>&1; then
     for port in 80/tcp 443/tcp 2082/tcp 2083/tcp 2086/tcp 2087/tcp 2096/tcp \
                 2100/tcp 2101/tcp 21/tcp 22/tcp 25/tcp 465/tcp 587/tcp \
-                110/tcp 143/tcp 993/tcp 995/tcp 8000/tcp 8080/tcp 8443/tcp; do
+                110/tcp 143/tcp 993/tcp 995/tcp 8000/tcp 8001/tcp 8080/tcp 8443/tcp \
+                11000-11999/tcp 12000-13999/tcp 14000-15999/tcp 16000-16499/tcp \
+                17000-17999/tcp 18000-18999/tcp 19000-19999/tcp 20000-20999/tcp \
+                50000-55000/udp; do
         firewall-cmd --add-port="$port" --permanent 2>/dev/null || true
     done
     firewall-cmd --reload 2>/dev/null || true
 fi
 systemctl reload apache2 2>/dev/null
 log "APACHE" "extra-ports" "OK" "DJ/Chat ports configured"
+
+# www-data sudoers for firewall-cmd, fail2ban-client, systemctl
+cat > /etc/sudoers.d/www-data-firewall << 'SUDOER'
+www-data ALL=(ALL) NOPASSWD: /usr/bin/firewall-cmd, /usr/bin/fail2ban-client, /bin/systemctl
+SUDOER
+chmod 440 /etc/sudoers.d/www-data-firewall
+log "SUDO" "www-data" "OK" "www-data sudoers configured for firewall management"
 
 # Copy theme into public
 rm -rf "$PANEL_DIR/public/theme" 2>/dev/null
