@@ -26,9 +26,30 @@ class FirewallController extends Controller
         }
     }
 
-    protected function exec($cmd)
+    protected function exec($cmd, $sudo = true)
     {
-        return trim(shell_exec($cmd . ' 2>/dev/null') ?: '');
+        $prefix = $sudo ? 'sudo ' : '';
+        return trim(shell_exec($prefix . $cmd . ' 2>/dev/null') ?: '');
+    }
+
+    protected function fwCmd($cmd)
+    {
+        return $this->exec("firewall-cmd {$cmd}", true);
+    }
+
+    protected function systemctl($action, $svc)
+    {
+        return $this->exec("systemctl $action $svc", true);
+    }
+
+    protected function aptGet($pkg)
+    {
+        return $this->exec("apt-get install -y $pkg", true);
+    }
+
+    protected function a2Mod($action, $mod)
+    {
+        return $this->exec("a2{$action}mod $mod", true);
     }
 
     public function index()
@@ -52,9 +73,9 @@ class FirewallController extends Controller
         $openPorts = [];
         $openServices = [];
         if ($fwInstalled && $fw === 'active') {
-            $rawPorts = $this->exec('firewall-cmd --list-ports');
+            $rawPorts = $this->fwCmd('--list-ports');
             if ($rawPorts) $openPorts = explode(' ', $rawPorts);
-            $rawSvc = $this->exec('firewall-cmd --list-services');
+            $rawSvc = $this->fwCmd('--list-services');
             if ($rawSvc) $openServices = explode(' ', $rawSvc);
         }
 
@@ -86,9 +107,9 @@ class FirewallController extends Controller
             exit;
         }
         if ($action === 'install') {
-            $this->exec("apt-get install -y $svc");
+            $this->aptGet($svc);
         } else {
-            $this->exec("systemctl $action $svc");
+            $this->systemctl($action, $svc);
         }
         $_SESSION['success_message'] = ucfirst($action) . " $svc completed.";
         $this->response->redirect('/admin/firewall');
@@ -98,13 +119,17 @@ class FirewallController extends Controller
     {
         $this->guard();
         if ($action === 'enable') {
-            $this->exec("a2enmod security2 2>/dev/null && systemctl restart apache2 2>/dev/null");
+            $this->a2Mod('en', 'security2');
+            $this->systemctl('restart', 'apache2');
             $_SESSION['success_message'] = 'ModSecurity enabled.';
         } elseif ($action === 'disable') {
-            $this->exec("a2dismod security2 2>/dev/null && systemctl restart apache2 2>/dev/null");
+            $this->a2Mod('dis', 'security2');
+            $this->systemctl('restart', 'apache2');
             $_SESSION['success_message'] = 'ModSecurity disabled.';
         } elseif ($action === 'install') {
-            $this->exec("apt-get install -y libapache2-mod-security2 2>/dev/null && a2enmod security2 2>/dev/null && systemctl restart apache2 2>/dev/null");
+            $this->aptGet('libapache2-mod-security2');
+            $this->a2Mod('en', 'security2');
+            $this->systemctl('restart', 'apache2');
             $_SESSION['success_message'] = 'ModSecurity installed and enabled.';
         } else {
             $_SESSION['error_message'] = "Invalid action: $action";
