@@ -39,8 +39,12 @@ class FilesystemController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
+        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+        $stmt = $pdo->query('SELECT id, username, email, domain FROM hosting_users ORDER BY username');
+        $users = $stmt ? $stmt->fetchAll(\PDO::FETCH_OBJ) : [];
+
         $fsStats = [
-            'total_users' => 0,
+            'total_users' => count($users),
             'shell_users' => 0,
             'jailed_shell_users' => 0,
             'users_with_sudo' => 0,
@@ -53,6 +57,7 @@ class FilesystemController extends Controller
         // Render the filesystem management view
         return $this->view('admin.filesystem.index', [
             'user' => $user,
+            'users' => $users,
             'fsStats' => $fsStats,
             'theme_settings' => $theme_settings
         ]);

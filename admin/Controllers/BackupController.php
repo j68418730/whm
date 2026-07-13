@@ -19,6 +19,11 @@ class BackupController extends Controller
         $this->backup = new BackupManager();
     }
 
+    protected function guard()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+    }
+
     public function index()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
@@ -176,6 +181,78 @@ class BackupController extends Controller
         $restoreManager = new \Admin\Services\Migration\RestoreManager();
         $restoreManager->toggleFavorite((int)$id);
         $this->response->redirect('/admin/backup/restore-points');
+        exit;
+    }
+
+    // ── Destinations ──
+    public function destinations()
+    {
+        $this->guard();
+        $user = $this->auth->user();
+        $destinations = $this->backup->getDestinations();
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        return $this->view('admin.backup.index', [
+            'user' => $user, 'destinations' => $destinations, 'destinationsView' => true,
+            'theme_settings' => $theme_settings,
+        ]);
+    }
+
+    public function destinationStore()
+    {
+        $this->guard();
+        $id = $this->backup->createDestination($this->request->post());
+        if ($id) {
+            $_SESSION['success_message'] = 'Backup destination created.';
+            if (!empty($this->request->post('test_after_create'))) {
+                $test = $this->backup->testDestination($id);
+                $_SESSION['success_message'] .= ' Test: ' . $test['message'];
+            }
+        } else {
+            $_SESSION['error_message'] = 'Failed to create destination.';
+        }
+        $this->response->redirect('/admin/backup/destinations');
+        exit;
+    }
+
+    public function destinationUpdate($id)
+    {
+        $this->guard();
+        $this->backup->updateDestination((int)$id, $this->request->post());
+        $_SESSION['success_message'] = 'Backup destination updated.';
+        $this->response->redirect('/admin/backup/destinations');
+        exit;
+    }
+
+    public function destinationDelete($id)
+    {
+        $this->guard();
+        $this->backup->deleteDestination((int)$id);
+        $_SESSION['success_message'] = 'Backup destination deleted.';
+        $this->response->redirect('/admin/backup/destinations');
+        exit;
+    }
+
+    public function destinationTest($id)
+    {
+        $this->guard();
+        $test = $this->backup->testDestination((int)$id);
+        $_SESSION[isset($test['success']) && $test['success'] ? 'success_message' : 'error_message'] = $test['message'] ?? 'Test completed.';
+        $this->response->redirect('/admin/backup/destinations');
+        exit;
+    }
+
+    public function destinationUpload($id)
+    {
+        $this->guard();
+        $backups = $this->backup->getBackups();
+        if (!empty($backups)) {
+            $latest = $backups[0];
+            $result = $this->backup->uploadToDestination($latest['path'], (int)$id);
+            $_SESSION[$result['success'] ? 'success_message' : 'error_message'] = $result['message'] ?? 'Upload attempted.';
+        } else {
+            $_SESSION['error_message'] = 'No backups available to upload.';
+        }
+        $this->response->redirect('/admin/backup/destinations');
         exit;
     }
 

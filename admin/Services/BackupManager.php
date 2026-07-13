@@ -185,6 +185,95 @@ class BackupManager
         } catch (\Exception $e) { return ['total' => 0, 'completed' => 0, 'failed' => 0, 'success' => 0]; }
     }
 
+    // ── Destinations CRUD ──
+
+    public function getDestinations()
+    {
+        try {
+            return $this->db->table('backup_destinations')->orderBy('is_default', 'DESC')->orderBy('name', 'ASC')->get() ?: [];
+        } catch (\Exception $e) { return []; }
+    }
+
+    public function getDestination($id)
+    {
+        try {
+            return $this->db->table('backup_destinations')->where('id', $id)->first();
+        } catch (\Exception $e) { return null; }
+    }
+
+    public function createDestination(array $data)
+    {
+        try {
+            $insert = [
+                'name' => $data['name'] ?? '',
+                'type' => $data['type'] ?? 'ftp',
+                'host' => $data['host'] ?? '',
+                'port' => (int)($data['port'] ?? 21),
+                'username' => $data['username'] ?? '',
+                'password' => $data['password'] ?? '',
+                'path' => $data['path'] ?? '/',
+                'passive' => !empty($data['passive']) ? 1 : 0,
+                'ssl' => !empty($data['ssl']) ? 1 : 0,
+                'private_key' => $data['private_key'] ?? null,
+                'is_active' => !empty($data['is_active']) ? 1 : 1,
+                'is_default' => !empty($data['is_default']) ? 1 : 0,
+                'max_retries' => (int)($data['max_retries'] ?? 3),
+                'notes' => $data['notes'] ?? null,
+            ];
+            if (!empty($insert['is_default'])) {
+                $this->db->pdo()->exec("UPDATE backup_destinations SET is_default=0");
+            }
+            return $this->db->table('backup_destinations')->insertGetId($insert);
+        } catch (\Exception $e) { return 0; }
+    }
+
+    public function updateDestination($id, array $data)
+    {
+        try {
+            $update = [];
+            foreach (['name','type','host','port','username','password','path','passive','ssl','private_key','is_active','is_default','max_retries','notes'] as $k) {
+                if (isset($data[$k])) $update[$k] = $data[$k];
+            }
+            if (!empty($update['is_default'])) {
+                $this->db->pdo()->exec("UPDATE backup_destinations SET is_default=0");
+            }
+            if (!empty($update)) $this->db->table('backup_destinations')->where('id', $id)->update($update);
+            return true;
+        } catch (\Exception $e) { return false; }
+    }
+
+    public function deleteDestination($id)
+    {
+        try {
+            $this->db->table('backup_destinations')->where('id', $id)->delete();
+            return true;
+        } catch (\Exception $e) { return false; }
+    }
+
+    public function uploadToDestination($backupFile, $destId)
+    {
+        $dest = $this->getDestination($destId);
+        if (!$dest || !$dest->is_active) return ['success' => false, 'message' => 'Destination not found or inactive'];
+        $engine = new FtpBackupEngine();
+        return $engine->upload($backupFile, $dest);
+    }
+
+    public function downloadFromDestination($remoteFile, $localPath, $destId)
+    {
+        $dest = $this->getDestination($destId);
+        if (!$dest) return ['success' => false, 'message' => 'Destination not found'];
+        $engine = new FtpBackupEngine();
+        return $engine->download($remoteFile, $localPath, $dest);
+    }
+
+    public function testDestination($id)
+    {
+        $dest = $this->getDestination($id);
+        if (!$dest) return ['success' => false, 'message' => 'Destination not found'];
+        $engine = new FtpBackupEngine();
+        return $engine->testConnection($dest);
+    }
+
     protected function logHistory($action, $filename, $success)
     {
         try {
