@@ -122,6 +122,9 @@ install_required "Web stack" apache2 mariadb-server jailkit quota quotatool \
   unzip wget curl git openssl \
   firewalld fail2ban clamav-daemon rspamd aide rkhunter chkrootkit lynis \
   certbot python3-certbot-apache nginx
+# Disable default nginx site (conflicts with Apache on port 80) and reconfigure
+systemctl stop nginx 2>/dev/null || true
+rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
 systemctl enable --now apache2 mariadb postfix dovecot vsftpd named
 HTTPD_INSTALLED=1; MARIADB_INSTALLED=1; PHP_INSTALLED=1
 FIREWALLD_INSTALLED=1
@@ -131,6 +134,70 @@ log "STACK" "install" "OK" "Web stack installed"
 echo "[3/8] Installing streaming stack..."
 log "MEDIA" "install" "RUNNING" "Installing streaming stack"
 install_required "Icecast" icecast2 && ICECAST_INSTALLED=1
+systemctl enable --now icecast2 2>/dev/null || true
+
+# Configure nginx on port 8080 (avoids Apache conflict on port 80)
+cat > /etc/nginx/sites-available/planet-proxy << "NGINX"
+server {
+    listen 8080 default_server;
+    listen [::]:8080 default_server;
+    server_name _;
+    root /var/www/radiohosting/public;
+    index index.php index.html;
+    location / {
+        try_files $uri $uri/ /index.php?$args;
+    }
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+    location ~ /\.ht { deny all; }
+}
+NGINX
+ln -sf /etc/nginx/sites-available/planet-proxy /etc/nginx/sites-enabled/ 2>/dev/null || true
+systemctl enable --now nginx 2>/dev/null || true
+
+# Install SHOUTcast DNAS v2
+log "SHOUTCAST" "install" "RUNNING" "Installing SHOUTcast DNAS"
+if [ -f "$SCRIPT_DIR/sc_serv2_linux_x64-latest.tar.gz" ]; then
+    mkdir -p /usr/local/shoutcast /var/log/shoutcast
+    tar xzf "$SCRIPT_DIR/sc_serv2_linux_x64-latest.tar.gz" -C /usr/local/shoutcast 2>/dev/null
+    chmod 755 /usr/local/shoutcast/sc_serv 2>/dev/null
+    cat > /usr/local/shoutcast/sc_serv.conf << "SCEOF"
+serveradmin=admin@planet-hosts.com
+adminpassword=ShoutcastAdmin171
+password=Shoutcast171
+portbase=8000
+logfile=/var/log/shoutcast/sc_serv.log
+w3clog=/var/log/shoutcast/sc_w3c.log
+banfile=/usr/local/shoutcast/sc_serv.ban
+ripfile=/var/log/shoutcast/sc_rip.log
+maxuser=100
+SCEOF
+    cat > /etc/systemd/system/shoutcast.service << "UNIT"
+[Unit]
+Description=SHOUTcast DNAS v2 Server
+After=network.target
+[Service]
+Type=simple
+User=nobody
+Group=nogroup
+WorkingDirectory=/usr/local/shoutcast
+ExecStart=/usr/local/shoutcast/sc_serv /usr/local/shoutcast/sc_serv.conf
+Restart=on-failure
+RestartSec=10
+[Install]
+WantedBy=multi-user.target
+UNIT
+    systemctl daemon-reload
+    systemctl enable --now shoutcast 2>/dev/null || true
+    log "SHOUTCAST" "install" "OK" "SHOUTcast installed on port 8000"
+else
+    log "SHOUTCAST" "install" "SKIP" "sc_serv2_linux_x64-latest.tar.gz not found in script dir"
+fi
+
 install_optional "Liquidsoap" liquidsoap && LIQUIDSOAP_INSTALLED=1
 install_optional "ezstream" ezstream-ffmpeg && EZSTREAM_INSTALLED=1
 install_optional "FFmpeg" ffmpeg && FFMPEG_INSTALLED=1
@@ -446,9 +513,16 @@ printf '<VirtualHost *:2100>\n    DocumentRoot /var/www/radiohosting/public\n   
 printf '<VirtualHost *:2101>\n    DocumentRoot /var/www/radiohosting/public\n    ServerName %s\n    <Directory /var/www/radiohosting/public>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n</VirtualHost>\n' "$SERVER_IP" > /etc/apache2/sites-available/chat-panel.conf
 printf '\nListen 2100\nListen 2101\n' >> /etc/apache2/ports.conf
 a2ensite dj-panel.conf chat-panel.conf 2>/dev/null
-firewall-cmd --add-port=2100/tcp --permanent 2>/dev/null
-firewall-cmd --add-port=2101/tcp --permanent 2>/dev/null
-firewall-cmd --reload 2>/dev/null
+# Full firewalld configuration: allow all panel, web, mail, FTP, streaming ports
+systemctl enable --now firewalld 2>/dev/null || true
+if systemctl is-active firewalld >/dev/null 2>&1; then
+    for port in 80/tcp 443/tcp 2082/tcp 2083/tcp 2086/tcp 2087/tcp 2096/tcp \
+                2100/tcp 2101/tcp 21/tcp 22/tcp 25/tcp 465/tcp 587/tcp \
+                110/tcp 143/tcp 993/tcp 995/tcp 8000/tcp 8080/tcp 8443/tcp; do
+        firewall-cmd --add-port="$port" --permanent 2>/dev/null || true
+    done
+    firewall-cmd --reload 2>/dev/null || true
+fi
 systemctl reload apache2 2>/dev/null
 log "APACHE" "extra-ports" "OK" "DJ/Chat ports configured"
 
@@ -477,7 +551,8 @@ echo "  Liquidsoap: $LIQUIDSOAP_INSTALLED    ezstream: $EZSTREAM_INSTALLED"
 echo "  FFmpeg: $FFMPEG_INSTALLED    phpMyAdmin: $PHPMYADMIN_INSTALLED"
 echo ""
 echo " Services: Apache, MariaDB, Postfix, Dovecot,"
-echo "           VSFTPD, Bind9, Icecast2, Firewalld, Fail2ban"
+echo "           VSFTPD, Bind9, Icecast2, Firewalld, Fail2ban,"
+echo "           SHOUTcast DNAS (port 8000), nginx (port 8080),"
 echo "           .NET 8 Support Server (port 5000)"
 
 log "INSTALLER" "finish" "OK" "Installation complete"
