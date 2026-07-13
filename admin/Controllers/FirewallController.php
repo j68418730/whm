@@ -57,11 +57,11 @@ class FirewallController extends Controller
         $this->guard();
         $user = $this->auth->user();
 
-        $fwInstalled = $this->exec('which firewall-cmd') !== '';
+        $fwInstalled = file_exists('/usr/bin/firewall-cmd') || file_exists('/bin/firewall-cmd');
         $fw = $fwInstalled ? $this->exec('systemctl is-active firewalld') : 'inactive';
         $fwEnabled = $fwInstalled ? $this->exec('systemctl is-enabled firewalld') : 'disabled';
 
-        $f2bInstalled = $this->exec('which fail2ban-client') !== '';
+        $f2bInstalled = file_exists('/usr/bin/fail2ban-client') || file_exists('/bin/fail2ban-client');
         $f2b = $f2bInstalled ? $this->exec('systemctl is-active fail2ban') : 'inactive';
 
         $modsecInstalled = is_dir('/etc/modsecurity') || is_file('/etc/apache2/mods-enabled/security2.load') || is_file('/etc/httpd/conf.d/mod_security.conf');
