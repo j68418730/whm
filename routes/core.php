@@ -178,6 +178,10 @@ $router->get('/admin/licensing', 'Admin\Controllers\LicensingController@index');
 $router->post('/admin/licensing/upload', 'Admin\Controllers\LicensingController@upload');
 $router->get('/admin/licensing/generate', 'Admin\Controllers\LicensingController@generate');
 $router->post('/admin/licensing/generate', 'Admin\Controllers\LicensingController@generate');
+$router->post('/admin/licensing/activate', 'Admin\Controllers\LicensingController@activate');
+$router->get('/admin/licensing/refresh', 'Admin\Controllers\LicensingController@refresh');
+$router->get('/admin/licensing/deactivate', 'Admin\Controllers\LicensingController@deactivate');
+$router->post('/admin/licensing/transfer', 'Admin\Controllers\LicensingController@transfer');
 $router->get('/livechat', 'Admin\Controllers\LiveChatController@portal');
 $router->post('/livechat', 'Admin\Controllers\LiveChatController@portal');
 $router->get('/admin/livechat', 'Admin\Controllers\LiveChatController@index');
@@ -598,6 +602,11 @@ $router->post('/admin/hostname/save', 'Admin\Controllers\HostnameController@save
 $router->post('/admin/hostname/rebuild', 'Admin\Controllers\HostnameController@rebuild');
 $router->post('/admin/hostname/autossl', 'Admin\Controllers\HostnameController@autossl');
 $router->get('/admin/hostname/health', 'Admin\Controllers\HostnameController@health');
+
+// ── Setup Wizard Routes (before install.lock exists) ──
+$router->get('/setup', 'Admin\Controllers\SetupController@index');
+$router->get('/setup/{step}', 'Admin\Controllers\SetupController@step');
+$router->post('/setup/{step}/post', 'Admin\Controllers\SetupController@postStep');
 
 // -- Catch-all for unknown /admin/* routes (redirects to dashboard) --
 $router->get('/admin/{any}', 'Admin\Controllers\DashboardController@index');

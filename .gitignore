@@ -36,5 +36,14 @@ scripts/keys/*.sh
 cron_autodj.php
 update_dj_table.php
 
+# Generated license keys
+storage/generated/
+
+# License cache
+storage/.license_cache
+storage/.trial_started
+storage/.grace_started
+storage/.license_restricted
+
 # SQL dumps
 plugins/webbasesams/*.sql.gz

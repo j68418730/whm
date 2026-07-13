@@ -38,10 +38,20 @@ $config = require BASE_PATH . '/config/app.php';
 $config['database'] = require BASE_PATH . '/config/database.php';
 $config['plugins'] = require BASE_PATH . '/config/plugins.php';
 
-// License check — only blocks WHM backend access after trial
+// Setup Wizard auto-redirect: if install.lock doesn't exist, redirect to /setup
 $uri = $_SERVER['REQUEST_URI'] ?? '/';
 $path = parse_url($uri, PHP_URL_PATH);
-$isLicensePage = str_starts_with($path, '/admin/licensing') || str_starts_with($path, '/admin/login') || str_starts_with($path, '/admin/support-status') || str_starts_with($path, '/api/') || str_starts_with($path, '/livechat') || str_starts_with($path, '/radio/');
+$lockFile = BASE_PATH . '/config/install.lock';
+$isSetupPath = str_starts_with($path, '/setup') || $path === '/';
+$isSetupExcluded = $isSetupPath || str_starts_with($path, '/theme/') || str_starts_with($path, '/api/') || str_starts_with($path, '/radio/');
+
+if (!is_file($lockFile) && !$isSetupExcluded) {
+    header('Location: /setup');
+    exit;
+}
+
+// License check — only blocks WHM backend access after trial
+$isLicensePage = str_starts_with($path, '/admin/licensing') || str_starts_with($path, '/admin/login') || str_starts_with($path, '/admin/support-status') || str_starts_with($path, '/api/') || str_starts_with($path, '/livechat') || str_starts_with($path, '/radio/') || str_starts_with($path, '/setup');
 $license = new Core\License(BASE_PATH);
 $licenseResult = $license->verify();
 if (!$licenseResult['valid'] && !$isLicensePage) {
@@ -76,7 +86,13 @@ HTML;
     exit;
 }
 
-$app = new Core\Application(BASE_PATH, $config);
+try {
+    $app = new Core\Application(BASE_PATH, $config);
+} catch (\Exception $e) {
+    http_response_code(500);
+    echo '<!DOCTYPE html><html><head><title>System Error - Planet Hosts</title><style>body{font-family:sans-serif;background:#07111f;color:#d8e7f7;display:flex;justify-content:center;align-items:center;height:100vh;margin:0}.card{background:#0d1b2e;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:2rem;max-width:500px;text-align:center}h1{color:#ff6b6b}p{color:#9bb4cf;line-height:1.6}</style></head><body><div class="card"><h1>System Error</h1><p>' . htmlspecialchars($e->getMessage()) . '</p></div></body></html>';
+    exit;
+}
 
 // Serve /radio/ pages directly
 if ($path === '/radio/' || $path === '/radio') {
