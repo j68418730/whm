@@ -574,6 +574,24 @@ $router->post('/admin/ssl/universal/toggle-auto-renew', 'Admin\Controllers\Unive
 $router->get('/admin/ssl/universal/delete', 'Admin\Controllers\UniversalSslController@deleteService');
 $router->get('/admin/ssl/cron', 'Admin\Controllers\UniversalSslController@cron');
 
+// Port Manager Routes (admin)
+$router->get('/admin/port', 'Admin\Controllers\PortController@index');
+$router->get('/admin/port/usage', 'Admin\Controllers\PortController@usage');
+$router->get('/admin/port/search', 'Admin\Controllers\PortController@search');
+$router->get('/admin/port/conflicts', 'Admin\Controllers\PortController@conflicts');
+$router->get('/admin/port/history', 'Admin\Controllers\PortController@history');
+$router->get('/admin/port/release/{id}', 'Admin\Controllers\PortController@release');
+$router->get('/admin/port/validate/{id}', 'Admin\Controllers\PortController@validate');
+// Port Manager API
+$router->get('/api/port/allocate', 'Admin\Controllers\Api\PortController@allocate');
+$router->post('/api/port/allocate', 'Admin\Controllers\Api\PortController@allocate');
+$router->get('/api/port/release/{id}', 'Admin\Controllers\Api\PortController@release');
+$router->get('/api/port/status/{port}', 'Admin\Controllers\Api\PortController@status');
+$router->get('/api/port/list', 'Admin\Controllers\Api\PortController@listAll');
+$router->get('/api/port/stats', 'Admin\Controllers\Api\PortController@stats');
+$router->get('/api/port/validate-port', 'Admin\Controllers\Api\PortController@validatePort');
+$router->post('/api/port/validate-port', 'Admin\Controllers\Api\PortController@validatePort');
+
 // Admin Hostname Configuration Routes
 $router->get('/admin/hostname', 'Admin\Controllers\HostnameController@index');
 $router->post('/admin/hostname/save', 'Admin\Controllers\HostnameController@save');
