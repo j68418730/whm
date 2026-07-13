@@ -310,6 +310,7 @@ class SetupController extends Controller
         $customerEmail = $this->request->post('customer_email', '');
         $companyName = $this->request->post('company_name', '');
         $trialMode = $this->request->post('trial_mode', '');
+        $serverIp = $this->request->post('server_ip', '');
 
         if ($mode === 'trial' || $trialMode === 'yes') {
             $this->setSd('license_key', 'TRIAL-' . strtoupper(bin2hex(random_bytes(8))));
@@ -329,7 +330,7 @@ class SetupController extends Controller
         }
 
         if ($mode === 'online' && $licenseKey) {
-            $result = $this->activateOnline($licenseKey, $customerEmail, $companyName);
+            $result = $this->activateOnline($licenseKey, $customerEmail, $companyName, $serverIp);
             if ($result['success']) {
                 $this->setSd('license_key', $licenseKey);
                 $this->setSd('license', $result['data']);
@@ -372,7 +373,7 @@ class SetupController extends Controller
         $this->response->redirect('/setup/3');
     }
 
-    protected function activateOnline($licenseKey, $email, $company)
+    protected function activateOnline($licenseKey, $email, $company, $serverIp = '')
     {
         $ch = curl_init('https://license.planet-hosts.com/api/activate');
         curl_setopt_array($ch, [
@@ -380,7 +381,7 @@ class SetupController extends Controller
             CURLOPT_POSTFIELDS => json_encode([
                 'license_key' => $licenseKey,
                 'domain' => $_SERVER['HTTP_HOST'] ?? '',
-                'ip' => $_SERVER['SERVER_ADDR'] ?? '',
+                'ip' => $serverIp ?: ($_SERVER['SERVER_ADDR'] ?? ''),
                 'machine_id' => function_exists('server_hw_id') ? server_hw_id() : '',
                 'hostname' => @exec('hostname') ?: '',
                 'email' => $email,

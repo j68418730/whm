@@ -222,6 +222,11 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
           <input type="text" name="company_name" placeholder="Planet Hosts">
         </div>
       </div>
+      <div class="form-group">
+        <label>Server IP Address</label>
+        <input type="text" name="server_ip" value="<?php echo htmlspecialchars($server_ip ?? $_SERVER['SERVER_ADDR'] ?? ''); ?>" placeholder="15.204.114.226" required>
+        <div class="help-text">Enter your server's public IP. This will be validated with Planet-Hosts.com licensing server.</div>
+      </div>
       <input type="hidden" name="license_mode" value="online">
     </div>
 
