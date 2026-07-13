@@ -146,7 +146,8 @@ class PackageController extends Controller
             'sort_order' => (int)$this->request->post('sort_order', 0),
             'is_active' => 1,
         ];
-        $this->db->table('hosting_packages')->insertGetId($data);
+        $id = $this->db->table('hosting_packages')->insertGetId($data);
+        $this->syncBillingProduct($id, $data);
         $_SESSION['success_message'] = 'Package created.';
         $this->response->redirect('/admin/packages');
         exit;
@@ -187,6 +188,7 @@ class PackageController extends Controller
             'is_active' => $this->request->post('is_active') === 'on' ? 1 : 0,
         ];
         $this->db->table('hosting_packages')->where('id', $id)->update($data);
+        $this->syncBillingProduct($id, $data);
         $_SESSION['success_message'] = 'Package updated.';
         $this->response->redirect('/admin/packages');
         exit;
@@ -196,9 +198,55 @@ class PackageController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $this->db->table('hosting_packages')->where('id', $id)->update(['is_active' => 0]);
+        $this->syncBillingProduct($id, ['is_active' => 0]);
         $_SESSION['success_message'] = 'Package deleted.';
         $this->response->redirect('/admin/packages');
         exit;
+    }
+
+    protected function syncBillingProduct($pkgId, $data)
+    {
+        $pkg = $this->db->table('hosting_packages')->where('id', $pkgId)->first();
+        if (!$pkg) return;
+
+        $typeMap = [
+            'Web Hosting' => 'hosting',
+            'Radio Hosting' => 'radio',
+            'Game Servers' => 'vps',
+            'Streaming Icecast' => 'radio',
+            'Streaming Shoutcast v1' => 'radio',
+            'Streaming Shoutcast v2' => 'radio',
+        ];
+        $billingType = $typeMap[$pkg->type] ?? 'hosting';
+
+        $productId = $pkg->product_id ?? null;
+        if ($productId) {
+            $this->db->table('billing_products')->where('id', $productId)->update([
+                'name' => $data['name'] ?? $pkg->name,
+                'description' => $data['description'] ?? $pkg->description,
+                'type' => $billingType,
+                'price' => $data['monthly_price'] ?? $pkg->monthly_price,
+                'setup_fee' => $data['setup_fee'] ?? $pkg->setup_fee,
+                'billing_cycle' => 'monthly',
+                'is_active' => $data['is_active'] ?? $pkg->is_active,
+                'sort_order' => $data['sort_order'] ?? $pkg->sort_order,
+            ]);
+        } else {
+            $productId = $this->db->table('billing_products')->insertGetId([
+                'name' => $data['name'] ?? $pkg->name,
+                'description' => $data['description'] ?? $pkg->description,
+                'type' => $billingType,
+                'price' => $data['monthly_price'] ?? $pkg->monthly_price,
+                'setup_fee' => $data['setup_fee'] ?? $pkg->setup_fee,
+                'billing_cycle' => 'monthly',
+                'is_active' => $data['is_active'] ?? $pkg->is_active,
+                'sort_order' => $data['sort_order'] ?? $pkg->sort_order,
+                'package_id' => $pkgId,
+            ]);
+            $this->db->table('hosting_packages')->where('id', $pkgId)->update(['product_id' => $productId]);
+        }
+        // Keep package_id in sync on billing_products
+        $this->db->table('billing_products')->where('id', $productId)->update(['package_id' => $pkgId]);
     }
 
     // --- Category management ---
