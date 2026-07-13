@@ -12,8 +12,8 @@ return [
         $sc = \Core\WidgetManager::getInstance()->getData('stationCounts') ?: [];
         $engines = $d;
         if (empty($engines)) {
-            $sc2Installed = file_exists('/opt/planethosts/shoutcast/sc_serv');
-            $sc1Installed = file_exists('/opt/planethosts/shoutcast1/sc_serv');
+            $sc2Installed = file_exists('/usr/local/shoutcast/sc_serv') || file_exists('/opt/planethosts/shoutcast/sc_serv');
+            $sc1Installed = file_exists('/usr/local/shoutcast/v1/sc_serv') || file_exists('/opt/planethosts/shoutcast1/sc_serv');
             $iceInstalled = trim(shell_exec('which icecast 2>/dev/null') ?: '') !== '' || trim(shell_exec('systemctl is-active icecast2 2>/dev/null') ?: '') === 'active';
             $engines = [
                 ['name' => 'SHOUTcast v2', 'installed' => $sc2Installed, 'running' => $sc2Installed && !empty(trim(shell_exec('pgrep -x sc_serv 2>/dev/null') ?: ''))],
