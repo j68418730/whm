@@ -164,6 +164,15 @@ class AccountController extends Controller
             'nameservers' => $nsList,
             'status' => 'pending',
         ];
+
+        // Pre-allocate streaming ports for this customer
+        try {
+            $pm = new \Core\PortManager();
+            foreach (['icecast', 'shoutcast_v1', 'rtmp', 'rtsp'] as $svcType) {
+                $pm->allocate($svcType, $userId);
+            }
+        } catch (\Exception $e) {}
+
         header('Location: /admin/account/summary/' . $userId);
         exit;
     }
@@ -408,6 +417,7 @@ class AccountController extends Controller
         $d = escapeshellarg($account->domain);
         $h = escapeshellarg("/home/{$account->username}");
         @exec("sudo /var/www/radiohosting/provision.sh terminate {$u} {$d} {$h} 2>/dev/null >/dev/null &");
+        try { (new \Core\PortManager())->releaseByCustomer($id); } catch (\Exception $e) {}
         try {
             $this->db->table('domains')->where('account_id', $id)->delete();
             $this->db->table('backup_settings')->where('account_id', $id)->delete();
@@ -568,11 +578,12 @@ class AccountController extends Controller
         $d = escapeshellarg($account->domain);
         $h = escapeshellarg("/home/{$account->username}");
         @exec("sudo /var/www/radiohosting/provision.sh terminate {$u} {$d} {$h} 2>/dev/null >/dev/null &");
+        // Release all ports allocated to this customer
+        try { (new \Core\PortManager())->releaseByCustomer($id); } catch (\Exception $e) {}
         try {
             $this->db->table('domains')->where('account_id', $id)->delete();
             $this->db->table('backup_settings')->where('account_id', $id)->delete();
             $this->db->table('activity_logs')->where('account_id', $id)->delete();
-            $this->db->table('hosting_users')->where('id', $id)->delete();
         } catch (\Exception $e) {}
 
         try {
