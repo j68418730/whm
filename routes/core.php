@@ -617,6 +617,11 @@ $router->get('/api/port/stats', 'Admin\Controllers\Api\PortController@stats');
 $router->get('/api/port/validate-port', 'Admin\Controllers\Api\PortController@validatePort');
 $router->post('/api/port/validate-port', 'Admin\Controllers\Api\PortController@validatePort');
 
+// License Validation API (for setup wizard)
+$router->post('/api/license/validate', 'Admin\Controllers\Api\LicenseController@validate');
+$router->post('/api/license/generate-key', 'Admin\Controllers\Api\LicenseController@generateKey');
+$router->get('/api/license/check-ip', 'Admin\Controllers\Api\LicenseController@checkIp');
+
 // Admin Hostname Configuration Routes
 $router->get('/admin/hostname', 'Admin\Controllers\HostnameController@index');
 $router->post('/admin/hostname/save', 'Admin\Controllers\HostnameController@save');
