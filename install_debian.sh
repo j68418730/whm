@@ -550,7 +550,30 @@ done
 for s in "$SCRIPT_DIR"/plugins/*/database/schema.sql; do
   [ -f "$s" ] && mysql -u root radiohosting < "$s" 2>/dev/null || true
 done
-log "DATABASE" "schema" "OK" "Schemas imported"
+
+# Add account_licenses table for license key management
+mysql -u root radiohosting <<'MYSQL' 2>/dev/null || true
+CREATE TABLE IF NOT EXISTS account_licenses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    account_id INT NOT NULL,
+    package_id INT NOT NULL,
+    product_key VARCHAR(255) NOT NULL,
+    account_key VARCHAR(255) NOT NULL UNIQUE,
+    status ENUM('active','expired','suspended','invalid') DEFAULT 'active',
+    last_validated DATETIME NULL,
+    expires_at DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_account_id (account_id),
+    INDEX idx_package_id (package_id),
+    INDEX idx_account_key (account_key),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE billing_products ADD COLUMN IF NOT EXISTS license_key VARCHAR(255) NULL AFTER package_id;
+ALTER TABLE setup_settings ADD COLUMN IF NOT EXISTS server_ip VARCHAR(45) NULL AFTER server_hostname;
+MYSQL
+log "DATABASE" "license_tables" "OK" "License tables created"
 
 # Create 3 default packages (7-Day Trial, 15-Day Trial, Monthly Pro)
 log "PACKAGES" "create" "RUNNING" "Creating default packages"
