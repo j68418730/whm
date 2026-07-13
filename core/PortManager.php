@@ -130,6 +130,11 @@ class PortManager
         return $ok;
     }
 
+    public function linkToStation($portStart, $stationId)
+    {
+        $this->pdo->prepare("UPDATE stream_ports SET station_id=? WHERE port_start=? AND status='assigned'")->execute([$stationId, $portStart]);
+    }
+
     // ─── Queries ───────────────────────────────────────────────────
 
     public function getById($id)

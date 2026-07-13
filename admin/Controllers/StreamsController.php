@@ -79,10 +79,17 @@ class StreamsController extends Controller
         $description = trim($this->request->post('description', ''));
         $hostname = trim($this->request->post('hostname', 'planet-hosts.com'));
 
+        $pm = new \Core\PortManager();
         if ($port === 0) {
-            $last = $this->db->table('streaming_stations')->orderBy('port', 'desc')->first();
-            $base = $engine === 'icecast' ? 8000 : ($engine === 'shoutcast1' ? 11000 : 9000);
-            $port = $last ? max($base, $last->port + 1) : $base;
+            $svcMap = ['icecast' => 'icecast', 'shoutcast1' => 'shoutcast_v1', 'shoutcast2' => 'shoutcast_v2'];
+            $alloc = $pm->allocate($svcMap[$engine] ?? 'icecast', $uid);
+            if ($alloc) {
+                $port = (int)$alloc->port_start;
+            } else {
+                $last = $this->db->table('streaming_stations')->orderBy('port', 'desc')->first();
+                $base = $engine === 'icecast' ? 8000 : ($engine === 'shoutcast1' ? 11000 : 9000);
+                $port = $last ? max($base, $last->port + 1) : $base;
+            }
         }
 
         $sid = $this->db->table('streaming_stations')->insertGetId([
@@ -94,6 +101,7 @@ class StreamsController extends Controller
             'max_listeners' => $maxListeners, 'public_server' => $public,
             'autodj_enabled' => $autodj, 'ssl_enabled' => $ssl, 'status' => 'stopped',
         ]);
+        $pm->linkToStation($port, $sid);
 
         $this->db->table('radio_streams')->insertGetId([
             'id' => $sid, 'user_id' => $uid, 'server_name' => $name ?: "Stream #$uid",
@@ -182,6 +190,8 @@ class StreamsController extends Controller
         try {
             $stream = $this->db->table('streaming_stations')->where('id', $id)->first();
             if (!$stream) { $_SESSION['error_message'] = 'Stream not found.'; $this->response->redirect('/admin/streams'); exit; }
+            $pm = new \Core\PortManager();
+            $pm->releaseByStation($id);
             $this->db->table('radio_autodj')->where('stream_id', $id)->delete();
             $this->db->table('radio_djs')->where('stream_id', $id)->delete();
             $this->db->table('radio_playlists')->where('stream_id', $id)->delete();

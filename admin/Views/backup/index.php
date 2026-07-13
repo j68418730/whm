@@ -12,6 +12,7 @@
 <a href="/admin/backup/history" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;<?php echo !empty($historyView) ? 'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff' : 'color:var(--text-secondary)'; ?>">📋 History</a>
 <a href="/admin/backup/reports" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;<?php echo !empty($reportView) ? 'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff' : 'color:var(--text-secondary)'; ?>">📈 Reports</a>
 <a href="/admin/backup/restore-points" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;<?php echo !empty($restorePointsView) ? 'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff' : 'color:var(--text-secondary)'; ?>">🔖 Restore Points</a>
+<a href="/admin/backup/destinations" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;<?php echo !empty($destinationsView) ? 'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff' : 'color:var(--text-secondary)'; ?>">📤 Destinations</a>
 <a href="/admin/backup/settings" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;<?php echo !empty($settingsView) ? 'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff' : 'color:var(--text-secondary)'; ?>">⚙️ Settings</a>
 </div>
 
@@ -96,6 +97,72 @@ User: <?php echo htmlspecialchars($pt['user_id'] ?? ''); ?> · <?php echo $pt['c
 <?php endforeach; ?>
 </tbody>
 </table>
+</div>
+<?php endif; ?>
+
+<?php elseif (!empty($destinationsView)): ?>
+<h3 style="color:var(--accent);margin-bottom:12px">Backup Destinations</h3>
+<div style="margin-bottom:16px">
+<a href="#" onclick="document.getElementById('newDestForm').style.display='block';return false" class="btn primary">+ Add Destination</a>
+</div>
+<div id="newDestForm" style="display:none;margin-bottom:16px">
+<div class="card">
+<h4 style="color:var(--accent);margin-bottom:10px">New Destination</h4>
+<form method="POST" action="/admin/backup/destination/store">
+<div class="form-row-3">
+<div class="form-group"><label>Name</label><input name="name" required class="inp inp-sm" placeholder="My Backup Server"></div>
+<div class="form-group"><label>Type</label><select name="type" class="inp inp-sm"><option value="ftp">FTP</option><option value="ftps">FTPS</option><option value="sftp">SFTP</option></select></div>
+<div class="form-group"><label>Host</label><input name="host" required class="inp inp-sm" placeholder="ftp.example.com"></div>
+</div>
+<div class="form-row-3">
+<div class="form-group"><label>Port</label><input name="port" type="number" value="21" class="inp inp-sm"></div>
+<div class="form-group"><label>Username</label><input name="username" class="inp inp-sm"></div>
+<div class="form-group"><label>Password</label><input name="password" type="password" class="inp inp-sm"></div>
+</div>
+<div class="form-row-3">
+<div class="form-group"><label>Remote Path</label><input name="path" value="/" class="inp inp-sm" placeholder="/backups/planet-hosts"></div>
+<div class="form-group" style="display:flex;gap:10px;align-items:center;padding-top:18px">
+<label><input type="checkbox" name="passive" value="1" checked> Passive Mode</label>
+<label><input type="checkbox" name="ssl" value="1"> SSL/TLS</label>
+</div>
+<div class="form-group" style="display:flex;gap:10px;align-items:center;padding-top:18px">
+<label><input type="checkbox" name="is_default" value="1"> Default</label>
+<label><input type="checkbox" name="test_after_create" value="1" checked> Test</label>
+</div>
+</div>
+<div class="form-group"><label>Notes</label><textarea name="notes" class="inp inp-sm" rows="2"></textarea></div>
+<button type="submit" class="btn btn-sm primary">Create Destination</button>
+<a href="#" onclick="document.getElementById('newDestForm').style.display='none';return false" class="btn btn-sm secondary">Cancel</a>
+</form>
+</div>
+</div>
+<?php if (empty($destinations)): ?>
+<div class="card" style="text-align:center;padding:24px;color:#64748b">No destinations configured yet.</div>
+<?php else: ?>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:12px">
+<?php foreach ($destinations as $d): ?>
+<div class="card" style="margin-bottom:0">
+<div style="display:flex;justify-content:space-between;align-items:start">
+<div>
+<strong style="font-size:14px;color:#e0e0e0"><?php echo htmlspecialchars($d->name); ?></strong>
+<?php if ($d->is_default): ?><span class="status-badge status-running" style="margin-left:6px">Default</span><?php endif; ?>
+<span class="status-badge <?php echo $d->is_active ? 'status-running' : 'status-stopped'; ?>" style="margin-left:4px"><?php echo $d->is_active ? 'Active' : 'Inactive'; ?></span>
+</div>
+<div style="display:flex;gap:4px">
+<a href="/admin/backup/destination/test/<?php echo $d->id; ?>" class="btn btn-sm btn-primary" title="Test Connection">Test</a>
+<a href="/admin/backup/destination/upload/<?php echo $d->id; ?>" class="btn btn-sm btn-success" title="Upload Latest Backup" onclick="return confirm('Upload latest backup to this destination?')">Upload</a>
+<a href="/admin/backup/destination/delete/<?php echo $d->id; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete this destination?')">Delete</a>
+</div>
+</div>
+<div style="margin-top:8px;font-size:12px;color:#94a3b8">
+<?php echo strtoupper($d->type); ?> · <?php echo htmlspecialchars($d->host); ?>:<?php echo $d->port; ?>
+<?php if ($d->path && $d->path !== '/'): ?> · Path: <?php echo htmlspecialchars($d->path); ?><?php endif; ?>
+</div>
+<div style="margin-top:4px;font-size:11px;color:#64748b">
+User: <?php echo htmlspecialchars($d->username); ?> · Created: <?php echo $d->created_at; ?>
+</div>
+</div>
+<?php endforeach; ?>
 </div>
 <?php endif; ?>
 
