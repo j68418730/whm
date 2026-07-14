@@ -47,7 +47,9 @@ class RadioController extends Controller
                     'port' => (int)$s->port,
                     'mount' => $s->mount_point ?? '/stream',
                     'password' => $s->password ?? '',
+                    'plain_password' => $s->plain_password ?? '',
                     'admin_password' => $s->admin_password ?? '',
+                    'admin_plain_password' => $s->admin_plain_password ?? '',
                     'bitrate' => (int)($s->bitrate ?? 128),
                     'status' => $s->status ?? 'stopped',
                     'listener_count' => (int)($s->listener_count ?? 0),
@@ -625,7 +627,24 @@ class RadioController extends Controller
         $update = [];
         foreach ($allowed as $f) { if (isset($_POST[$f])) $update[$f] = $_POST[$f]; }
         if (!empty($update)) {
-            try { $this->db->table('radio_stations')->where('id', $station->id)->update($update); $_SESSION['success'] = 'Settings saved!'; } catch (\Exception $e) { $_SESSION['error'] = 'Failed to save settings.'; }
+            try { $this->db->table('radio_stations')->where('id', $station->id)->update($update); } catch (\Exception $e) {}
+            try {
+                $ssUpdate = [];
+                foreach (['name','description','genre','bitrate','mount','max_listeners','public_server'] as $f) {
+                    if (isset($_POST[$f])) $ssUpdate[$f] = $_POST[$f];
+                }
+                if (isset($_POST['password'])) {
+                    $ssUpdate['password'] = password_hash($_POST['password'], PASSWORD_DEFAULT);
+                    $ssUpdate['plain_password'] = $_POST['password'];
+                }
+                if (isset($_POST['admin_password'])) {
+                    $ssUpdate['admin_password'] = password_hash($_POST['admin_password'], PASSWORD_DEFAULT);
+                    $ssUpdate['admin_plain_password'] = $_POST['admin_password'];
+                }
+                if (isset($_POST['mount'])) $ssUpdate['mount_point'] = $_POST['mount'];
+                if (!empty($ssUpdate)) $this->db->table('streaming_stations')->where('id', $station->streaming_id)->update($ssUpdate);
+                $_SESSION['success'] = 'Settings saved!';
+            } catch (\Exception $e) { $_SESSION['error'] = 'Failed to save settings.'; }
         }
         header('Location: /user/radio?tab=settings&station_id=' . $station->id); exit;
     }
