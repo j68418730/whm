@@ -151,9 +151,52 @@ class StreamingApiController extends Controller
                 'public_server' => (int)$this->request->post('public_server', 0),
                 'stream_authhash' => $this->request->post('stream_authhash', ''),
             ]);
+            $this->persistStreamConfig($userId, $engine, $result);
             return $this->response->json(['success' => true, 'station' => $result]);
         } catch (\Exception $e) {
             return $this->response->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // Persist plaintext stream credentials into station_stream_config so they
+    // can be downloaded via GET /api/stations/{id}/stream (Layer 3).
+    protected function persistStreamConfig($userId, $engine, $result)
+    {
+        $ipRow = $this->db->table('server_ips')->orderBy('id', 'ASC')->first();
+        $hostname = $ipRow->ip_address ?? '45.61.59.55';
+        $port = $result['port'] ?? 8000;
+        $password = $result['password'] ?? '';
+        $mount = $result['mount_point'] ?? '/live';
+
+        $data = [];
+        if ($engine === 'shoutcast1') {
+            $data['shoutcast_v1_hostname'] = $hostname;
+            $data['shoutcast_v1_port'] = $port;
+            $data['shoutcast_v1_password'] = $password;
+        } elseif ($engine === 'shoutcast' || $engine === 'shoutcast_v2') {
+            $data['shoutcast_v2_hostname'] = $hostname;
+            $data['shoutcast_v2_port'] = $port;
+            $data['shoutcast_v2_username'] = 'admin';
+            $data['shoutcast_v2_password'] = $password;
+        } else {
+            $data['icecast_hostname'] = $hostname;
+            $data['icecast_port'] = $port;
+            $data['icecast_username'] = 'source';
+            $data['icecast_password'] = $password;
+            $data['icecast_mount'] = $mount;
+            $data['icecast_protocol'] = 'icecast';
+        }
+
+        try {
+            $existing = $this->db->table('station_stream_config')->where('station_id', $userId)->first();
+            if ($existing) {
+                $this->db->table('station_stream_config')->where('station_id', $userId)->update($data);
+            } else {
+                $data['station_id'] = $userId;
+                $this->db->table('station_stream_config')->insertGetId($data);
+            }
+        } catch (\Exception $e) {
+            // Non-fatal: stream still created; config download will fall back to streaming_stations.
         }
     }
 

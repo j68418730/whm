@@ -131,4 +131,80 @@ class PublicStreamingApiController extends Controller
             $this->response->json(['success'=>true, 'data'=>$health]);
         }
     }
+
+    // GET /api/stations/{id}/stream  (Layer 3: download stream credentials)
+    // Returns hostname, port, username, password, mount, protocol.
+    public function streamConfig($id)
+    {
+        $this->authenticate();
+        $stationId = (int)$id;
+        if (!$stationId) {
+            return $this->response->json(['success' => false, 'error' => 'station id required'], 400);
+        }
+
+        $cfg = $this->db->table('station_stream_config')->where('station_id', $stationId)->first();
+        $stream = $this->db->table('streaming_stations')->where('user_id', $stationId)
+            ->orderBy('id', 'DESC')->first();
+
+        if (!$cfg && !$stream) {
+            return $this->response->json(['success' => false, 'error' => 'Station not found'], 404);
+        }
+
+        // Default to the engine from the live stream record.
+        $engine = $stream->engine ?? 'icecast';
+
+        $protocol = 'icecast';
+        $hostname = null;
+        $port = null;
+        $username = null;
+        $password = null;
+        $mount = null;
+
+        if ($cfg) {
+            if (!empty($cfg->icecast_hostname)) {
+                $protocol = 'icecast';
+                $hostname = $cfg->icecast_hostname;
+                $port = $cfg->icecast_port;
+                $username = $cfg->icecast_username ?: 'source';
+                $password = $cfg->icecast_password;
+                $mount = $cfg->icecast_mount ?: '/live';
+            } elseif (!empty($cfg->shoutcast_v2_hostname)) {
+                $protocol = 'shoutcast_v2';
+                $hostname = $cfg->shoutcast_v2_hostname;
+                $port = $cfg->shoutcast_v2_port;
+                $username = $cfg->shoutcast_v2_username ?: 'admin';
+                $password = $cfg->shoutcast_v2_password;
+                $mount = null;
+            } elseif (!empty($cfg->shoutcast_v1_hostname)) {
+                $protocol = 'shoutcast_v1';
+                $hostname = $cfg->shoutcast_v1_hostname;
+                $port = $cfg->shoutcast_v1_port;
+                $username = null;
+                $password = $cfg->shoutcast_v1_password;
+                $mount = null;
+            }
+        }
+
+        // Fall back to the live stream record for anything still missing.
+        if ($stream) {
+            $hostname = $hostname ?: ($_SERVER['SERVER_NAME'] ?? 'localhost');
+            $port = $port ?: $stream->port;
+            $mount = $mount ?: ($stream->mount_point ?? '/live');
+            if ($protocol === 'icecast' && !$username) $username = 'source';
+            if (!$password) $password = $stream->password; // hashed in table; prefer station_stream_config
+        }
+
+        return $this->response->json([
+            'success'  => true,
+            'data'     => [
+                'station_id' => $stationId,
+                'hostname'   => $hostname,
+                'port'       => (int)$port,
+                'username'   => $username,
+                'password'   => $password,
+                'mount'      => $mount,
+                'protocol'   => $protocol,
+            ],
+        ]);
+    }
 }
