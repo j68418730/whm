@@ -634,5 +634,33 @@ $router->get('/setup', 'Admin\Controllers\SetupController@index');
 $router->get('/setup/{step}', 'Admin\Controllers\SetupController@step');
 $router->post('/setup/{step}/post', 'Admin\Controllers\SetupController@postStep');
 
+// DJ Management Routes
+$router->get('/admin/dj', 'Admin\Controllers\DjController@index');
+$router->get('/admin/dj/create', 'Admin\Controllers\DjController@create');
+$router->post('/admin/dj/store', 'Admin\Controllers\DjController@store');
+$router->get('/admin/dj/show/{id}', 'Admin\Controllers\DjController@show');
+$router->get('/admin/dj/edit/{id}', 'Admin\Controllers\DjController@edit');
+$router->post('/admin/dj/update/{id}', 'Admin\Controllers\DjController@update');
+$router->get('/admin/dj/destroy/{id}', 'Admin\Controllers\DjController@destroy');
+$router->get('/admin/dj/stations/{id}', 'Admin\Controllers\DjController@stations');
+$router->post('/admin/dj/stations/assign/{id}', 'Admin\Controllers\DjController@assignStation');
+$router->get('/admin/dj/stations/unassign/{id}/{stationId}', 'Admin\Controllers\DjController@unassignStation');
+$router->get('/admin/dj/api-keys/{id}', 'Admin\Controllers\DjController@apiKeys');
+$router->post('/admin/dj/api-keys/generate/{id}', 'Admin\Controllers\DjController@generateApiKey');
+$router->get('/admin/dj/api-keys/revoke/{id}/{keyId}', 'Admin\Controllers\DjController@revokeApiKey');
+$router->get('/admin/dj/stream-config/{id}/{stationId}', 'Admin\Controllers\DjController@streamConfig');
+$router->post('/admin/dj/stream-config/update/{id}/{stationId}', 'Admin\Controllers\DjController@updateStreamConfig');
+
+// DJ API endpoints (for Studio app)
+$router->post('/api/dj/login', 'Admin\Controllers\Api\DjController@login');
+$router->post('/api/dj/logout', 'Admin\Controllers\Api\DjController@logout');
+$router->get('/api/dj/stations', 'Admin\Controllers\Api\DjController@stations');
+$router->get('/api/dj/stream-config/{stationId}', 'Admin\Controllers\Api\DjController@streamConfig');
+$router->post('/api/dj/validate', 'Admin\Controllers\Api\DjController@validate');
+
+// DJ Stream Config Routes
+$router->get('/admin/dj/stream-config/{id}/{stationId}', 'Admin\Controllers\DjController@streamConfig');
+$router->post('/admin/dj/stream-config/update/{id}/{stationId}', 'Admin\Controllers\DjController@updateStreamConfig');
+
 // -- Catch-all for unknown /admin/* routes (redirects to dashboard) --
 $router->get('/admin/{any}', 'Admin\Controllers\DashboardController@index');

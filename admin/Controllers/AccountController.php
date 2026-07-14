@@ -173,6 +173,58 @@ class AccountController extends Controller
             }
         } catch (\Exception $e) {}
 
+        // Create station_stream_config for this station
+        try {
+            $pm = new \Core\PortManager();
+            $ports = $pm->getAllocatedPorts($userId);
+            
+            // Generate API key for the station
+            $apiKey = 'ph_' . bin2hex(random_bytes(16));
+            $stationStreamConfig = [
+                'station_id' => $userId,
+                'icecast_hostname' => 'radio.planet-hosts.com',
+                'icecast_port' => isset($ports['icecast'][0]) ? $ports['icecast'][0] : 8000,
+                'icecast_username' => 'source',
+                'icecast_password' => 'sourcepass_' . bin2hex(random_bytes(8)),
+                'icecast_mount' => '/live',
+                'icecast_protocol' => 'icecast',
+                'shoutcast_v1_hostname' => 'radio.planet-hosts.com',
+                'shoutcast_v1_port' => isset($ports['shoutcast_v1'][0]) ? $ports['shoutcast_v1'][0] : 11000,
+                'shoutcast_v1_password' => 'sc1_' . bin2hex(random_bytes(8)),
+                'shoutcast_v2_hostname' => 'radio.planet-hosts.com',
+                'shoutcast_v2_port' => isset($ports['shoutcast_v2'][0]) ? $ports['shoutcast_v2'][0] : 12000,
+                'shoutcast_v2_username' => 'source',
+                'shoutcast_v2_password' => 'sc2_' . bin2hex(random_bytes(8)),
+                'auto_reconnect' => 1,
+                'reconnect_interval' => 5,
+                'max_reconnect_attempts' => 10,
+                'bitrate' => 128,
+                'format' => 'mp3',
+                'samplerate' => 44100,
+                'channels' => 2,
+            ];
+            $this->db->table('station_stream_config')->insert($stationStreamConfig);
+            
+            // Generate API key for this station
+            $apiKey = 'ph_' . bin2hex(random_bytes(16));
+            $this->db->table('billing_products')->insertGetId([
+                'name' => 'Station API - ' . $username,
+                'description' => 'Auto-generated API key for station ' . $username,
+                'type' => 'hosting',
+                'price' => 0,
+                'setup_fee' => 0,
+                'billing_cycle' => 'monthly',
+                'is_active' => 1,
+                'sort_order' => 0,
+                'license_key' => $apiKey,
+            ]);
+            
+            // Also update the station_stream_config with the API key
+            $this->db->table('station_stream_config')
+                ->where('station_id', $userId)
+                ->update(['api_key' => $stationStreamConfig['api_key'] ?? '']);
+        } catch (\Exception $e) {}
+
         header('Location: /admin/account/summary/' . $userId);
         exit;
     }

@@ -34,9 +34,22 @@ class StreamingApiController extends Controller
         $user = $this->auth->user();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         $engines = $this->engine->getAvailableDrivers();
-        $stations = $this->engine->getAllStations();
-        $users = $this->db->table('hosting_users')->get() ?: [];
-        $packages = $this->db->pdo()->query("SELECT * FROM hosting_packages ORDER BY name ASC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        try {
+            $stations = $this->engine->getAllStations();
+        } catch (\Exception $e) {
+            $stations = [];
+            $_SESSION['error_message'] = 'Could not load stations: ' . $e->getMessage();
+        }
+        try {
+            $users = $this->db->table('hosting_users')->get() ?: [];
+        } catch (\Exception $e) {
+            $users = [];
+        }
+        try {
+            $packages = $this->db->pdo()->query("SELECT * FROM hosting_packages ORDER BY name ASC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        } catch (\Exception $e) {
+            $packages = [];
+        }
         return $this->view('admin.radio_dashboard.streaming', [
             'user' => $user, 'theme_settings' => $theme_settings, 'title' => 'Streaming Engine',
             'engines' => $engines, 'stations' => $stations,

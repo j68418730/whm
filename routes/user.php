@@ -80,7 +80,7 @@ $router->get('/user/stats', 'User\Controllers\UserController@stats');
 $router->get('/user/admins', 'User\Controllers\UserController@admins');
 $router->post('/user/admins', 'User\Controllers\UserController@admins');
 $router->get('/user/dj-manager', 'User\Controllers\UserController@djManager');
-$router->get('/user/dj-panel', 'User\Controllers\UserController@djPanel');
+// /user/dj-panel routes are defined in the DJ Panel block below (DjController)
 $router->get('/user/radio', 'User\Controllers\RadioController@dashboard');
 $router->post('/user/radio/kick-source', 'User\Controllers\RadioController@kickSource');
 $router->get('/user/radio/request/approve/{id}', 'User\Controllers\RadioController@approveRequest');
@@ -198,11 +198,27 @@ $router->get('/user/radio/autodj/category/delete/{id}', 'User\Controllers\RadioC
 $router->post('/user/radio/autodj/add-log', 'User\Controllers\RadioController@autodjAddLog');
 $router->get('/user/radio/autodj/clear-logs', 'User\Controllers\RadioController@autodjClearLogs');
 $router->get('/user/radio/widgets', 'User\Controllers\RadioController@widgets');
-// Chat routes
-$router->post('/chat/start', 'User\Controllers\ChatController@start');
-$router->get('/chat/poll/{sessionId}', 'User\Controllers\ChatController@poll');
-$router->post('/chat/send', 'User\Controllers\ChatController@send');
-$router->post('/chat/upload/{sessionId}', 'User\Controllers\ChatController@upload');
+
+// DJ Panel Routes (3-layer auth: Planet Hosts API -> DJ Auth -> Stream Auth)
+$router->get('/user/dj-panel', 'User\Controllers\DjController@index');
+$router->get('/user/dj-panel/create', 'User\Controllers\DjController@create');
+$router->post('/user/dj-panel/create', 'User\Controllers\DjController@store');
+$router->get('/user/dj-panel/show/{id}', 'User\Controllers\DjController@show');
+$router->get('/user/dj-panel/edit/{id}', 'User\Controllers\DjController@edit');
+$router->post('/user/dj-panel/edit/{id}', 'User\Controllers\DjController@update');
+$router->post('/user/dj-panel/suspend/{id}', 'User\Controllers\DjController@suspend');
+$router->post('/user/dj-panel/activate/{id}', 'User\Controllers\DjController@activate');
+$router->get('/user/dj-panel/streams/{id}', 'User\Controllers\DjController@streams');
+$router->post('/user/dj-panel/api-keys/generate/{id}', 'User\Controllers\DjController@generateApiKey');
+$router->post('/user/dj-panel/api-keys/revoke/{id}', 'User\Controllers\DjController@revokeApiKey');
+$router->get('/user/dj-panel/api-keys/{id}', 'User\Controllers\DjController@apiKeys');
+$router->post('/user/dj-panel/stream-config/{djId}/{stationId}', 'User\Controllers\DjController@updateStreamConfig');
+$router->get('/user/dj-panel/stream-config/{djId}/{stationId}', 'User\Controllers\DjController@streamConfig');
+$router->get('/user/dj-panel/stations/assign/{id}', 'User\Controllers\DjController@stationsAssignForm');
+$router->post('/user/dj-panel/stations/assign/{id}', 'User\Controllers\DjController@stationsAssign');
+$router->post('/user/dj-panel/stations/unassign/{djId}/{stationId}', 'User\Controllers\DjController@stationsUnassign');
+$router->get('/user/dj-panel/stations/{id}', 'User\Controllers\DjController@assignedStations');
+$router->get('/user/dj-panel/activity/{id}', 'User\Controllers\DjController@activityLog');
 // Reseller portal routes
 $router->get('/reseller', 'User\Controllers\ResellerPortalController@dashboard');
 $router->get('/reseller/clients', 'User\Controllers\ResellerPortalController@clients');
