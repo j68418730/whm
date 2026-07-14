@@ -1,7 +1,6 @@
 <?php
 session_start();
-$baseDir = '/var/www/radiohosting/public/storage/dj/';
-$uploadDir = function() use ($baseDir) { return $baseDir . $_SESSION['dj_user']['id'] . '/'; };
+$action = $_POST['action'] ?? $_GET['action'] ?? 'login';
 $error = '';
 $success = '';
 $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
@@ -397,6 +396,7 @@ textarea{min-height:80px;resize:vertical}
 <div style="display:flex;align-items:center;gap:12px">
 <span style="font-size:13px;color:#94a3b8"><?php echo htmlspecialchars($_SESSION['dj_user']['name'] ?? ''); ?></span>
 <a href="/dj_panel.php?action=logout">Logout</a>
+<a href="/studio/index.php" target="_blank" style="color:#a855f7;text-decoration:none;font-size:13px;margin-left:12px">🎛️ Studio</a>
 </div>
 </div>
 <div class="container">
@@ -484,7 +484,7 @@ function copyAll(){var t='Server: <?php echo addslashes($djHost); ?>\nPort: <?ph
 
 <!-- Banner -->
 <div class="banner">
-<?php if ($djData->banner && $djData->banner): ?>
+<?php if ($djData->banner): ?>
 <img src="/<?php echo $djData->banner; ?>" alt="Banner">
 <?php else: ?>
 <i class="fas fa-image" style="font-size:32px;opacity:.3"></i> No banner set
@@ -513,7 +513,7 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 <!-- Banner Upload -->
 <div class="card" style="border-color:rgba(250,204,21,.15)">
 <h3 style="color:#facc15"><i class="fas fa-image"></i> Profile Banner</h3>
-<?php if ($djData->banner && $djData->banner): ?>
+<?php if ($djData->banner): ?>
 <img src="/<?php echo $djData->banner; ?>" style="width:100%;max-height:100px;object-fit:cover;border-radius:6px;margin-bottom:8px">
 <?php endif; ?>
 <form method="POST" enctype="multipart/form-data">
@@ -633,7 +633,7 @@ function pf($k, $d=''){global $pd; return htmlspecialchars($pd[$k] ?? $d);}
 <div class="card">
 <h3><i class="fas fa-camera"></i> Photo</h3>
 <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-<?php if ($djData->avatar && $djData->avatar): ?>
+<?php if ($djData->avatar): ?>
 <img src="/<?php echo $djData->avatar; ?>" style="width:64px;height:64px;border-radius:50%;object-fit:cover">
 <?php else: ?><div style="width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:28px">🎤</div><?php endif; ?>
 <label class="upload-btn" style="cursor:pointer;padding:6px 12px;background:rgba(0,140,255,.1);border:1px solid rgba(0,140,255,.2);border-radius:6px;font-size:11px">Change Photo<input type="file" name="file" style="display:none" onchange="var f=this.form;f.action='/dj_panel.php?action=upload_avatar';f.submit()"></label>

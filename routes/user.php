@@ -219,6 +219,13 @@ $router->post('/user/dj-panel/stations/assign/{id}', 'User\Controllers\DjControl
 $router->post('/user/dj-panel/stations/unassign/{djId}/{stationId}', 'User\Controllers\DjController@stationsUnassign');
 $router->get('/user/dj-panel/stations/{id}', 'User\Controllers\DjController@assignedStations');
 $router->get('/user/dj-panel/activity/{id}', 'User\Controllers\DjController@activityLog');
+
+$router->get('/studio', 'User\Controllers\RadioController@studio');
+// Chat routes
+$router->post('/chat/start', 'User\Controllers\ChatController@start');
+$router->get('/chat/poll/{sessionId}', 'User\Controllers\ChatController@poll');
+$router->post('/chat/send', 'User\Controllers\ChatController@send');
+$router->post('/chat/upload/{sessionId}', 'User\Controllers\ChatController@upload');
 // Reseller portal routes
 $router->get('/reseller', 'User\Controllers\ResellerPortalController@dashboard');
 $router->get('/reseller/clients', 'User\Controllers\ResellerPortalController@clients');
