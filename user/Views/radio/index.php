@@ -142,6 +142,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div style="display:flex;gap:6px;flex-shrink:0">
       <a href="https://planet-hosts.com:2083/radio/embed.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-primary" style="font-size:10px;padding:6px 10px">Player</a>
       <a href="<?=$isIces ? 'http://planet-hosts.com:'.$station->port.$station->mount : 'http://planet-hosts.com:'.$station->port.'/;stream.nsv'?>" target="_blank" class="btn btn-sm btn-secondary" style="font-size:10px;padding:6px 10px">Direct</a>
+   </div>
   </div>
 
   <div class="card" style="border:1px solid rgba(0,191,255,.12);background:linear-gradient(135deg,rgba(0,140,255,.04),rgba(168,85,247,.02))">
