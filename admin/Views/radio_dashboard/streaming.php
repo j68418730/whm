@@ -5,6 +5,11 @@
 <div class="alert alert-error"><?php echo htmlspecialchars($_SESSION['error_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['error_message']); ?></div>
 <?php endif; ?>
 
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+    <h2 style="margin:0;color:var(--accent)">Streaming Engine</h2>
+    <button type="button" class="btn primary" onclick="document.getElementById('createStationForm').scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('createStationForm').querySelector('input,select')?.focus();">+ Create Station</button>
+</div>
+
 <div class="stats-grid" style="margin-bottom:16px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
 <div class="stat-card"><h3>Total Stations</h3><div class="value"><?php echo $totalStations; ?></div></div>
 <div class="stat-card"><h3>Running</h3><div class="value" style="color:#4ade80"><?php echo $runningStations; ?></div></div>
