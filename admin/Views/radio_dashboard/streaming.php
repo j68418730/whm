@@ -7,7 +7,7 @@
 
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
     <h2 style="margin:0;color:var(--accent)">Streaming Engine</h2>
-    <button type="button" class="btn primary" onclick="document.getElementById('createStationForm').scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('createStationForm').querySelector('input,select')?.focus();">+ Create Station</button>
+    <button type="button" class="btn" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;font-weight:600" onclick="document.getElementById('createStationForm').scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('createStationForm').querySelector('input,select')?.focus();">+ Create Station</button>
 </div>
 
 <div class="stats-grid" style="margin-bottom:16px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
