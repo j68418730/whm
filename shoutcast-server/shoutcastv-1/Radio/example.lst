@@ -1,0 +1,23 @@
+# this is a sample playlist file.
+#
+# the playlist contains one line per song file you wish to stream.  the paths
+# should be absolute.
+#
+# if shuffle is off, the songs will play in order.
+#
+# the playlist is read once at startup, and cached to memory.  you may update
+# the playlist in a running process by sending a kill -USR1.  The next track
+# to play after the one currently playing will be from the new playlist.
+#
+# on linux, you may specify a playlist item of DSP:/dev/soundcard, where soundcard
+# is the name of your audio device.  It's usually /dev/audio.  doing so will allow
+# you to broadcast from a line input feed instead of mp3s on disk.
+#
+# the playlist ignores the first valid line.  Don't ask why.  
+# Your playlist must have at least 2 entries.  if you only want to stream one file
+# over and over again, then list it twice, including DSP sources.
+#
+# the following 2 lines are sample playlist lines.  you should replace them with
+# actual mp3 files, being sure to adhere to all the content guidelines set forth in
+# the .conf file!
+music/vasapiesen.mp3
