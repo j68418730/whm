@@ -263,18 +263,39 @@ FPMEOF
         set_status "creating_dns"
         ZONE_FILE="/etc/bind/zones/db.${DOMAIN}"
         if [ ! -f "$ZONE_FILE" ]; then
-            # Generate DKIM key pair
-            DKIM_SELECTOR="default"
-            DKIM_DIR="${HOMEDIR}/ssl/dkim"
+            # Generate DKIM key pair registered with OpenDKIM (selector "mail")
+            DKIM_SELECTOR="mail"
+            DKIM_DIR="/etc/opendkim/keys/${DOMAIN}"
             mkdir -p "$DKIM_DIR"
             DKIM_PUB=""
             if command -v openssl &>/dev/null; then
-                openssl genrsa -out "${DKIM_DIR}/dkim.pem" 2048 2>/dev/null || true
-                openssl rsa -in "${DKIM_DIR}/dkim.pem" -pubout -out "${DKIM_DIR}/dkim.pub" 2>/dev/null || true
-                DKIM_PUB=$(grep -v "PUBLIC KEY" "${DKIM_DIR}/dkim.pub" 2>/dev/null | tr -d '\n' || echo "MIGfMA0GCSqGSIb...")
-                chown -R "${USERNAME}:${USERNAME}" "$DKIM_DIR"
-                chmod 600 "${DKIM_DIR}/dkim.pem"
-                chmod 644 "${DKIM_DIR}/dkim.pub"
+                if [ ! -f "${DKIM_DIR}/mail.private" ]; then
+                    openssl genrsa -out "${DKIM_DIR}/mail.private" 2048 2>/dev/null || true
+                    chown -R opendkim:opendkim "$DKIM_DIR" 2>/dev/null || true
+                    chmod 600 "${DKIM_DIR}/mail.private"
+                fi
+                DKIM_PUB=$(openssl rsa -in "${DKIM_DIR}/mail.private" -pubout 2>/dev/null | grep -v "PUBLIC KEY" | tr -d '\n')
+                # Register with OpenDKIM so the published key matches the signing key
+                if [ -f /etc/opendkim/KeyTable ]; then
+                    if ! grep -q "mail._domainkey.${DOMAIN}" /etc/opendkim/KeyTable 2>/dev/null; then
+                        echo "mail._domainkey.${DOMAIN} ${DOMAIN}:mail:${DKIM_DIR}/mail.private" >> /etc/opendkim/KeyTable
+                    fi
+                    if [ -f /etc/opendkim/SigningTable ] && ! grep -q "@${DOMAIN}" /etc/opendkim/SigningTable 2>/dev/null; then
+                        echo "*@${DOMAIN} mail._domainkey.${DOMAIN}" >> /etc/opendkim/SigningTable
+                    fi
+                    systemctl reload opendkim 2>/dev/null || true
+                fi
+            fi
+
+            # Build DKIM TXT with the public key split into <=255-char strings
+            DKIM_TXT='"v=DKIM1; h=sha256; k=rsa; p="'
+            if [ -n "$DKIM_PUB" ]; then
+                i=0
+                plen=${#DKIM_PUB}
+                while [ "$i" -lt "$plen" ]; do
+                    DKIM_TXT="$DKIM_TXT \"${DKIM_PUB:$i:255}\""
+                    i=$((i + 255))
+                done
             fi
 
             cat > "$ZONE_FILE" << ZONEEOF
@@ -309,7 +330,7 @@ mail    IN      AAAA    2604:2dc0:101:200::1b7e
 @       IN      TXT     "v=spf1 mx a ip4:15.204.114.226 include:_spf.planet-hosts.com ~all"
 
 ; DKIM
-${DKIM_SELECTOR}._domainkey IN TXT "v=DKIM1; k=rsa; p=${DKIM_PUB}"
+${DKIM_SELECTOR}._domainkey IN TXT ${DKIM_TXT}
 
 ; DMARC
 _dmarc  IN      TXT     "v=DMARC1; p=quarantine; rua=mailto:admin@${DOMAIN}; pct=100; sp=quarantine"
@@ -338,7 +359,7 @@ CONFEOF
             fi
 
             if named-checkzone "${DOMAIN}" "$ZONE_FILE" 2>/dev/null && named-checkconf 2>/dev/null; then
-                systemctl reload named 2>/dev/null || true
+                systemctl reload bind9 2>/dev/null || systemctl reload named 2>/dev/null || true
                 log "OK" "Created DNS zone: ${DOMAIN}"
             else
                 log "WARN" "DNS zone created but validation failed — check zone file"
