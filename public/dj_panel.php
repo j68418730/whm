@@ -8,6 +8,7 @@ $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radi
 // ─── AUTO-LOGIN for account owners ───
 if (!isset($_SESSION['dj_user']) && isset($_SESSION['user'])) {
     $user = $_SESSION['user'];
+    if (!is_object($user)) $user = (object)$user;
     // Check if user has a radio stream
     $hostingId = $user->id ?? 0;
     $hStmt = $pdo->prepare("SELECT id FROM hosting_users WHERE id = ? OR email = ? OR username = ? LIMIT 1");

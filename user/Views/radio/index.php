@@ -134,7 +134,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div style="flex-shrink:0;width:60px;height:60px;border-radius:12px;background:linear-gradient(135deg,rgba(0,140,255,.15),rgba(168,85,247,.1));display:flex;align-items:center;justify-content:center;font-size:28px;border:1px solid rgba(0,191,255,.1)">🎵</div>
     <div style="flex:1;min-width:150px">
       <div style="font-size:14px;font-weight:600;color:#e0e0e0;margin-bottom:2px">Now Playing</div>
-      <div style="font-size:12px;color:#94a3b8" id="ov-song"><?=$autodjCfg->autodj_enabled?'Loading...':'AutoDJ Stopped'?></div>
+      <div style="font-size:12px;color:#94a3b8" id="ov-song"><?=($autodjCfg&&$autodjCfg->autodj_enabled)?'Loading...':'AutoDJ Stopped'?></div>
     </div>
     <div style="flex-shrink:0;min-width:200px">
       <audio src="<?=$listenUrl?>" preload="none" controls style="width:100%;height:36px;border-radius:8px"></audio>
