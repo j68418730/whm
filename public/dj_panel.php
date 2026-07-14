@@ -476,11 +476,12 @@ textarea{min-height:80px;resize:vertical}
             
             // Station-specific content
             echo "<div class=\"card\" style=\"border-color:rgba(0,191,255,.2)\">\n";
+            $statusColor = $station->status === 'running' ? '#4ade80' : '#f87171';
             echo "<h3 style=\"color:#0A84FF\"><i class=\"fas fa-broadcast-tower\"></i> Station Info\n" . htmlspecialchars($station->name) . "</h3>\n";
             echo "<div style=\"font-size:12px;color:#94a3b8;line-height:1.5\">\n";
             echo "<strong>Engine:</strong> " . htmlspecialchars($station->engine) . "<br>\n";
             echo "<strong>Port:</strong> " . htmlspecialchars($station->port) . "<br>\n";
-            echo "<strong>Status:</strong> <span style=\"color:{$station->status === 'running' ? '#4ade80' : '#f87171'};\">" . htmlspecialchars($station->status) . "</span><br>\n";
+            echo "<strong>Status:</strong> <span style=\"color:{$statusColor};\">" . htmlspecialchars($station->status) . "</span><br>\n";
             echo "<strong>Stream ID:</strong> {$station->id}<br>\n";
             echo "</div>\n";
             echo "<button class=\"btn btn-primary\" onclick=\"window.location.href='/dj_panel.php?action=dashboard&stream_id={$stationId}'\" style=\"width:auto;margin-top:8px;\">\n";
