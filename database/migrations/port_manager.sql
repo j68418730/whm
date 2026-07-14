@@ -102,21 +102,31 @@ ON DUPLICATE KEY UPDATE name=name;
 SET @has_old = (SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'port_allocations');
 SET @has_streams = (SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'radio_streams');
 
--- Migrate from old port_allocations table
-INSERT IGNORE INTO stream_ports (server_id, service_type, customer_id, station_id, port_start, status, allocated_at, created_at)
-SELECT 1, COALESCE(pa.service_type, 'unknown'), pa.user_id, pa.service_id, pa.port, 
-       CASE WHEN pa.status = 'active' THEN 'assigned' ELSE pa.status END,
-       pa.created_at, pa.created_at
-FROM port_allocations pa
-WHERE pa.port NOT IN (SELECT port_start FROM stream_ports);
+-- Migrate from old port_allocations table (only if the legacy table exists)
+SET @sql_pa = IF(@has_old > 0,
+  'INSERT IGNORE INTO stream_ports (server_id, service_type, customer_id, station_id, port_start, status, allocated_at, created_at)
+   SELECT 1, COALESCE(pa.service_type, ''unknown''), pa.user_id, pa.service_id, pa.port,
+          CASE WHEN pa.status = ''active'' THEN ''assigned'' ELSE pa.status END,
+          pa.created_at, pa.created_at
+   FROM port_allocations pa
+   WHERE pa.port NOT IN (SELECT port_start FROM stream_ports)',
+  'SELECT 1');
+PREPARE stmt_pa FROM @sql_pa;
+EXECUTE stmt_pa;
+DEALLOCATE PREPARE stmt_pa;
 
--- Migrate existing radio streams
-INSERT IGNORE INTO stream_ports (server_id, service_type, customer_id, station_id, port_start, status, allocated_at, created_at)
-SELECT 1, 'icecast', s.user_id, s.id, COALESCE(s.port, 14000),
-       'assigned', s.created_at, s.created_at
-FROM radio_streams s
-WHERE s.port IS NOT NULL
-AND s.port NOT IN (SELECT port_start FROM stream_ports);
+-- Migrate existing radio streams (only if the legacy table exists)
+SET @sql_rs = IF(@has_streams > 0,
+  'INSERT IGNORE INTO stream_ports (server_id, service_type, customer_id, station_id, port_start, status, allocated_at, created_at)
+   SELECT 1, ''icecast'', s.user_id, s.id, COALESCE(s.port, 14000),
+          ''assigned'', s.created_at, s.created_at
+   FROM radio_streams s
+   WHERE s.port IS NOT NULL
+   AND s.port NOT IN (SELECT port_start FROM stream_ports)',
+  'SELECT 1');
+PREPARE stmt_rs FROM @sql_rs;
+EXECUTE stmt_rs;
+DEALLOCATE PREPARE stmt_rs;
 
 -- 8. Mark system ports as reserved
 INSERT IGNORE INTO stream_ports (server_id, service_type, port_start, status, created_at)
