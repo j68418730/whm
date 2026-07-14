@@ -155,16 +155,54 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <tr><td style="color:#64748b;padding:6px 0">Status</td><td style="padding:6px 0;color:<?=$station->status==='running'?'#4ade80':'#f87171'?>"><?=$station->status??'stopped'?></td></tr>
   </table>
   </div>
-  <div class="card"><h3>Source Password</h3>
-  <div style="display:flex;gap:8px;align-items:center">
-    <input class="inp inp-sm" id="src-pass" value="<?=htmlspecialchars($station->password??'')?>" readonly style="flex:1;font-family:monospace;font-size:13px;color:#4ade80">
-    <button class="btn btn-sm btn-sec" onclick="var p=document.getElementById('src-pass');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(function(){this.textContent='Copy'}.bind(this),2000)">Copy</button>
+  <div class="card" style="border:1px solid rgba(0,191,255,.12);background:linear-gradient(135deg,rgba(0,140,255,.04),rgba(168,85,247,.02))">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.06)">
+    <span style="font-size:16px">🔗</span>
+    <h3 style="margin:0;font-size:14px;font-weight:600">Stream Connection</h3>
   </div>
-  </div>
-  <div class="card"><h3>Admin Password</h3>
-  <div style="display:flex;gap:8px;align-items:center">
-    <input class="inp inp-sm" id="adm-pass" value="<?=htmlspecialchars($station->admin_plain_password??$station->admin_password??'')?>" readonly style="flex:1;font-family:monospace;font-size:13px;color:#facc15">
-    <button class="btn btn-sm btn-sec" onclick="var p=document.getElementById('adm-pass');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(function(){this.textContent='Copy'}.bind(this),2000)">Copy</button>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div>
+      <label style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px">Stream URL</label>
+      <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
+        <input class="inp inp-sm" id="stream-url" value="<?=$listenUrl?>" readonly style="flex:1;font-family:monospace;font-size:12px">
+        <button class="btn btn-sm btn-sec" style="font-size:10px;padding:4px 8px" onclick="var p=document.getElementById('stream-url');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+      </div>
+    </div>
+    <div>
+      <label style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px">Direct Stream</label>
+      <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
+        <input class="inp inp-sm" id="direct-url" value="<?=$directUrl?>" readonly style="flex:1;font-family:monospace;font-size:12px">
+        <button class="btn btn-sm btn-sec" style="font-size:10px;padding:4px 8px" onclick="var p=document.getElementById('direct-url');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+      </div>
+    </div>
+    <div>
+      <label style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px">Server</label>
+      <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
+        <input class="inp inp-sm" id="stream-host" value="<?=$streamHost?>:<?=$station->port?>" readonly style="flex:1;font-family:monospace;font-size:12px">
+        <button class="btn btn-sm btn-sec" style="font-size:10px;padding:4px 8px" onclick="var p=document.getElementById('stream-host');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+      </div>
+    </div>
+    <div>
+      <label style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px">Mount Point</label>
+      <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
+        <input class="inp inp-sm" id="stream-mount" value="<?=htmlspecialchars($mount)?>" readonly style="flex:1;font-family:monospace;font-size:12px">
+        <button class="btn btn-sm btn-sec" style="font-size:10px;padding:4px 8px" onclick="var p=document.getElementById('stream-mount');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+      </div>
+    </div>
+    <div>
+      <label style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px">Source Password</label>
+      <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
+        <input class="inp inp-sm" id="src-pass" value="<?=htmlspecialchars($station->plain_password??$station->password??'')?>" readonly style="flex:1;font-family:monospace;font-size:12px;color:#4ade80">
+        <button class="btn btn-sm btn-sec" style="font-size:10px;padding:4px 8px" onclick="var p=document.getElementById('src-pass');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+      </div>
+    </div>
+    <div>
+      <label style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px">Admin Password</label>
+      <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
+        <input class="inp inp-sm" id="adm-pass" value="<?=htmlspecialchars($station->admin_plain_password??$station->admin_password??'')?>" readonly style="flex:1;font-family:monospace;font-size:12px;color:#facc15">
+        <button class="btn btn-sm btn-sec" style="font-size:10px;padding:4px 8px" onclick="var p=document.getElementById('adm-pass');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+      </div>
+    </div>
   </div>
   </div>
   <div class="card"><h3>Change Passwords</h3>
