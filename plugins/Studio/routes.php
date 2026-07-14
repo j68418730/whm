@@ -26,6 +26,9 @@ $router->get('/admin/studio/station/{id}/current-song', 'Plugins\Studio\Controll
 // Public Studio Widget Embed
 $router->get('/studio/widget/{stationId}', 'Plugins\Studio\Controllers\StudioController@widget');
 
+// Public Studio Connect Wizard (3-layer auth: Planet Hosts Account -> DJ Login -> Station -> Stream)
+$router->get('/studio/connect', 'Plugins\Studio\Controllers\StudioController@connect');
+
 // ── Phase 2: Queue Editing ──
 
 $router->post('/admin/studio/station/{id}/queue/add', 'Plugins\Studio\Controllers\StudioController@queueAdd');

@@ -44,6 +44,13 @@ class StudioController extends Controller
         return $station;
     }
 
+    public function connect()
+    {
+        return $this->view('Plugins.Studio.Views.connect', [
+            'title' => 'Planet Hosts Studio — Connect',
+        ]);
+    }
+
     public function index()
     {
         $this->guard();
