@@ -156,14 +156,19 @@ class Database
                 return (int)($stmt->fetchColumn() ?: 0);
             }
 
-            public function insertGetId($data)
+            public function insert($data)
             {
                 $columns = '`' . implode('`, `', array_keys($data)) . '`';
                 $placeholders = ':' . implode(', :', array_keys($data));
                 $sql = "INSERT INTO {$this->table} ({$columns}) VALUES ({$placeholders})";
                 $stmt = $this->pdo->prepare($sql);
                 foreach ($data as $key => $value) $stmt->bindValue(":$key", $value);
-                $stmt->execute();
+                return $stmt->execute();
+            }
+
+            public function insertGetId($data)
+            {
+                $this->insert($data);
                 return (int)$this->pdo->lastInsertId();
             }
         };
