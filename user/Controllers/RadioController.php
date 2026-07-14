@@ -232,8 +232,7 @@ class RadioController extends Controller
                     'stream_id' => $realStationId, 'username' => $username,
                     'password' => password_hash($password, PASSWORD_DEFAULT),
                     'name' => $name, 'email' => $_POST['email'] ?? '',
-                    'bio' => $_POST['bio'] ?? '', 'status' => 'active',
-                    'role' => $role,
+                    'status' => 'active',
                 ]);
                 // Also add to chatbox users
                 try {
