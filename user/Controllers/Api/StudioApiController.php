@@ -137,7 +137,6 @@ class StudioApiController extends Controller
                 'password' => password_hash($password, PASSWORD_DEFAULT),
                 'name' => $name,
                 'email' => $email,
-                'role' => $role,
                 'status' => 'active',
             ]);
 
