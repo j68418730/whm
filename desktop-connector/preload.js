@@ -1,0 +1,88 @@
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('api', {
+    getConfig: () => ipcRenderer.invoke('get-config'),
+    saveConfig: (c) => ipcRenderer.invoke('save-config', c),
+    importFolder: () => ipcRenderer.invoke('import-folder'),
+    importFolderPath: (p) => ipcRenderer.invoke('import-folder-path', p),
+    pickFolder: () => ipcRenderer.invoke('pick-folder'),
+    
+    // File system / Folder browser
+    listFolder: (d) => ipcRenderer.invoke('list-folder', d),
+    createFolder: (p, n) => ipcRenderer.invoke('create-folder', p, n),
+    renameFolder: (o, n) => ipcRenderer.invoke('rename-folder', o, n),
+    deleteFolder: (d) => ipcRenderer.invoke('delete-folder', d),
+    getFileMeta: (p) => ipcRenderer.invoke('get-file-meta', p),
+    deleteFile: (p) => ipcRenderer.invoke('delete-file', p),
+    moveFile: (s, d) => ipcRenderer.invoke('move-file', s, d),
+    
+    // Library DB
+    searchSongs: (q) => ipcRenderer.invoke('search-songs', q),
+    getAllSongs: (l) => ipcRenderer.invoke('get-all-songs', l),
+    getSong: (i) => ipcRenderer.invoke('get-song', i),
+    getRecentSongs: (l) => ipcRenderer.invoke('get-recent-songs', l),
+    getSongCount: () => ipcRenderer.invoke('get-song-count'),
+    getStats: () => ipcRenderer.invoke('get-stats'),
+    getArtists: () => ipcRenderer.invoke('get-artists'),
+    getAlbums: (a) => ipcRenderer.invoke('get-albums', a),
+    getGenres: () => ipcRenderer.invoke('get-genres'),
+    incrementPlayCount: (i) => ipcRenderer.invoke('increment-play-count', i),
+    updateRating: (i,r) => ipcRenderer.invoke('update-rating', i, r),
+    createPlaylist: (n) => ipcRenderer.invoke('create-playlist', n),
+    getPlaylists: () => ipcRenderer.invoke('get-playlists'),
+    addToPlaylist: (p,s) => ipcRenderer.invoke('add-to-playlist', p, s),
+    getPlaylistSongs: (p) => ipcRenderer.invoke('get-playlist-songs', p),
+    removeFromPlaylist: (p,s) => ipcRenderer.invoke('remove-from-playlist', p, s),
+    deletePlaylist: (i) => ipcRenderer.invoke('delete-playlist', i),
+    
+    // Audio
+    readAudioFile: (p) => ipcRenderer.invoke('read-audio-file', p),
+    
+    // Streaming
+    apiRequest: (o) => ipcRenderer.invoke('api-request', o),
+    setMenuFull: () => ipcRenderer.invoke('set-menu-full'),
+    startStream: (p,c) => ipcRenderer.invoke('start-stream', p, c),
+    stopStream: () => ipcRenderer.invoke('stop-stream'),
+    getStreamStatus: () => ipcRenderer.invoke('get-stream-status'),
+    
+    writeTags: (p, t) => ipcRenderer.invoke('write-tags', p, t),
+    startRecord: (u, o) => ipcRenderer.invoke('start-record', u, o),
+    stopRecord: () => ipcRenderer.invoke('stop-record'),
+    monitorStart: (p) => ipcRenderer.invoke('monitor-start', p),
+    monitorStop: () => ipcRenderer.invoke('monitor-stop'),
+    getMicDevices: () => ipcRenderer.invoke('get-mic-devices'),
+    startMicStream: (p, c) => ipcRenderer.invoke('start-mic-stream', p, c),
+    stopMicStream: () => ipcRenderer.invoke('stop-mic-stream'),
+    setPtt: (a) => ipcRenderer.invoke('set-ptt', a),
+    
+    // Events
+    onScanStart: (cb) => ipcRenderer.on('scan-start', (e,d) => cb(d)),
+    onScanComplete: (cb) => ipcRenderer.on('scan-complete', (e,d) => cb(d)),
+    onStreamLog: (cb) => ipcRenderer.on('stream-log', (e,m) => cb(m)),
+    onStreamStopped: (cb) => ipcRenderer.on('stream-stopped', (e,c) => cb(c)),
+    onStreamsStarted: (cb) => ipcRenderer.on('streams-started', (e,c) => cb(c)),
+    onNavigate: (cb) => ipcRenderer.on('navigate', (e,p) => cb(p)),
+    onDeckToggle: (cb) => ipcRenderer.on('deck-toggle', (e,d) => cb(d)),
+    onDeckCue: (cb) => ipcRenderer.on('deck-cue', (e,d) => cb(d)),
+    onPttState: (cb) => ipcRenderer.on('ptt-state', (e,a) => cb(a)),
+    onRecordStopped: (cb) => ipcRenderer.on('record-stopped', () => cb()),
+    onBroadcastLive: (cb) => ipcRenderer.on('broadcast-live', () => cb()),
+    onBroadcastStop: (cb) => ipcRenderer.on('broadcast-stop', () => cb()),
+    onBroadcastMic: (cb) => ipcRenderer.on('broadcast-mic', () => cb()),
+    onMenuSave: (cb) => ipcRenderer.on('menu-save', () => cb()),
+    onMenuLoad: (cb) => ipcRenderer.on('menu-load', () => cb()),
+    onShowShortcuts: (cb) => ipcRenderer.on('show-shortcuts', () => cb()),
+    onManageAux: (cb) => ipcRenderer.on('manage-aux', () => cb()),
+    onTogglePipeline: (cb) => ipcRenderer.on('toggle-pipeline', () => cb()),
+    onWindowCloseAll: (cb) => ipcRenderer.on('window-close-all', () => cb()),
+    onWindowRestore: (cb) => ipcRenderer.on('window-restore', () => cb()),
+    onWindowToggle: (cb) => ipcRenderer.on('window-toggle', (e,p) => cb(p)),
+    onSwitchDashboard: (cb) => ipcRenderer.on('switch-dashboard', (e,d) => cb(d)),
+    onWorkspaceSave: (cb) => ipcRenderer.on('workspace-save', () => cb()),
+    onWorkspaceLoad: (cb) => ipcRenderer.on('workspace-load', () => cb()),
+    onPlayerPlay: (cb) => ipcRenderer.on('player-play', () => cb()),
+    onPlayerPause: (cb) => ipcRenderer.on('player-pause', () => cb()),
+    onPlayerStop: (cb) => ipcRenderer.on('player-stop', () => cb()),
+    onPlayerNext: (cb) => ipcRenderer.on('player-next', () => cb()),
+    onToolRecord: (cb) => ipcRenderer.on('tool-record', () => cb())
+});

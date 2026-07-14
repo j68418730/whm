@@ -47,3 +47,7 @@ storage/.license_restricted
 
 # SQL dumps
 plugins/webbasesams/*.sql.gz
+
+# Desktop Connector build
+desktop-connector/dist/
+desktop-connector/node_modules/
