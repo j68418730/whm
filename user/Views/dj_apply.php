@@ -5,7 +5,7 @@
 <h2>🎤 Apply to be a DJ</h2>
 <p style="color:#64748b;margin-bottom:16px">Submit your application to become a radio DJ on our station.</p>
 <?php
-$existing = $hosting ? ($this->db->table('radio_djs')->where('stream_id', $streams[0]->id ?? 0)->where('email', $hosting->email)->first() : null) : null;
+$existing = $hosting ? $this->db->table('radio_djs')->where('stream_id', $streams[0]->id ?? 0)->where('email', $hosting->email)->first() : null;
 if ($existing): ?>
 <div class="card apply-card"><h3>✅ Already a DJ</h3>
 <p style="color:#4ade80;text-align:center">You already have a DJ account: <strong><?php echo htmlspecialchars($existing->name ?? $existing->username);?></strong></p>

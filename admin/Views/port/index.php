@@ -67,7 +67,7 @@
   <td><?php echo $s->reserved; ?></td>
   <td><?php echo $s->failed > 0 ? '<span style="color:#ef4444">' . $s->failed . '</span>' : '0'; ?></td>
   <td><div style="background:rgba(255,255,255,.06);border-radius:4px;height:8px;width:100px;overflow:hidden">
-    <div style="background:<?php echo ($s->used/$s->total) > 0.8 ? '#ef4444' : ($s->used/$s->total) > 0.5 ? '#facc15' : '#4ade80'; ?>;width:<?php echo min(100, ($s->used/$s->total)*100); ?>%;height:8px;border-radius:4px"></div>
+    <div style="background:<?php echo (($s->used/$s->total) > 0.8) ? '#ef4444' : ((($s->used/$s->total) > 0.5) ? '#facc15' : '#4ade80'); ?>;width:<?php echo min(100, ($s->used/$s->total)*100); ?>%;height:8px;border-radius:4px"></div>
   </div></td>
 </tr>
 <?php endforeach; ?>

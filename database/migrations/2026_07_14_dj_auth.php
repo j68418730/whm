@@ -120,4 +120,4 @@ CREATE TABLE IF NOT EXISTS dj_activity_log (
 -- Insert default DJ roles
 INSERT IGNORE INTO dj_accounts (username, email, password_hash, full_name, role, status, created_at) VALUES
 ('admin', 'admin@planet-hosts.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'super_admin', 'active', CURRENT_TIMESTAMP),
-('dj_demo', 'dj_demo@planet-hosts.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Demo DJ', 'dj', 'active', CURRENT_TIMESTAMP);
+('dj_demo', 'dj_demo@planet-hosts.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Demo DJ', 'dj', 'active', CURRENT_TIMESTAMP);");
