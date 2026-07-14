@@ -46,5 +46,9 @@ CREATE TABLE IF NOT EXISTS server_ips (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Feature toggles expected by the streaming/SHOUTcast UI.
-ALTER TABLE hosting_packages ADD COLUMN IF NOT EXISTS `shoutcast_enabled` TINYINT(1) DEFAULT 0 AFTER `live_chat_enabled`;
-ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `shoutcast` TINYINT(1) DEFAULT 0 AFTER `radio`;
+-- Add prerequisite columns first (idempotent), then the new toggles,
+-- avoiding positional AFTER clauses that fail when the anchor is missing.
+ALTER TABLE hosting_packages ADD COLUMN IF NOT EXISTS `live_chat_enabled` TINYINT(1) DEFAULT 0;
+ALTER TABLE hosting_packages ADD COLUMN IF NOT EXISTS `shoutcast_enabled` TINYINT(1) DEFAULT 0;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `radio` TINYINT(1) DEFAULT 0;
+ALTER TABLE feature_lists ADD COLUMN IF NOT EXISTS `shoutcast` TINYINT(1) DEFAULT 0;
