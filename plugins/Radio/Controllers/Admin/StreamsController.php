@@ -96,7 +96,7 @@ class StreamsController extends Controller
             'user_id' => $uid, 'engine' => $engine, 'name' => $name ?: "Stream #$uid",
             'description' => $description, 'server_type' => $engine, 'port' => $port,
             'password' => password_hash($password, PASSWORD_DEFAULT), 'plain_password' => $password,
-            'admin_password' => password_hash($adminPw, PASSWORD_DEFAULT),
+            'admin_password' => password_hash($adminPw, PASSWORD_DEFAULT), 'admin_plain_password' => $adminPw,
             'mount_point' => $mount, 'bitrate' => $bitrate, 'format' => $format,
             'max_listeners' => $maxListeners, 'public_server' => $public,
             'autodj_enabled' => $autodj, 'ssl_enabled' => $ssl, 'status' => 'stopped',
