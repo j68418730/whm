@@ -7,7 +7,7 @@ $streamHost = 'planet-hosts.com';
 $streamProto = 'https';
 $mount = $station->mount ?? '/live';
 if (!str_starts_with($mount, '/')) $mount = "/{$mount}";
-$listenUrl = $streamProto . '://' . $streamHost . ':2083/radio/stream-proxy.php?stream=' . $station->streaming_id;
+$listenUrl = $streamProto . '://' . $streamHost . '/radio/stream-proxy.php?stream=' . $station->streaming_id;
 $directUrl = $isIces ? "http://{$streamHost}:{$station->port}{$mount}" : "http://{$streamHost}:{$station->port}/;stream.nsv";
 ?>
 <style>
@@ -140,7 +140,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <audio src="<?=$listenUrl?>" preload="none" controls style="width:100%;height:36px;border-radius:8px"></audio>
     </div>
     <div style="display:flex;gap:6px;flex-shrink:0">
-      <a href="https://planet-hosts.com:2083/radio/embed.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-primary" style="font-size:10px;padding:6px 10px">Player</a>
+      <a href="https://planet-hosts.com/radio/embed.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-primary" style="font-size:10px;padding:6px 10px">Player</a>
       <a href="<?=$isIces ? 'http://planet-hosts.com:'.$station->port.$station->mount : 'http://planet-hosts.com:'.$station->port.'/;stream.nsv'?>" target="_blank" class="btn btn-sm btn-secondary" style="font-size:10px;padding:6px 10px">Direct</a>
    </div>
   </div>
@@ -196,7 +196,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div style="grid-column:1/-1;margin-top:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)">
       <label style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px">API Base URL</label>
       <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
-        <input class="inp inp-sm" id="api-url" value="https://planet-hosts.com:2083/api/studio/station/<?=$stationId?>" readonly style="flex:1;font-family:monospace;font-size:12px;color:#a855f7">
+        <input class="inp inp-sm" id="api-url" value="/api/studio/station/<?=$stationId?>" readonly style="flex:1;font-family:monospace;font-size:12px;color:#a855f7">
         <button class="btn btn-sm btn-sec" style="font-size:10px;padding:4px 8px" onclick="var p=document.getElementById('api-url');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
       </div>
       <div style="font-size:10px;color:#64748b;margin-top:4px;line-height:1.6">
@@ -236,7 +236,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <a href="?station_id=<?=$stationId?>&tab=branding" class="btn btn-sm btn-primary">Branding</a>
     <a href="?station_id=<?=$stationId?>&tab=autodj" class="btn btn-sm btn-primary">AutoDJ</a>
     <a href="?station_id=<?=$stationId?>&tab=backups" class="btn btn-sm btn-secondary">Backups</a>
-    <a href="https://planet-hosts.com:2083/radio/embed.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-secondary">Listen</a>
+    <a href="https://planet-hosts.com/radio/embed.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-secondary">Listen</a>
   </div></div>
   <?php if (!empty($songs)): ?>
   <div class="card"><div class="hdr"><h3>Recently Played</h3></div><table><tr><th>Title</th><th>Artist</th><th>Played At</th></tr>
@@ -288,7 +288,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <div class="card"><h3>DJ Login Link</h3>
   <p style="font-size:11px;color:#64748b;margin-bottom:8px">Share this link with your DJs so they can access the DJ Panel with their credentials:</p>
   <div style="display:flex;gap:8px;align-items:center">
-    <input class="inp inp-sm" value="https://planet-hosts.com:2083/dj_panel.php" readonly style="flex:1;font-family:monospace;font-size:12px;color:#4ade80">
+    <input class="inp inp-sm" value="https://planet-hosts.com/dj_panel.php" readonly style="flex:1;font-family:monospace;font-size:12px;color:#4ade80">
     <button class="btn btn-sm btn-primary" onclick="var i=this.previousElementSibling;i.select();navigator.clipboard.writeText(i.value);this.textContent='Copied!';setTimeout(function(){this.textContent='Copy'}.bind(this),2000)">Copy</button>
   </div>
   </div>
@@ -689,7 +689,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </div>
 </div>
 <div class="tab <?=$tab==='applications'?'active':''?>">
-  <div class="card"><div class="hdr"><h3>DJ Applications</h3><a href="https://planet-hosts.com:2083/radio/apply.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-primary">Public Form</a></div>
+  <div class="card"><div class="hdr"><h3>DJ Applications</h3><a href="https://planet-hosts.com/radio/apply.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-primary">Public Form</a></div>
   <?php $apps = $applications ?? []; $as = $_GET['app_filter'] ?? 'pending';
   $fa = array_filter($apps, function($a) use ($as) { return $as === 'all' || ($a->status ?? 'pending') === $as; }); ?>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
