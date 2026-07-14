@@ -143,16 +143,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <a href="https://planet-hosts.com:2083/radio/embed.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-primary" style="font-size:10px;padding:6px 10px">Player</a>
       <a href="<?=$isIces ? 'http://planet-hosts.com:'.$station->port.$station->mount : 'http://planet-hosts.com:'.$station->port.'/;stream.nsv'?>" target="_blank" class="btn btn-sm btn-secondary" style="font-size:10px;padding:6px 10px">Direct</a>
   </div>
-  <div class="card"><div class="hdr"><h3>Station Information</h3></div>
-  <table>
-    <tr><td style="color:#64748b;padding:6px 0">Station Name</td><td style="padding:6px 0"><?=htmlspecialchars($station->name??'')?></td></tr>
-    <tr><td style="color:#64748b;padding:6px 0">Server Type</td><td style="padding:6px 0"><?=strtoupper($station->server_type??'ICECAST')?></td></tr>
-    <tr><td style="color:#64748b;padding:6px 0">Port</td><td style="padding:6px 0"><?=$station->port?></td></tr>
-    <tr><td style="color:#64748b;padding:6px 0">Mount Point</td><td style="padding:6px 0"><?=htmlspecialchars($station->mount??'/stream')?></td></tr>
-    <tr><td style="color:#64748b;padding:6px 0">Bitrate</td><td style="padding:6px 0"><?=$station->bitrate??128?> kbps</td></tr>
-    <tr><td style="color:#64748b;padding:6px 0">Status</td><td style="padding:6px 0;color:<?=$station->status==='running'?'#4ade80':'#f87171'?>"><?=$station->status??'stopped'?></td></tr>
-  </table>
-  </div>
+
   <div class="card" style="border:1px solid rgba(0,191,255,.12);background:linear-gradient(135deg,rgba(0,140,255,.04),rgba(168,85,247,.02))">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.06)">
     <span style="font-size:16px">🔗</span>
@@ -203,17 +194,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     </div>
   </div>
   </div>
-  <div class="card"><h3>Change Passwords</h3>
-  <form method="post" action="/user/radio/update-passwords">
-    <input type="hidden" name="station_id" value="<?=$stationId?>">
-    <div class="form-row">
-      <div class="form-group"><label>New Source Password</label><input class="inp inp-sm" name="password" placeholder="Leave blank to keep current"></div>
-      <div class="form-group"><label>New Admin Password</label><input class="inp inp-sm" name="admin_password" placeholder="Leave blank to keep current"></div>
-    </div>
-    <button class="btn btn-sm btn-primary">Update Passwords</button>
-  </form>
-  </div>
-</div>
+
   <script>
   setInterval(function(){
     var x=new XMLHttpRequest();
