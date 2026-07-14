@@ -499,6 +499,23 @@ function togglePass(){var p=document.getElementById('bi-pass');if(p.textContent=
 function copyAll(){var t='Server: <?php echo addslashes($djHost); ?>\nPort: <?php echo $djPort; ?>\nUsername: <?php echo addslashes($djUsername); ?>\nPassword: <?php echo $isOwner ? addslashes($djPass) : '<your DJ password>'; ?>\nFormat: MP3 <?php echo $station->bitrate ?? 128; ?>kbps';navigator.clipboard.writeText(t);var b=event.target;b.textContent='Copied All!';setTimeout(function(){b.textContent='📋 Copy All'},2000);}
 </script>
 
+<!-- API Connection -->
+<div class="card" style="border-color:rgba(168,85,247,.2)">
+<h3 style="color:#a855f7"><i class="fas fa-code"></i> API Connection</h3>
+<div style="margin-bottom:12px;font-size:13px;color:#94a3b8;line-height:1.5">
+Access station data programmatically. Uses your DJ session cookie for auth.
+</div>
+<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:16px;font-family:monospace;font-size:12px;line-height:2">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<span><strong style="color:#64748b">Base URL:</strong> <span style="color:#a855f7" id="api-base">https://planet-hosts.com/api/studio/station/<?php echo $streamId; ?></span></span>
+<button class="btn" style="padding:2px 8px;font-size:10px;background:rgba(255,255,255,.06);color:#94a3b8;border:none;border-radius:4px;cursor:pointer" onclick="copyField('api-base')">Copy</button>
+</div>
+<div style="font-size:10px;color:#64748b;margin-top:8px;line-height:1.8">
+<code style="color:#a855f7">GET /connection</code> — station info & stream details
+<span style="margin:0 4px;color:rgba(255,255,255,.08)">|</span>
+<code style="color:#a855f7">GET /djs</code> — list DJs
+</div>
+</div>
 </div>
 
 <!-- Banner -->
