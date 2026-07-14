@@ -108,6 +108,7 @@ if (isset($hosting) && isset($hosting->id)) {
     <a href="/radio" class="nav-link<?php echo $currentUrl === '/radio' ? ' active' : ''; ?>"><i class="bi bi-broadcast"></i>Radio Dashboard</a>
     <a href="/radio/create" class="nav-link<?php echo str_contains($currentUrl, '/radio/create') ? ' active' : ''; ?>"><i class="bi bi-plus-circle"></i>New Stream</a>
     <a href="/user/dj-manager" class="nav-link<?php echo str_contains($currentUrl, '/user/dj-manager') ? ' active' : ''; ?>"><i class="bi bi-mic"></i>DJ Accounts</a>
+    <a href="/user/dj-panel" class="nav-link<?php echo str_contains($currentUrl, '/user/dj-panel') ? ' active' : ''; ?>"><i class="bi bi-sliders"></i>DJ Panel</a>
     <a href="/radio/widgets" class="nav-link<?php echo str_contains($currentUrl, '/radio/widgets') ? ' active' : ''; ?>"><i class="bi bi-code-slash"></i>Widgets</a>
 <?php endif; ?>
 <?php if ($hasGames): ?>
@@ -182,3 +183,4 @@ document.querySelectorAll('.nav-section').forEach(function(section) {
 </script>
 </body>
 </html>
+

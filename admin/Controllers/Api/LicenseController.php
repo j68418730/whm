@@ -20,9 +20,10 @@ class LicenseController extends Controller
         $this->response = $app->get('response');
     }
 
-    public function validate()
+public function validate()
     {
-        $this->response->header('Content-Type', 'application/json');
+        try {
+            $this->response->setHeader('Content-Type', 'application/json');
         
         $licenseKey = $this->request->post('license_key', '');
         $serverIp = $this->request->post('server_ip', '');
@@ -71,7 +72,7 @@ class LicenseController extends Controller
 
     public function generateKey()
     {
-        $this->response->header('Content-Type', 'application/json');
+        $this->response->setHeader('Content-Type', 'application/json');
         
         $productId = (int)$this->request->post('product_id', 0);
         $accountId = (int)$this->request->post('account_id', 0);
@@ -112,7 +113,7 @@ class LicenseController extends Controller
 
     public function checkIp()
     {
-        $this->response->header('Content-Type', 'application/json');
+        $this->response->setHeader('Content-Type', 'application/json');
         
         $ip = $this->request->get('ip', '');
         if (!$ip) {

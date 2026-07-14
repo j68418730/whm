@@ -835,14 +835,18 @@ class RadioController extends Controller
         if (!$this->auth->check()) exit;
         $hosting = $this->getHosting();
         if (!$hosting) { header('Location: /user/radio'); exit; }
-        $existing = $this->db->table('radio_stations')->where('hosting_user_id', $hosting->id)->first();
-        if (!$existing) {
-            $pw = substr(md5(time() . rand()), 0, 8);
-            $this->db->table('radio_stations')->insertGetId([
-                'hosting_user_id' => $hosting->id, 'name' => $hosting->username . "'s Station",
-                'port' => 8000, 'password' => $pw, 'status' => 'stopped'
-            ]);
-            $_SESSION['success'] = 'Station created!';
+        try {
+            $existing = $this->db->table('radio_stations')->where('hosting_user_id', $hosting->id)->first();
+            if (!$existing) {
+                $pw = substr(md5(time() . rand()), 0, 8);
+                $this->db->table('radio_stations')->insertGetId([
+                    'hosting_user_id' => $hosting->id, 'name' => $hosting->username . "'s Station",
+                    'port' => 8000, 'password' => $pw, 'status' => 'stopped'
+                ]);
+                $_SESSION['success'] = 'Station created!';
+            }
+        } catch (\Exception $e) {
+            $_SESSION['error'] = 'Could not set up station: ' . $e->getMessage();
         }
         header('Location: /user/radio'); exit;
     }
