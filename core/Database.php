@@ -40,6 +40,7 @@ class Database
             protected $orderCol = null;
             protected $orderDir = 'ASC';
             protected $limitCount = 0;
+            protected $columns = '*';
 
             public function __construct($pdo, $table, $column, $operator, $value)
             {
@@ -68,10 +69,16 @@ class Database
                 return $this;
             }
 
+            public function select($columns = '*')
+            {
+                $this->columns = is_array($columns) ? implode(', ', $columns) : $columns;
+                return $this;
+            }
+
             public function get()
             {
                 if (empty($this->wheres)) {
-                    $sql = "SELECT * FROM {$this->table}";
+                    $sql = "SELECT {$this->columns} FROM {$this->table}";
                 } else {
                     $clauses = [];
                     $params = [];
@@ -79,7 +86,7 @@ class Database
                         $clauses[] = "{$w[0]} {$w[1]} ?";
                         $params[] = $w[2];
                     }
-                    $sql = "SELECT * FROM {$this->table} WHERE " . implode(' AND ', $clauses);
+                    $sql = "SELECT {$this->columns} FROM {$this->table} WHERE " . implode(' AND ', $clauses);
                 }
                 if ($this->orderCol) $sql .= " ORDER BY {$this->orderCol} {$this->orderDir}";
                 if ($this->limitCount > 0) $sql .= " LIMIT {$this->limitCount}";
