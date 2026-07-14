@@ -81,7 +81,7 @@ class StreamsController extends Controller
 
         $pm = new \Core\PortManager();
         if ($port === 0) {
-            $svcMap = ['icecast' => 'icecast', 'shoutcast1' => 'shoutcast_v1', 'shoutcast2' => 'shoutcast_v2'];
+            $svcMap = ['icecast' => 'icecast', 'shoutcast' => 'shoutcast_v2', 'shoutcast1' => 'shoutcast_v1', 'shoutcast2' => 'shoutcast_v2'];
             $alloc = $pm->allocate($svcMap[$engine] ?? 'icecast', $uid);
             if ($alloc) {
                 $port = (int)$alloc->port_start;
