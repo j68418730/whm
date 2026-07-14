@@ -196,7 +196,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div style="grid-column:1/-1;margin-top:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)">
       <label style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px">API Base URL</label>
       <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
-        <input class="inp inp-sm" id="api-url" value="/api/studio/station/<?=$stationId?>" readonly style="flex:1;font-family:monospace;font-size:12px;color:#a855f7">
+        <input class="inp inp-sm" id="api-url" value="https://planet-hosts.com:2083/api/studio/station/<?=$stationId?>" readonly style="flex:1;font-family:monospace;font-size:12px;color:#a855f7">
         <button class="btn btn-sm btn-sec" style="font-size:10px;padding:4px 8px" onclick="var p=document.getElementById('api-url');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
       </div>
       <div style="font-size:10px;color:#64748b;margin-top:4px;line-height:1.6">
