@@ -172,6 +172,7 @@ class StreamConfigController extends Controller
                 'format' => $streamConfig->format,
                 'samplerate' => $streamConfig->samplerate,
                 'channels' => $streamConfig->channels,
-            ])->send();
+            ],
+        ])->send();
     }
 }

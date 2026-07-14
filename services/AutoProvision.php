@@ -5,6 +5,7 @@
  * Creates Linux user, home directory, DNS records, etc.
  */
 function autoProvision($userId, $packageId) {
+    $sn = $_SERVER['SERVER_NAME'] ?? 'planet-hosts.com';
     $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
 
     $user = $pdo->prepare("SELECT * FROM hosting_users WHERE id = ?");
@@ -98,8 +99,8 @@ function autoProvision($userId, $packageId) {
         . "Username: {$username}\n"
         . "Password: {$password}\n"
         . "Domain: {$domain}\n"
-        . "Panel: http://{$_SERVER['SERVER_NAME'] ?? 'planet-hosts.com'}:2082/\n\n"
-        . "Webmail: http://{$_SERVER['SERVER_NAME'] ?? 'planet-hosts.com'}:2096/\n\n"
+    . "Panel: http://{$sn}:2082/\n\n"
+    . "Webmail: http://{$sn}:2096/\n\n"
         . "Thank you for choosing Planet Hosts!\n";
     @mail($user->email, $subject, $message, "From: support@planet-hosts.com\r\nReply-To: support@planet-hosts.com");
 

@@ -24,13 +24,6 @@ class Station extends Model
             ->get() ?: [];
     }
 
-    public function streamConfig()
-    {
-        return $this->db->table('station_stream_config')
-            ->where('station_id', $this->id)
-            ->first();
-    }
-
     public function generateApiKey()
     {
         $key = 'ph_' . bin2hex(random_bytes(16));

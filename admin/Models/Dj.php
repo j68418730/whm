@@ -17,26 +17,6 @@ class Dj extends Model
             ->get() ?: [];
     }
 
-    public function stations()
-    {
-        return $this->db->table('dj_stations')
-            ->join('hosting_users', 'dj_stations.station_id', '=', 'hosting_users.id')
-            ->join('station_stream_config', 'hosting_users.id', '=', 'station_stream_config.station_id')
-            ->where('dj_stations.dj_id', $this->id)
-            ->select('dj_stations.*', 'hosting_users.username as station_username', 'hosting_users.domain')
-            ->get() ?: [];
-    }
-
-    public function stations()
-    {
-        return $this->db->table('dj_stations')
-            ->join('hosting_users', 'dj_stations.station_id', '=', 'hosting_users.id')
-            ->join('station_stream_config', 'hosting_users.id', '=', 'station_stream_config.station_id')
-            ->where('dj_stations.dj_id', $this->id)
-            ->select('dj_stations.*', 'hosting_users.username as station_username', 'hosting_users.domain')
-            ->get() ?: [];
-    }
-
     public function apiKeys()
     {
         return $this->db->table('dj_api_keys')->where('dj_id', $this->id)->get() ?: [];
