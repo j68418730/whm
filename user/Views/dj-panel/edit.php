@@ -46,6 +46,25 @@
                 </select>
             </div>
         </div>
+
+        <!-- Multi-Station Assignment (Checkbox Grid) -->
+        <?php
+        $assignedStations = $this->db->table('dj_stations')->where('dj_id', $dj->id)->get() ?: [];
+        $assignedIds = array_column($assigned, 'station_id');
+        $availableStations = $this->myStations();
+        ?>
+        <div style="margin-top:16px;padding:16px;background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2);border-radius:8px">
+            <label style="display:block;margin-bottom:12px;font-size:13px;font-weight:600;color:var(--text-secondary)">Assigned Stations</label>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Select stations this DJ can access.</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
+                <?php foreach (($myStations ?? $this->myStations()) as $st): ?>
+                <label style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.08);border-radius:6px;cursor:pointer;font-size:13px;color:#e0e0e0;transition:all .15s">
+                    <input type="checkbox" name="station_ids[]" value="<?php echo $st->id; ?>" <?php echo in_array((int)$st->id, $assignedIds) ? 'checked' : ''; ?> style="margin:0;transform:scale(1.1)">
+                    <span><?php echo htmlspecialchars($st->username); ?><?php echo !empty($st->domain) ? ' (' . htmlspecialchars($st->domain) . ')' : ''; ?></span>
+                </label>
+                <?php endforeach; ?>
+            </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px">
             <div>
                 <label style="display:block;margin-bottom:6px;font-size:13px;color:var(--text-secondary)">New Password (leave blank to keep current)</label>
