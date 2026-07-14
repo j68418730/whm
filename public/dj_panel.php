@@ -297,12 +297,30 @@ if ($action === 'download_playlist' && isset($_SESSION['dj_user'])) {
 // ─── GET FRESH DJ DATA ───
 $djData = null;
 if (isset($_SESSION['dj_user'])) {
-    $stmt = $pdo->prepare("SELECT d.*, ss.status as stream_status, ss.listener_count, ss.current_song, ss.autodj_enabled as autodj_active, hu.username as hosting_username,
-        (SELECT COUNT(*) FROM radio_playlist_items pi JOIN radio_playlists p ON pi.playlist_id = p.id WHERE p.stream_id = d.stream_id) as track_count
-        FROM radio_djs d JOIN streaming_stations ss ON d.stream_id = ss.id JOIN hosting_users hu ON ss.user_id = hu.id WHERE d.id = ?");
-    $stmt->execute([$_SESSION['dj_user']['id']]);
-    $djData = $stmt->fetch(PDO::FETCH_OBJ);
-    if (!$djData) { session_destroy(); header('Location: /dj_panel.php'); exit; }
+    if (!empty($_SESSION['dj_user']['is_owner'])) {
+        $ss = $pdo->prepare("SELECT ss.*, rs.port as rs_port FROM streaming_stations ss LEFT JOIN radio_streams rs ON rs.id = ss.id WHERE ss.id = ?");
+        $ss->execute([$_SESSION['dj_user']['stream_id']]);
+        $s = $ss->fetch(PDO::FETCH_OBJ);
+        $djData = (object)[
+            'stream_status' => $s->status ?? 'stopped',
+            'listener_count' => $s->listener_count ?? 0,
+            'current_song' => $s->current_song ?? '',
+            'autodj_active' => $s->autodj_enabled ?? 0,
+            'track_count' => 0,
+            'id' => 0,
+            'stream_id' => $_SESSION['dj_user']['stream_id'],
+            'hosting_username' => '',
+            'current_dj' => null,
+            'port' => $s->port ?? 0,
+        ];
+    } else {
+        $stmt = $pdo->prepare("SELECT d.*, ss.status as stream_status, ss.listener_count, ss.current_song, ss.autodj_enabled as autodj_active, hu.username as hosting_username,
+            (SELECT COUNT(*) FROM radio_playlist_items pi JOIN radio_playlists p ON pi.playlist_id = p.id WHERE p.stream_id = d.stream_id) as track_count
+            FROM radio_djs d JOIN streaming_stations ss ON d.stream_id = ss.id JOIN hosting_users hu ON ss.user_id = hu.id WHERE d.id = ?");
+        $stmt->execute([$_SESSION['dj_user']['id']]);
+        $djData = $stmt->fetch(PDO::FETCH_OBJ);
+        if (!$djData) { session_destroy(); header('Location: /dj_panel.php'); exit; }
+    }
 }
 
 // ─── RENDER ───
