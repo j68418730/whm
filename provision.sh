@@ -560,6 +560,7 @@ CREDEOF
 
         # Disable vhost
         if a2dissite "${USERNAME}.conf" 2>/dev/null; then
+            a2dissite "${USERNAME}-le-ssl.conf" 2>/dev/null || true
             # Create suspension page
             cat > "${HOMEDIR}/public_html/.suspended.html" << SUSPENDEOF
 <!DOCTYPE html>
@@ -584,7 +585,8 @@ SUSPENDEOF
     ErrorDocument 403 ${HOMEDIR}/public_html/.suspended.html
     ErrorDocument 404 ${HOMEDIR}/public_html/.suspended.html
     RewriteEngine On
-    RewriteRule ^(.*)$ /index.html [L]
+    RewriteCond %{REQUEST_URI} !^/\.suspended\.html$
+    RewriteRule ^(.*)$ /.suspended.html [L]
     ErrorLog ${HOMEDIR}/logs/error.log
     CustomLog ${HOMEDIR}/logs/access.log combined
 </VirtualHost>
@@ -625,6 +627,7 @@ VHOSTEOF
 </VirtualHost>
 VHOSTEOF
         a2ensite "${USERNAME}.conf" 2>/dev/null || true
+        a2ensite "${USERNAME}-le-ssl.conf" 2>/dev/null || true
         rm -f "${HOMEDIR}/public_html/.suspended.html" 2>/dev/null || true
         systemctl reload apache2 2>/dev/null || true
         log "OK" "Account unsuspended"
