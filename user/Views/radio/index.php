@@ -163,7 +163,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </div>
   <div class="card"><h3>Admin Password</h3>
   <div style="display:flex;gap:8px;align-items:center">
-    <input class="inp inp-sm" id="adm-pass" value="<?=htmlspecialchars($station->admin_password??'')?>" readonly style="flex:1;font-family:monospace;font-size:13px;color:#facc15">
+    <input class="inp inp-sm" id="adm-pass" value="<?=htmlspecialchars($station->admin_plain_password??$station->admin_password??'')?>" readonly style="flex:1;font-family:monospace;font-size:13px;color:#facc15">
     <button class="btn btn-sm btn-sec" onclick="var p=document.getElementById('adm-pass');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(function(){this.textContent='Copy'}.bind(this),2000)">Copy</button>
   </div>
   </div>
@@ -565,7 +565,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="form-row"><div class="form-group"><label>Station Name</label><input class="inp inp-sm" name="name" value="<?=htmlspecialchars($station->name??'')?>"></div><div class="form-group"><label>Genre</label><input class="inp inp-sm" name="genre" value="<?=htmlspecialchars($station->genre??'')?>"></div></div>
     <div class="form-group"><label>Description</label><textarea class="inp inp-sm" name="description" rows="2"><?=htmlspecialchars($station->description??'')?></textarea></div>
     <div class="form-row"><div class="form-group"><label>Mount Point</label><input class="inp inp-sm" name="mount" value="<?=htmlspecialchars($station->mount??'/stream')?>"></div><div class="form-group"><label>Bitrate</label><select class="inp inp-sm" name="bitrate"><option value="128" <?=($station->bitrate??128)==128?'selected':''?>>128 kbps</option><option value="192" <?=($station->bitrate??'')==192?'selected':''?>>192 kbps</option><option value="256" <?=($station->bitrate??'')==256?'selected':''?>>256 kbps</option><option value="320" <?=($station->bitrate??'')==320?'selected':''?>>320 kbps</option></select></div></div>
-    <div class="form-row"><div class="form-group"><label>Source Password</label><input class="inp inp-sm" name="password" value="<?=htmlspecialchars($station->plain_password??$station->password??'')?>" style="font-family:monospace;color:#4ade80"></div><div class="form-group"><label>Admin Password</label><input class="inp inp-sm" name="admin_password" value="<?=htmlspecialchars($station->admin_password??'')?>" style="font-family:monospace;color:#facc15"></div></div>
+    <div class="form-row"><div class="form-group"><label>Source Password</label><input class="inp inp-sm" name="password" value="<?=htmlspecialchars($station->plain_password??$station->password??'')?>" style="font-family:monospace;color:#4ade80"></div><div class="form-group"><label>Admin Password</label><input class="inp inp-sm" name="admin_password" value="<?=htmlspecialchars($station->admin_plain_password??$station->admin_password??'')?>" style="font-family:monospace;color:#facc15"></div></div>
     <div class="form-row"><div class="form-group"><label>Max Listeners</label><input class="inp inp-sm" type="number" name="max_listeners" value="<?=$station->max_listeners??100?>"></div><div class="form-group"><label>Public</label><select class="inp inp-sm" name="public_server"><option value="1" <?=($station->public_server??1)==1?'selected':''?>>Yes</option><option value="0" <?=($station->public_server??'')==='0'?'selected':''?>>No</option></select></div></div>
     <button class="btn btn-sm btn-primary">Save Settings</button>
   </form></div>
