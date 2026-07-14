@@ -123,6 +123,7 @@ $router->post('/api/v1/stations/backup', 'Plugins\Radio\Controllers\PublicStream
 $router->get('/api/v1/stations/statistics', 'Plugins\Radio\Controllers\PublicStreamingApiController@stationStats');
 $router->get('/api/v1/stations/logs', 'Plugins\Radio\Controllers\PublicStreamingApiController@stationLogs');
 $router->get('/api/v1/health', 'Plugins\Radio\Controllers\PublicStreamingApiController@health');
+$router->get('/api/stations/{id}/stream', 'Plugins\Radio\Controllers\PublicStreamingApiController@streamConfig');
 
 // Public endpoints (no auth)
 $router->get('/radio/public/djs', 'Plugins\Radio\Controllers\User\RadioController@publicDjs');
