@@ -153,6 +153,13 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <tr><td style="color:#64748b;padding:6px 0">Status</td><td style="padding:6px 0;color:<?=$station->status==='running'?'#4ade80':'#f87171'?>"><?=$station->status??'stopped'?></td></tr>
   </table>
   </div>
+  <div class="card"><h3>Quick Actions</h3><div style="display:flex;gap:6px;flex-wrap:wrap">
+    <a href="?station_id=<?=$stationId?>&tab=playlists" class="btn btn-sm btn-primary">Manage Playlists</a>
+    <a href="?station_id=<?=$stationId?>&tab=branding" class="btn btn-sm btn-primary">Branding</a>
+    <a href="?station_id=<?=$stationId?>&tab=autodj" class="btn btn-sm btn-primary">AutoDJ</a>
+    <a href="?station_id=<?=$stationId?>&tab=backups" class="btn btn-sm btn-secondary">Backups</a>
+    <a href="https://planet-hosts.com:2083/radio/embed.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-secondary">Listen</a>
+  </div></div>
   <div class="card" style="border:1px solid rgba(0,191,255,.12);background:linear-gradient(135deg,rgba(0,140,255,.04),rgba(168,85,247,.02))">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.06)">
     <span style="font-size:16px">🔗</span>
@@ -213,7 +220,6 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <button class="btn btn-sm btn-primary">Update Passwords</button>
   </form>
   </div>
-</div>
   <script>
   setInterval(function(){
     var x=new XMLHttpRequest();
@@ -233,13 +239,6 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="stat-card"><div class="sv"><?=count($songs)?></div><div class="sl">Recent Songs</div></div>
     <div class="stat-card"><div class="sv"><?=count($schedule)?></div><div class="sl">Shows</div></div>
   </div>
-  <div class="card"><h3>Quick Actions</h3><div style="display:flex;gap:6px;flex-wrap:wrap">
-    <a href="?station_id=<?=$stationId?>&tab=playlists" class="btn btn-sm btn-primary">Manage Playlists</a>
-    <a href="?station_id=<?=$stationId?>&tab=branding" class="btn btn-sm btn-primary">Branding</a>
-    <a href="?station_id=<?=$stationId?>&tab=autodj" class="btn btn-sm btn-primary">AutoDJ</a>
-    <a href="?station_id=<?=$stationId?>&tab=backups" class="btn btn-sm btn-secondary">Backups</a>
-    <a href="https://planet-hosts.com:2083/radio/embed.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-secondary">Listen</a>
-  </div></div>
   <?php if (!empty($songs)): ?>
   <div class="card"><div class="hdr"><h3>Recently Played</h3></div><table><tr><th>Title</th><th>Artist</th><th>Played At</th></tr>
     <?php foreach (array_slice($songs,0,10) as $sh): ?>
