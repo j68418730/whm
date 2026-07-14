@@ -131,29 +131,6 @@ class DjController extends Controller
         $this->response->redirect('/admin/djs');
     }
 
-    public function edit($id)
-    {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $user = $this->auth->user();
-        $dj = $this->db->table('radio_djs')->where('id', $id)->first();
-        $streams = $this->db->table('radio_streams')->get() ?: [];
-        return $this->view('Plugins.Radio.Views.admin.djs.index', [
-            'user' => $user, 'dj' => $dj, 'streams' => $streams, 'editId' => $id,
-            'theme_settings' => json_decode($user->theme_settings ?? '{}', true), 'title' => 'Edit DJ'
-        ]);
-    }
-
-    public function update($id)
-    {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $data = ['name' => $this->request->post('name', ''), 'email' => $this->request->post('email', ''), 'status' => $this->request->post('status', 'active')];
-        $pw = $this->request->post('password', '');
-        if ($pw) $data['password'] = password_hash($pw, PASSWORD_DEFAULT);
-        $this->db->table('radio_djs')->where('id', $id)->update($data);
-        $_SESSION['success_message'] = 'DJ updated.';
-        $this->response->redirect('/admin/djs');
-    }
-
     public function remove($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
