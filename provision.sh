@@ -117,6 +117,7 @@ mkdir -p "$LOGDIR"
 
 case "$ACTION" in
     provision)
+        a2enmod headers >/dev/null 2>&1 || true
         log "START" "Beginning provision for ${USERNAME} (${DOMAIN})"
 
         # === STEP 1: Create Linux system user ===
@@ -598,6 +599,7 @@ VHOSTEOF
         ;;
 
     unsuspend)
+        a2enmod headers >/dev/null 2>&1 || true
         log "START" "Unsuspending account: ${USERNAME}"
 
         # Restore original vhost (reuse provision logic)
