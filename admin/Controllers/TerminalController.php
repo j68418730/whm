@@ -43,7 +43,7 @@ class TerminalController extends Controller
         $output = [];
         $returnVar = 0;
         $cdCmd = $cwd ? "cd " . escapeshellarg($cwd) . " 2>/dev/null && " : "";
-        $fullCmd = 'sudo bash -c ' . escapeshellarg($cdCmd . $cmd . ' 2>&1; echo "[CWD:"; pwd; echo ":CWD]"');
+        $fullCmd = 'sudo bash -c ' . escapeshellarg($cdCmd . $cmd . ' 2>&1; echo "[CWD:$(pwd):CWD]"');
         exec($fullCmd, $output, $returnVar);
         $newCwd = $cwd ?: '/root';
         $cmdOutput = [];
