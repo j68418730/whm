@@ -46,12 +46,88 @@ class DjController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $username = $this->request->post('username', '');
         $password = $this->request->post('password', bin2hex(random_bytes(6)));
-        $this->db->table('radio_djs')->insertGetId([
+        
+        // Insert DJ with primary stream
+        $djId = $this->db->table('radio_djs')->insertGetId([
             'stream_id' => (int)$this->request->post('stream_id', 0),
             'username' => $username, 'password' => password_hash($password, PASSWORD_DEFAULT),
             'name' => $this->request->post('name', $username), 'email' => $this->request->post('email', ''),
         ]);
+        
+        // Store multiple stream assignments (many-to-many relationship)
+        $streamIds = $this->request->post('stream_ids', []);
+        if (!empty($streamIds)) {
+            $assignments = [];
+            foreach ($streamIds as $streamId) {
+                if (!empty($streamId) && (int)$streamId > 0) {
+                    $assignments[] = [
+                        'dj_id' => $djId,
+                        'stream_id' => (int)$streamId,
+                        'assigned_by' => $this->auth->user()->id,
+                    ];
+                }
+            }
+            if (!empty($assignments)) {
+                $this->db->table('radio_dj_streams')->insert($assignments);
+            }
+        }
+        
         $_SESSION['success_message'] = "DJ $username created. Password: $password";
+        $this->response->redirect('/admin/djs');
+    }
+    
+    public function edit($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $dj = $this->db->table('radio_djs')->where('id', $id)->first();
+        $streams = $this->db->table('radio_streams')->get() ?: [];
+        
+        // Get all stream assignments for this DJ
+        $assignedStreams = $this->db->table('radio_dj_streams')
+            ->where('dj_id', $id)
+            ->get() ?: [];
+        
+        return $this->view('Plugins.Radio.Views.admin.djs.index', [
+            'user' => $user, 'dj' => $dj, 'streams' => $streams, 'editId' => $id,
+            'assignedStreams' => $assignedStreams,
+            'theme_settings' => json_decode($user->theme_settings ?? '{}', true), 'title' => 'Edit DJ'
+        ]);
+    }
+    
+    public function update($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $data = ['name' => $this->request->post('name', ''), 'email' => $this->request->post('email', ''), 'status' => $this->request->post('status', 'active')];
+        $pw = $this->request->post('password', '');
+        if ($pw) $data['password'] = password_hash($pw, PASSWORD_DEFAULT);
+        
+        $this->db->table('radio_djs')->where('id', $id)->update($data);
+        
+        // Update stream assignments (many-to-many)
+        $streamIds = $this->request->post('stream_ids', []);
+        
+        // Remove all existing assignments
+        $this->db->table('radio_dj_streams')->where('dj_id', $id)->delete();
+        
+        // Insert new assignments
+        if (!empty($streamIds)) {
+            $assignments = [];
+            foreach ($streamIds as $streamId) {
+                if (!empty($streamId) && (int)$streamId > 0) {
+                    $assignments[] = [
+                        'dj_id' => $id,
+                        'stream_id' => (int)$streamId,
+                        'assigned_by' => $this->auth->user()->id,
+                    ];
+                }
+            }
+            if (!empty($assignments)) {
+                $this->db->table('radio_dj_streams')->insert($assignments);
+            }
+        }
+        
+        $_SESSION['success_message'] = 'DJ updated.';
         $this->response->redirect('/admin/djs');
     }
 

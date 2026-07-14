@@ -424,14 +424,135 @@ textarea{min-height:80px;resize:vertical}
 <?php if ($error): ?><div class="alert" style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:10px 14px;color:#f87171;font-size:13px;margin-bottom:16px"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
 
 <div class="dj-tabs">
-<div class="dj-tab act" onclick="sw(event,'overview')">Overview</div>
-<div class="dj-tab" onclick="sw(event,'schedule')">Schedule</div>
-<div class="dj-tab" onclick="sw(event,'requests')">Requests</div>
-<div class="dj-tab" onclick="sw(event,'profile')">Profile</div>
-<div class="dj-tab" onclick="sw(event,'gallery')">Gallery</div>
+    <div class="dj-tab act" onclick="sw(event,'overview')">Overview</div>
+    <?php
+    // Add station tabs for all assigned streams
+    $userId = $_SESSION['dj_user']['id'] ?? 0;
+    $isOwner = !empty($_SESSION['dj_user']['is_owner']);
+    if ($isOwner || $userId > 0) {
+        // Get all streams for this user (owner mode) or DJ (non-owner)
+        if ($isOwner) {
+            $userId = $hostingId ?? 0;
+        }
+        $stationQuery = $pdo->prepare("SELECT id, name, engine, port, status FROM streaming_stations WHERE user_id=? ORDER BY name");
+        $stationQuery->execute([$userId]);
+        $userStations = $stationQuery->fetchAll(PDO::FETCH_OBJ);
+        
+        if (!empty($userStations)) {
+            foreach ($userStations as $index => $station) {
+                $tabId = $index + 1; // 1, 2, 3, etc.
+                $tabName = $station->name ?? "Stream #{$station->id}";
+                if ($station->id === $_SESSION['dj_user']['stream_id']) {
+                    echo "<div class=\"dj-tab active-station act\" onclick=\"sw(event,'station-{$station->id}')\">" . htmlspecialchars($tabName) . "</div>";
+                } else {
+                    echo "<div class=\"dj-tab active-station\" onclick=\"sw(event,'station-{$station->id}')\">" . htmlspecialchars($tabName) . "</div>";
+                }
+            }
+        }
+    }
+    ?>
+    <div class="dj-tab" onclick="sw(event,'schedule')">Schedule</div>
+    <div class="dj-tab" onclick="sw(event,'requests')">Requests</div>
+    <div class="dj-tab" onclick="sw(event,'profile')">Profile</div>
+    <div class="dj-tab" onclick="sw(event,'gallery')">Gallery</div>
 </div>
 
-<div class="dj-panel act" id="pn-overview">
+<!-- Station tabs content -->
+    <?php
+    $userId = $_SESSION['dj_user']['id'] ?? 0;
+    $isOwner = !empty($_SESSION['dj_user']['is_owner']);
+    if ($isOwner || $userId > 0) {
+        if ($isOwner) {
+            $userId = $hostingId ?? 0;
+        }
+        $stationQuery = $pdo->prepare("SELECT id, name, engine, port, status FROM streaming_stations WHERE user_id=? ORDER BY name");
+        $stationQuery->execute([$userId]);
+        $userStations = $stationQuery->fetchAll(PDO::FETCH_OBJ);
+        
+        foreach ($userStations as $station) {
+            $stationId = $station->id;
+            $isActiveStation = $stationId === $_SESSION['dj_user']['stream_id'];
+            echo "<div class=\"dj-panel" . ($isActiveStation ? ' act' : '') . "\" id=\"pn-station-{$stationId}\">\n";
+            
+            // Station-specific content
+            echo "<div class=\"card\" style=\"border-color:rgba(0,191,255,.2)\">\n";
+            echo "<h3 style=\"color:#0A84FF\"><i class=\"fas fa-broadcast-tower\"></i> Station Info\n" . htmlspecialchars($station->name) . "</h3>\n";
+            echo "<div style=\"font-size:12px;color:#94a3b8;line-height:1.5\">\n";
+            echo "<strong>Engine:</strong> " . htmlspecialchars($station->engine) . "<br>\n";
+            echo "<strong>Port:</strong> " . htmlspecialchars($station->port) . "<br>\n";
+            echo "<strong>Status:</strong> <span style=\"color:{$station->status === 'running' ? '#4ade80' : '#f87171'};\">" . htmlspecialchars($station->status) . "</span><br>\n";
+            echo "<strong>Stream ID:</strong> {$station->id}<br>\n";
+            echo "</div>\n";
+            echo "<button class=\"btn btn-primary\" onclick=\"window.location.href='/dj_panel.php?action=dashboard&stream_id={$stationId}'\" style=\"width:auto;margin-top:8px;\">\n";
+            echo "Go to Station Dashboard\n";
+            echo "</button>\n";
+            echo "</div>\n";
+            echo "</div>\n";
+        }
+    }
+    ?>
+
+    <!-- Station tabs content -->
+    <?php
+    $userId = $_SESSION['dj_user']['id'] ?? 0;
+    $isOwner = !empty($_SESSION['dj_user']['is_owner']);
+    if ($isOwner || $userId > 0) {
+        if ($isOwner) {
+            $hostId = $hRow->user_id ?? 0;
+            $userId = $hostId;
+        }
+        $stationQuery = $pdo->prepare("SELECT COUNT(*) as count FROM streaming_stations WHERE user_id=?");
+        $stationQuery->execute([$userId]);
+        $stationCount = $stationQuery->fetchColumn();
+        if ($stationCount > 1) {
+            $activeStreamId = $_SESSION['dj_user']['stream_id'] ?? 0;
+            if ($activeStreamId > 0) {
+                echo "<script>\n";
+                echo "window.location.href = '/dj_panel.php?action=dashboard&stream_id=" . $activeStreamId . "';\n";
+                echo "</script>\n";
+                echo "<div style=\"text-align:center;padding:40px;\">\n";
+                echo "<div class=\"card\" style=\"max-width:400px;margin:0 auto;\">\n";
+                echo "<h2>Redirecting to Station Dashboard...</h2>\n";
+                echo "<p>Your dashboard is showing the active station above. Please use the station tabs to navigate to other stations.</p>\n";
+                echo "</div>\n";
+                echo "</div>\n";
+                echo "<?php exit; ?>\n";
+            }
+        }
+    }
+    ?>
+
+    <!-- Redirect Logic for Multi-Station Users -->
+    <?php
+    $userId = $_SESSION['dj_user']['id'] ?? 0;
+    $isOwner = !empty($_SESSION['dj_user']['is_owner']);
+    if ($userId > 0 && !$isOwner) {
+        $userId = $hostingId;
+    }
+    if ($userId > 0) {
+        $stationQuery = $pdo->prepare("SELECT COUNT(*) FROM streaming_stations WHERE user_id=?");
+        $stationQuery->execute([$userId]);
+        $stationCount = $stationQuery->fetchColumn();
+        if ($stationCount > 1) {
+            $activeStreamId = $_SESSION['dj_user']['stream_id'] ?? 0;
+            if ($activeStreamId > 0) {
+                echo "<script>\n";
+                echo "window.location.href = '/dj_panel.php?action=dashboard&stream_id=" . $activeStreamId . "';\n";
+                echo "</script>\n";
+                echo "<div style=\"text-align:center;padding:40px;\">\n";
+                echo "<div class=\"card\" style=\"max-width:400px;margin:0 auto;\">\n";
+                echo "<h2>Redirecting to Station Dashboard...</h2>\n";
+                echo "<p>Your dashboard is showing the active station above. Please use the station tabs to navigate to other stations.</p>\n";
+                echo "</div>\n";
+                echo "</div>\n";
+                echo "<?php exit; ?>\n";
+            }
+        }
+    }
+    ?>
+
+    <!-- Stats -->
+    <div class="grid">
 <!-- Stats -->
 <div class="grid">
 <div class="stat-card" style="--c:#4ade80"><div class="num"><?php echo $djData->stream_status ?? 'N/A'; ?></div><div class="label">Stream Status</div></div>
