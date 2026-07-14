@@ -221,6 +221,12 @@ $router->get('/user/dj-panel/stations/{id}', 'User\Controllers\DjController@assi
 $router->get('/user/dj-panel/activity/{id}', 'User\Controllers\DjController@activityLog');
 
 $router->get('/studio', 'User\Controllers\RadioController@studio');
+// Studio API
+$router->get('/api/studio/station/{stationId}/connection', 'User\Controllers\Api\StudioApiController@connection');
+$router->get('/api/studio/station/{stationId}/djs', 'User\Controllers\Api\StudioApiController@listDjs');
+$router->post('/api/studio/station/{stationId}/djs', 'User\Controllers\Api\StudioApiController@createDj');
+$router->put('/api/studio/station/{stationId}/djs/{djId}', 'User\Controllers\Api\StudioApiController@updateDj');
+$router->delete('/api/studio/station/{stationId}/djs/{djId}', 'User\Controllers\Api\StudioApiController@deleteDj');
 // Chat routes
 $router->post('/chat/start', 'User\Controllers\ChatController@start');
 $router->get('/chat/poll/{sessionId}', 'User\Controllers\ChatController@poll');
