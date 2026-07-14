@@ -247,19 +247,39 @@ class DjController extends Controller
             'created_at' => date('Y-m-d H:i:s'),
         ]);
 
-        // Optional initial station assignment
-        $stationId = (int)$this->request->post('station_id', 0);
-        if ($stationId && $this->canManageStation($stationId)) {
-            try {
-                $this->db->table('dj_stations')->insertGetId([
-                    'dj_id' => $id,
-                    'station_id' => $stationId,
-                    'role' => $this->request->post('station_role', 'dj'),
-                    'permissions' => json_encode(['stream', 'view']),
-                    'assigned_by' => (int)$user->id,
-                    'assigned_at' => date('Y-m-d H:i:s'),
-                ]);
-            } catch (\Exception $e) {}
+        // Handle multiple station assignments (checkboxes)
+        $stationIds = $this->request->post('station_ids', []);
+        if (!empty($stationIds)) {
+            foreach ($stationIds as $stationId) {
+                $sid = (int)$stationId;
+                if ($sid > 0 && $this->canManageStation($sid)) {
+                    try {
+                        $this->db->table('dj_stations')->insertGetId([
+                            'dj_id' => $id,
+                            'station_id' => $sid,
+                            'role' => $this->request->post('station_role', 'dj'),
+                            'permissions' => json_encode(['stream', 'view']),
+                            'assigned_by' => (int)$user->id,
+                            'assigned_at' => date('Y-m-d H:i:s'),
+                        ]);
+                    } catch (\Exception $e) {}
+                }
+            }
+        } else {
+            // Fallback: single station_id for backward compatibility
+            $stationId = (int)$this->request->post('station_id', 0);
+            if ($stationId && $this->canManageStation($stationId)) {
+                try {
+                    $this->db->table('dj_stations')->insertGetId([
+                        'dj_id' => $id,
+                        'station_id' => $stationId,
+                        'role' => $this->request->post('station_role', 'dj'),
+                        'permissions' => json_encode(['stream', 'view']),
+                        'assigned_by' => (int)$user->id,
+                        'assigned_at' => date('Y-m-d H:i:s'),
+                    ]);
+                } catch (\Exception $e) {}
+            }
         }
 
         $this->logActivity($id, 'dj_created', 'DJ account created by user ' . $user->username);
@@ -351,7 +371,32 @@ class DjController extends Controller
             $data['password_hash'] = password_hash($this->request->post('password'), PASSWORD_DEFAULT);
         }
 
-        $this->db->table('dj_accounts')->where('id', $dj->id)->update($data);
+        // Update stream assignments (many-to-many)
+        $stationIds = $this->request->post('station_ids', []);
+
+        // Remove all existing assignments
+        $this->db->table('dj_stations')->where('dj_id', $dj->id)->delete();
+
+        // Insert new assignments
+        if (!empty($stationIds)) {
+            $assignments = [];
+            foreach ($stationIds as $stationId) {
+                if (!empty($stationId) && (int)$stationId > 0 && $this->canManageStation($stationId)) {
+                    $assignments[] = [
+                        'dj_id' => $dj->id,
+                        'station_id' => (int)$stationId,
+                        'role' => $this->request->post('station_role', 'dj'),
+                        'permissions' => json_encode(['stream', 'view']),
+                        'assigned_by' => (int)$user->id,
+                        'assigned_at' => date('Y-m-d H:i:s'),
+                    ];
+                }
+            }
+            if (!empty($assignments)) {
+                $this->db->table('dj_stations')->insert($assignments);
+            }
+        }
+
         $this->logActivity($dj->id, 'dj_updated', 'DJ profile updated by user ' . $user->username);
         $_SESSION['success_message'] = 'DJ updated successfully.';
         $this->response->redirect('/user/dj-panel/show/' . $dj->id);

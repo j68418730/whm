@@ -75,6 +75,20 @@
                 </select>
             </div>
         </div>
+
+        <!-- Multi-Station Assignment (Checkbox Grid) -->
+        <div style="margin-top:16px;padding:16px;background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2);border-radius:8px">
+            <label style="display:block;margin-bottom:12px;font-size:13px;font-weight:600;color:var(--text-secondary)">Additional Stations (optional)</label>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Select additional stations this DJ can access. Primary station above is automatically included.</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
+                <?php foreach (($stations ?? []) as $st): ?>
+                <label style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.08);border-radius:6px;cursor:pointer;font-size:13px;color:#e0e0e0;transition:all .15s">
+                    <input type="checkbox" name="station_ids[]" value="<?php echo $st->id; ?>" style="margin:0;transform:scale(1.1)">
+                    <span><?php echo htmlspecialchars($st->username); ?><?php echo !empty($st->domain) ? ' (' . htmlspecialchars($st->domain) . ')' : ''; ?></span>
+                </label>
+                <?php endforeach; ?>
+            </div>
+        </div>
         <div style="display:flex;gap:8px;margin-top:8px">
             <button type="submit" class="btn primary">Create DJ Account</button>
             <a href="/user/dj-panel" class="btn secondary">Cancel</a>
