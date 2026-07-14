@@ -143,8 +143,6 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <a href="https://planet-hosts.com:2083/radio/embed.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-primary" style="font-size:10px;padding:6px 10px">Player</a>
       <a href="<?=$isIces ? 'http://planet-hosts.com:'.$station->port.$station->mount : 'http://planet-hosts.com:'.$station->port.'/;stream.nsv'?>" target="_blank" class="btn btn-sm btn-secondary" style="font-size:10px;padding:6px 10px">Direct</a>
   </div>
-</div>
-<div class="tab <?=$tab==='station_info'?'active':''?>">
   <div class="card"><div class="hdr"><h3>Station Information</h3></div>
   <table>
     <tr><td style="color:#64748b;padding:6px 0">Station Name</td><td style="padding:6px 0"><?=htmlspecialchars($station->name??'')?></td></tr>
