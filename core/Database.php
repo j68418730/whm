@@ -130,6 +130,25 @@ class Database
                 return $result->{$column} ?? null;
             }
 
+            public function count()
+            {
+                if (empty($this->wheres)) {
+                    $sql = "SELECT COUNT(*) AS c FROM {$this->table}";
+                    $params = [];
+                } else {
+                    $clauses = [];
+                    $params = [];
+                    foreach ($this->wheres as $w) {
+                        $clauses[] = "{$w[0]} {$w[1]} ?";
+                        $params[] = $w[2];
+                    }
+                    $sql = "SELECT COUNT(*) AS c FROM {$this->table} WHERE " . implode(' AND ', $clauses);
+                }
+                $stmt = $this->pdo->prepare($sql);
+                $stmt->execute($params ?? []);
+                return (int)($stmt->fetchColumn() ?: 0);
+            }
+
             public function insertGetId($data)
             {
                 $columns = '`' . implode('`, `', array_keys($data)) . '`';
@@ -191,6 +210,11 @@ class Database
     public function value($column)
     {
         return $this->table($this->table)->value($column);
+    }
+
+    public function count()
+    {
+        return $this->table($this->table)->count();
     }
 
     public function pdo()
