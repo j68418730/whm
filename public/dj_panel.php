@@ -165,7 +165,7 @@ if ($action === 'add_schedule' && $_POST && isset($_SESSION['dj_user'])) {
     $et = trim($_POST['end_time'] ?? '');
     if ($sn && $st && $et && $sId) {
         try {
-            $pdo->prepare("INSERT INTO radio_schedule (stream_id, dj_id, show_name, day_of_week, start_time, end_time, is_active, created_by) VALUES (?,?,?,?,?,?,1,'dj')")
+            $pdo->prepare("INSERT INTO radio_dj_schedule (stream_id, dj_id, show_name, day_of_week, start_time, end_time, is_active, created_by) VALUES (?,?,?,?,?,?,1,'dj')")
                 ->execute([$sId, $djId, $sn, $dw, $st, $et]);
             $success = 'Show added to your schedule.';
         } catch (\Exception $e) { $error = 'Failed to add show.'; }
@@ -716,9 +716,12 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 <?php
 $sId = $_SESSION['dj_user']['stream_id'] ?? 0;
 $djId = $_SESSION['dj_user']['id'] ?? 0;
-$schStmt = $pdo->prepare("SELECT * FROM radio_schedule WHERE stream_id = ? AND (dj_id = ? OR dj_id = 0 OR dj_id IS NULL) ORDER BY day_of_week, start_time");
-$schStmt->execute([$sId, $djId]);
-$mySchedule = $schStmt->fetchAll(PDO::FETCH_OBJ);
+$mySchedule = [];
+try {
+    $schStmt = $pdo->prepare("SELECT * FROM radio_dj_schedule WHERE stream_id = ? AND (dj_id = ? OR dj_id = 0 OR dj_id IS NULL) ORDER BY scheduled_date, time_slot");
+    $schStmt->execute([$sId, $djId]);
+    $mySchedule = $schStmt->fetchAll(PDO::FETCH_OBJ);
+} catch (\Exception $e) {}
 $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 ?>
 <div class="card">
