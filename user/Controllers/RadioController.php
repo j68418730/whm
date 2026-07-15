@@ -284,7 +284,7 @@ class RadioController extends Controller
                     }
                 } catch (\Exception $e) {}
                 $_SESSION['success'] = "DJ '{$name}' created.";
-            } catch (\Exception $e) { $_SESSION['error'] = 'Username already exists.'; }
+            } catch (\Exception $e) { $_SESSION['error'] = 'Failed to create DJ: ' . $e->getMessage(); }
         }
         header('Location: /user/radio?tab=djs&station_id=' . $station->id); exit;
     }
