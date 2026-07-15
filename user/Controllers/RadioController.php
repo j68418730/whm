@@ -1011,7 +1011,6 @@ class RadioController extends Controller
                 if ($step >= 12) {
                     $this->db->table('radio_streams')->where('id', $sid % 10000)->update([
                         'autodj_enabled' => (int)($_POST['autodj_enabled'] ?? 0),
-                        'requests_enabled' => (int)($_POST['requests_enabled'] ?? 1),
                     ]);
                     try { $this->db->table('streaming_stations')->where('id', $sid % 10000)->update([
                         'autodj_enabled' => (int)($_POST['autodj_enabled'] ?? 0),

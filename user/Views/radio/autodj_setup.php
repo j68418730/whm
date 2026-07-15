@@ -89,7 +89,7 @@ textarea.inp{resize:vertical;min-height:60px}
 <div class="wizard-nav"><a href="/user/radio" class="btn btn-secondary">Cancel</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
 
 <?php elseif ($step === 3): ?>
-<?php $engine = $config->streaming_engine ?: ($station->server_type === 'shoutcast' ? 'shoutcast2' : 'icecast'); ?>
+<?php $engine = $config->wizard_step >= 3 ? $config->streaming_engine : ($station->server_type === 'shoutcast' ? 'shoutcast2' : ($station->server_type === 'shoutcast1' ? 'shoutcast1' : 'icecast')); ?>
 <?php $labels = ['icecast' => 'Icecast', 'shoutcast' => 'SHOUTcast', 'shoutcast1' => 'SHOUTcast v1', 'shoutcast2' => 'SHOUTcast v2']; ?>
 <div class="wizard-card">
 <h2>Streaming Engine</h2>
