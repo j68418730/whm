@@ -1,3 +1,4 @@
+
 <?php
 $tab = $_GET['tab'] ?? 'overview';
 $stationId = $station->id ?? 0;
@@ -267,6 +268,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <?php endforeach; ?>
     <?php endif; ?>
   </table></div>
+  
   <div class="card"><h3>Add DJ</h3>
   <form method="post" action="/user/radio/dj/create">
     <input type="hidden" name="station_id" value="<?=$stationId?>">
@@ -274,6 +276,28 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="form-row"><div class="form-group"><label>Display Name</label><input class="inp inp-sm" name="name"></div><div class="form-group"><label>Email</label><input class="inp inp-sm" type="email" name="email"></div></div>
     <div class="form-group"><label>Bio</label><textarea class="inp inp-sm" name="bio" rows="2"></textarea></div>
     <div class="form-group"><label>Role</label><div style="display:flex;gap:12px"><label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#c0c0c0"><input type="radio" name="role" value="dj" checked> DJ</label><label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#c0c0c0"><input type="radio" name="role" value="mod"> Mod</label></div></div>
+
+    <!-- Multi-Station Assignment -->
+    <div style="margin-top:16px;padding:16px;background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2);border-radius:8px">
+      <label style="display:block;margin-bottom:12px;font-size:13px;font-weight:600;color:var(--text-secondary)">Assigned Stations</label>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Select stations this DJ can access. Primary station is the one currently being viewed.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
+        <?php
+        $allStations = $stations ?? [];
+        $currentStationId = (int)$stationId;
+        foreach ($allStations as $st):
+            $isCurrent = ($st->id ?? 0) == $currentStationId;
+            $checked = $isCurrent ? "checked" : "";
+            $disabled = $isCurrent ? "disabled" : "";
+        ?>
+        <label style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.08);border-radius:6px;cursor:pointer;font-size:13px;color:#e0e0e0;transition:all .15s">
+          <input type="checkbox" name="station_ids[]" value="<?php echo $st->id; ?>" <?php echo $isCurrent ? "checked disabled" : ""; ?> style="margin:0;transform:scale(1.1)">
+          <span><?php echo htmlspecialchars($st->name ?? "Stream #" . ($st->id ?? 0)) . ($isCurrent ? " (Primary)" : ""); ?></span>
+        </label>
+        <?php endforeach; ?>
+      </div>
+    </div>
+
     <button class="btn btn-sm btn-primary">Add DJ</button>
   </form></div>
   <div class="card"><h3>DJ Takeover</h3>
@@ -738,3 +762,4 @@ function renderQueue(){_q.innerHTML='';if(!_queue.length){_btn.style.display='no
 function startUpload(){if(!_queue.length)return;_btn.disabled=true;_btn.textContent='Uploading...';_p.style.display='block';_pb.style.width='0';_ps.textContent='';var i=0;var total=_queue.length;function uploadNext(){if(i>=total){_ps.textContent='All files uploaded!';_btn.textContent='Done';setTimeout(function(){location.reload();},1000);return;}var fd=new FormData();fd.append('playlist_id',_playlistId);fd.append('_csrf_token',_csrf);fd.append('files[]',_queue[i]);var x=new XMLHttpRequest();x.open('POST','/user/radio/media/upload',true);x.setRequestHeader('X-CSRF-Token',_csrf);x.upload.onprogress=function(ev){if(ev.lengthComputable){var pct=Math.round(((i+ev.loaded/ev.total)/total)*100);_pb.style.width=pct+'%';_ps.textContent='Uploading '+_queue[i].name+' ('+Math.round(ev.loaded/ev.total*100)+'%)';}};x.onload=function(){if(x.status===200){i++;uploadNext();}else{_ps.textContent='Failed: '+_queue[i].name;_btn.disabled=false;}};x.send(fd);}uploadNext();}
 </script>
 
+[?9001l[?1004l
