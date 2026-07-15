@@ -101,7 +101,9 @@ class RadioController extends Controller
         if ($station) {
             $sid = $station->id;
             $realStationId = $station->streaming_id ?? $sid;
-            try { $djs = $this->db->table('radio_djs')->where('stream_id', $realStationId)->get() ?: []; } catch (\Exception $e) {}
+            try {
+                $djs = $this->db->query("SELECT DISTINCT d.* FROM radio_djs d LEFT JOIN radio_dj_streams rjds ON d.id = rjds.dj_id WHERE d.stream_id = ? OR rjds.stream_id = ? ORDER BY d.username", [$realStationId, $realStationId]) ?: [];
+            } catch (\Exception $e) {}
             try { $requests = $this->db->table('radio_requests')->where('stream_id', $realStationId)->orderBy('created_at', 'desc')->limit(50)->get() ?: []; } catch (\Exception $e) {}
             try { $schedule = $this->db->table('radio_schedule')->where('stream_id', $realStationId)->where('is_active', 1)->orderBy('day_of_week')->orderBy('start_time')->get() ?: []; } catch (\Exception $e) {}
             try { $playlists = $this->db->table('radio_playlists')->where('stream_id', $realStationId)->get() ?: []; } catch (\Exception $e) {}
