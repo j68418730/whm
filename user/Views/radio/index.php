@@ -145,6 +145,13 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <a href="<?=$isIces ? 'http://planet-hosts.com:'.$station->port.$station->mount : 'http://planet-hosts.com:'.$station->port.'/;stream.nsv'?>" target="_blank" class="btn btn-sm btn-secondary" style="font-size:10px;padding:6px 10px">Direct</a>
    </div>
   </div>
+  <div class="card"><h3>Quick Actions</h3><div style="display:flex;gap:6px;flex-wrap:wrap">
+    <a href="?station_id=<?=$stationId?>&tab=playlists" class="btn btn-sm btn-primary">Manage Playlists</a>
+    <a href="?station_id=<?=$stationId?>&tab=branding" class="btn btn-sm btn-primary">Branding</a>
+    <a href="?station_id=<?=$stationId?>&tab=autodj" class="btn btn-sm btn-primary">AutoDJ</a>
+    <a href="?station_id=<?=$stationId?>&tab=backups" class="btn btn-sm btn-secondary">Backups</a>
+    <a href="https://planet-hosts.com/radio/embed.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-secondary">Listen</a>
+  </div></div>
 
   <div class="card" style="border:1px solid rgba(0,191,255,.12);background:linear-gradient(135deg,rgba(0,140,255,.04),rgba(168,85,247,.02))">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.06)">
@@ -183,21 +190,23 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div>
       <label style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px">Source Password</label>
       <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
-        <input class="inp inp-sm" id="src-pass" value="<?=htmlspecialchars($station->plain_password??$station->password??'')?>" readonly style="flex:1;font-family:monospace;font-size:12px;color:#4ade80">
+        <?php $_sp = $station->plain_password ?? $station->password ?? ''; ?>
+        <input class="inp inp-sm" id="src-pass" value="<?=htmlspecialchars($_sp && !str_starts_with($_sp, '$2y$') ? $_sp : 'Set in Settings')?>" readonly style="flex:1;font-family:monospace;font-size:12px;color:#4ade80">
         <button class="btn btn-sm btn-sec" style="font-size:10px;padding:4px 8px" onclick="var p=document.getElementById('src-pass');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
       </div>
     </div>
     <div>
       <label style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px">Admin Password</label>
       <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
-        <input class="inp inp-sm" id="adm-pass" value="<?=htmlspecialchars($station->admin_plain_password??$station->admin_password??'')?>" readonly style="flex:1;font-family:monospace;font-size:12px;color:#facc15">
+        <?php $_ap = $station->admin_plain_password ?? $station->admin_password ?? ''; ?>
+        <input class="inp inp-sm" id="adm-pass" value="<?=htmlspecialchars($_ap && !str_starts_with($_ap, '$2y$') ? $_ap : 'Set in Settings')?>" readonly style="flex:1;font-family:monospace;font-size:12px;color:#facc15">
         <button class="btn btn-sm btn-sec" style="font-size:10px;padding:4px 8px" onclick="var p=document.getElementById('adm-pass');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
       </div>
     </div>
     <div style="grid-column:1/-1;margin-top:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)">
       <label style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px">API Base URL</label>
       <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
-        <input class="inp inp-sm" id="api-url" value="/api/studio/station/<?=$stationId?>" readonly style="flex:1;font-family:monospace;font-size:12px;color:#a855f7">
+        <input class="inp inp-sm" id="api-url" value="https://planet-hosts.com/api/studio/station/<?=$stationId?>" readonly style="flex:1;font-family:monospace;font-size:12px;color:#a855f7">
         <button class="btn btn-sm btn-sec" style="font-size:10px;padding:4px 8px" onclick="var p=document.getElementById('api-url');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
       </div>
       <div style="font-size:10px;color:#64748b;margin-top:4px;line-height:1.6">
@@ -232,13 +241,6 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="stat-card"><div class="sv"><?=count($songs)?></div><div class="sl">Recent Songs</div></div>
     <div class="stat-card"><div class="sv"><?=count($schedule)?></div><div class="sl">Shows</div></div>
   </div>
-  <div class="card"><h3>Quick Actions</h3><div style="display:flex;gap:6px;flex-wrap:wrap">
-    <a href="?station_id=<?=$stationId?>&tab=playlists" class="btn btn-sm btn-primary">Manage Playlists</a>
-    <a href="?station_id=<?=$stationId?>&tab=branding" class="btn btn-sm btn-primary">Branding</a>
-    <a href="?station_id=<?=$stationId?>&tab=autodj" class="btn btn-sm btn-primary">AutoDJ</a>
-    <a href="?station_id=<?=$stationId?>&tab=backups" class="btn btn-sm btn-secondary">Backups</a>
-    <a href="https://planet-hosts.com/radio/embed.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-secondary">Listen</a>
-  </div></div>
   <?php if (!empty($songs)): ?>
   <div class="card"><div class="hdr"><h3>Recently Played</h3></div><table><tr><th>Title</th><th>Artist</th><th>Played At</th></tr>
     <?php foreach (array_slice($songs,0,10) as $sh): ?>
@@ -339,7 +341,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <tr>
       <td><?=htmlspecialchars($r->song??$r->title??'')?></td><td><?=htmlspecialchars($r->artist??'')?></td>
       <td><?=htmlspecialchars($r->requester_name??$r->name??'Anonymous')?></td><td><?=htmlspecialchars($r->created_at??'')?></td>
-      <td><span class="status-badge <?=$r->status==='approved'?'status-running':($r->status==='rejected'?'status-stopped':'status-starting')?>"><?=$r->status??'pending'?></span></td>
+      <td><span class="status-badge <?=$r->status==='played'?'status-running':($r->status==='removed'?'status-stopped':'status-starting')?>"><?=$r->status??'pending'?></span></td>
       <td class="actions"><?php if (($r->status??'pending')==='pending'): ?><a href="/user/radio/request/approve/<?=$r->id?>" class="btn btn-sm btn-success">Approve</a><a href="/user/radio/request/reject/<?=$r->id?>" class="btn btn-sm btn-danger">Reject</a><?php endif; ?></td>
     </tr>
     <?php endforeach; ?>
@@ -761,5 +763,3 @@ function handleFiles(files){for(var i=0;i<files.length;i++){var f=files[i];var e
 function renderQueue(){_q.innerHTML='';if(!_queue.length){_btn.style.display='none';return;}_btn.style.display='inline-block';_cnt.textContent=_queue.length+' file(s)';for(var i=0;i<_queue.length;i++){var d=document.createElement('div');d.style.cssText='padding:4px 8px;margin:2px 0;background:rgba(0,0,0,.2);border-radius:4px';d.textContent=_queue[i].name+' ('+Math.round(_queue[i].size/1024)+' KB)';_q.appendChild(d);}}
 function startUpload(){if(!_queue.length)return;_btn.disabled=true;_btn.textContent='Uploading...';_p.style.display='block';_pb.style.width='0';_ps.textContent='';var i=0;var total=_queue.length;function uploadNext(){if(i>=total){_ps.textContent='All files uploaded!';_btn.textContent='Done';setTimeout(function(){location.reload();},1000);return;}var fd=new FormData();fd.append('playlist_id',_playlistId);fd.append('_csrf_token',_csrf);fd.append('files[]',_queue[i]);var x=new XMLHttpRequest();x.open('POST','/user/radio/media/upload',true);x.setRequestHeader('X-CSRF-Token',_csrf);x.upload.onprogress=function(ev){if(ev.lengthComputable){var pct=Math.round(((i+ev.loaded/ev.total)/total)*100);_pb.style.width=pct+'%';_ps.textContent='Uploading '+_queue[i].name+' ('+Math.round(ev.loaded/ev.total*100)+'%)';}};x.onload=function(){if(x.status===200){i++;uploadNext();}else{_ps.textContent='Failed: '+_queue[i].name;_btn.disabled=false;}};x.send(fd);}uploadNext();}
 </script>
-
-[?9001l[?1004l

@@ -35,6 +35,8 @@ class RadioController extends Controller
         try {
             $ss = $this->db->table('streaming_stations')->where('user_id', $hosting->id)->get() ?: [];
             foreach ($ss as $s) {
+                $rs = null;
+                try { $rs = $this->db->table('radio_stations')->where('hosting_user_id', $hosting->id)->first(); } catch (\Exception $e) {}
                 $stations[] = (object)[
                     'id' => 10000 + $s->id,
                     'streaming_id' => $s->id,
@@ -47,16 +49,16 @@ class RadioController extends Controller
                     'port' => (int)$s->port,
                     'mount' => $s->mount_point ?? '/stream',
                     'password' => $s->password ?? '',
-                    'plain_password' => $s->plain_password ?: $s->password,
+                    'plain_password' => $s->plain_password ?? '',
                     'admin_password' => $s->admin_password ?? '',
-                    'admin_plain_password' => $s->admin_plain_password ?: $s->admin_password,
+                    'admin_plain_password' => $s->admin_plain_password ?? '',
                     'bitrate' => (int)($s->bitrate ?? 128),
                     'status' => $s->status ?? 'stopped',
                     'listener_count' => (int)($s->listener_count ?? 0),
                     'listener_peak' => 0,
                     'current_song' => $s->current_song ?? '',
                     'autodj_enabled' => (int)($s->autodj_enabled ?? 0),
-                    'requests_enabled' => 1,
+                    'requests_enabled' => $rs ? (int)$rs->requests_enabled : 1,
                     'timezone' => 'UTC',
                     'format' => $s->format ?? 'mp3',
                 ];
@@ -112,7 +114,7 @@ class RadioController extends Controller
             try { $songs = $this->db->table('radio_song_history')->where('stream_id', $realStationId)->orderBy('played_at', 'desc')->limit(50)->get() ?: []; } catch (\Exception $e) {}
             $hosting = $this->getHosting();
             try { $settings = $hosting ? $this->db->table('radio_settings')->where('user_id', $hosting->id)->first() ?: [] : []; } catch (\Exception $e) {}
-            try { $mounts = $this->db->table('radio_mounts')->where('station_id', $sid)->get() ?: []; } catch (\Exception $e) {}
+            try { $mounts = $this->db->table('radio_mounts')->where('stream_id', $realStationId)->get() ?: []; } catch (\Exception $e) {}
             try { $branding = $this->db->table('radio_branding')->where('station_id', $sid)->first(); } catch (\Exception $e) {}
 
             $autodjCfg = null; $autodjCats = []; $autodjLogs = [];
@@ -400,7 +402,7 @@ class RadioController extends Controller
     {
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
-        if ($station) { $this->db->table('radio_requests')->where('id', $id)->where('stream_id', $station->streaming_id ?? $station->id)->update(['status' => 'approved']); }
+        try { if ($station) { $this->db->table('radio_requests')->where('id', $id)->where('stream_id', $station->streaming_id ?? $station->id)->update(['status' => 'played']); } } catch (\Exception $e) {}
         header('Location: /user/radio?tab=requests&station_id=' . ($station->id ?? '')); exit;
     }
 
@@ -408,7 +410,7 @@ class RadioController extends Controller
     {
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
-        if ($station) { $this->db->table('radio_requests')->where('id', $id)->where('stream_id', $station->streaming_id ?? $station->id)->update(['status' => 'rejected']); }
+        try { if ($station) { $this->db->table('radio_requests')->where('id', $id)->where('stream_id', $station->streaming_id ?? $station->id)->update(['status' => 'removed']); } } catch (\Exception $e) {}
         header('Location: /user/radio?tab=requests&station_id=' . ($station->id ?? '')); exit;
     }
 
