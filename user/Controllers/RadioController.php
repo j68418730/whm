@@ -37,6 +37,8 @@ class RadioController extends Controller
             foreach ($ss as $s) {
                 $rs = null;
                 try { $rs = $this->db->table('radio_stations')->where('hosting_user_id', $hosting->id)->first(); } catch (\Exception $e) {}
+                $srcPass = $s->plain_password ?? ($rs->password ?? '');
+                $admPass = $s->admin_plain_password ?? ($rs->admin_password ?? '');
                 $stations[] = (object)[
                     'id' => 10000 + $s->id,
                     'streaming_id' => $s->id,
@@ -49,9 +51,9 @@ class RadioController extends Controller
                     'port' => (int)$s->port,
                     'mount' => $s->mount_point ?? '/stream',
                     'password' => $s->password ?? '',
-                    'plain_password' => $s->plain_password ?? '',
+                    'plain_password' => $srcPass,
                     'admin_password' => $s->admin_password ?? '',
-                    'admin_plain_password' => $s->admin_plain_password ?? '',
+                    'admin_plain_password' => $admPass,
                     'bitrate' => (int)($s->bitrate ?? 128),
                     'status' => $s->status ?? 'stopped',
                     'listener_count' => (int)($s->listener_count ?? 0),
