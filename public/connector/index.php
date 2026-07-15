@@ -171,8 +171,18 @@ if (preg_match('#^/connector/station/(\d+)/requests$#', $uriPath, $m)) {
     
     if ($method === 'POST') {
         $input = json_decode(file_get_contents('php://input'), true);
+        
+        // New request submission
+        if (!empty($input['artist']) && !empty($input['title'])) {
+            $ins = $pdo->prepare("INSERT INTO radio_requests (stream_id, guest_name, artist, title, message, status) VALUES (?, ?, ?, ?, ?, 'pending')");
+            $ins->execute([$stationId, $input['guest_name'] ?? '', $input['artist'], $input['title'], $input['message'] ?? '']);
+            echo json_encode(['success' => true, 'message' => 'Request submitted']);
+            exit;
+        }
+        
+        // DJ actions (approve/deny)
         $reqId = (int)($input['request_id'] ?? 0);
-        $action = $input['action'] ?? ''; // 'approve' or 'deny'
+        $action = $input['action'] ?? '';
         
         if ($reqId && $action === 'approve') {
             $up = $pdo->prepare("UPDATE radio_requests SET status = 'played' WHERE id = ? AND stream_id = ?");
