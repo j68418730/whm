@@ -35,8 +35,9 @@ $router->get('/admin/radio_dashboard', 'Admin\Controllers\RadioDashboardControll
 
 // Admin Streams Management Routes
 $router->get('/admin/streams', 'Admin\Controllers\StreamsController@index');
-$router->get('/admin/streams/create', 'Admin\Controllers\StreamsController@create');
-$router->post('/admin/streams/create', 'Admin\Controllers\StreamsController@store');
+// Redirected to /admin/streaming
+$router->get('/admin/streams/create', function() { header('Location: /admin/streaming'); exit; });
+$router->post('/admin/streams/create', function() { header('Location: /admin/streaming'); exit; });
 $router->get('/admin/streams/edit/{id}', 'Admin\Controllers\StreamsController@edit');
 $router->post('/admin/streams/edit/{id}', 'Admin\Controllers\StreamsController@update');
 $router->get('/admin/streams/delete/{id}', 'Admin\Controllers\StreamsController@delete');

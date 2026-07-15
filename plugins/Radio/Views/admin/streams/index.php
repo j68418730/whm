@@ -11,7 +11,7 @@ ksort($grouped);
 <div class="card" style="margin-bottom:16px">
 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
 <div><h3 style="margin:0">Stream Management</h3><p style="color:var(--text_muted);font-size:12px;margin:2px 0 0">All radio streams grouped by client</p></div>
-<a href="/admin/streams/create" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Create Stream</a>
+<a href="/admin/streaming" class="btn btn-primary"><i class="bi bi-gear"></i> Streaming Panel</a>
 </div>
 </div>
 
@@ -57,6 +57,6 @@ ksort($grouped);
 <div style="font-size:48px;margin-bottom:8px">📻</div>
 <h4 style="margin:0 0 4px">No Streams</h4>
 <p style="color:var(--text_muted);font-size:13px;margin:0 0 14px">No radio streams created yet.</p>
-<a href="/admin/streaming" class="btn btn-primary">Create First Stream</a>
+<a href="/admin/streaming" class="btn btn-primary">Go to Streaming Panel</a>
 </div>
 <?php endif; ?>
