@@ -90,7 +90,9 @@ class WebsiteBuilderController extends Controller
         $templates = $this->db->table('wb_templates')->orderBy('name', 'ASC')->get() ?: [];
         $categories = [];
         foreach ($templates as $t) {
-            if ($t->category && !in_array($t->category, $categories)) $categories[] = $t->category;
+            $cfg = json_decode($t->config, true);
+            $c = $cfg['category'] ?? '';
+            if ($c && !in_array($c, $categories)) $categories[] = $c;
         }
         return $this->view('Plugins.WebsiteBuilder.Views.admin.templates', [
             'user' => $this->auth->user(), 'templates' => $templates, 'categories' => $categories, 'title' => 'Templates',

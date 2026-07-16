@@ -32,7 +32,7 @@ $primary = $cfg['primary'] ?? '#008cff';
 <div style="height:80px;background:linear-gradient(135deg,<?php echo $primary; ?>,<?php echo $cfg['secondary'] ?? $primary; ?>);display:flex;align-items:center;justify-content:center;font-size:32px;opacity:.8">🎨</div>
 <div style="padding:16px">
 <h4 style="margin:0 0 4px"><?php echo htmlspecialchars($t->name); ?></h4>
-<p style="color:var(--text_muted);font-size:11px;margin:0 0 8px"><?php echo htmlspecialchars($t->description ?: ''); ?> v<?php echo htmlspecialchars($t->version ?? '1.0'); ?></p>
+<p style="color:var(--text_muted);font-size:11px;margin:0 0 8px"><?php echo htmlspecialchars($cfg['description'] ?? ''); ?> v<?php echo htmlspecialchars($cfg['version'] ?? '1.0'); ?></p>
 <div style="display:flex;gap:8px;margin-bottom:10px">
 <?php foreach (['primary','secondary','accent','bg'] as $k):
 $c = $cfg[$k] ?? '#333';

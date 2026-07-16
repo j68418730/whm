@@ -13,7 +13,7 @@ class AiProjectMemory
 
     public function ensureTable()
     {
-        $this->db->query("CREATE TABLE IF NOT EXISTS wb_ai_memory (
+        $this->db->pdo()->exec("CREATE TABLE IF NOT EXISTS wb_ai_memory (
             id INT AUTO_INCREMENT PRIMARY KEY,
             site_id INT NOT NULL,
             brand_colors TEXT,
