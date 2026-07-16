@@ -3,17 +3,16 @@
 <?php endif; ?>
 <div class="card">
 <h3 style="color:var(--accent);margin-bottom:12px">Your Domains</h3>
-<table><tr><th>Domain</th><th>Nameservers</th><th>Actions</th></tr>
+<table><tr><th>Domain</th></tr>
 <?php if (!empty($domains)): foreach ($domains as $d): ?>
-<tr><td><strong><?php echo htmlspecialchars($d->domain); ?></strong></td><td><?php echo htmlspecialchars($d->ns1 ?? '-'); ?>, <?php echo htmlspecialchars($d->ns2 ?? '-'); ?></td>
-<td><a href="/user/domains/zone/<?php echo $d->id; ?>" class="btn btn-sm secondary">DNS</a></td></tr>
-<?php endforeach; else: ?><tr><td colspan="3" style="text-align:center;padding:20px;color:#64748b">No domains yet.</td></tr>
+<tr><td><strong><?php echo htmlspecialchars($d->domain); ?></strong></td></tr>
+<?php endforeach; else: ?><tr><td style="text-align:center;padding:20px;color:#64748b">No domains yet.</td></tr>
 <?php endif; ?></table></div>
 
 <div class="card">
-<h3 style="color:var(--accent);margin-bottom:12px">Your Subdomains <span style="font-size:11px;color:#64748b;font-weight:400">(stored in <code style="color:#a855f7">dns_records</code> table, type A)</span></h3>
-<table><tr><th>Domain</th><th>Subdomain</th><th>Points To</th></tr>
+<h3 style="color:var(--accent);margin-bottom:12px">Your Subdomains</h3>
+<table><tr><th>Subdomain</th></tr>
 <?php $hasSd = false; foreach ($domains as $d): $sdList = array_filter($subdomains, function($s) use ($d) { return $s->domain === $d->domain; }); if (empty($sdList)) continue; $hasSd = true; foreach ($sdList as $s): ?>
-<tr><td><?php echo htmlspecialchars($d->domain); ?></td><td><strong><?php echo htmlspecialchars($s->name); ?></strong></td><td><?php echo htmlspecialchars($s->value); ?></td></tr>
-<?php endforeach; endforeach; if (!$hasSd): ?><tr><td colspan="3" style="text-align:center;padding:20px;color:#64748b">No subdomains yet.</td></tr>
+<tr><td><?php echo htmlspecialchars($s->name . '.' . $d->domain); ?></td></tr>
+<?php endforeach; endforeach; if (!$hasSd): ?><tr><td style="text-align:center;padding:20px;color:#64748b">No subdomains yet.</td></tr>
 <?php endif; ?></table></div>
