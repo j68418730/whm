@@ -102,6 +102,15 @@ class DomainsController extends Controller
                 $recordId = $this->dns->addRecord($zone->id, $subdomain, 'A', $ip, 300);
                 if ($recordId) $this->db->table('dns_records')->where('id', $recordId)->update(['is_user_subdomain' => 1]);
                 $msg = "Subdomain {$full} created pointing to {$ip}.";
+                $home = '/home/' . $this->hostingUser->username;
+                $docRoot = $home . '/public_html/' . $subdomain;
+                if (!is_dir($docRoot)) @mkdir($docRoot, 0755, true);
+                $vhostCfg = "<VirtualHost *:80>\n    ServerName {$full}\n    DocumentRoot {$docRoot}\n    <Directory {$docRoot}>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n    ErrorLog /var/log/apache2/{$full}_error.log\n    CustomLog /var/log/apache2/{$full}_access.log combined\n</VirtualHost>\n";
+                $tmpFile = '/tmp/vhost_' . $full . '.conf';
+                file_put_contents($tmpFile, $vhostCfg);
+                @exec("sudo cp {$tmpFile} /etc/apache2/sites-available/{$full}.conf && sudo a2ensite {$full}.conf && sudo systemctl reload apache2 2>/dev/null");
+                @unlink($tmpFile);
+                $msg .= " Vhost created for {$full}.";
                 if (!empty($_POST['create_ftp'])) {
                     $ftpUser = trim($_POST['ftp_username'] ?: $subdomain);
                     $ftpPass = $_POST['ftp_password'] ?? bin2hex(random_bytes(6));
