@@ -28,7 +28,7 @@
 .fm-list .file .type{width:60px;color:#64748b;font-size:11px}
 .fm-list .file .perms{width:50px;color:#64748b;font-size:10px;font-family:monospace}
 .fm-list .file .date{width:140px;color:#64748b;font-size:11px}
-.fm-list .file .actions{display:none;gap:4px}
+.fm-list .file .actions{display:flex;gap:4px}
 .fm-list .file:hover .actions{display:flex}
 .fm-list .file .actions a{padding:2px 6px;border-radius:3px;font-size:10px;text-decoration:none;color:#94a3b8}
 .fm-list .file .actions a:hover{background:rgba(0,140,255,.1);color:#0A84FF}
@@ -121,6 +121,7 @@
 <button onclick="document.getElementById('uploadInput').click()">📤 Upload</button>
 <input type="file" id="uploadInput" multiple style="display:none" onchange="fmUpload(this.files)">
 <button onclick="fmDownload()">⬇ Download</button>
+<button onclick="fmEditSelected()">✏ Edit</button>
 <div class="sep"></div>
 <button onclick="fmArchive()">📦 Compress</button>
 <button onclick="document.getElementById('extractInput').click()">📂 Extract</button>
@@ -256,6 +257,13 @@ function fmDownload() {
     if (!selectedFile) return;
     fmDownloadItem(selectedFile);
     fmHideCtx();
+}
+
+function fmEditSelected() {
+    if (!selectedFile) return;
+    var isDir = document.querySelector(".file.selected .size").textContent === "-";
+    if (!isDir) fmEditFile(selectedFile);
+    else fmToast("Cannot edit a folder", "error");
 }
 
 function fmEditFile(path) {
