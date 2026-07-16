@@ -1,3 +1,0 @@
-
- UPDATE radio_dj_streams SET stream_id = stream_id - 10000 WHERE stream_id
-[?9001l[?1004l
