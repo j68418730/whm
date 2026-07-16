@@ -541,6 +541,12 @@ function fmSavePerms(path) {
     });
 }
 
+function fmRefreshProps(path) {
+    fetch("/user/files/properties?file=" + encodeURIComponent(path)).then(function(r){return r.json()}).then(function(d){
+        document.querySelector(".file.selected .perms").textContent = d.perms || "";
+    });
+}
+
 function fmProps() {
     if (!selectedFile) return;
     fetch("/user/files/properties?file=" + encodeURIComponent(selectedFile)).then(function(r){return r.json()}).then(function(d){
