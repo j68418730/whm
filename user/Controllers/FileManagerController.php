@@ -140,12 +140,14 @@ class FileManagerController extends Controller
         if ($name) {
             $path = $dir . '/' . $name;
             if (!is_file($path)) {
-                file_put_contents($path, '');
+                $ok = file_put_contents($path, '') !== false;
+                if (!$ok) $ok = @exec("sudo -u {$this->hostingUser->username} touch " . escapeshellarg($path) . " 2>/dev/null") !== null;
+                if ($ok) @exec("sudo chown {$this->hostingUser->username}:{$this->hostingUser->username} " . escapeshellarg($path) . " 2>/dev/null");
                 $ok = is_file($path);
             }
         }
         header('Content-Type: application/json');
-        echo json_encode(['success' => $ok]);
+        echo json_encode(['success' => $ok, 'file' => $path ?? '']);
         exit;
     }
 
@@ -167,12 +169,13 @@ class FileManagerController extends Controller
         $this->requireUser();
         $path = $this->sanitizePath($_POST['file'] ?? '');
         $content = $_POST['content'] ?? '';
+        $ok = false;
         if ($path && is_file($path)) {
-            file_put_contents($path, $content);
-            @exec("sudo chown {$this->hostingUser->username}:{$this->hostingUser->username} " . escapeshellarg($path) . " 2>/dev/null");
+            $ok = file_put_contents($path, $content) !== false;
+            if ($ok) @exec("sudo chown {$this->hostingUser->username}:{$this->hostingUser->username} " . escapeshellarg($path) . " 2>/dev/null");
         }
         header('Content-Type: application/json');
-        echo json_encode(['success' => true]);
+        echo json_encode(['success' => $ok, 'error' => $ok ? '' : ('Cannot write: ' . $path)]);
         exit;
     }
 

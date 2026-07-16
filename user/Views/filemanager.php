@@ -285,9 +285,9 @@ function fmSaveEditor() {
     fd.append("file", path);
     fd.append("content", content);
     fetch("/user/files/save", {method:"POST",body:fd}).then(function(r){return r.json()}).then(function(d){
-        fmToast("💾 Saved", "success");
-        fmCloseEditor();
-    });
+        if (d.success) { fmToast("💾 Saved", "success"); fmCloseEditor(); }
+        else fmToast("❌ Save failed: " + (d.error || "unknown"), "error");
+    }).catch(function(e){ fmToast("❌ Error: " + e.message, "error"); });
 }
 
 function fmCloseEditor() {
