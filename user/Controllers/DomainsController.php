@@ -86,7 +86,12 @@ class DomainsController extends Controller
     {
         $u = $this->requireUser();
         $zones = $this->hostingUser ? ($this->db->table('dns_zones')->where('domain', 'LIKE', '%' . ($this->hostingUser->domain ?? '') . '%')->get() ?: []) : [];
-        return $this->view('user.subdomains', ['user' => $u, 'hosting' => $this->hostingUser, 'zones' => $zones, 'title' => 'Subdomains']);
+        $subdomainRecords = [];
+        foreach ($zones as $z) {
+            $records = $this->db->table('dns_records')->where('zone_id', $z->id)->where('type', 'A')->where('is_user_subdomain', 1)->get() ?: [];
+            foreach ($records as $r) $subdomainRecords[] = $r;
+        }
+        return $this->view('user.subdomains', ['user' => $u, 'hosting' => $this->hostingUser, 'zones' => $zones, 'subdomainRecords' => $subdomainRecords, 'title' => 'Subdomains']);
     }
 
     public function createSubdomain()
@@ -134,6 +139,20 @@ class DomainsController extends Controller
             } else {
                 $_SESSION['error'] = "Domain {$domain} not found in DNS zones.";
             }
+        }
+        $this->response->redirect('/user/subdomains');
+    }
+
+    public function deleteSubdomain($id)
+    {
+        $u = $this->requireUser();
+        $record = $this->db->table('dns_records')->where('id', $id)->where('is_user_subdomain', 1)->first();
+        if ($record) {
+            $full = $record->name . '.' . ($this->db->table('dns_zones')->where('id', $record->zone_id)->first()->domain ?? '');
+            $this->db->table('dns_records')->where('id', $id)->delete();
+            @exec("sudo a2dissite {$full}.conf 2>/dev/null && sudo rm -f /etc/apache2/sites-available/{$full}.conf && sudo systemctl reload apache2 2>/dev/null");
+            @exec("sudo rm -rf /home/{$this->hostingUser->username}/public_html/{$record->name} 2>/dev/null");
+            $_SESSION['success'] = "Subdomain {$full} deleted.";
         }
         $this->response->redirect('/user/subdomains');
     }
