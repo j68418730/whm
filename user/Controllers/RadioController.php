@@ -500,12 +500,13 @@ class RadioController extends Controller
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
         $source = $_FILES['files'] ?? $_FILES['file'] ?? null;
         if ($source && !empty($source['name'][0])) {
-            $count = 0;
+            $count = 0; $dupes = 0;
             foreach ((array)$source['name'] as $i => $name) {
                 if ($source['error'][$i] !== UPLOAD_ERR_OK) continue;
                 $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
                 if (in_array($ext, ['mp3', 'aac', 'ogg', 'flac', 'wav', 'm4a', 'm3u'])) {
                     $dest = $dir . '/' . basename($name);
+                    if (file_exists($dest)) { $dupes++; continue; }
                     if (move_uploaded_file($source['tmp_name'][$i], $dest)) {
                         $count++;
                         if ($playlistId) {
@@ -526,10 +527,12 @@ class RadioController extends Controller
             }
             if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
                 header('Content-Type: application/json');
-                echo json_encode(['success' => true, 'count' => $count]);
+                echo json_encode(['success' => true, 'count' => $count, 'duplicates' => $dupes]);
                 exit;
             }
-            $_SESSION['success'] = "$count file(s) uploaded.";
+            $msg = "$count file(s) uploaded.";
+            if ($dupes) $msg .= " $dupes duplicate(s) skipped.";
+            $_SESSION['success'] = $msg;
         }
         $qs = $playlistId ? '&playlist_id=' . $playlistId : '';
         $tab = $playlistId ? 'playlists' : 'media';
