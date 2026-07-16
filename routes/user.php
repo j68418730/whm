@@ -239,3 +239,7 @@ $router->get('/reseller/packages', 'User\Controllers\ResellerPortalController@pa
 $router->get('/reseller/branding', 'User\Controllers\ResellerPortalController@branding');
 $router->get('/reseller/billing', 'User\Controllers\ResellerPortalController@billing');
 $router->get('/reseller/support', 'User\Controllers\ResellerPortalController@support');
+
+// Global Music Library
+$router->get('/user/radio/global-music', 'User\Controllers\RadioController@globalMusic');
+$router->get('/user/radio/global-music/download/{itemId}', 'User\Controllers\RadioController@globalMusicDownload');

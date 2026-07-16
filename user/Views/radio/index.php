@@ -127,6 +127,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <a href="?station_id=<?=$stationId?>&tab=song_history" class="<?=$tab==='song_history'?'active':''?>">Song History</a>
   <a href="?station_id=<?=$stationId?>&tab=applications" class="<?=$tab==='applications'?'active':''?>" style="color:#facc15">📋 Applications</a>
   <a href="?station_id=<?=$stationId?>&tab=backups" class="<?=$tab==='backups'?'active':''?>">Backups</a>
+  <a href="/user/radio/global-music" style="color:#4ade80;font-weight:700">🌐 Global Music</a>
   <a href="/user/radio/widgets?station_id=<?=$stationId?>" style="color:#a855f7;font-weight:700">🎨 Widgets</a>
   <a href="/dj_panel.php" target="_blank" style="color:#facc15;font-weight:600">🎧 DJ Panel</a>
 </div>
