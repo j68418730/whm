@@ -16,4 +16,5 @@
 <a href="/admin/websitebuilder/sites" class="section-card"><div class="icon">🌐</div><div class="name">Sites</div><div class="desc">Published websites</div></a>
 <a href="/admin/websitebuilder/templates" class="section-card"><div class="icon">📐</div><div class="name">Templates</div><div class="desc">Site templates</div></a>
 <a href="/admin/websitebuilder/themes" class="section-card"><div class="icon">🎨</div><div class="name">Themes</div><div class="desc">Visual themes</div></a>
+<a href="/admin/websitebuilder/ai" class="section-card" style="border-color:rgba(168,85,247,.3)"><div class="icon">🤖</div><div class="name">AI Builder</div><div class="desc">AI site generator</div></a>
 </div>
