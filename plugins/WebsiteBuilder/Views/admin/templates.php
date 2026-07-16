@@ -39,8 +39,10 @@
 <?php
 $currentCat = '';
 foreach ($templates as $t):
-if ($t->category !== $currentCat):
-$currentCat = $t->category;
+$cfg = json_decode($t->config, true);
+$cat = $cfg['category'] ?? 'uncategorized';
+if ($cat !== $currentCat):
+$currentCat = $cat;
 ?>
 <div class="card" style="margin-bottom:12px;padding:12px 16px">
 <h4 style="margin:0;font-size:13px;color:var(--accent);text-transform:capitalize"><?php echo htmlspecialchars($currentCat ?: 'Uncategorized'); ?></h4>
