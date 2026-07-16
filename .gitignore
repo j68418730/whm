@@ -51,3 +51,13 @@ plugins/webbasesams/*.sql.gz
 # Desktop Connector build
 desktop-connector/dist/
 desktop-connector/node_modules/
+*.py
+*.bat
+10000
+*.sql
+dj_panel_fixed.php
+patch_*.php
+update_*.php
+set_*.php
+fix_*.php
+migration_fix.sql
