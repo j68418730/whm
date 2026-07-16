@@ -530,7 +530,7 @@ function fmCalcPerms() {
 }
 
 function fmSavePerms(path) {
-    var perms = parseInt(document.getElementById("permCode").textContent);
+    var perms = document.getElementById("permCode").textContent;
     var fd = new FormData();
     fd.append("file", path);
     fd.append("perms", perms);
