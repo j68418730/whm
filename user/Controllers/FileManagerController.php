@@ -61,7 +61,7 @@ class FileManagerController extends Controller
         $tree = $this->buildTree($home, $home);
         $items = [];
         $files = @scandir($dir);
-        if ($files === false) { header('Content-Type: application/json'); echo json_encode(['error' => 'scandir failed: ' . $dir, 'home' => $home, 'tree' => $tree, 'items' => []]); exit; }
+        if ($files === false) { header('Content-Type: application/json'); echo json_encode(['error' => 'scandir failed: ' . $dir, 'tree' => $tree, 'items' => []]); exit; }
         foreach ($files as $f) {
             if ($f === '.' || $f === '..') continue;
             $path = $dir . '/' . $f;
