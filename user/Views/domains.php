@@ -1,9 +1,6 @@
 <?php if (isset($_SESSION['success'])): ?>
 <div class="alert alert-success"><?php echo htmlspecialchars($_SESSION['success'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['success']); ?></div>
 <?php endif; ?>
-<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-<a href="/user/domains/add" class="btn primary">+ Add Domain</a>
-</div>
 <div class="card">
 <h3 style="color:var(--accent);margin-bottom:12px">Your Domains</h3>
 <table><tr><th>Domain</th><th>Nameservers</th><th>Subdomains</th><th>Actions</th></tr>
