@@ -60,6 +60,9 @@
 #toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:8px;font-size:12px;z-index:9999;display:none}
 #toast.success{background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.2);color:#4ade80}
 #toast.error{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.2);color:#ef4444}
+.ve-btn{padding:4px 10px;border-radius:4px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.2);color:#94a3b8;font-size:12px;cursor:pointer}
+.ve-btn:hover{background:rgba(0,140,255,.1);color:#fff}
+.ve-btn.active{background:rgba(0,140,255,.2);color:#0A84FF}
 </style>
 
 <div id="toast"></div>
@@ -81,7 +84,22 @@
 <div class="editor-overlay" id="editorOverlay" onclick="if(event.target===this)fmCloseEditor()">
 <div class="editor-box">
 <div class="header"><h3 id="editorTitle">Edit File</h3><button onclick="fmCloseEditor()">✕</button></div>
-<textarea id="editorContent" spellcheck="false"></textarea>
+<div style="display:flex;gap:4px;padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.1)">
+<button class="ve-btn" data-view="code" onclick="veSetView('code')">Code</button>
+<button class="ve-btn" data-view="split" onclick="veSetView('split')">Split</button>
+<button class="ve-btn" data-view="design" onclick="veSetView('design')">Design</button>
+<div style="flex:1"></div>
+<button class="ve-btn" onclick="veBold()" title="Bold"><b>B</b></button>
+<button class="ve-btn" onclick="veItalic()" title="Italic"><i>I</i></button>
+<button class="ve-btn" onclick="veUnderline()" title="Underline"><u>U</u></button>
+<button class="ve-btn" onclick="veHeading()" title="Heading">H</button>
+<button class="ve-btn" onclick="veLink()" title="Link">🔗</button>
+<button class="ve-btn" onclick="veImage()" title="Image">🖼</button>
+</div>
+<div id="veContainer" style="flex:1;display:flex;overflow:hidden">
+<textarea id="editorContent" spellcheck="false" style="flex:1;padding:12px;background:#0a0e1a;color:#4ade80;font-family:monospace;font-size:13px;border:none;outline:none;resize:none;tab-size:4"></textarea>
+<iframe id="vePreview" style="flex:1;border:none;background:#fff;display:none"></iframe>
+</div>
 <div class="footer"><button onclick="fmCloseEditor()" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.2);color:#94a3b8;cursor:pointer">Cancel</button><button onclick="fmSaveEditor()" style="padding:6px 14px;border-radius:6px;border:none;background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff;cursor:pointer">💾 Save</button></div>
 </div>
 </div>
@@ -175,7 +193,7 @@ function fmRenderFiles(items) {
     var html = "";
     items.forEach(function(f){
         var icon = f.is_dir ? "📁" : fmIcon(f.ext);
-        html += '<div class="file" data-path="' + f.path + '" onclick="fmSelect(this,event)">';
+        html += '<div class="file" data-path="' + f.path + '" onclick="fmSelect(this,event)" ondblclick="fmOpenItem(\'' + f.path + '\',' + f.is_dir + ')">';
         html += '<span class="icon">' + icon + '</span>';
         html += '<span class="name">' + f.name + '</span>';
         html += '<span class="size">' + (f.is_dir ? "-" : fmSize(f.size)) + '</span>';
@@ -245,6 +263,7 @@ function fmEditFile(path) {
         document.getElementById("editorContent").value = d.content;
         document.getElementById("editorContent").dataset.file = path;
         document.getElementById("editorOverlay").classList.add("show");
+        veSetView(d.ext === "html" || d.ext === "htm" ? "split" : "code");
     });
     fmHideCtx();
 }
@@ -263,6 +282,40 @@ function fmSaveEditor() {
 
 function fmCloseEditor() {
     document.getElementById("editorOverlay").classList.remove("show");
+}
+
+var veCurrentView = "code";
+function veSetView(view) {
+    veCurrentView = view;
+    var code = document.getElementById("editorContent");
+    var prev = document.getElementById("vePreview");
+    document.querySelectorAll(".ve-btn[data-view]").forEach(function(b){b.classList.toggle("active",b.dataset.view===view)});
+    if (view === "code") { code.style.display = "block"; prev.style.display = "none"; }
+    else if (view === "design") { code.style.display = "none"; prev.style.display = "block"; veUpdatePreview(); }
+    else { code.style.display = "block"; prev.style.display = "block"; veUpdatePreview(); }
+}
+function veUpdatePreview() {
+    var prev = document.getElementById("vePreview");
+    var html = document.getElementById("editorContent").value;
+    prev.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
+}
+document.getElementById("editorContent").addEventListener("input", function() {
+    if (veCurrentView !== "code") veUpdatePreview();
+});
+function veBold() { document.execCommand("bold"); }
+function veItalic() { document.execCommand("italic"); }
+function veUnderline() { document.execCommand("underline"); }
+function veHeading() {
+    var h = prompt("Heading level (1-6):", "2");
+    if (h) document.execCommand("formatBlock", false, "h" + h);
+}
+function veLink() {
+    var url = prompt("URL:", "https://");
+    if (url) document.execCommand("createLink", false, url);
+}
+function veImage() {
+    var url = prompt("Image URL:", "https://");
+    if (url) document.execCommand("insertImage", false, url);
 }
 
 function fmCreateFolder() {
