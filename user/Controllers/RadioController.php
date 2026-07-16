@@ -505,7 +505,7 @@ class RadioController extends Controller
                 $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
                 if (in_array($ext, ['mp3', 'aac', 'ogg', 'flac', 'wav', 'm4a'])) {
                     $dest = $dir . '/' . basename($name);
-                    if (move_uploaded_file($_FILES['file']['tmp_name'][$i], $dest)) {
+                    if (move_uploaded_file($source['tmp_name'][$i], $dest)) {
                         $count++;
                         if ($playlistId) {
                             $title = pathinfo($name, PATHINFO_FILENAME);
