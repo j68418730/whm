@@ -118,7 +118,10 @@ class FileManagerController extends Controller
         $name = preg_replace('/[^a-zA-Z0-9_\- .]/', '', $_POST['name'] ?? '');
         if ($name) {
             $path = $parent . '/' . $name;
-            if (!is_dir($path)) @mkdir($path, 0755, true);
+            if (!is_dir($path)) {
+                @mkdir($path, 0755, true);
+                @exec("sudo chown {$this->hostingUser->username}:{$this->hostingUser->username} " . escapeshellarg($path) . " 2>/dev/null");
+            }
         }
         header('Content-Type: application/json');
         echo json_encode(['success' => true]);
@@ -133,7 +136,10 @@ class FileManagerController extends Controller
         $name = preg_replace('/[^a-zA-Z0-9_\- .]/', '', $_POST['name'] ?? '');
         if ($name) {
             $path = $dir . '/' . $name;
-            if (!is_file($path)) file_put_contents($path, '');
+            if (!is_file($path)) {
+                file_put_contents($path, '');
+                @exec("sudo chown {$this->hostingUser->username}:{$this->hostingUser->username} " . escapeshellarg($path) . " 2>/dev/null");
+            }
         }
         header('Content-Type: application/json');
         echo json_encode(['success' => true]);
@@ -160,6 +166,7 @@ class FileManagerController extends Controller
         $content = $_POST['content'] ?? '';
         if ($path && is_file($path)) {
             file_put_contents($path, $content);
+            @exec("sudo chown {$this->hostingUser->username}:{$this->hostingUser->username} " . escapeshellarg($path) . " 2>/dev/null");
         }
         header('Content-Type: application/json');
         echo json_encode(['success' => true]);

@@ -129,11 +129,12 @@ function fmRefresh(dir) {
     if (dir !== undefined) currentDir = dir;
     var url = "/user/files/list?dir=" + encodeURIComponent(currentDir);
     fetch(url).then(function(r){return r.json()}).then(function(d){
+        console.log('FM data:', d);
         fmRenderTree(d.tree);
         fmRenderPath(d.dir);
         fmRenderFiles(d.items);
         fmUpdateStatus(d.items.length, d.home);
-    }).catch(function(e){document.getElementById("fileList").innerHTML='<div style="padding:30px;text-align:center;color:#f87171">Error loading files.</div>';});
+    }).catch(function(e){console.error('FM error:', e);document.getElementById("fileList").innerHTML='<div style="padding:30px;text-align:center;color:#f87171">Error: '+e.message+'</div>';});
 }
 fmRefresh("");
 
@@ -170,6 +171,7 @@ function fmRenderPath(path) {
 }
 
 function fmRenderFiles(items) {
+    console.log('fmRenderFiles called with', items.length, 'items');
     var html = "";
     items.forEach(function(f){
         var icon = f.is_dir ? "📁" : fmIcon(f.ext);
@@ -418,7 +420,7 @@ function fmPerms() {
         html += "<div class=\"perms-col\"><label>Public</label><select id=\"permPublic\" onchange=\"fmCalcPerms()\">" + fmPermOpts(pub) + "</select></div>";
         html += "</div>";
         html += "<div style=\"font-size:12px;margin:8px 0;color:#4ade80;font-family:monospace\">chmod <span id=\"permCode\">" + perms + "</span></div>";
-        html += "<button onclick=\"fmSavePerms(\\"" + selectedFile + "\\")\" style=\"padding:6px 14px;border-radius:6px;border:none;background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff;cursor:pointer\">💾 Apply</button>";
+        html += '<button onclick="fmSavePerms(\'' + selectedFile + '\')" style="padding:6px 14px;border-radius:6px;border:none;background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff;cursor:pointer">💾 Apply</button>';
         document.getElementById("propContent").innerHTML = html;
         document.getElementById("propOverlay").classList.add("show");
     });
