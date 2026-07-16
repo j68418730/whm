@@ -13,4 +13,5 @@
 <a href="/user/builder/templates" class="section-card"><span class="icon">📐</span><div class="name">Templates</div><div class="desc">Site templates</div></a>
 <a href="/user/builder/themes" class="section-card"><span class="icon">🎨</span><div class="name">Themes</div><div class="desc">Customize appearance</div></a>
 <a href="/user/builder/media" class="section-card"><span class="icon">🖼️</span><div class="name">Media Manager</div><div class="desc">Upload & manage media</div></a>
+<a href="/user/websites/ai" class="section-card" style="border-color:rgba(168,85,247,.3)"><span class="icon">🤖</span><div class="name">AI Builder</div><div class="desc">AI site generator</div></a>
 </div>
