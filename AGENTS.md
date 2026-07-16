@@ -41,13 +41,19 @@ To reinstall: `sudo tar xzf sc_serv2_linux_x64-latest.tar.gz -C /usr/local/shout
 - Music database directory auto-created during provisioning
 - Global playlist system: admin CRUD (table, controller, views, routes)
 - Global Music tab for users with download-to-station
+- File Manager: tree view, file list, code editor, visual HTML editor (Code/Split/Design), double-click open, permissions editor
+- Admin file manager: user selection, file browsing
+- Subdomain system: DNS + Apache vhost + auto-directory creation
+- FTP account creation with reserved name/duplicate/directory traversal checks
+- ToDo list admin page
+- DnsManager syncZoneToBind writes Bind9 zone files
 
 ### Needs Work
 - Admin global playlists upload still has issues (empty $_FILES)
 - AutoDJ wizard: media upload, engine detection, finish button
-- Admin/streams/create redirect to /admin/streaming
-- Error message improvements across the board
+- DNS glue records for ns1/ns2.planet-hosts.com (subdomain resolution)
 
 ### Known Issues
 - admin/radio/global-playlists/upload/{id} receives empty $_FILES on admin port
-- streaming_stations IDs changed from 9/10/11 to 12/13/14 (may affect old bookmarks)
+- repair.planet-hosts.com DNS not resolving from some ISPs (needs glue records at registrar)
+- streaming_stations IDs changed from 9/10/11 to 12/13/14
