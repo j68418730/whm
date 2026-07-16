@@ -13,7 +13,8 @@ input,select{padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,25
 
 <div class="section-card">
 <h3>➕ Create Subdomain</h3>
-<form method="POST" action="/user/subdomains/create" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<form method="POST" action="/user/subdomains/create" style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;gap:10px;flex-wrap:wrap">
 <div style="flex:1;min-width:120px">
 <label style="font-size:11px;color:#64748b;display:block;margin-bottom:2px">Subdomain</label>
 <input name="subdomain" placeholder="blog" required>
@@ -26,6 +27,28 @@ input,select{padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,25
 <option value="<?php echo htmlspecialchars($z->domain); ?>"><?php echo htmlspecialchars($z->domain); ?></option>
 <?php endforeach; ?>
 </select>
+</div>
+</div>
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+<label style="font-size:11px;color:#64748b;display:flex;align-items:center;gap:6px;cursor:pointer">
+<input type="checkbox" name="create_ftp" value="1" onchange="document.getElementById('ftp-fields').style.display=this.checked?'block':'none'"> Create FTP Account
+</label>
+</div>
+<div id="ftp-fields" style="display:none">
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+<div style="flex:1;min-width:150px">
+<label style="font-size:11px;color:#64748b;display:block;margin-bottom:2px">Directory</label>
+<input name="ftp_dir" placeholder="public_html/blog" value="public_html">
+</div>
+<div style="flex:1;min-width:120px">
+<label style="font-size:11px;color:#64748b;display:block;margin-bottom:2px">FTP Username</label>
+<input name="ftp_username" placeholder="blog">
+</div>
+<div style="flex:1;min-width:120px">
+<label style="font-size:11px;color:#64748b;display:block;margin-bottom:2px">FTP Password</label>
+<input name="ftp_password" type="password" placeholder="Min 6 chars">
+</div>
+</div>
 </div>
 <button type="submit" class="btn">Create Subdomain</button>
 </form>
