@@ -68,14 +68,21 @@ class FilesystemController extends Controller
     public function fileManager()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect("/admin/login"); exit; }
-        $users = [];
         $pdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", "radiouser", "Skylinehosting171");
+        $selectedUser = $_GET["user"] ?? "";
+        if ($selectedUser) {
+            $stmt = $pdo->prepare("SELECT id, username, email, domain FROM hosting_users WHERE username = ?");
+            $stmt->execute([$selectedUser]);
+            $target = $stmt->fetch(PDO::FETCH_OBJ);
+            if (!$target) { $this->response->redirect("/admin/filesystem"); exit; }
+            return $this->view("admin.filesystem.browse", [
+                "user" => $this->auth->user(), "targetUser" => $target, "title" => "Files: " . $target->username
+            ]);
+        }
         $stmt = $pdo->query("SELECT id, username, email, domain FROM hosting_users ORDER BY username");
-        if ($stmt) $users = $stmt->fetchAll(PDO::FETCH_OBJ);
+        $users = $stmt ? $stmt->fetchAll(PDO::FETCH_OBJ) : [];
         return $this->view("admin.filesystem.index", [
-            "user" => $this->auth->user(),
-            "users" => $users,
-            "title" => "File Manager"
+            "user" => $this->auth->user(), "users" => $users, "title" => "File Manager"
         ]);
     }
 
