@@ -30,8 +30,12 @@ td{padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.04);color:#c0c0c0}
 
 <div class="crd"><h2>Upload Songs</h2>
 <form method="post" action="/admin/radio/global-playlists/upload/<?=$playlist->id?>" enctype="multipart/form-data">
-  <div class="upload-zone" onclick="document.getElementById('fu').click()" ondragover="event.preventDefault()" ondrop="event.preventDefault();document.getElementById('fu').files=event.dataTransfer.files">Click or drop files here (mp3, aac, ogg, flac, wav, m4a)</div>
-  <input id="fu" type="file" name="files[]" multiple accept=".mp3,.aac,.ogg,.flac,.wav,.m4a" style="display:none">
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <label style="flex:1;padding:20px;border:2px dashed rgba(0,140,255,.2);border-radius:10px;text-align:center;color:#64748b;font-size:12px;cursor:pointer;transition:.15s;display:block" onmouseover="this.style.borderColor='rgba(0,140,255,.4)';this.style.color='#94a3b8'" onmouseout="this.style.borderColor='rgba(0,140,255,.2)';this.style.color='#64748b'">
+    <input type="file" name="files[]" multiple accept=".mp3,.aac,.ogg,.flac,.wav,.m4a" style="display:block;margin:0 auto;font-size:11px;color:#e0e0e0;background:rgba(0,0,0,.3);padding:6px;border-radius:4px;border:1px solid rgba(255,255,255,.08)" onchange="this.parentElement.textContent=this.files.length+' file(s) selected'">
+    <span style="display:block;margin-top:6px">Click to browse (mp3, aac, ogg, flac, wav, m4a)</span>
+    </label>
+  </div>
   <button class="btn btn-p" style="margin-top:8px">Upload</button>
 </form>
 </div>

@@ -80,35 +80,36 @@ class GlobalPlaylistsController extends Controller
 
     public function upload($id)
     {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->redirect('/admin/login'); exit; }
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $_SESSION['error_message'] = 'Auth failed'; $this->redirect('/admin/login'); exit; }
         $dir = '/var/www/radiohosting/global_music/playlist_' . $id;
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        if (empty($_FILES) && empty($_POST)) { $_SESSION['error_message'] = 'No form data received. Check post_max_size.'; $this->redirect('/admin/radio/global-playlists/edit/' . $id); exit; }
+        if (empty($_FILES)) { $_SESSION['error_message'] = 'No files received (enctype or size issue). POST size=' . $_SERVER['CONTENT_LENGTH']; $this->redirect('/admin/radio/global-playlists/edit/' . $id); exit; }
         $source = $_FILES['files'] ?? $_FILES['file'] ?? null;
-        if ($source && !empty($source['name'][0])) {
-            $count = 0;
-            foreach ((array)$source['name'] as $i => $name) {
-                if ($source['error'][$i] !== UPLOAD_ERR_OK) continue;
-                $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-                if (in_array($ext, ['mp3', 'aac', 'ogg', 'flac', 'wav', 'm4a', 'm3u'])) {
-                    $dest = $dir . '/' . basename($name);
-                    if (file_exists($dest)) continue;
-                    if (move_uploaded_file($source['tmp_name'][$i], $dest)) {
-                        $count++;
-                        $title = pathinfo($name, PATHINFO_FILENAME);
-                        $artist = '';
-                        $parts = explode(' - ', $title, 2);
-                        if (count($parts) === 2) { $artist = trim($parts[0]); $title = trim($parts[1]); }
-                        try {
-                            $this->db->table('radio_global_playlist_items')->insertGetId([
-                                'playlist_id' => $id, 'title' => $title, 'artist' => $artist,
-                                'file_path' => $dest, 'duration' => 0, 'file_size' => filesize($dest),
-                            ]);
-                        } catch (\Exception $e) {}
-                    }
-                }
+        if (!$source || empty($source['name'][0])) { $_SESSION['error_message'] = 'Empty file source. Files keys: ' . implode(',', array_keys($_FILES)); $this->redirect('/admin/radio/global-playlists/edit/' . $id); exit; }
+        $count = 0;
+        foreach ((array)$source['name'] as $i => $name) {
+            if ($source['error'][$i] !== UPLOAD_ERR_OK) { $_SESSION['error_message'] = 'Upload error ' . $source['error'][$i] . ' for ' . $name; continue; }
+            $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+            if (in_array($ext, ['mp3', 'aac', 'ogg', 'flac', 'wav', 'm4a', 'm3u'])) {
+                $dest = $dir . '/' . basename($name);
+                if (file_exists($dest)) continue;
+                if (move_uploaded_file($source['tmp_name'][$i], $dest)) {
+                    $count++;
+                    $title = pathinfo($name, PATHINFO_FILENAME);
+                    $artist = '';
+                    $parts = explode(' - ', $title, 2);
+                    if (count($parts) === 2) { $artist = trim($parts[0]); $title = trim($parts[1]); }
+                    try {
+                        $this->db->table('radio_global_playlist_items')->insertGetId([
+                            'playlist_id' => $id, 'title' => $title, 'artist' => $artist,
+                            'file_path' => $dest, 'duration' => 0, 'file_size' => filesize($dest),
+                        ]);
+                    } catch (\Exception $e) { $_SESSION['error_message'] = 'DB insert failed.'; }
+                } else { $_SESSION['error_message'] = 'Failed to move ' . $name; }
             }
-            $_SESSION['success_message'] = "$count file(s) uploaded.";
         }
+        $_SESSION['success_message'] = "$count file(s) uploaded.";
         $this->redirect('/admin/radio/global-playlists/edit/' . $id);
     }
 
