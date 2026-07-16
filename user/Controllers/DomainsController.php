@@ -32,9 +32,9 @@ class DomainsController extends Controller
         $domains = $this->hostingUser ? ($this->db->table('dns_zones')->where('domain', 'LIKE', '%' . ($this->hostingUser->domain ?? '') . '%')->get() ?: []) : [];
         $subdomains = [];
         foreach ($domains as $d) {
-            $records = $this->db->table('dns_records')->where('zone_id', $d->id)->where('type', 'A')->get() ?: [];
+            $records = $this->db->table('dns_records')->where('zone_id', $d->id)->where('type', 'A')->where('is_user_subdomain', 1)->get() ?: [];
             foreach ($records as $r) {
-                if ($r->name !== '@') $subdomains[] = (object)['domain' => $d->domain, 'name' => $r->name, 'value' => $r->value, 'record_id' => $r->id, 'zone_id' => $d->id];
+                $subdomains[] = (object)['domain' => $d->domain, 'name' => $r->name, 'value' => $r->value, 'record_id' => $r->id, 'zone_id' => $d->id];
             }
         }
         return $this->view('user.domains', ['user' => $u, 'hosting' => $this->hostingUser, 'domains' => $domains, 'subdomains' => $subdomains, 'title' => 'Domains']);
@@ -99,7 +99,8 @@ class DomainsController extends Controller
             $ip = $_SERVER['SERVER_ADDR'] ?? 'planet-hosts.com';
             $zone = $this->db->table('dns_zones')->where('domain', $domain)->first();
             if ($zone) {
-                $this->dns->addRecord($zone->id, $subdomain, 'A', $ip, 300);
+                $recordId = $this->dns->addRecord($zone->id, $subdomain, 'A', $ip, 300);
+                if ($recordId) $this->db->table('dns_records')->where('id', $recordId)->update(['is_user_subdomain' => 1]);
                 $msg = "Subdomain {$full} created pointing to {$ip}.";
                 if (!empty($_POST['create_ftp'])) {
                     $ftpUser = trim($_POST['ftp_username'] ?: $subdomain);
