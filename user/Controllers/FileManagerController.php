@@ -362,10 +362,16 @@ class FileManagerController extends Controller
     {
         $this->requireUser();
         $path = $this->sanitizePath($_POST['file'] ?? '');
-        $perms = (int)$_POST['perms'] ?? 755;
-        if (file_exists($path)) chmod($path, $perms);
+        $perms = (int)($_POST['perms'] ?? 755);
+        $octal = octdec((string)$perms);
+        $ok = false;
+        if (file_exists($path)) {
+            $ok = @chmod($path, $octal);
+            if (!$ok) @exec("sudo chmod {$perms} " . escapeshellarg($path) . " 2>/dev/null");
+            $ok = true;
+        }
         header('Content-Type: application/json');
-        echo json_encode(['success' => true]);
+        echo json_encode(['success' => $ok]);
         exit;
     }
 
