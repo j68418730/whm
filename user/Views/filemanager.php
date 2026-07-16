@@ -133,24 +133,24 @@ function fmRefresh(dir) {
         fmRenderPath(d.dir);
         fmRenderFiles(d.items);
         fmUpdateStatus(d.items.length, d.home);
-    });
+    }).catch(function(e){document.getElementById("fileList").innerHTML='<div style="padding:30px;text-align:center;color:#f87171">Error loading files.</div>';});
 }
 fmRefresh("");
 
 function fmRenderTree(tree) {
     var html = "";
-    html += "<div class=\"folder active\" onclick=\"fmRefresh(\\"\\")\">🏠 Home</div>";
+    html += '<div class="folder active" onclick="fmRefresh(\'\')">🏠 Home</div>';
     tree.forEach(function(f){ html += fmRenderNode(f, 0); });
     document.getElementById("folderTree").innerHTML = html;
 }
 
 function fmRenderNode(f, depth) {
     var hasChildren = f.children && f.children.length > 0;
-    var html = "<div class=\"folder\" onclick=\"fmRefresh(\\"" + f.path + "\\")\" data-path=\\"" + f.path + "\\">";
-    html += "<span class=\"arrow" + (hasChildren ? "" : "\\") + "\\" + (hasChildren ? " style=\\"visibility:visible\\"\\" : " style=\\"visibility:hidden\\"") + "></span>";
-    html += "<span class=\\"icon\\">📁</span>" + f.name + "</div>";
+    var html = '<div class="folder" onclick="fmRefresh(\'' + f.path + '\')">';
+    html += '<span class="arrow">' + (hasChildren ? "&#9654;" : "") + '</span>';
+    html += '<span class="icon">📁</span>' + f.name + '</div>';
     if (hasChildren) {
-        html += "<div class=\\"children\\">";
+        html += '<div class="children">';
         f.children.forEach(function(c){ html += fmRenderNode(c, depth + 1); });
         html += "</div>";
     }
@@ -159,12 +159,12 @@ function fmRenderNode(f, depth) {
 
 function fmRenderPath(path) {
     var parts = path ? path.split("/") : [];
-    var html = "<a href=\\"#\\" onclick=\\"fmRefresh(\\"\\");return false\\">Home</a>";
+    var html = '<a href="#" onclick="fmRefresh(\'\');return false">Home</a>';
     var running = "";
     parts.forEach(function(p){
         if (!p) return;
         running += "/" + p;
-        html += "<span class=\\"sep\\">/</span><a href=\\"#\\" onclick=\\"fmRefresh(\\"" + running + "\\");return false\\">" + p + "</a>";
+        html += '<span class="sep">/</span><a href="#" onclick="fmRefresh(\'' + running + '\');return false">' + p + '</a>';
     });
     document.getElementById("fmPath").innerHTML = html;
 }
@@ -173,18 +173,18 @@ function fmRenderFiles(items) {
     var html = "";
     items.forEach(function(f){
         var icon = f.is_dir ? "📁" : fmIcon(f.ext);
-        html += "<div class=\\"file\\" data-path=\\"" + f.path + "\\" onclick=\\"fmSelect(this,event)\\">";
-        html += "<span class=\\"icon\\">" + icon + "</span>";
-        html += "<span class=\\"name\\">" + f.name + "</span>";
-        html += "<span class=\\"size\\">" + (f.is_dir ? "-" : fmSize(f.size)) + "</span>";
-        html += "<span class=\\"type\\">" + (f.is_dir ? "folder" : f.ext.toUpperCase()) + "</span>";
-        html += "<span class=\\"perms\\">" + f.perms + "</span>";
-        html += "<span class=\\"date\\">" + f.modified + "</span>";
-        html += "<span class=\\"actions\\">";
-        html += "<a href=\\"#\\" onclick=\\"event.stopPropagation();fmOpenItem(\\"" + f.path + "\\"," + f.is_dir + ");return false\\">Open</a>";
-        if (!f.is_dir) html += "<a href=\\"#\\" onclick=\\"event.stopPropagation();fmEditFile(\\"" + f.path + "\\");return false\\">Edit</a>";
-        html += "<a href=\\"#\\" onclick=\\"event.stopPropagation();fmDeleteItem(\\"" + f.path + "\\");return false\\">Del</a>";
-        html += "</span></div>";
+        html += '<div class="file" data-path="' + f.path + '" onclick="fmSelect(this,event)">';
+        html += '<span class="icon">' + icon + '</span>';
+        html += '<span class="name">' + f.name + '</span>';
+        html += '<span class="size">' + (f.is_dir ? "-" : fmSize(f.size)) + '</span>';
+        html += '<span class="type">' + (f.is_dir ? "folder" : f.ext.toUpperCase()) + '</span>';
+        html += '<span class="perms">' + f.perms + '</span>';
+        html += '<span class="date">' + f.modified + '</span>';
+        html += '<span class="actions">';
+        html += '<a href="#" onclick="event.stopPropagation();fmOpenItem(\'' + f.path + '\',' + f.is_dir + ');return false">Open</a>';
+        if (!f.is_dir) html += '<a href="#" onclick="event.stopPropagation();fmEditFile(\'' + f.path + '\');return false">Edit</a>';
+        html += '<a href="#" onclick="event.stopPropagation();fmDeleteItem(\'' + f.path + '\');return false">Del</a>';
+        html += '</span></div>';
     });
     document.getElementById("fileList").innerHTML = html;
 }
