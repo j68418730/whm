@@ -30,7 +30,14 @@ class DomainsController extends Controller
     {
         $u = $this->requireUser();
         $domains = $this->hostingUser ? ($this->db->table('dns_zones')->where('domain', 'LIKE', '%' . ($this->hostingUser->domain ?? '') . '%')->get() ?: []) : [];
-        return $this->view('user.domains', ['user' => $u, 'hosting' => $this->hostingUser, 'domains' => $domains, 'title' => 'Domains']);
+        $subdomains = [];
+        foreach ($domains as $d) {
+            $records = $this->db->table('dns_records')->where('zone_id', $d->id)->where('type', 'A')->get() ?: [];
+            foreach ($records as $r) {
+                if ($r->name !== '@') $subdomains[] = (object)['domain' => $d->domain, 'name' => $r->name, 'value' => $r->value, 'record_id' => $r->id, 'zone_id' => $d->id];
+            }
+        }
+        return $this->view('user.domains', ['user' => $u, 'hosting' => $this->hostingUser, 'domains' => $domains, 'subdomains' => $subdomains, 'title' => 'Domains']);
     }
 
     public function add()
