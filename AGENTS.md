@@ -52,6 +52,9 @@ To reinstall: `sudo tar xzf sc_serv2_linux_x64-latest.tar.gz -C /usr/local/shout
 - Admin global playlists upload still has issues (empty $_FILES)
 - AutoDJ wizard: media upload, engine detection, finish button
 - DNS glue records for ns1/ns2.planet-hosts.com (subdomain resolution)
+- Missing game DB tables: game_slot_pricing, game_packages (need migrations)
+- GameServers controller uses `is_active`/`status` columns not in current tables
+- repair.planet-hosts.com DNS glue records needed at registrar
 
 ### Known Issues
 - admin/radio/global-playlists/upload/{id} receives empty $_FILES on admin port
