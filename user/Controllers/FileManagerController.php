@@ -35,11 +35,13 @@ class FileManagerController extends Controller
     protected function sanitizePath($path)
     {
         $home = $this->getUserHome();
-        $full = realpath($home . '/' . ltrim($path, '/'));
-        if ($full === false || !str_starts_with($full, $home)) {
-            return $home;
-        }
-        return $full;
+        if (empty($path)) return $home;
+        $clean = $home . '/' . ltrim($path, '/');
+        $full = realpath($clean);
+        if ($full !== false && str_starts_with($full, $home)) return $full;
+        $dir = realpath(dirname($clean));
+        if ($dir !== false && str_starts_with($dir, $home)) return $clean;
+        return $home;
     }
 
     public function index()
@@ -134,15 +136,16 @@ class FileManagerController extends Controller
         $home = $this->getUserHome();
         $dir = $this->sanitizePath($_POST['dir'] ?? '');
         $name = preg_replace('/[^a-zA-Z0-9_\- .]/', '', $_POST['name'] ?? '');
+        $ok = false;
         if ($name) {
             $path = $dir . '/' . $name;
             if (!is_file($path)) {
-                file_put_contents($path, '');
-                @exec("sudo chown {$this->hostingUser->username}:{$this->hostingUser->username} " . escapeshellarg($path) . " 2>/dev/null");
+                $ok = file_put_contents($path, '') !== false;
+                if ($ok) @exec("sudo chown {$this->hostingUser->username}:{$this->hostingUser->username} " . escapeshellarg($path) . " 2>/dev/null");
             }
         }
         header('Content-Type: application/json');
-        echo json_encode(['success' => true]);
+        echo json_encode(['success' => $ok, 'path' => $path ?? '']);
         exit;
     }
 
