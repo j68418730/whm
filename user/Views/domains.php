@@ -16,5 +16,5 @@
 <?php $hasSd = false; foreach ($domains as $d): $sdList = array_filter($subdomains, function($s) use ($d) { return $s->domain === $d->domain; }); if (empty($sdList)) continue; $hasSd = true; foreach ($sdList as $s): ?>
 <tr><td><strong><?php echo htmlspecialchars($s->name . '.' . $s->domain); ?></strong></td><td><?php echo htmlspecialchars($s->value); ?></td>
 <td><a href="/user/domains/zone/<?php echo $s->zone_id; ?>" class="btn btn-sm secondary">DNS</a></td></tr>
-<?php endforeach; endforeach; if (!$hasSd): ?><tr><td colspan="3" style="text-align:center;padding:20px;color:#64748b">No subdomains yet. <a href="/user/subdomains" style="color:#0A84FF">Create one</a></td></tr>
+<?php endforeach; endforeach; if (!$hasSd): ?><tr><td colspan="3" style="text-align:center;padding:20px;color:#64748b">No subdomains yet.</td></tr>
 <?php endif; ?></table></div>
