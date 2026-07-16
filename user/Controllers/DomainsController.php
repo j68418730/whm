@@ -107,9 +107,11 @@ class DomainsController extends Controller
                 $recordId = $this->dns->addRecord($zone->id, $subdomain, 'A', $ip, 300);
                 if ($recordId) $this->db->table('dns_records')->where('id', $recordId)->update(['is_user_subdomain' => 1]);
                 $msg = "Subdomain {$full} created pointing to {$ip}.";
-                $home = '/home/' . $this->hostingUser->username;
+                $domainOwner = $this->db->table('hosting_users')->where('domain', $domain)->first();
+                $ownerUser = $domainOwner ? $domainOwner->username : $this->hostingUser->username;
+                $home = '/home/' . $ownerUser;
                 $docRoot = $home . '/public_html/' . $subdomain;
-                if (!is_dir($docRoot)) @mkdir($docRoot, 0755, true);
+                @exec("sudo mkdir -p {$docRoot} && sudo chown -R {$this->hostingUser->username}:{$this->hostingUser->username} {$docRoot} 2>/dev/null");
                 $vhostCfg = "<VirtualHost *:80>\n    ServerName {$full}\n    DocumentRoot {$docRoot}\n    <Directory {$docRoot}>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n    ErrorLog /var/log/apache2/{$full}_error.log\n    CustomLog /var/log/apache2/{$full}_access.log combined\n</VirtualHost>\n";
                 $tmpFile = '/tmp/vhost_' . $full . '.conf';
                 file_put_contents($tmpFile, $vhostCfg);
@@ -120,10 +122,9 @@ class DomainsController extends Controller
                     $ftpUser = trim($_POST['ftp_username'] ?: $subdomain);
                     $ftpPass = $_POST['ftp_password'] ?? bin2hex(random_bytes(6));
                     $ftpDir = trim($_POST['ftp_dir'] ?: 'public_html/' . $subdomain);
-                    $fullUser = $this->hostingUser->username . '_' . $ftpUser;
-                    $home = '/home/' . $this->hostingUser->username;
+                    $fullUser = $ownerUser . '_' . $ftpUser;
                     $absDir = $home . '/' . ltrim($ftpDir, '/');
-                    if (!is_dir($absDir)) @mkdir($absDir, 0755, true);
+                    @exec("sudo mkdir -p {$absDir} && sudo chown -R {$fullUser}:{$fullUser} {$absDir} 2>/dev/null");
                     try {
                         $this->db->table('ftp_accounts')->insertGetId([
                             'hosting_user_id' => $this->hostingUser->id,
@@ -148,10 +149,13 @@ class DomainsController extends Controller
         $u = $this->requireUser();
         $record = $this->db->table('dns_records')->where('id', $id)->where('is_user_subdomain', 1)->first();
         if ($record) {
-            $full = $record->name . '.' . ($this->db->table('dns_zones')->where('id', $record->zone_id)->first()->domain ?? '');
+            $zone = $this->db->table('dns_zones')->where('id', $record->zone_id)->first();
+            $domainOwner = $zone ? $this->db->table('hosting_users')->where('domain', $zone->domain)->first() : null;
+            $ownerUser = $domainOwner ? $domainOwner->username : $this->hostingUser->username;
+            $full = $record->name . '.' . ($zone->domain ?? '');
             $this->db->table('dns_records')->where('id', $id)->delete();
             @exec("sudo a2dissite {$full}.conf 2>/dev/null && sudo rm -f /etc/apache2/sites-available/{$full}.conf && sudo systemctl reload apache2 2>/dev/null");
-            @exec("sudo rm -rf /home/{$this->hostingUser->username}/public_html/{$record->name} 2>/dev/null");
+            @exec("sudo rm -rf /home/{$ownerUser}/public_html/{$record->name} 2>/dev/null");
             $_SESSION['success'] = "Subdomain {$full} deleted.";
         }
         $this->response->redirect('/user/subdomains');
