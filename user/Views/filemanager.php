@@ -91,7 +91,7 @@
 </div>
 
 <h2>📁 File Manager</h2>
-<p style="color:#64748b;margin-bottom:12px;font-size:12px">Manage your files and folders from the browser.</p>
+<p style="color:#64748b;margin-bottom:12px;font-size:12px">Manage your files and folders from the browser. <a href="/user/files/list?dir=" target="_blank" style="color:#0A84FF;font-size:11px">Debug: view raw JSON</a></p>
 
 <div class="fm-wrapper">
 <div class="fm-tree" id="folderTree"></div>

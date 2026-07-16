@@ -90,6 +90,7 @@ class FileManagerController extends Controller
     {
         $tree = [];
         $items = @scandir($current);
+        if (!$items) return $tree;
         $dirs = [];
         foreach ($items as $f) {
             if ($f === '.' || $f === '..') continue;
