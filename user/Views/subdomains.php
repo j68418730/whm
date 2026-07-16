@@ -53,3 +53,14 @@ input,select{padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,25
 <button type="submit" class="btn">Create Subdomain</button>
 </form>
 </div>
+
+<?php if (!empty($subdomainRecords)): ?>
+<div class="section-card">
+<h3>🗑 Your Subdomains</h3>
+<table style="width:100%"><tr><th>Subdomain</th><th>Points To</th><th>Actions</th></tr>
+<?php foreach ($subdomainRecords as $r): $zone = null; foreach ($zones as $z) { if ($z->id == $r->zone_id) { $zone = $z; break; } } $full = $r->name . '.' . ($zone->domain ?? '?'); ?>
+<tr><td><strong><?php echo htmlspecialchars($full); ?></strong></td><td><?php echo htmlspecialchars($r->value); ?></td>
+<td><a href="/user/subdomains/delete/<?php echo $r->id; ?>" class="btn" style="background:rgba(255,68,68,.15);color:#ff4444;padding:4px 10px;font-size:10px" onclick="return confirm('Delete <?php echo htmlspecialchars($full); ?>?')">Delete</a></td></tr>
+<?php endforeach; ?></table>
+</div>
+<?php endif; ?>
