@@ -27,14 +27,61 @@ class DnsManager
 
     public function addRecord($zoneId, $name, $type, $value, $ttl = 14400, $priority = null)
     {
-        return $this->db->table('dns_records')->insertGetId([
+        $id = $this->db->table('dns_records')->insertGetId([
             'zone_id' => $zoneId, 'name' => $name, 'type' => strtoupper($type),
             'value' => $value, 'ttl' => $ttl, 'priority' => $priority,
         ]);
+        $this->syncZoneToBind($zoneId);
+        return $id;
     }
 
-    public function updateRecord($id, $data) { $this->db->table('dns_records')->where('id', $id)->update($data); }
-    public function deleteRecord($id) { $this->db->table('dns_records')->where('id', $id)->delete(); }
+    public function updateRecord($id, $data) {
+        $this->db->table('dns_records')->where('id', $id)->update($data);
+        $rec = $this->db->table('dns_records')->where('id', $id)->first();
+        if ($rec) $this->syncZoneToBind($rec->zone_id);
+    }
+    
+    public function deleteRecord($id) {
+        $rec = $this->db->table('dns_records')->where('id', $id)->first();
+        $this->db->table('dns_records')->where('id', $id)->delete();
+        if ($rec) $this->syncZoneToBind($rec->zone_id);
+    }
+
+    public function syncZoneToBind($zoneId)
+    {
+        $zone = $this->getZone($zoneId);
+        if (!$zone) return;
+        $records = $this->getRecords($zoneId);
+        $domain = $zone->domain;
+        $file = "/etc/bind/zones/db.{$domain}";
+        $serial = date('Ymd') . '01';
+        $lines = [];
+        $lines[] = "\$TTL\t604800";
+        $lines[] = "@\tIN\tSOA\t{$this->ns1}. admin.{$domain}. (";
+        $lines[] = "\t\t\t{$serial}\t; Serial";
+        $lines[] = "\t\t\t604800\t\t; Refresh";
+        $lines[] = "\t\t\t86400\t\t; Retry";
+        $lines[] = "\t\t\t2419200\t\t; Expire";
+        $lines[] = "\t\t\t604800\t)\t; Negative Cache TTL";
+        $lines[] = "";
+        $lines[] = "; Nameservers";
+        $lines[] = "@\tIN\tNS\t{$this->ns1}.";
+        $lines[] = "@\tIN\tNS\t{$this->ns2}.";
+        foreach ($records as $r) {
+            $n = $r->name === '@' ? '@' : $r->name;
+            $ttl = $r->ttl ?: 14400;
+            if ($r->type === 'SOA' || $r->type === 'NS') continue;
+            if ($r->type === 'MX') {
+                $lines[] = "{$n}\tIN\tMX\t{$r->priority}\t{$r->value}.";
+            } else {
+                $lines[] = "{$n}\tIN\t{$r->type}\t{$r->value}" . (in_array($r->type, ['CNAME', 'NS', 'MX', 'SRV']) ? '.' : '');
+            }
+        }
+        $content = implode("\n", $lines) . "\n";
+        file_put_contents('/tmp/zone_' . $domain, $content);
+        @exec("sudo cp /tmp/zone_{$domain} {$file} && sudo chown bind:bind {$file} && sudo chmod 644 {$file} 2>/dev/null");
+        $this->reloadDns();
+    }
 
     public function deleteZone($id)
     {
