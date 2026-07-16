@@ -483,6 +483,7 @@ class RadioController extends Controller
         if ($station) {
             $item = $this->db->table('radio_playlist_items')->where('id', $id)->first();
             $playlistId = $item->playlist_id ?? 0;
+            if ($item && !empty($item->file_path) && is_file($item->file_path)) unlink($item->file_path);
             $this->db->table('radio_playlist_items')->where('id', $id)->delete();
             $_SESSION['success'] = 'Song removed.';
         }
@@ -544,7 +545,10 @@ class RadioController extends Controller
         $playlistId = isset($_GET['playlist_id']) ? (int)$_GET['playlist_id'] : null;
         $dir = $this->getPlaylistDir($station, $playlistId);
         $path = $dir . '/' . $file;
-        if ($file && is_file($path)) unlink($path);
+        if ($file && is_file($path)) {
+            unlink($path);
+            try { $this->db->table('radio_playlist_items')->where('file_path', $path)->delete(); } catch (\Exception $e) {}
+        }
         $qs = $playlistId ? '&playlist_id=' . $playlistId : '';
         header('Location: /user/radio?tab=media' . $qs . '&station_id=' . $station->id); exit;
     }
