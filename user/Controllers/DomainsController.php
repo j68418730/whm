@@ -53,7 +53,7 @@ class DomainsController extends Controller
             $this->response->redirect('/user/domains');
             exit;
         }
-        return $this->view('user.domains', ['user' => $u, 'hosting' => $this->hostingUser, 'domains' => [], 'title' => 'Add Domain']);
+        return $this->view('user.domains', ['user' => $u, 'hosting' => $this->hostingUser, 'domains' => [], 'subdomains' => [], 'title' => 'Add Domain']);
     }
 
     public function zone($id)
