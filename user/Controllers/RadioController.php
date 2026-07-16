@@ -516,7 +516,7 @@ class RadioController extends Controller
                                 $this->db->table('radio_playlist_items')->insertGetId([
                                     'playlist_id' => $playlistId, 'title' => $title,
                                     'artist' => $artist, 'file_path' => $dest,
-                                    'duration' => 0, 'position' => 0,
+                                    'duration' => 0,
                                 ]);
                             } catch (\Exception $e) {}
                         }
