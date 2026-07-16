@@ -10,6 +10,7 @@ use Core\Controller;
 use Core\Auth;
 use Core\Request;
 use Core\Response;
+use PDO;
 use Core\View;
 
 class FilesystemController extends Controller
