@@ -491,9 +491,9 @@ class RadioController extends Controller
 
     public function mediaUpload()
     {
-        if (!$this->auth->check()) exit;
+        if (!$this->auth->check()) { $_SESSION['error'] = 'Not authenticated.'; header('Location: /?login'); exit; }
         $station = $this->getStation();
-        if (!$station) exit;
+        if (!$station) { $_SESSION['error'] = 'No station.'; header('Location: /user/radio'); exit; }
         $playlistId = isset($_POST['playlist_id']) ? (int)$_POST['playlist_id'] : null;
         $dir = $this->getPlaylistDir($station, $playlistId);
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
@@ -503,7 +503,7 @@ class RadioController extends Controller
             foreach ((array)$source['name'] as $i => $name) {
                 if ($source['error'][$i] !== UPLOAD_ERR_OK) continue;
                 $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-                if (in_array($ext, ['mp3', 'aac', 'ogg', 'flac', 'wav', 'm4a'])) {
+                if (in_array($ext, ['mp3', 'aac', 'ogg', 'flac', 'wav', 'm4a', 'm3u'])) {
                     $dest = $dir . '/' . basename($name);
                     if (move_uploaded_file($source['tmp_name'][$i], $dest)) {
                         $count++;
@@ -534,7 +534,7 @@ class RadioController extends Controller
         $tab = $playlistId ? 'playlists' : 'media';
         header('Location: /user/radio?tab=' . $tab . $qs . '&station_id=' . $station->id); exit;
     }
-
+    
     public function mediaDelete()
     {
         if (!$this->auth->check()) exit;
