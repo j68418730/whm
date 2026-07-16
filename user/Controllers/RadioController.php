@@ -1244,10 +1244,51 @@ class RadioController extends Controller
     public function studio()
     {
         if (!$this->auth->check()) { header('Location: /?login'); exit; }
-        // Redirect to DJ panel — Studio requires DJ authentication
         $_SESSION['studio_redirect'] = true;
         header('Location: /dj_panel.php');
         exit;
+    }
+
+    public function globalMusic()
+    {
+        if (!$this->auth->check()) { header('Location: /?login'); exit; }
+        $station = $this->getStation();
+        $playlists = $this->db->table('radio_global_playlists')->orderBy('name')->get() ?: [];
+        $globalItems = [];
+        foreach ($playlists as $p) {
+            $globalItems[$p->id] = $this->db->table('radio_global_playlist_items')->where('playlist_id', $p->id)->orderBy('artist')->get() ?: [];
+        }
+        $userPlaylists = ($station) ? ($this->db->table('radio_playlists')->where('stream_id', $station->streaming_id ?? $station->id)->get() ?: []) : [];
+        return $this->view('user.radio.global_music', [
+            'station' => $station, 'playlists' => $playlists, 'globalItems' => $globalItems,
+            'userPlaylists' => $userPlaylists, 'title' => 'Global Music Library'
+        ]);
+    }
+
+    public function globalMusicDownload($itemId)
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) exit;
+        $item = $this->db->table('radio_global_playlist_items')->where('id', $itemId)->first();
+        if (!$item || !$item->file_path || !is_file($item->file_path)) { $_SESSION['error'] = 'File not found.'; header('Location: /user/radio/global-music'); exit; }
+        $targetPlaylist = isset($_GET['playlist_id']) ? (int)$_GET['playlist_id'] : null;
+        if (!$targetPlaylist) { $_SESSION['error'] = 'Select a target playlist.'; header('Location: /user/radio/global-music'); exit; }
+        $dir = $this->getPlaylistDir($station, $targetPlaylist);
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $dest = $dir . '/' . basename($item->file_path);
+        if (file_exists($dest)) { $_SESSION['error'] = 'File already exists in target playlist.'; header('Location: /user/radio/global-music'); exit; }
+        if (copy($item->file_path, $dest)) {
+            try {
+                $this->db->table('radio_playlist_items')->insertGetId([
+                    'playlist_id' => $targetPlaylist, 'title' => $item->title,
+                    'artist' => $item->artist, 'file_path' => $dest,
+                    'duration' => $item->duration ?? 0, 'file_size' => filesize($dest),
+                ]);
+                $_SESSION['success'] = 'Song downloaded to playlist.';
+            } catch (\Exception $e) { $_SESSION['error'] = 'DB error.'; }
+        } else { $_SESSION['error'] = 'Failed to copy file.'; }
+        header('Location: /user/radio/global-music'); exit;
     }
 }
 

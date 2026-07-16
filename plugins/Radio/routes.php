@@ -130,3 +130,17 @@ $router->get('/radio/public/djs', 'Plugins\Radio\Controllers\User\RadioControlle
 $router->get('/radio/public/schedule', 'Plugins\Radio\Controllers\User\RadioController@publicSchedule');
 $router->get('/radio/public/now-playing', 'Plugins\Radio\Controllers\User\RadioController@publicNowPlaying');
 $router->post('/radio/public/request', 'Plugins\Radio\Controllers\User\RadioController@publicRequest');
+
+// Global Playlist Routes (Admin)
+$router->get('/admin/radio/global-playlists', 'Plugins\Radio\Controllers\Admin\GlobalPlaylistsController@index');
+$router->get('/admin/radio/global-playlists/create', 'Plugins\Radio\Controllers\Admin\GlobalPlaylistsController@create');
+$router->post('/admin/radio/global-playlists/store', 'Plugins\Radio\Controllers\Admin\GlobalPlaylistsController@store');
+$router->get('/admin/radio/global-playlists/edit/{id}', 'Plugins\Radio\Controllers\Admin\GlobalPlaylistsController@edit');
+$router->post('/admin/radio/global-playlists/update/{id}', 'Plugins\Radio\Controllers\Admin\GlobalPlaylistsController@update');
+$router->get('/admin/radio/global-playlists/delete/{id}', 'Plugins\Radio\Controllers\Admin\GlobalPlaylistsController@delete');
+$router->post('/admin/radio/global-playlists/upload/{id}', 'Plugins\Radio\Controllers\Admin\GlobalPlaylistsController@upload');
+$router->get('/admin/radio/global-playlists/remove-song/{itemId}', 'Plugins\Radio\Controllers\Admin\GlobalPlaylistsController@removeSong');
+
+// Global Music Library (User)
+$router->get('/user/radio/global-music', 'Plugins\Radio\Controllers\User\RadioController@globalMusic');
+$router->get('/user/radio/global-music/download/{itemId}', 'Plugins\Radio\Controllers\User\RadioController@globalMusicDownload');
