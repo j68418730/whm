@@ -58,13 +58,10 @@ class FileManagerController extends Controller
         $dir = $this->sanitizePath($_GET['dir'] ?? '');
         if (!is_dir($dir)) $dir = $home;
         $rel = str_starts_with($dir, $home) ? substr($dir, strlen($home) + 1) : '';
-
-        // Build folder tree
         $tree = $this->buildTree($home, $home);
-
-        // List files
         $items = [];
-        $files = scandir($dir);
+        $files = @scandir($dir);
+        if ($files === false) { header('Content-Type: application/json'); echo json_encode(['error' => 'scandir failed: ' . $dir, 'home' => $home, 'tree' => $tree, 'items' => []]); exit; }
         foreach ($files as $f) {
             if ($f === '.' || $f === '..') continue;
             $path = $dir . '/' . $f;
@@ -92,7 +89,7 @@ class FileManagerController extends Controller
     private function buildTree($base, $current, $maxDepth = 3)
     {
         $tree = [];
-        $items = scandir($current);
+        $items = @scandir($current);
         $dirs = [];
         foreach ($items as $f) {
             if ($f === '.' || $f === '..') continue;
