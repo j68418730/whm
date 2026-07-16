@@ -122,7 +122,13 @@ class DomainsController extends Controller
                     $ftpUser = trim($_POST['ftp_username'] ?: $subdomain);
                     $ftpPass = $_POST['ftp_password'] ?? bin2hex(random_bytes(6));
                     $ftpDir = trim($_POST['ftp_dir'] ?: 'public_html/' . $subdomain);
+                    $reserved = ['admin','root','administrator','superuser','system','sys','www','web','test','user','guest','demo','ftp','mail','mysql','backup','support','info','hostmaster','postmaster','webmaster','nobody','daemon','bin'];
+                    if (in_array(strtolower($ftpUser), $reserved)) { $_SESSION['error'] = "Username '{$ftpUser}' is reserved."; $this->response->redirect('/user/subdomains'); exit; }
+                    if (!preg_match('/^[a-z][a-z0-9_]+$/', $ftpUser)) { $_SESSION['error'] = 'Invalid FTP username (letters, numbers, underscore only).'; $this->response->redirect('/user/subdomains'); exit; }
+                    if (strlen($ftpPass) < 6) { $_SESSION['error'] = 'FTP password must be at least 6 characters.'; $this->response->redirect('/user/subdomains'); exit; }
                     $fullUser = $ownerUser . '_' . $ftpUser;
+                    if ($this->db->table('ftp_accounts')->where('username', $fullUser)->first()) { $_SESSION['error'] = "FTP user '{$fullUser}' already exists."; $this->response->redirect('/user/subdomains'); exit; }
+                    if (str_contains($ftpDir, '..')) { $_SESSION['error'] = 'Invalid directory path.'; $this->response->redirect('/user/subdomains'); exit; }
                     $absDir = $home . '/' . ltrim($ftpDir, '/');
                     @exec("sudo mkdir -p {$absDir} && sudo chown -R {$fullUser}:{$fullUser} {$absDir} 2>/dev/null");
                     try {
