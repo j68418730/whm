@@ -22,6 +22,7 @@ class RadioAutoDJPlayer
     {
         $this->stop();
         @mkdir($this->autodjDir, 0755, true);
+        @mkdir($this->musicDir, 0755, true);
         $files = $this->scanMusicFiles();
         if (empty($files)) return false;
         $port = $this->stream->port ?? 8000;

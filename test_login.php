@@ -1,22 +1,11 @@
 <?php
-$_SERVER = [
-    'REQUEST_METHOD' => 'POST',
-    'REMOTE_ADDR' => '127.0.0.1',
-    'HTTP_HOST' => 'localhost',
-    'SERVER_NAME' => 'localhost',
-    'SERVER_ADDR' => '127.0.0.1',
-    'DOCUMENT_ROOT' => '/var/www/radiohosting/public',
-];
-$_POST['username'] = 'root';
-$_POST['password'] = 'Skylinehosting171';
-
-define('BASE_PATH', '/var/www/radiohosting');
-require BASE_PATH . '/public/index.php';
-$controller = new Admin\Controllers\AuthController();
-try {
-    $controller->postLogin();
-    echo "OK\n";
-} catch (Exception $e) {
-    echo "ERROR: " . $e->getMessage() . "\n";
-    echo $e->getTraceAsString() . "\n";
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$stmt = $pdo->prepare("SELECT d.*, s.port, s.status as stream_status, s.autodj_active FROM radio_djs d JOIN streaming_stations s ON d.stream_id = s.id JOIN radio_streams rs ON d.stream_id = rs.id WHERE d.username = ? AND d.status = 'active'");
+$stmt->execute(['testing']);
+$dj = $stmt->fetch(PDO::FETCH_OBJ);
+var_dump($dj);
+if ($dj && password_verify('password', $dj->password)) {
+    echo "Password verified!\n";
+} else {
+    echo "Password NOT verified!\n";
 }

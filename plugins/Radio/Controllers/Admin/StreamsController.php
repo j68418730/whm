@@ -102,6 +102,8 @@ class StreamsController extends Controller
             'autodj_enabled' => $autodj, 'ssl_enabled' => $ssl, 'status' => 'stopped',
         ]);
         $pm->linkToStation($port, $sid);
+        $user = $this->db->table('hosting_users')->where('id', $uid)->first();
+        if ($user) { $musicDir = "/home/{$user->username}/radio/musicdatabase"; if (!is_dir($musicDir)) @mkdir($musicDir, 0755, true); }
 
         $this->db->table('radio_streams')->insertGetId([
             'id' => $sid, 'user_id' => $uid, 'server_name' => $name ?: "Stream #$uid",
