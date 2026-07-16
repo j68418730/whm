@@ -99,6 +99,7 @@
 <div id="veContainer" style="flex:1;display:flex;overflow:hidden">
 <textarea id="editorContent" spellcheck="false" style="flex:1;padding:12px;background:#0a0e1a;color:#4ade80;font-family:monospace;font-size:13px;border:none;outline:none;resize:none;tab-size:4"></textarea>
 <iframe id="vePreview" style="flex:1;border:none;background:#fff;display:none"></iframe>
+<div id="veDesign" contenteditable="true" style="flex:1;padding:12px;background:#fff;color:#000;font-size:14px;overflow-y:auto;display:none;outline:none;min-height:100%"></div>
 </div>
 <div class="footer"><button onclick="fmCloseEditor()" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.2);color:#94a3b8;cursor:pointer">Cancel</button><button onclick="fmSaveEditor()" style="padding:6px 14px;border-radius:6px;border:none;background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff;cursor:pointer">💾 Save</button></div>
 </div>
@@ -269,6 +270,7 @@ function fmEditFile(path) {
 }
 
 function fmSaveEditor() {
+    veSyncDesignToCode();
     var path = document.getElementById("editorContent").dataset.file;
     var content = document.getElementById("editorContent").value;
     var fd = new FormData();
@@ -289,10 +291,17 @@ function veSetView(view) {
     veCurrentView = view;
     var code = document.getElementById("editorContent");
     var prev = document.getElementById("vePreview");
+    var design = document.getElementById("veDesign");
     document.querySelectorAll(".ve-btn[data-view]").forEach(function(b){b.classList.toggle("active",b.dataset.view===view)});
-    if (view === "code") { code.style.display = "block"; prev.style.display = "none"; }
-    else if (view === "design") { code.style.display = "none"; prev.style.display = "block"; veUpdatePreview(); }
-    else { code.style.display = "block"; prev.style.display = "block"; veUpdatePreview(); }
+    if (view === "code") { code.style.display = "block"; prev.style.display = "none"; design.style.display = "none"; }
+    else if (view === "design") {
+        code.style.display = "none"; prev.style.display = "none"; design.style.display = "block";
+        design.innerHTML = code.value;
+        design.focus();
+    } else {
+        code.style.display = "block"; prev.style.display = "block"; design.style.display = "none";
+        veUpdatePreview();
+    }
 }
 function veUpdatePreview() {
     var prev = document.getElementById("vePreview");
@@ -300,23 +309,41 @@ function veUpdatePreview() {
     prev.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
 }
 document.getElementById("editorContent").addEventListener("input", function() {
-    if (veCurrentView !== "code") veUpdatePreview();
+    if (veCurrentView === "split") veUpdatePreview();
 });
-function veBold() { document.execCommand("bold"); }
-function veItalic() { document.execCommand("italic"); }
-function veUnderline() { document.execCommand("underline"); }
+function veSyncDesignToCode() {
+    if (veCurrentView === "design")
+        document.getElementById("editorContent").value = document.getElementById("veDesign").innerHTML;
+}
+function veExec(cmd, val) {
+    if (veCurrentView === "design") {
+        document.getElementById("veDesign").focus();
+        document.execCommand(cmd, false, val || null);
+    } else if (veCurrentView === "split") {
+        document.getElementById("editorContent").focus();
+    }
+}
+function veBold() { veExec("bold"); veSyncDesignToCode(); }
+function veItalic() { veExec("italic"); veSyncDesignToCode(); }
+function veUnderline() { veExec("underline"); veSyncDesignToCode(); }
 function veHeading() {
     var h = prompt("Heading level (1-6):", "2");
-    if (h) document.execCommand("formatBlock", false, "h" + h);
+    if (h) { veExec("formatBlock", "h" + h); veSyncDesignToCode(); }
 }
 function veLink() {
     var url = prompt("URL:", "https://");
-    if (url) document.execCommand("createLink", false, url);
+    if (url) { veExec("createLink", url); veSyncDesignToCode(); }
 }
 function veImage() {
     var url = prompt("Image URL:", "https://");
-    if (url) document.execCommand("insertImage", false, url);
+    if (url) { veExec("insertImage", url); veSyncDesignToCode(); }
 }
+document.getElementById("veDesign").addEventListener("input", function() {
+    document.getElementById("editorContent").value = this.innerHTML;
+});
+document.getElementById("veDesign").addEventListener("keydown", function(e) {
+    if (e.key === "Tab") { e.preventDefault(); document.execCommand("insertHTML", false, "&nbsp;&nbsp;&nbsp;&nbsp"); }
+});
 
 function fmCreateFolder() {
     var name = prompt("Folder name:");
