@@ -1,10 +1,10 @@
-<h2>≡ƒôü File Manager</h2>
+<h2>📁 File Manager</h2>
 <p style="color:#64748b;font-size:12px;margin-bottom:14px">Browse and manage files across all hosting accounts.</p>
 
 <?php if (isset($users)): ?>
 <div style="margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap">
 <?php foreach ($users as $u): ?>
-<a href="/admin/files?user=<?php echo urlencode($u->username); ?>" class="btn btn-sm btn-secondary">≡ƒæñ <?php echo htmlspecialchars($u->username); ?></a>
+<a href="/admin/files?user=<?php echo urlencode($u->username); ?>" class="btn btn-sm btn-secondary">👤 <?php echo htmlspecialchars($u->username); ?></a>
 <?php endforeach; ?>
 </div>
 <?php endif; ?>
