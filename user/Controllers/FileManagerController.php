@@ -140,12 +140,12 @@ class FileManagerController extends Controller
         if ($name) {
             $path = $dir . '/' . $name;
             if (!is_file($path)) {
-                $ok = file_put_contents($path, '') !== false;
-                if ($ok) @exec("sudo chown {$this->hostingUser->username}:{$this->hostingUser->username} " . escapeshellarg($path) . " 2>/dev/null");
+                file_put_contents($path, '');
+                $ok = is_file($path);
             }
         }
         header('Content-Type: application/json');
-        echo json_encode(['success' => $ok, 'path' => $path ?? '']);
+        echo json_encode(['success' => $ok]);
         exit;
     }
 
