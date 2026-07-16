@@ -439,7 +439,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div style="font-size:12px;color:#0A84FF;padding:6px 0 0 8px">Playlist: <?=htmlspecialchars($selPlName)?></div>
     <?php endif; ?>
   </div>
-  <div id="uploadZone" class="upload-zone" style="cursor:pointer;border:2px dashed rgba(0,191,255,.2);border-radius:10px;padding:30px;text-align:center;transition:.3s;background:rgba(0,0,0,.2)" ontouchend="document.getElementById('media-input').click()">Drop files here or click to browse (mp3, aac, ogg, flac, wav, m4a)</div>
+  <div id="uploadZone" class="upload-zone" style="cursor:pointer;border:2px dashed rgba(0,191,255,.2);border-radius:10px;padding:30px;text-align:center;transition:.3s;background:rgba(0,0,0,.2)" onclick="document.getElementById('media-input').click()" ontouchend="document.getElementById('media-input').click()">Drop files here or click to browse (mp3, aac, ogg, flac, wav, m4a)</div>
   <input id="media-input" type="file" name="files[]" multiple accept=".mp3,.aac,.ogg,.flac,.wav,.m4a" style="display:none">
   <div id="uploadQueue" style="margin-top:8px;font-size:11px;color:#94a3b8"></div>
   <div id="uploadProgress" style="display:none;margin-top:8px;background:rgba(0,0,0,.3);border-radius:6px;overflow:hidden;height:6px"><div id="uploadProgressBar" style="width:0;height:100%;background:linear-gradient(90deg,#008cff,#3bb8ff);transition:width .3s"></div></div>
