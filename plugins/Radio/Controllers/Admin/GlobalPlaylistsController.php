@@ -16,7 +16,7 @@ class GlobalPlaylistsController extends Controller
 
     public function index()
     {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->redirect('/admin/login'); exit; }
         $playlists = $this->db->table('radio_global_playlists')->orderBy('id', 'desc')->get() ?: [];
         $items = [];
         foreach ($playlists as $p) {
@@ -29,13 +29,13 @@ class GlobalPlaylistsController extends Controller
 
     public function create()
     {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->redirect('/admin/login'); exit; }
         return $this->view('Plugins.Radio.Views.admin.global_playlists.create', ['title' => 'Create Global Playlist']);
     }
 
     public function store()
     {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->redirect('/admin/login'); exit; }
         $name = trim($_POST['name'] ?? '');
         if ($name) {
             try {
@@ -43,14 +43,14 @@ class GlobalPlaylistsController extends Controller
                 $_SESSION['success_message'] = 'Global playlist created.';
             } catch (\Exception $e) { $_SESSION['error_message'] = 'Failed to create.'; }
         }
-        $this->response->redirect('/admin/radio/global-playlists');
+        $this->redirect('/admin/radio/global-playlists');
     }
 
     public function edit($id)
     {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->redirect('/admin/login'); exit; }
         $pl = $this->db->table('radio_global_playlists')->where('id', $id)->first();
-        if (!$pl) { $this->response->redirect('/admin/radio/global-playlists'); exit; }
+        if (!$pl) { $this->redirect('/admin/radio/global-playlists'); exit; }
         $items = $this->db->table('radio_global_playlist_items')->where('playlist_id', $id)->get() ?: [];
         return $this->view('Plugins.Radio.Views.admin.global_playlists.edit', [
             'playlist' => $pl, 'items' => $items, 'title' => 'Edit: ' . $pl->name
@@ -59,28 +59,28 @@ class GlobalPlaylistsController extends Controller
 
     public function update($id)
     {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->redirect('/admin/login'); exit; }
         $name = trim($_POST['name'] ?? '');
         if ($name) {
             try { $this->db->table('radio_global_playlists')->where('id', $id)->update(['name' => $name, 'description' => $_POST['description'] ?? '']); } catch (\Exception $e) {}
         }
-        $this->response->redirect('/admin/radio/global-playlists/edit/' . $id);
+        $this->redirect('/admin/radio/global-playlists/edit/' . $id);
     }
 
     public function delete($id)
     {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->redirect('/admin/login'); exit; }
         try {
             $items = $this->db->table('radio_global_playlist_items')->where('playlist_id', $id)->get() ?: [];
             foreach ($items as $item) { if ($item->file_path && is_file($item->file_path)) unlink($item->file_path); }
             $this->db->table('radio_global_playlists')->where('id', $id)->delete();
         } catch (\Exception $e) {}
-        $this->response->redirect('/admin/radio/global-playlists');
+        $this->redirect('/admin/radio/global-playlists');
     }
 
     public function upload($id)
     {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->redirect('/admin/login'); exit; }
         $dir = '/var/www/radiohosting/global_music/playlist_' . $id;
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
         $source = $_FILES['files'] ?? $_FILES['file'] ?? null;
@@ -109,18 +109,18 @@ class GlobalPlaylistsController extends Controller
             }
             $_SESSION['success_message'] = "$count file(s) uploaded.";
         }
-        $this->response->redirect('/admin/radio/global-playlists/edit/' . $id);
+        $this->redirect('/admin/radio/global-playlists/edit/' . $id);
     }
 
     public function removeSong($itemId)
     {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->redirect('/admin/login'); exit; }
         $item = $this->db->table('radio_global_playlist_items')->where('id', $itemId)->first();
         $plId = $item->playlist_id ?? 0;
         if ($item) {
             if ($item->file_path && is_file($item->file_path)) unlink($item->file_path);
             $this->db->table('radio_global_playlist_items')->where('id', $itemId)->delete();
         }
-        $this->response->redirect('/admin/radio/global-playlists/edit/' . $plId);
+        $this->redirect('/admin/radio/global-playlists/edit/' . $plId);
     }
 }
