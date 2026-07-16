@@ -23,30 +23,27 @@
 <script>
 var curUser="<?php echo htmlspecialchars($_GET["user"] ?? ""); ?>";
 var curDir="";
-function fmLoad(u){curUser=u;fmRefresh("");}
 function fmRefresh(d){
     if(d!==undefined) curDir=d;
     fetch("/admin/files/list?user="+encodeURIComponent(curUser)+"&dir="+encodeURIComponent(curDir))
     .then(function(r){return r.json()}).then(function(data){
-        var h="<div class=\"item active\" onclick=\"fmRefresh(\\"\\")\">≡ƒÅá Home</div>";
+        var h='<div class="item active" onclick="fmRefresh(\'\')">📂 Home</div>';
         data.tree.forEach(function(u){
-            h+="<div class=\"item\" onclick=\"fmRefresh(\\""+u.path+"\\")\">≡ƒôü "+u.name+"</div>";
+            h+='<div class="item" onclick="fmRefresh(\''+u.path+'\')">📁 '+u.name+'</div>';
             u.children.forEach(function(c){
-                h+="<div class=\"item\" style=\"padding-left:24px\" onclick=\"fmRefresh(\\""+c.path+"\\")\">≡ƒôü "+c.name+"</div>";
+                h+='<div class="item" style="padding-left:24px" onclick="fmRefresh(\''+c.path+'\')">📁 '+c.name+'</div>';
             });
         });
         document.getElementById("fmTree").innerHTML=h;
-        // Path
-        var ph="<a href=\\"#\\" onclick=\\"fmRefresh(\\"\\");return false\\">"+curUser+"</a>";
-        data.dir.split("/").forEach(function(p){if(p)ph+=" / <a href=\\"#\\" onclick=\\"fmRefresh(\\""+p+"\\");return false\\">"+p+"</a>";});
+        var ph='<a href="#" onclick="fmRefresh(\'\');return false">'+curUser+'</a>';
+        data.dir.split("/").forEach(function(p){if(p)ph+=" / <a href=\"#\" onclick=\"fmRefresh('"+p+"');return false\">"+p+"</a>";});
         document.getElementById("fmPath").innerHTML=ph;
-        // Files
         var fh=""; data.items.forEach(function(f){
-            var ic=f.is_dir?"≡ƒôü":"≡ƒôä";
-            fh+="<div class=\"f\"><span>"+ic+"</span><span class=\"nm\">"+f.name+"</span><span class=\"sz\">"+(f.is_dir?"-":fmSize(f.size))+"</span><span class=\"pr\">"+f.perms+"</span><span class=\"dt\">"+f.modified+"</span></div>";
+            var ic=f.is_dir?"📁":"📄";
+            fh+='<div class="f"><span>'+ic+'</span><span class="nm">'+f.name+'</span><span class="sz">'+(f.is_dir?"-":fmSize(f.size))+'</span><span class="pr">'+f.perms+'</span><span class="dt">'+f.modified+'</span></div>';
         });
         document.getElementById("fmFiles").innerHTML=fh;
-    });
+    }).catch(function(e){document.getElementById("fmFiles").innerHTML='<div style="padding:20px;color:#f87171;text-align:center">Error loading files: '+e.message+'</div>';});
 }
 function fmSize(s){if(!s)return"0 B";var u=["B","KB","MB","GB"],i=0;while(s>=1024&&i<3){s/=1024;i++}return(i<2?Math.round(s):s.toFixed(1))+" "+u[i];}
 if(curUser)fmRefresh("");
@@ -56,10 +53,10 @@ if(curUser)fmRefresh("");
 <div class="fm-side" id="fmTree"></div>
 <div class="fm-main">
 <div class="fm-tbar">
-<button onclick="fmMkdir()">≡ƒôü Folder</button>
-<button onclick="document.getElementById( upInput).click()">≡ƒôñ Upload</button>
+<button onclick="fmMkdir()">+ Folder</button>
+<button onclick="document.getElementById('upInput').click()">Upload</button>
 <input type="file" id="upInput" multiple style="display:none" onchange="fmUpload(this.files)">
-<button onclick="fmRefresh()">≡ƒöä Refresh</button>
+<button onclick="fmRefresh()">Refresh</button>
 </div>
 <div class="fm-path" id="fmPath"></div>
 <div class="fm-list" id="fmFiles"></div>
@@ -67,5 +64,5 @@ if(curUser)fmRefresh("");
 </div>
 <script>
 function fmMkdir(){var n=prompt("Folder name:");if(!n)return;var fd=new FormData();fd.append("user",curUser);fd.append("dir",curDir);fd.append("name",n);fetch("/admin/files/mkdir",{method:"POST",body:fd}).then(function(){fmRefresh(curDir)});}
-function fmUpload(files){var fd=new FormData();fd.append("user",curUser);fd.append("dir",curDir);for(var i=0;i<files.length;i++)fd.append("files[]",files[i]);fetch("/admin/files/mkdir",{method:"POST",body:fd}).then(function(){fmRefresh(curDir)});}
+function fmUpload(files){var fd=new FormData();fd.append("user",curUser);fd.append("dir",curDir);for(var i=0;i<files.length;i++)fd.append("files[]",files[i]);fetch("/admin/files/upload",{method:"POST",body:fd}).then(function(){fmRefresh(curDir)});}
 </script>
