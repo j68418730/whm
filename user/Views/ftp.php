@@ -49,14 +49,12 @@ input:focus,select:focus{border-color:#0A84FF}
 <div id="pwText" style="font-size:10px;color:#64748b;margin-top:-4px"></div></div>
 <div><label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px">Home Directory (jailed)</label>
 <select name="directory">
-<option value="public_html">/public_html (Full Access)</option>
-<option value="public_html/uploads">/public_html/uploads</option>
-<option value="public_html/images">/public_html/images</option>
-<option value="public_html/blog">/public_html/blog</option>
-<option value="radio">/radio</option>
-<option value="radio/music">/radio/music</option>
-<option value="radio/playlists">/radio/playlists</option>
-<option value="website_builder">/website_builder</option>
+<?php foreach ($ftpDirs as $d): ?>
+<option value="<?php echo htmlspecialchars($d['path']); ?>">/<?php echo htmlspecialchars($d['path']); ?> (<?php echo htmlspecialchars($d['path']); ?>)</option>
+<?php foreach ($d['children'] as $c): ?>
+<option value="<?php echo htmlspecialchars($c); ?>">/<?php echo htmlspecialchars($c); ?></option>
+<?php endforeach; ?>
+<?php endforeach; ?>
 <option value="/">/ (Full Account Access)</option>
 </select></div>
 <div><label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px">Disk Quota</label>
