@@ -90,11 +90,30 @@ class DomainsController extends Controller
         if ($subdomain && $domain) {
             $full = $subdomain . '.' . $domain;
             $ip = $_SERVER['SERVER_ADDR'] ?? 'planet-hosts.com';
-            // Add A record for subdomain
             $zone = $this->db->table('dns_zones')->where('domain', $domain)->first();
             if ($zone) {
                 $this->dns->addRecord($zone->id, $subdomain, 'A', $ip, 300);
-                $_SESSION['success'] = "Subdomain {$full} created pointing to {$ip}.";
+                $msg = "Subdomain {$full} created pointing to {$ip}.";
+                if (!empty($_POST['create_ftp'])) {
+                    $ftpUser = trim($_POST['ftp_username'] ?: $subdomain);
+                    $ftpPass = $_POST['ftp_password'] ?? bin2hex(random_bytes(6));
+                    $ftpDir = trim($_POST['ftp_dir'] ?: 'public_html/' . $subdomain);
+                    $fullUser = $this->hostingUser->username . '_' . $ftpUser;
+                    $home = '/home/' . $this->hostingUser->username;
+                    $absDir = $home . '/' . ltrim($ftpDir, '/');
+                    if (!is_dir($absDir)) @mkdir($absDir, 0755, true);
+                    try {
+                        $this->db->table('ftp_accounts')->insertGetId([
+                            'hosting_user_id' => $this->hostingUser->id,
+                            'username' => $fullUser, 'password_hash' => password_hash($ftpPass, PASSWORD_DEFAULT),
+                            'directory' => $ftpDir, 'permissions' => 'read_write',
+                        ]);
+                        @exec("sudo useradd -m -d {$home} -s /bin/bash {$fullUser} 2>/dev/null");
+                        @exec("echo '{$ftpPass}' | sudo passwd --stdin {$fullUser} 2>/dev/null");
+                        $msg .= " FTP account '{$fullUser}' created (pass: {$ftpPass}).";
+                    } catch (\Exception $e) { $msg .= ' FTP creation failed.'; }
+                }
+                $_SESSION['success'] = $msg;
             } else {
                 $_SESSION['error'] = "Domain {$domain} not found in DNS zones.";
             }
