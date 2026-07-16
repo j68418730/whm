@@ -96,10 +96,10 @@
 <button class="ve-btn" onclick="veLink()" title="Link">🔗</button>
 <button class="ve-btn" onclick="veImage()" title="Image">🖼</button>
 </div>
-<div id="veContainer" style="flex:1;display:flex;overflow:hidden">
-<textarea id="editorContent" spellcheck="false" style="flex:1;padding:12px;background:#0a0e1a;color:#4ade80;font-family:monospace;font-size:13px;border:none;outline:none;resize:none;tab-size:4"></textarea>
-<iframe id="vePreview" style="flex:1;border:none;background:#fff;display:none"></iframe>
-<div id="veDesign" contenteditable="true" style="flex:1;padding:12px;background:#fff;color:#000;font-size:14px;overflow-y:auto;display:none;outline:none;min-height:100%"></div>
+<div id="veContainer" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+<iframe id="vePreview" style="flex:1;border:none;background:#fff;display:none;min-height:0"></iframe>
+<div id="veDesign" contenteditable="true" style="flex:1;padding:12px;background:#fff;color:#000;font-size:14px;overflow-y:auto;display:none;outline:none;min-height:0"></div>
+<textarea id="editorContent" spellcheck="false" style="flex:1;padding:12px;background:#0a0e1a;color:#4ade80;font-family:monospace;font-size:13px;border:none;outline:none;resize:none;tab-size:4;min-height:0"></textarea>
 </div>
 <div class="footer"><button onclick="fmCloseEditor()" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.2);color:#94a3b8;cursor:pointer">Cancel</button><button onclick="fmSaveEditor()" style="padding:6px 14px;border-radius:6px;border:none;background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff;cursor:pointer">💾 Save</button></div>
 </div>
