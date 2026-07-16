@@ -35,6 +35,8 @@ function radioProvision($userId, $packageId) {
     $username = $user->username;
     $configDir = "/home/{$username}/radio/streams";
     @mkdir($configDir, 0755, true);
+    $musicDir = "/home/{$username}/radio/musicdatabase";
+    @mkdir($musicDir, 0755, true);
 
     $config = <<<XML
 <icecast>

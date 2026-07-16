@@ -81,7 +81,9 @@ function autoProvision($userId, $packageId) {
         if (!is_dir($radioDir)) mkdir($radioDir, 0755, true);
         $autodjDir = "{$homeDir}/radio/autodj";
         if (!is_dir($autodjDir)) mkdir($autodjDir, 0755, true);
-        exec("chown -R {$username}:{$username} {$homeDir}/radio 2>/dev/null");
+        $musicDir = "{$homeDir}/radio/musicdatabase";
+        if (!is_dir($musicDir)) mkdir($musicDir, 0755, true);
+        exec("chown -R www-data:www-data {$homeDir}/radio 2>/dev/null");
     }
 
     // 7. Update user status to active

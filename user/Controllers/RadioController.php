@@ -889,6 +889,8 @@ class RadioController extends Controller
                     'hosting_user_id' => $hosting->id, 'name' => $hosting->username . "'s Station",
                     'port' => 8000, 'password' => $pw, 'status' => 'stopped'
                 ]);
+                $musicDir = "/home/{$hosting->username}/radio/musicdatabase";
+                if (!is_dir($musicDir)) @mkdir($musicDir, 0755, true);
                 $_SESSION['success'] = 'Station created!';
             }
         } catch (\Exception $e) {
