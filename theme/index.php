@@ -166,7 +166,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 /* FLOATING CHAT - BIGGER */
 .floating-chat{position:fixed;bottom:120px;right:30px;z-index:9999;cursor:pointer}
 .floating-chat .chat-bubble{display:none}
-.floating-chat .support-badge-img{width:340px;height:auto;aspect-ratio:3/1;border-radius:18px;object-fit:contain;background:rgba(0,0,0,.5);padding:12px 24px;box-shadow:0 8px 45px rgba(0,0,0,.6);transition:.3s}
+.floating-chat .support-badge-img{width:340px;height:auto;aspect-ratio:3/1;border-radius:18px;object-fit:contain;box-shadow:0 8px 45px rgba(0,0,0,.6);transition:.3s}
 .floating-chat .support-badge-img:hover{transform:scale(1.06)}
 /* TESTIMONIAL SCROLL */
 .testimonial-scroll-wrap{position:relative;margin-top:24px;display:flex;align-items:center;gap:10px}
