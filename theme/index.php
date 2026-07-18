@@ -504,7 +504,7 @@ $safeText3 = htmlspecialchars($rv->text ?? '', ENT_QUOTES, 'UTF-8');
 <div class="panel-header">
 <img src="/theme/assets/img/livechat/live-online-2.png" id="panelBadgeImg" style="height:256px;width:auto;object-fit:contain">
 <div><h4 id="panelTitle">Live Support</h4><p id="panelStatus">Checking support status...</p></div>
-<button onclick="toggleChatPanel()" style="margin-left:auto;background:none;border:none;color:#fff;font-size:22px;cursor:pointer">&times;</button>
+<button onclick="toggleChatPanel()" style="margin-left:auto;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:18px;cursor:pointer;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;line-height:1">−</button>
 </div>
 <div class="panel-body" id="panelBody">
 <input type="hidden" id="chatSessionId" value="0">
