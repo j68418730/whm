@@ -164,10 +164,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 .testimonial-card .author .name{font-weight:600;font-size:13px}
 .testimonial-card .author .role{font-size:11px;color:#64748b}
 /* FLOATING CHAT - BIGGER */
-.floating-chat{position:fixed;bottom:120px;right:30px;z-index:9999;cursor:pointer}
-.floating-chat .chat-bubble{display:none}
-.floating-chat .support-badge-img{width:340px;height:auto;aspect-ratio:3/1;border-radius:18px;object-fit:contain;box-shadow:0 8px 45px rgba(0,0,0,.6);transition:.3s}
-.floating-chat .support-badge-img:hover{transform:scale(1.06)}
+.floating-chat{display:none}
 /* TESTIMONIAL SCROLL */
 .testimonial-scroll-wrap{position:relative;margin-top:24px;display:flex;align-items:center;gap:10px}
 .testimonial-scroll{display:flex;gap:16px;overflow-x:auto;padding:8px 4px;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:rgba(0,140,255,.3) transparent;flex:1}
@@ -749,15 +746,18 @@ if(phOffline&&d.images&&d.images.offline)phOffline.innerHTML='<img src="'+d.imag
 if(phAway&&d.images&&d.images.away)phAway.innerHTML='<img src="'+d.images.away+'" style="height:20px;vertical-align:middle;margin-right:4px"> Away';
 }).catch(function(){});
 </script>
-<div style="text-align:center;padding:20px;background:rgba(8,16,28,.6);border-top:1px solid rgba(255,255,255,.04);font-size:13px">
-<strong>Professional Support</strong>
-<p style="color:#94a3b8;font-size:11px;margin:4px 0 8px">Experienced system administrators available 24/7 via tickets, live chat, and phone.</p>
-<div id="phChatStatus" style="display:flex;justify-content:center;gap:16px;margin-bottom:8px;font-size:11px;color:#94a3b8">
+<div style="text-align:center;padding:24px;background:rgba(8,16,28,.6);border-top:1px solid rgba(255,255,255,.04)">
+<div style="display:inline-block;padding:20px;background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.08);border-radius:12px;max-width:400px">
+<div style="font-size:32px;margin-bottom:6px">🎧</div>
+<strong style="font-size:15px">24/7 Live Support</strong>
+<p style="color:#94a3b8;font-size:11px;margin:6px 0 10px">Experienced system administrators available 24/7 via tickets, live chat, and phone.</p>
+<div id="phChatStatus" style="display:flex;justify-content:center;gap:16px;margin-bottom:10px;font-size:11px;color:#94a3b8">
 <span id="phOnline"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#4ade80;vertical-align:middle;margin-right:4px"></span> Loading...</span>
 <span id="phOffline"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#ef4444;vertical-align:middle;margin-right:4px"></span> Loading...</span>
 <span id="phAway"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#facc15;vertical-align:middle;margin-right:4px"></span> Loading...</span>
 </div>
-<a href="#" onclick="window.open('https://planet-hosts.com/livechat_popup.php','ph_chat','width=400,height=600');return false" style="color:#0A84FF;text-decoration:none;font-size:12px">💬 Live Chat</a>
+<a href="#" onclick="window.open('https://planet-hosts.com/livechat_popup.php','ph_chat','width=400,height=600');return false" style="color:#0A84FF;text-decoration:none;font-size:13px;padding:8px 20px;border-radius:6px;background:rgba(0,140,255,.15);display:inline-block">💬 Start Live Chat</a>
+</div>
 </div>
 <script src="/theme/assets/js/app.js"></script>
 <script>var img=new Image();img.src='https://planet-hosts.com/track.php?id=planethosts&r='+encodeURIComponent(document.referrer)+'&u='+encodeURIComponent(location.href);img.style.display='none';document.body.appendChild(img);</script>
