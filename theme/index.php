@@ -296,7 +296,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 <div class="feature-card"><span class="icon"><i class="fa-solid fa-shield-halved"></i></span><h4>DDoS Protection</h4><p>Advanced mitigation filtering at network edge. Stay online during Layer 3/4/7 attacks.</p></div>
 <div class="feature-card"><span class="icon"><i class="fa-solid fa-clock-rotate-left"></i></span><h4>Daily Backups</h4><p>Automated daily backups with 7-day retention. One-click restore from your control panel.</p></div>
 <div class="feature-card"><span class="icon"><i class="fa-solid fa-rocket"></i></span><h4>One-Click Installs</h4><p>WordPress, Joomla, Laravel, and 400+ apps installable in seconds from your dashboard.</p></div>
-<div class="feature-card"><span class="icon"><i class="fa-solid fa-headset"></i></span><h4>24/7 Support</h4><p>Expert technical support available 24 hours a day via tickets, live chat, and knowledgebase.</p></div>
+<div class="feature-card" style="cursor:pointer" onclick="window.open('https://planet-hosts.com/livechat_popup.php','ph_chat','width=400,height=600')"><span class="icon"><i class="fa-solid fa-headset"></i></span><h4>💬 24/7 Live Support</h4><p>Experienced system administrators available 24/7 via tickets, live chat, and phone.</p><div id="phChatStatus" style="display:flex;gap:10px;justify-content:center;margin-top:8px;font-size:11px"><span id="phOnline">● Online</span> <span id="phOffline">● Offline</span> <span id="phAway">● Away</span></div></div>
 <div class="feature-card"><span class="icon"><i class="fa-solid fa-gauge-high"></i></span><h4>WHM/cPanel</h4><p>Industry-standard control panel with full account, DNS, email, database, and security management.</p></div>
 </div>
 </div>
@@ -741,24 +741,11 @@ else if(d.status==='away'){src=awayImg;ttl.textContent='Away';txt.textContent='L
 else{src=offlineImg;ttl.textContent='Offline';txt.textContent='Sorry, Support is offline. Leave us a message';}
 img.src=src;if(pnl)pnl.src=src;
 var phOnline=document.getElementById('phOnline');var phOffline=document.getElementById('phOffline');var phAway=document.getElementById('phAway');
-if(phOnline&&d.images&&d.images.online)phOnline.innerHTML='<img src="'+d.images.online+'" style="height:20px;vertical-align:middle;margin-right:4px"> Online';
-if(phOffline&&d.images&&d.images.offline)phOffline.innerHTML='<img src="'+d.images.offline+'" style="height:20px;vertical-align:middle;margin-right:4px"> Offline';
-if(phAway&&d.images&&d.images.away)phAway.innerHTML='<img src="'+d.images.away+'" style="height:20px;vertical-align:middle;margin-right:4px"> Away';
+if(phOnline&&d.images&&d.images.online)phOnline.innerHTML='<img src="'+d.images.online+'" style="height:18px;vertical-align:middle;margin-right:3px"> Online';else if(phOnline)phOnline.innerHTML='● Online';
+if(phOffline&&d.images&&d.images.offline)phOffline.innerHTML='<img src="'+d.images.offline+'" style="height:18px;vertical-align:middle;margin-right:3px"> Offline';else if(phOffline)phOffline.innerHTML='● Offline';
+if(phAway&&d.images&&d.images.away)phAway.innerHTML='<img src="'+d.images.away+'" style="height:18px;vertical-align:middle;margin-right:3px"> Away';else if(phAway)phAway.innerHTML='● Away';
 }).catch(function(){});
 </script>
-<div style="text-align:center;padding:24px;background:rgba(8,16,28,.6);border-top:1px solid rgba(255,255,255,.04)">
-<div style="display:inline-block;padding:20px;background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.08);border-radius:12px;max-width:400px">
-<div style="font-size:32px;margin-bottom:6px">🎧</div>
-<strong style="font-size:15px">24/7 Live Support</strong>
-<p style="color:#94a3b8;font-size:11px;margin:6px 0 10px">Experienced system administrators available 24/7 via tickets, live chat, and phone.</p>
-<div id="phChatStatus" style="display:flex;justify-content:center;gap:16px;margin-bottom:10px;font-size:11px;color:#94a3b8">
-<span id="phOnline"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#4ade80;vertical-align:middle;margin-right:4px"></span> Loading...</span>
-<span id="phOffline"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#ef4444;vertical-align:middle;margin-right:4px"></span> Loading...</span>
-<span id="phAway"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#facc15;vertical-align:middle;margin-right:4px"></span> Loading...</span>
-</div>
-<a href="#" onclick="window.open('https://planet-hosts.com/livechat_popup.php','ph_chat','width=400,height=600');return false" style="color:#0A84FF;text-decoration:none;font-size:13px;padding:8px 20px;border-radius:6px;background:rgba(0,140,255,.15);display:inline-block">💬 Start Live Chat</a>
-</div>
-</div>
 <script src="/theme/assets/js/app.js"></script>
 <script>var img=new Image();img.src='https://planet-hosts.com/track.php?id=planethosts&r='+encodeURIComponent(document.referrer)+'&u='+encodeURIComponent(location.href);img.style.display='none';document.body.appendChild(img);</script>
 </body>
