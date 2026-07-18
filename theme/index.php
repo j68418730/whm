@@ -742,6 +742,11 @@ else{src=offlineImg;ttl.textContent='Offline';txt.textContent='Sorry, Support is
 img.src=src;if(pnl)pnl.src=src;
 }).catch(function(){});
 </script>
+<div style="text-align:center;padding:20px;background:rgba(8,16,28,.6);border-top:1px solid rgba(255,255,255,.04);font-size:13px">
+<strong>Professional Support</strong>
+<p style="color:#94a3b8;font-size:11px;margin:4px 0 8px">Experienced system administrators available 24/7 via tickets, live chat, and phone.</p>
+<a href="#" onclick="window.open('https://planet-hosts.com/livechat_popup.php','ph_chat','width=400,height=600');return false" style="color:#0A84FF;text-decoration:none;font-size:12px">💬 Live Chat</a>
+</div>
 <script src="/theme/assets/js/app.js"></script>
 <script>var img=new Image();img.src='https://planet-hosts.com/track.php?id=planethosts&r='+encodeURIComponent(document.referrer)+'&u='+encodeURIComponent(location.href);img.style.display='none';document.body.appendChild(img);</script>
 </body>
