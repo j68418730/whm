@@ -52,10 +52,9 @@ class SupportStatusController extends Controller
 
         $images = [];
         try {
-            $imgSettings = $this->db->table('automation_settings')->where('setting_key', 'chat_image_online')->orWhere('setting_key', 'chat_image_offline')->orWhere('setting_key', 'chat_image_away')->get() ?: [];
-            foreach ($imgSettings as $s) {
-                $key = str_replace('chat_image_', '', $s->setting_key);
-                if ($s->setting_value) $images[$key] = '/' . $s->setting_value;
+            foreach (['online', 'offline', 'away'] as $k) {
+                $s = $this->db->table('automation_settings')->where('setting_key', 'chat_image_' . $k)->first();
+                if ($s && $s->setting_value) $images[$k] = '/' . $s->setting_value;
             }
         } catch (\Exception $e) {}
 

@@ -1,6 +1,7 @@
 <?php
 header('Content-Type: application/javascript');
 header('Access-Control-Allow-Origin: *');
+require_once __DIR__ . '/../core/helpers.php';
 $settings = [];
 $config = [];
 try {
