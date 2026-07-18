@@ -23,6 +23,8 @@ $router->get('/admin/section/billing', 'Admin\Controllers\SectionController@bill
 $router->get('/admin/section/support', 'Admin\Controllers\SectionController@support');
 $router->post('/admin/support/settings', 'Admin\Controllers\SectionController@supportSettings');
 $router->post('/admin/support/upload-image', 'Admin\Controllers\SectionController@supportUploadImage');
+$router->post('/admin/support/upload-chat-image', 'Admin\Controllers\SectionController@supportUploadChatImage');
+$router->get('/admin/support/delete-chat-image/{key}', 'Admin\Controllers\SectionController@supportDeleteChatImage');
 $router->get('/admin/support/delete-image/{file}', 'Admin\Controllers\SectionController@supportDeleteImage');
 $router->get('/admin/section/radio', 'Admin\Controllers\SectionController@radio');
 $router->get('/admin/section/games', 'Admin\Controllers\SectionController@games');
