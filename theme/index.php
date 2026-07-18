@@ -164,9 +164,10 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 .testimonial-card .author .name{font-weight:600;font-size:13px}
 .testimonial-card .author .role{font-size:11px;color:#64748b}
 /* FLOATING CHAT - BIGGER */
-.floating-chat{display:block;text-align:center}
-.floating-chat .chat-bubble{display:none}
-.floating-chat .support-badge-img{width:240px;height:256px;object-fit:contain;cursor:pointer;transition:.3s}
+.floating-chat{position:fixed;bottom:120px;right:30px;z-index:9999;cursor:pointer}
+.floating-chat .chat-bubble{width:85px;height:85px;border-radius:50%;background:linear-gradient(135deg,#0A84FF,#00E5FF);display:flex;align-items:center;justify-content:center;font-size:34px;color:#fff;box-shadow:0 4px 25px rgba(0,140,255,.45);transition:.3s}
+.floating-chat .chat-bubble:hover{transform:scale(1.08);box-shadow:0 4px 35px rgba(0,140,255,.55)}
+.floating-chat .support-badge-img{width:340px;height:auto;aspect-ratio:3/1;border-radius:18px;object-fit:contain;box-shadow:0 8px 45px rgba(0,0,0,.6);transition:.3s}
 .floating-chat .support-badge-img:hover{transform:scale(1.06)}
 /* TESTIMONIAL SCROLL */
 .testimonial-scroll-wrap{position:relative;margin-top:24px;display:flex;align-items:center;gap:10px}
@@ -185,8 +186,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 .scroll-arrow:hover{background:#0A84FF;border-color:#0A84FF}
 @media(max-width:768px){.testimonial-scroll-wrap{flex-direction:column}.scroll-arrow{display:none}}
 
-.floating-chat-panel{position:static;width:100%;max-width:100%;background:#0b1728;border:1px solid rgba(0,191,255,.15);border-radius:16px;overflow:hidden;margin-top:8px;display:none}
-.floating-chat-panel.open{display:block}
+.floating-chat-panel{position:fixed;bottom:260px;right:30px;width:420px;max-width:92vw;background:#0b1728;border:1px solid rgba(0,191,255,.15);border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.5);display:none;z-index:9998}
 .floating-chat-panel.open{display:block}
 .floating-chat-panel .panel-header{background:linear-gradient(135deg,#0A84FF,#00E5FF);padding:18px 20px;display:flex;align-items:center;gap:12px}
 .floating-chat-panel .panel-header h4{font-size:16px;margin:0;color:#fff}
@@ -300,24 +300,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 <div class="feature-card"><span class="icon"><i class="fa-solid fa-shield-halved"></i></span><h4>DDoS Protection</h4><p>Advanced mitigation filtering at network edge. Stay online during Layer 3/4/7 attacks.</p></div>
 <div class="feature-card"><span class="icon"><i class="fa-solid fa-clock-rotate-left"></i></span><h4>Daily Backups</h4><p>Automated daily backups with 7-day retention. One-click restore from your control panel.</p></div>
 <div class="feature-card"><span class="icon"><i class="fa-solid fa-rocket"></i></span><h4>One-Click Installs</h4><p>WordPress, Joomla, Laravel, and 400+ apps installable in seconds from your dashboard.</p></div>
-<div class="feature-card" style="text-align:center;padding:16px">
-<h4 style="margin-bottom:8px">💬 24/7 Live Support</h4>
-<div class="floating-chat" id="floatingChat" style="position:static;display:block;text-align:center;z-index:auto">
-<img src="/theme/assets/img/livechat/live-online-2.png" alt="Live Support" class="support-badge-img" id="supportBadge" style="width:240px;height:256px;object-fit:contain;margin:0 auto;cursor:pointer" onclick="toggleChatPanel()">
-</div>
-<div class="floating-chat-panel" id="chatPanel">
-<div class="panel-header" style="padding:14px;gap:10px">
-<img src="/theme/assets/img/livechat/live-online-2.png" id="panelBadgeImg" style="height:40px;width:auto;object-fit:contain">
-<div><h4 id="panelTitle" style="font-size:14px">Live Support</h4><p id="panelStatus" style="font-size:11px">Checking support status...</p></div>
-</div>
-<div class="panel-body" style="padding:14px">
-<input type="text" id="chatName" placeholder="Your Name" style="font-size:12px;padding:8px 10px">
-<input type="email" id="chatEmail" placeholder="Your Email" style="font-size:12px;padding:8px 10px">
-<textarea id="chatMessage" placeholder="Your Question" style="font-size:12px;padding:8px 10px;min-height:50px"></textarea>
-<button onclick="sendChatMessage()" style="padding:8px 16px;border:none;border-radius:6px;background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff;cursor:pointer;font-size:12px;width:100%">Send Message</button>
-</div>
-</div>
-</div>
+<div class="feature-card"><span class="icon"><i class="fa-solid fa-headset"></i></span><h4>24/7 Live Support</h4><p>Experienced system administrators available 24/7 via tickets, live chat, and phone.</p></div>
 <div class="feature-card"><span class="icon"><i class="fa-solid fa-gauge-high"></i></span><h4>WHM/cPanel</h4><p>Industry-standard control panel with full account, DNS, email, database, and security management.</p></div>
 </div>
 </div>
