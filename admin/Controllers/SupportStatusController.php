@@ -36,7 +36,6 @@ class SupportStatusController extends Controller
 
     public function publicStatus()
     {
-        // Aggregate ALL admin statuses for public widget
         $statuses = [];
         try {
             $rows = $this->db->table('automation_settings')->get() ?: [];
@@ -51,7 +50,16 @@ class SupportStatusController extends Controller
         if (in_array('online', $statuses)) $agg = 'online';
         elseif (in_array('away', $statuses)) $agg = 'away';
 
-        $this->response->json(['status' => $agg]);
+        $images = [];
+        try {
+            $imgSettings = $this->db->table('automation_settings')->where('setting_key', 'chat_image_online')->orWhere('setting_key', 'chat_image_offline')->orWhere('setting_key', 'chat_image_away')->get() ?: [];
+            foreach ($imgSettings as $s) {
+                $key = str_replace('chat_image_', '', $s->setting_key);
+                if ($s->setting_value) $images[$key] = '/' . $s->setting_value;
+            }
+        } catch (\Exception $e) {}
+
+        $this->response->json(['status' => $agg, 'images' => $images]);
         $this->response->send();
         exit;
     }

@@ -736,10 +736,13 @@ var txt=document.getElementById('panelStatus');
 var ttl=document.getElementById('panelTitle');
 var img=document.getElementById('supportBadge');
 var pnl=document.getElementById('panelBadgeImg');
-var src='/theme/assets/img/livechat/live-away-2.png';
-if(d.status==='online'){src='/theme/assets/img/livechat/live-online-2.png';ttl.textContent='Live Support';txt.textContent='We are online - reply within minutes';}
-else if(d.status==='away'){src='/theme/assets/img/livechat/live-away-2.png';ttl.textContent='Away';txt.textContent='Leave a message and someone will get back to you shortly';}
-else{src='/theme/assets/img/livechat/live-offline-2.png';ttl.textContent='Offline';txt.textContent='Sorry, Support is offline. Right Leave us a message';}
+var onlineImg=d.images&&d.images.online||'/theme/assets/img/livechat/live-online-2.png';
+var awayImg=d.images&&d.images.away||'/theme/assets/img/livechat/live-away-2.png';
+var offlineImg=d.images&&d.images.offline||'/theme/assets/img/livechat/live-offline-2.png';
+var src=offlineImg;
+if(d.status==='online'){src=onlineImg;ttl.textContent='Live Support';txt.textContent='We are online - reply within minutes';}
+else if(d.status==='away'){src=awayImg;ttl.textContent='Away';txt.textContent='Leave a message and someone will get back to you shortly';}
+else{src=offlineImg;ttl.textContent='Offline';txt.textContent='Sorry, Support is offline. Leave us a message';}
 img.src=src;if(pnl)pnl.src=src;
 }).catch(function(){});
 </script>
