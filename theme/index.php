@@ -495,7 +495,7 @@ $safeText3 = htmlspecialchars($rv->text ?? '', ENT_QUOTES, 'UTF-8');
 </div>
 </section><!-- ===== FLOATING CHAT ===== -->
 <div class="floating-chat" id="floatingChat" onclick="toggleChatPanel()">
-<img src="/theme/assets/img/livechat/live-online-2.png" alt="Live Support" class="support-badge-img" id="supportBadge" style="width:auto;height:256px;object-fit:contain">
+<img src="/theme/assets/img/livechat/live-online-2.png" alt="Live Support" class="support-badge-img" id="supportBadge" style="width:240px;height:256px;object-fit:contain">
 </div>
 
 <div class="floating-chat-panel" id="chatPanel">
