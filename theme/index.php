@@ -769,5 +769,8 @@ if(phAway&&d.images&&d.images.away)phAway.innerHTML='<img src="'+d.images.away+'
 </script>
 <script src="/theme/assets/js/app.js"></script>
 <script>var img=new Image();img.src='https://planet-hosts.com/track.php?id=planethosts&r='+encodeURIComponent(document.referrer)+'&u='+encodeURIComponent(location.href);img.style.display='none';document.body.appendChild(img);</script>
+<script>
+(function(){var x=new XMLHttpRequest();x.open('POST','/admin/livechat/track',true);x.setRequestHeader('Content-Type','application/x-www-form-urlencoded');x.send('page='+encodeURIComponent(location.pathname)+'&tz='+encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone)+'&res='+encodeURIComponent(screen.width+'x'+screen.height)+'&lang='+encodeURIComponent(navigator.language));})();
+</script>
 </body>
 </html>
