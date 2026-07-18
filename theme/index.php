@@ -647,8 +647,13 @@ function startPkgRotation(type) {
 // Chat panel
 function toggleChatPanel(){
 var p=document.getElementById('chatPanel');
-p.classList.toggle('open');
+var f=document.getElementById('floatingChat');
+var isOpen=p.classList.toggle('open');
+if(isOpen){f.style.display='none';sessionStorage.setItem('chatOpen','1');}
+else{f.style.display='block';sessionStorage.setItem('chatOpen','0');}
 }
+// Restore chat state from session
+if(sessionStorage.getItem('chatOpen')==='1'){document.getElementById('chatPanel').classList.add('open');document.getElementById('floatingChat').style.display='none';}
 var chatSid=0;
 function sendChatMessage(){
 var name=document.getElementById('chatName').value.trim();
