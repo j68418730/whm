@@ -764,8 +764,9 @@ var onlineImg=d.images&&d.images.online||'/theme/assets/img/livechat/live-online
 var awayImg=d.images&&d.images.away||'/theme/assets/img/livechat/live-away-2.png';
 var offlineImg=d.images&&d.images.offline||'/theme/assets/img/livechat/live-offline-2.png';
 var src=offlineImg;var ttl=document.getElementById('panelTitle');var txt=document.getElementById('panelStatus');
-if(ttl&&d.status==='online'){ttl.textContent='Live Support';}else if(ttl&&d.status==='away'){ttl.textContent='Away';}else if(ttl){ttl.textContent='Offline';}
-if(txt&&d.status==='online'){txt.textContent='We are online - reply within minutes';}else if(txt&&d.status==='away'){txt.textContent='Leave a message';}else if(txt){txt.textContent='Support is offline';}
+if(d.status==='online'){src=onlineImg;if(ttl)ttl.textContent='Live Support';if(txt)txt.textContent='We are online - reply within minutes';}
+else if(d.status==='away'){src=awayImg;if(ttl)ttl.textContent='Away';if(txt)txt.textContent='Leave a message';}
+else{if(ttl)ttl.textContent='Offline';if(txt)txt.textContent='Support is offline';}
 if(img)img.src=src;if(pnl)pnl.src=src;
 var phOnline=document.getElementById('phOnline');var phOffline=document.getElementById('phOffline');var phAway=document.getElementById('phAway');
 if(phOnline&&d.images&&d.images.online)phOnline.innerHTML='<img src="'+d.images.online+'" style="height:18px;vertical-align:middle;margin-right:3px"> Online';else if(phOnline)phOnline.innerHTML='● Online';
