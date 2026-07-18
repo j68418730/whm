@@ -126,6 +126,38 @@ class SectionController extends Controller
         header('Location: /admin/section/support'); exit;
     }
 
+    public function supportUploadChatImage()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { header('Location: /admin/login'); exit; }
+        $key = $_POST['status_key'] ?? '';
+        if (!in_array($key, ['online', 'offline', 'away'])) { header('Location: /admin/section/support'); exit; }
+        $dir = BASE_PATH . '/public/uploads/chat';
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $name = 'chat_' . $key . '.' . pathinfo($_FILES['image']['name'] ?? 'png', PATHINFO_EXTENSION);
+        if (!empty($_FILES['image']['tmp_name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            $dest = $dir . '/' . $name;
+            move_uploaded_file($_FILES['image']['tmp_name'], $dest);
+            $val = 'uploads/chat/' . $name;
+            $existing = $this->db->table('automation_settings')->where('setting_key', 'chat_image_' . $key)->first();
+            if ($existing) $this->db->table('automation_settings')->where('setting_key', 'chat_image_' . $key)->update(['setting_value' => $val]);
+            else $this->db->table('automation_settings')->insertGetId(['setting_key' => 'chat_image_' . $key, 'setting_value' => $val]);
+        }
+        header('Location: /admin/section/support'); exit;
+    }
+
+    public function supportDeleteChatImage($key)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { header('Location: /admin/login'); exit; }
+        if (!in_array($key, ['online', 'offline', 'away'])) { header('Location: /admin/section/support'); exit; }
+        $existing = $this->db->table('automation_settings')->where('setting_key', 'chat_image_' . $key)->first();
+        if ($existing) {
+            $path = BASE_PATH . '/public/' . $existing->setting_value;
+            if (is_file($path)) unlink($path);
+            $this->db->table('automation_settings')->where('setting_key', 'chat_image_' . $key)->delete();
+        }
+        header('Location: /admin/section/support'); exit;
+    }
+
     public function supportDeleteImage($file)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { header('Location: /admin/login'); exit; }

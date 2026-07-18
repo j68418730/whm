@@ -73,20 +73,27 @@
 </div>
 
 <div class="card" style="margin-top:12px">
-<h3 style="margin-bottom:14px">🖼️ Support Images</h3>
-<form method="post" action="/admin/support/upload-image" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
-<div><label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px">Upload Image</label><input type="file" name="image" accept="image/*" required></div>
-<button class="btn primary">Upload</button>
+<h3 style="margin-bottom:14px">🖼️ Chat Status Images</h3>
+<p style="font-size:11px;color:#64748b;margin-bottom:8px">Upload images for live chat online, offline, and away status icons.</p>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+<?php $statuses = ['online' => '🟢 Online', 'offline' => '🔴 Offline', 'away' => '🟡 Away']; ?>
+<?php foreach ($statuses as $key => $label): ?>
+<div style="padding:12px;background:rgba(0,0,0,.2);border-radius:8px;text-align:center">
+<strong style="font-size:12px;display:block;margin-bottom:6px"><?php echo $label; ?></strong>
+<?php $img = $settings['chat_image_' . $key] ?? ''; ?>
+<?php if ($img && is_file(BASE_PATH . '/public/' . $img)): ?>
+<img src="/<?php echo htmlspecialchars($img); ?>" style="width:48px;height:48px;object-fit:contain;border-radius:4px;margin-bottom:6px">
+<?php else: ?>
+<div style="width:48px;height:48px;background:rgba(255,255,255,.04);border-radius:4px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:24px;opacity:.4">?</div>
+<?php endif; ?>
+<form method="post" action="/admin/support/upload-chat-image" enctype="multipart/form-data">
+<input type="hidden" name="status_key" value="<?php echo $key; ?>">
+<input type="file" name="image" accept="image/*" style="font-size:10px;width:100%;margin-bottom:4px" onchange="this.form.submit()">
 </form>
-<?php if (!empty($images)): ?>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:12px">
-<?php foreach ($images as $img): ?>
-<div style="text-align:center;padding:6px;background:rgba(0,0,0,.2);border-radius:6px">
-<img src="/uploads/support/<?php echo rawurlencode($img); ?>" style="width:100%;height:80px;object-fit:cover;border-radius:4px">
-<div style="font-size:10px;color:#64748b;margin-top:4px;word-break:break-all"><?php echo htmlspecialchars($img); ?></div>
-<a href="/admin/support/delete-image/<?php echo rawurlencode($img); ?>" class="btn btn-sm danger" style="padding:2px 6px;font-size:9px;margin-top:4px" onclick="return confirm('Delete?')">Delete</a>
+<?php if ($img): ?>
+<a href="/admin/support/delete-chat-image/<?php echo $key; ?>" class="btn btn-sm danger" style="padding:2px 6px;font-size:9px" onclick="return confirm('Remove?')">Remove</a>
+<?php endif; ?>
 </div>
 <?php endforeach; ?>
 </div>
-<?php endif; ?>
 </div>
