@@ -97,3 +97,25 @@
 <?php endforeach; ?>
 </div>
 </div>
+
+<div class="card" style="margin-top:12px">
+<h3 style="margin-bottom:14px">📊 Visitor Tracking Stats</h3>
+<?php if (empty($visitors)): ?>
+<p style="color:#64748b;font-size:12px;text-align:center;padding:10px">No visitors yet. Tracking code is embedded on the site.</p>
+<?php else: ?>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:10px">
+<div style="padding:10px;background:rgba(0,140,255,.06);border-radius:8px;text-align:center">
+<strong style="font-size:22px"><?php echo count($visitors); ?></strong><br><span style="font-size:10px;color:#64748b">Recent Visits</span>
+</div>
+<div style="padding:10px;background:rgba(48,209,88,.06);border-radius:8px;text-align:center">
+<strong style="font-size:22px"><?php echo count(array_unique(array_map(fn($v)=>$v->site_id, $visitors))); ?></strong><br><span style="font-size:10px;color:#64748b">Sites</span>
+</div>
+</div>
+<table style="width:100%;font-size:11px"><tr><th>Site</th><th>URL</th><th>IP</th><th>Time</th></tr>
+<?php foreach ($visitors as $v): ?>
+<tr><td><?php echo htmlspecialchars($v->site_id); ?></td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?php echo htmlspecialchars($v->url); ?></td>
+<td><?php echo htmlspecialchars($v->ip); ?></td><td style="white-space:nowrap"><?php echo htmlspecialchars($v->visited_at); ?></td></tr>
+<?php endforeach; ?>
+</table>
+<?php endif; ?>
+</div>
