@@ -230,6 +230,11 @@ function filterSidebar(val) {
 .visitor-panel .head{padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center}
 .visitor-panel .head h3{margin:0;font-size:15px;color:#fff}
 .visitor-panel .head span{cursor:pointer;color:#64748b;font-size:18px}
+.support-status{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:none;margin:0 4px}
+.support-status.online{background:rgba(74,222,128,.15);color:#4ade80}
+.support-status.away{background:rgba(250,204,21,.12);color:#facc15}
+.support-status.offline{background:rgba(239,68,68,.12);color:#ef4444}
+.support-status:hover{opacity:.8}
 .visitor-item{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:.15s}
 .visitor-item:hover{background:rgba(0,191,255,.04)}
 .visitor-item .vtop{display:flex;align-items:center;gap:10px}
@@ -242,7 +247,8 @@ function filterSidebar(val) {
 .visitor-toggle{position:fixed;top:10px;right:16px;z-index:9998;background:rgba(0,140,255,.15);border:1px solid rgba(0,140,255,.2);border-radius:20px;padding:4px 14px;font-size:11px;color:#008cff;cursor:pointer;display:none}
 .visitor-toggle:hover{background:rgba(0,140,255,.25)}
 </style>
-<div class="visitor-toggle" id="visitorToggle" onclick="toggleVisitorPanel()">👤 <span id="vCount">0</span></div>
+<div class="visitor-toggle" id="visitorToggle" onclick="toggleVisitorPanel()">👥 <span id="vCount">0</span></div>
+<button id="supportStatusBtn" class="support-status online" onclick="var s=prompt('Set status: online, away, offline','online');if(s&&['online','away','offline'].includes(s.toLowerCase()))setSupportStatus(s.toLowerCase())">Online</button>
 <div class="visitor-panel" id="visitorPanel">
 <div class="head"><h3>👤 Live Visitors</h3><span onclick="toggleVisitorPanel()">✕</span></div>
 <div id="visitorList"></div>
@@ -367,6 +373,31 @@ function escapeHtml(t) { return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;
 
 setInterval(pollVisitors, 5000);
 setTimeout(pollVisitors, 500);
+
+// Support Status
+function setSupportStatus(s) {
+    var x = new XMLHttpRequest();
+    x.open('POST', '/admin/support-status', true);
+    x.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    x.onload = function() {
+        var btn = document.getElementById('supportStatusBtn');
+        if (btn) { btn.textContent = s.charAt(0).toUpperCase() + s.slice(1); btn.className = 'support-status ' + s; }
+    };
+    x.send('status=' + encodeURIComponent(s));
+}
+// Load current status
+(function() {
+    var x = new XMLHttpRequest();
+    x.open('GET', '/admin/support-status', true);
+    x.onload = function() {
+        try {
+            var d = JSON.parse(x.responseText);
+            var btn = document.getElementById('supportStatusBtn');
+            if (btn) { btn.textContent = d.status.charAt(0).toUpperCase() + d.status.slice(1); btn.className = 'support-status ' + d.status; }
+        } catch(e) {}
+    };
+    x.send();
+})();
 </script>
 </body>
 </body>
