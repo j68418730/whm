@@ -186,15 +186,15 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 .scroll-arrow:hover{background:#0A84FF;border-color:#0A84FF}
 @media(max-width:768px){.testimonial-scroll-wrap{flex-direction:column}.scroll-arrow{display:none}}
 
-.floating-chat-panel{position:fixed;bottom:180px;right:20px;width:360px;max-width:92vw;background:#0b1728;border:1px solid rgba(0,191,255,.15);border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.5);display:none;z-index:9998}
+.floating-chat-panel{position:fixed;bottom:180px;right:20px;width:360px;max-width:92vw;background:#0b1728;border:1px solid rgba(0,191,255,.15);border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.5);display:none;z-index:9998}
 .floating-chat-panel.open{display:block}
-.floating-chat-panel .panel-header{background:linear-gradient(135deg,#0A84FF,#00E5FF);padding:18px 20px;display:flex;align-items:center;gap:12px}
-.floating-chat-panel .panel-header h4{font-size:16px;margin:0;color:#fff}
-.floating-chat-panel .panel-header p{font-size:12px;color:rgba(255,255,255,.8);margin:0}
-.floating-chat-panel .panel-body{padding:20px}
-.floating-chat-panel .panel-body input,.floating-chat-panel .panel-body textarea{width:100%;padding:12px 14px;margin-bottom:10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-family:'Inter',sans-serif;font-size:13px;outline:none;box-sizing:border-box}
+.floating-chat-panel .panel-header{background:linear-gradient(135deg,#0A84FF,#00E5FF);padding:12px 16px;display:flex;align-items:center;gap:10px;border-radius:16px 16px 0 0}
+.floating-chat-panel .panel-header h4{font-size:14px;margin:0;color:#fff}
+.floating-chat-panel .panel-header p{font-size:11px;color:rgba(255,255,255,.8);margin:0}
+.floating-chat-panel .panel-body{padding:14px;max-height:350px;overflow-y:auto}
+.floating-chat-panel .panel-body input,.floating-chat-panel .panel-body textarea{width:100%;padding:10px 12px;margin-bottom:8px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-family:'Inter',sans-serif;font-size:13px;outline:none;box-sizing:border-box}
 .floating-chat-panel .panel-body input:focus,.floating-chat-panel .panel-body textarea:focus{border-color:#0A84FF}
-.floating-chat-panel .panel-body textarea{resize:vertical;min-height:80px}
+.floating-chat-panel .panel-body textarea{resize:vertical;min-height:60px}
 /* FOOTER */
 .footer{background:rgba(2,8,23,.9);border-top:1px solid rgba(0,191,255,.08);padding:60px 0 30px}
 .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px}
