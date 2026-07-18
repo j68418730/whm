@@ -143,4 +143,5 @@ echo "Free SSL<br>24/7 Support";
 <p>&copy; 2026 Planet-Hosts. All rights reserved. Terms of Service | Privacy Policy</p>
 </footer>
 </div>
+<script>var img=new Image();img.src='https://planet-hosts.com/track.php?id=portal&r='+encodeURIComponent(document.referrer)+'&u='+encodeURIComponent(location.href);img.style.display='none';document.body.appendChild(img);</script>
 </body></html>
