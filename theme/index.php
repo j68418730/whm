@@ -745,6 +745,22 @@ if(phOnline&&d.images&&d.images.online)phOnline.innerHTML='<img src="'+d.images.
 if(phOffline&&d.images&&d.images.offline)phOffline.innerHTML='<img src="'+d.images.offline+'" style="height:18px;vertical-align:middle;margin-right:3px"> Offline';else if(phOffline)phOffline.innerHTML='● Offline';
 if(phAway&&d.images&&d.images.away)phAway.innerHTML='<img src="'+d.images.away+'" style="height:18px;vertical-align:middle;margin-right:3px"> Away';else if(phAway)phAway.innerHTML='● Away';
 }).catch(function(){});
+setInterval(function(){
+fetch('/admin/support-status/public').then(function(r){return r.json()}).then(function(d){
+var img=document.getElementById('supportBadge');var pnl=document.getElementById('panelBadgeImg');
+var onlineImg=d.images&&d.images.online||'/theme/assets/img/livechat/live-online-2.png';
+var awayImg=d.images&&d.images.away||'/theme/assets/img/livechat/live-away-2.png';
+var offlineImg=d.images&&d.images.offline||'/theme/assets/img/livechat/live-offline-2.png';
+var src=offlineImg;var ttl=document.getElementById('panelTitle');var txt=document.getElementById('panelStatus');
+if(ttl&&d.status==='online'){ttl.textContent='Live Support';}else if(ttl&&d.status==='away'){ttl.textContent='Away';}else if(ttl){ttl.textContent='Offline';}
+if(txt&&d.status==='online'){txt.textContent='We are online - reply within minutes';}else if(txt&&d.status==='away'){txt.textContent='Leave a message';}else if(txt){txt.textContent='Support is offline';}
+if(img)img.src=src;if(pnl)pnl.src=src;
+var phOnline=document.getElementById('phOnline');var phOffline=document.getElementById('phOffline');var phAway=document.getElementById('phAway');
+if(phOnline&&d.images&&d.images.online)phOnline.innerHTML='<img src="'+d.images.online+'" style="height:18px;vertical-align:middle;margin-right:3px"> Online';else if(phOnline)phOnline.innerHTML='● Online';
+if(phOffline&&d.images&&d.images.offline)phOffline.innerHTML='<img src="'+d.images.offline+'" style="height:18px;vertical-align:middle;margin-right:3px"> Offline';else if(phOffline)phOffline.innerHTML='● Offline';
+if(phAway&&d.images&&d.images.away)phAway.innerHTML='<img src="'+d.images.away+'" style="height:18px;vertical-align:middle;margin-right:3px"> Away';else if(phAway)phAway.innerHTML='● Away';
+}).catch(function(){});
+},15000);
 </script>
 <script src="/theme/assets/js/app.js"></script>
 <script>var img=new Image();img.src='https://planet-hosts.com/track.php?id=planethosts&r='+encodeURIComponent(document.referrer)+'&u='+encodeURIComponent(location.href);img.style.display='none';document.body.appendChild(img);</script>
