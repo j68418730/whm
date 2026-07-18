@@ -2,6 +2,17 @@
 header('Content-Type: application/javascript');
 header('Access-Control-Allow-Origin: *');
 require_once __DIR__ . '/../core/helpers.php';
+$envFile = __DIR__ . '/../.env';
+if (is_file($envFile)) {
+    foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        $line = trim($line);
+        if ($line === '' || str_starts_with($line, '#')) continue;
+        if (str_contains($line, '=')) {
+            [$key, $value] = explode('=', $line, 2);
+            putenv(trim($key) . '=' . trim($value));
+        }
+    }
+}
 $settings = [];
 $config = [];
 $dbFile = __DIR__ . '/../config/database.php';
@@ -21,7 +32,7 @@ if ($enabled && !empty($ref) && !empty($config)) {
     try {
         $pdo2 = new PDO("mysql:host={$config['host']};dbname={$config['database']};charset=utf8mb4", $config['username'], $config['password']);
         $ins = $pdo2->prepare("INSERT INTO visitor_logs (site_id, url, user_agent, ip, visited_at) VALUES (?, ?, ?, ?, NOW())");
-        $ins->execute([$siteId, substr($ref, 0, 500), substr($ua, 0, 500), $_SERVER['REMOTE_ADDR'] ?? '']);
+        $ins->execute([$siteId, $ref, $ua, $_SERVER['REMOTE_ADDR'] ?? '']);
     } catch (\Exception $e) {}
 }
 ?>
