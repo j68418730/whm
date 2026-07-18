@@ -37,6 +37,42 @@
 </div>
 
 <div class="card" style="margin-top:12px">
+<h3 style="margin-bottom:14px">💬 Live Chat Widget</h3>
+<p style="font-size:11px;color:#64748b;margin-bottom:8px">Copy and paste this code into your website's HTML to enable live chat support.</p>
+<div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:10px;position:relative">
+<button onclick="var t=this.previousElementSibling;navigator.clipboard.writeText(t.textContent);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000)" style="position:absolute;top:6px;right:6px;padding:2px 8px;border-radius:4px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#94a3b8;font-size:10px;cursor:pointer">Copy</button>
+<pre style="font-size:10px;color:#4ade80;margin:0;white-space:pre-wrap;word-break:break-all;font-family:monospace;line-height:1.6">&lt;!-- Planet Hosts Live Chat --&gt;
+&lt;script&gt;
+(function() {
+    var s = document.createElement('script');
+    s.src = 'https://planet-hosts.com/livechat.php?widget=1';
+    s.async = true;
+    document.body.appendChild(s);
+})();
+&lt;/script&gt;
+&lt;!-- End Live Chat --&gt;</pre>
+</div>
+</div>
+
+<div class="card" style="margin-top:12px">
+<h3 style="margin-bottom:14px">📊 Visitor Tracking Code</h3>
+<p style="font-size:11px;color:#64748b;margin-bottom:8px">Copy and paste this code into your website to track visitors and page views.</p>
+<div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:10px;position:relative">
+<button onclick="var t=this.previousElementSibling;navigator.clipboard.writeText(t.textContent);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000)" style="position:absolute;top:6px;right:6px;padding:2px 8px;border-radius:4px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#94a3b8;font-size:10px;cursor:pointer">Copy</button>
+<pre style="font-size:10px;color:#4ade80;margin:0;white-space:pre-wrap;word-break:break-all;font-family:monospace;line-height:1.6">&lt;!-- Planet Hosts Visitor Tracking --&gt;
+&lt;script&gt;
+(function() {
+    var s = document.createElement('script');
+    s.src = 'https://planet-hosts.com/track.php?id=SITE_ID';
+    s.async = true;
+    document.body.appendChild(s);
+})();
+&lt;/script&gt;
+&lt;!-- End Tracking --&gt;</pre>
+</div>
+</div>
+
+<div class="card" style="margin-top:12px">
 <h3 style="margin-bottom:14px">🖼️ Support Images</h3>
 <form method="post" action="/admin/support/upload-image" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
 <div><label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px">Upload Image</label><input type="file" name="image" accept="image/*" required></div>
