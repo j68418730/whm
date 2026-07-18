@@ -300,8 +300,9 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 <div class="feature-card"><span class="icon"><i class="fa-solid fa-clock-rotate-left"></i></span><h4>Daily Backups</h4><p>Automated daily backups with 7-day retention. One-click restore from your control panel.</p></div>
 <div class="feature-card"><span class="icon"><i class="fa-solid fa-rocket"></i></span><h4>One-Click Installs</h4><p>WordPress, Joomla, Laravel, and 400+ apps installable in seconds from your dashboard.</p></div>
 <div class="feature-card" style="text-align:center;padding:16px">
-<div class="floating-chat" id="floatingChat" onclick="toggleChatPanel()" style="position:static;display:block;text-align:center;z-index:auto">
-<img src="/theme/assets/img/livechat/live-online-2.png" alt="Live Support" class="support-badge-img" id="supportBadge" style="width:240px;height:256px;object-fit:contain;cursor:pointer;margin:0 auto">
+<h4 style="margin-bottom:8px">💬 24/7 Live Support</h4>
+<div class="floating-chat" id="floatingChat" style="position:static;display:block;text-align:center;z-index:auto">
+<img src="/theme/assets/img/livechat/live-online-2.png" alt="Live Support" class="support-badge-img" id="supportBadge" style="width:240px;height:256px;object-fit:contain;margin:0 auto;cursor:pointer" onclick="toggleChatPanel()">
 </div>
 <div class="floating-chat-panel" id="chatPanel" style="position:static;width:100%;max-width:100%;z-index:auto;margin-top:8px;display:none">
 <div class="panel-header" style="padding:14px;gap:10px">
