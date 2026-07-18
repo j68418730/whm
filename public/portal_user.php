@@ -95,7 +95,26 @@ footer{text-align:center;padding:30px 0;border-top:1px solid rgba(255,255,255,.0
 <div class="fcard"><div class="fi">≡ƒÆ╛</div><div class="ft">Daily Backups</div><div class="fd">Automated daily backups with 7-day retention</div></div>
 <div class="fcard"><div class="fi">≡ƒôï</div><div class="ft">WHM Control Panel</div><div class="fd">Full account, DNS, email, database management</div></div>
 <div class="fcard"><div class="fi">≡ƒÄº</div><div class="ft">Icecast Radio</div><div class="fd">Built-in SHOUTcast/Icecast streaming support</div></div>
+<div class="fcard"><div class="fi">≡ƒÄº≡ƒÄº</div><div class="ft">24/7 Live Support</div><div class="fd">Real-time support via live chat with status indicators</div></div>
 </div></div>
+
+<?php
+$cs = [];
+try { $p2 = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4","radiouser","Skylinehosting171");
+$st = $p2->query("SELECT setting_key,setting_value FROM automation_settings WHERE setting_key LIKE 'chat_image_%' OR setting_key='live_chat_enabled'");
+while ($r = $st->fetch(PDO::FETCH_OBJ)) $cs[$r->setting_key]=$r->setting_value; } catch(\Exception $e){}
+$ce = ($cs['live_chat_enabled']??'1')==='1';
+$oi = $cs['chat_image_online']??''; $ofi = $cs['chat_image_offline']??''; $ai = $cs['chat_image_away']??'';
+if ($ce && ($oi||$ofi||$ai)): ?>
+<div style="margin:20px 0;padding:16px;background:rgba(8,16,28,.6);border:1px solid rgba(0,191,255,.08);border-radius:10px;text-align:center">
+<strong>≡ƒÆ¼ Live Chat Status</strong>
+<div style="display:flex;justify-content:center;gap:20px;margin-top:10px;font-size:13px">
+<?php if($oi):?><div><img src="/<?=htmlspecialchars($oi)?>" style="width:20px;height:20px;vertical-align:middle"> Online</div><?php endif;?>
+<?php if($ofi):?><div><img src="/<?=htmlspecialchars($ofi)?>" style="width:20px;height:20px;vertical-align:middle"> Offline</div><?php endif;?>
+<?php if($ai):?><div><img src="/<?=htmlspecialchars($ai)?>" style="width:20px;height:20px;vertical-align:middle"> Away</div><?php endif;?>
+</div>
+</div>
+<?php endif; ?>
 
 <div id="pricing" style="margin:30px 0">
 <h2 class="sec-title">Simple Pricing</h2>
