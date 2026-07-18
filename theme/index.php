@@ -496,12 +496,12 @@ $safeText3 = htmlspecialchars($rv->text ?? '', ENT_QUOTES, 'UTF-8');
 </div>
 </section><!-- ===== FLOATING CHAT ===== -->
 <div class="floating-chat" id="floatingChat" onclick="toggleChatPanel()">
-<img src="/theme/assets/img/livechat/live-online-2.png" alt="Live Support" class="support-badge-img" id="supportBadge" style="width:auto;height:48px;object-fit:contain">
+<img src="/theme/assets/img/livechat/live-online-2.png" alt="Live Support" class="support-badge-img" id="supportBadge" style="width:auto;height:72px;object-fit:contain">
 </div>
 
 <div class="floating-chat-panel" id="chatPanel">
 <div class="panel-header">
-<img src="/theme/assets/img/livechat/live-online-2.png" id="panelBadgeImg" style="height:40px;width:auto;border-radius:6px;object-fit:contain;background:rgba(255,255,255,.1);padding:4px 10px">
+<img src="/theme/assets/img/livechat/live-online-2.png" id="panelBadgeImg" style="height:60px;width:auto;border-radius:6px;object-fit:contain;background:rgba(255,255,255,.1);padding:4px 10px">
 <div><h4 id="panelTitle">Live Support</h4><p id="panelStatus">Checking support status...</p></div>
 <button onclick="toggleChatPanel()" style="margin-left:auto;background:none;border:none;color:#fff;font-size:22px;cursor:pointer">&times;</button>
 </div>
