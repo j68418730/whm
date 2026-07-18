@@ -53,7 +53,11 @@ class SectionController extends Controller
         foreach ($rows as $r) $settings[$r->setting_key] = $r->setting_value;
         $imgDir = BASE_PATH . '/public/uploads/support';
         $images = is_dir($imgDir) ? array_values(array_diff(scandir($imgDir), ['.', '..'])) : [];
-        return $this->view('admin.sections.support', ['user' => $user, 'settings' => $settings, 'images' => $images, 'title' => 'Support']);
+        $visitors = [];
+        try {
+            $visitors = $this->db->table('visitor_logs')->orderBy('visited_at', 'desc')->limit(20)->get() ?: [];
+        } catch (\Exception $e) {}
+        return $this->view('admin.sections.support', ['user' => $user, 'settings' => $settings, 'images' => $images, 'visitors' => $visitors, 'title' => 'Support']);
     }
 
     public function radio()
