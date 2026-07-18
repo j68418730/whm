@@ -187,6 +187,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 
 .floating-chat-panel{position:static;width:100%;max-width:100%;background:#0b1728;border:1px solid rgba(0,191,255,.15);border-radius:16px;overflow:hidden;margin-top:8px;display:none}
 .floating-chat-panel.open{display:block}
+.floating-chat-panel.open{display:block}
 .floating-chat-panel .panel-header{background:linear-gradient(135deg,#0A84FF,#00E5FF);padding:18px 20px;display:flex;align-items:center;gap:12px}
 .floating-chat-panel .panel-header h4{font-size:16px;margin:0;color:#fff}
 .floating-chat-panel .panel-header p{font-size:12px;color:rgba(255,255,255,.8);margin:0}
@@ -304,7 +305,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 <div class="floating-chat" id="floatingChat" style="position:static;display:block;text-align:center;z-index:auto">
 <img src="/theme/assets/img/livechat/live-online-2.png" alt="Live Support" class="support-badge-img" id="supportBadge" style="width:240px;height:256px;object-fit:contain;margin:0 auto;cursor:pointer" onclick="toggleChatPanel()">
 </div>
-<div class="floating-chat-panel" id="chatPanel" style="position:static;width:100%;max-width:100%;z-index:auto;margin-top:8px;display:none">
+<div class="floating-chat-panel" id="chatPanel">
 <div class="panel-header" style="padding:14px;gap:10px">
 <img src="/theme/assets/img/livechat/live-online-2.png" id="panelBadgeImg" style="height:40px;width:auto;object-fit:contain">
 <div><h4 id="panelTitle" style="font-size:14px">Live Support</h4><p id="panelStatus" style="font-size:11px">Checking support status...</p></div>
