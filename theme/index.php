@@ -164,7 +164,10 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 .testimonial-card .author .name{font-weight:600;font-size:13px}
 .testimonial-card .author .role{font-size:11px;color:#64748b}
 /* FLOATING CHAT - BIGGER */
-.floating-chat{display:none}
+.floating-chat{display:block;text-align:center}
+.floating-chat .chat-bubble{display:none}
+.floating-chat .support-badge-img{width:240px;height:256px;object-fit:contain;cursor:pointer;transition:.3s}
+.floating-chat .support-badge-img:hover{transform:scale(1.06)}
 /* TESTIMONIAL SCROLL */
 .testimonial-scroll-wrap{position:relative;margin-top:24px;display:flex;align-items:center;gap:10px}
 .testimonial-scroll{display:flex;gap:16px;overflow-x:auto;padding:8px 4px;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:rgba(0,140,255,.3) transparent;flex:1}
@@ -182,7 +185,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 .scroll-arrow:hover{background:#0A84FF;border-color:#0A84FF}
 @media(max-width:768px){.testimonial-scroll-wrap{flex-direction:column}.scroll-arrow{display:none}}
 
-.floating-chat-panel{position:fixed;bottom:260px;right:30px;width:420px;max-width:92vw;background:#0b1728;border:1px solid rgba(0,191,255,.15);border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.5);display:none;z-index:9998}
+.floating-chat-panel{position:static;width:100%;max-width:100%;background:#0b1728;border:1px solid rgba(0,191,255,.15);border-radius:16px;overflow:hidden;margin-top:8px;display:none}
 .floating-chat-panel.open{display:block}
 .floating-chat-panel .panel-header{background:linear-gradient(135deg,#0A84FF,#00E5FF);padding:18px 20px;display:flex;align-items:center;gap:12px}
 .floating-chat-panel .panel-header h4{font-size:16px;margin:0;color:#fff}
@@ -296,7 +299,23 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 <div class="feature-card"><span class="icon"><i class="fa-solid fa-shield-halved"></i></span><h4>DDoS Protection</h4><p>Advanced mitigation filtering at network edge. Stay online during Layer 3/4/7 attacks.</p></div>
 <div class="feature-card"><span class="icon"><i class="fa-solid fa-clock-rotate-left"></i></span><h4>Daily Backups</h4><p>Automated daily backups with 7-day retention. One-click restore from your control panel.</p></div>
 <div class="feature-card"><span class="icon"><i class="fa-solid fa-rocket"></i></span><h4>One-Click Installs</h4><p>WordPress, Joomla, Laravel, and 400+ apps installable in seconds from your dashboard.</p></div>
-<div class="feature-card" style="cursor:pointer" onclick="window.open('https://planet-hosts.com/livechat_popup.php','ph_chat','width=400,height=600')"><span class="icon"><i class="fa-solid fa-headset"></i></span><h4>💬 24/7 Live Support</h4><p>Experienced system administrators available 24/7 via tickets, live chat, and phone.</p><div id="phChatStatus" style="display:flex;gap:10px;justify-content:center;margin-top:8px;font-size:11px"><span id="phOnline">● Online</span> <span id="phOffline">● Offline</span> <span id="phAway">● Away</span></div></div>
+<div class="feature-card" style="text-align:center;padding:16px">
+<div class="floating-chat" id="floatingChat" onclick="toggleChatPanel()" style="position:static;display:block;text-align:center;z-index:auto">
+<img src="/theme/assets/img/livechat/live-online-2.png" alt="Live Support" class="support-badge-img" id="supportBadge" style="width:240px;height:256px;object-fit:contain;cursor:pointer;margin:0 auto">
+</div>
+<div class="floating-chat-panel" id="chatPanel" style="position:static;width:100%;max-width:100%;z-index:auto;margin-top:8px;display:none">
+<div class="panel-header" style="padding:14px;gap:10px">
+<img src="/theme/assets/img/livechat/live-online-2.png" id="panelBadgeImg" style="height:40px;width:auto;object-fit:contain">
+<div><h4 id="panelTitle" style="font-size:14px">Live Support</h4><p id="panelStatus" style="font-size:11px">Checking support status...</p></div>
+</div>
+<div class="panel-body" style="padding:14px">
+<input type="text" id="chatName" placeholder="Your Name" style="font-size:12px;padding:8px 10px">
+<input type="email" id="chatEmail" placeholder="Your Email" style="font-size:12px;padding:8px 10px">
+<textarea id="chatMessage" placeholder="Your Question" style="font-size:12px;padding:8px 10px;min-height:50px"></textarea>
+<button onclick="sendChatMessage()" style="padding:8px 16px;border:none;border-radius:6px;background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff;cursor:pointer;font-size:12px;width:100%">Send Message</button>
+</div>
+</div>
+</div>
 <div class="feature-card"><span class="icon"><i class="fa-solid fa-gauge-high"></i></span><h4>WHM/cPanel</h4><p>Industry-standard control panel with full account, DNS, email, database, and security management.</p></div>
 </div>
 </div>
