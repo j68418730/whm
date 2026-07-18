@@ -167,7 +167,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 .floating-chat{position:fixed;bottom:120px;right:30px;z-index:9999;cursor:pointer}
 .floating-chat .chat-bubble{width:85px;height:85px;border-radius:50%;background:linear-gradient(135deg,#0A84FF,#00E5FF);display:flex;align-items:center;justify-content:center;font-size:34px;color:#fff;box-shadow:0 4px 25px rgba(0,140,255,.45);transition:.3s}
 .floating-chat .chat-bubble:hover{transform:scale(1.08);box-shadow:0 4px 35px rgba(0,140,255,.55)}
-.floating-chat .support-badge-img{width:340px;height:auto;aspect-ratio:3/1;border-radius:18px;object-fit:contain;box-shadow:0 8px 45px rgba(0,0,0,.6);transition:.3s}
+.floating-chat .support-badge-img{width:280px;height:auto;aspect-ratio:3/1;border-radius:18px;object-fit:contain;box-shadow:0 8px 45px rgba(0,0,0,.6);transition:.3s}
 .floating-chat .support-badge-img:hover{transform:scale(1.06)}
 /* TESTIMONIAL SCROLL */
 .testimonial-scroll-wrap{position:relative;margin-top:24px;display:flex;align-items:center;gap:10px}
@@ -186,7 +186,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 .scroll-arrow:hover{background:#0A84FF;border-color:#0A84FF}
 @media(max-width:768px){.testimonial-scroll-wrap{flex-direction:column}.scroll-arrow{display:none}}
 
-.floating-chat-panel{position:fixed;bottom:260px;right:30px;width:420px;max-width:92vw;background:#0b1728;border:1px solid rgba(0,191,255,.15);border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.5);display:none;z-index:9998}
+.floating-chat-panel{position:fixed;bottom:180px;right:20px;width:360px;max-width:92vw;background:#0b1728;border:1px solid rgba(0,191,255,.15);border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.5);display:none;z-index:9998}
 .floating-chat-panel.open{display:block}
 .floating-chat-panel .panel-header{background:linear-gradient(135deg,#0A84FF,#00E5FF);padding:18px 20px;display:flex;align-items:center;gap:12px}
 .floating-chat-panel .panel-header h4{font-size:16px;margin:0;color:#fff}
@@ -231,7 +231,8 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 .section{padding:50px 0}
 .footer-grid{grid-template-columns:1fr}
 .floating-chat-panel{width:calc(100vw - 40px);right:20px;bottom:180px}
-.floating-chat .support-badge-img{width:260px}
+.floating-chat-panel{width:calc(100vw - 40px);right:10px;bottom:120px}
+.floating-chat .support-badge-img{width:200px}
 .floating-chat .chat-bubble{width:70px;height:70px;font-size:28px}
 }
 </style>
