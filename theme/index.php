@@ -507,6 +507,7 @@ $safeText3 = htmlspecialchars($rv->text ?? '', ENT_QUOTES, 'UTF-8');
 <button onclick="toggleChatPanel()" style="margin-left:auto;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:16px;cursor:pointer;padding:4px 10px;border-radius:4px;white-space:nowrap">Minimize</button>
 </div>
 <div class="panel-body" id="panelBody">
+<button onclick="toggleChatPanel()" style="margin-bottom:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#94a3b8;font-size:11px;cursor:pointer;padding:4px 10px;border-radius:4px;width:100%">Minimize Chat</button>
 <input type="hidden" id="chatSessionId" value="0">
 <div id="chatMessages" style="max-height:280px;overflow-y:auto;margin-bottom:12px;display:none"></div>
 <div id="chatForm">
