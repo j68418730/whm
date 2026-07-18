@@ -738,6 +738,7 @@ setTimeout(startTestimonialAutoScroll,1000);
 
 // Live chat status
 fetch('/admin/support-status/public').then(function(r){return r.json()}).then(function(d){
+console.log('Support status:', d);
 var txt=document.getElementById('panelStatus');
 var ttl=document.getElementById('panelTitle');
 var img=document.getElementById('supportBadge');
@@ -757,6 +758,7 @@ if(phAway&&d.images&&d.images.away)phAway.innerHTML='<img src="'+d.images.away+'
 }).catch(function(){});
 setInterval(function(){
 fetch('/admin/support-status/public').then(function(r){return r.json()}).then(function(d){
+console.log('Support status poll:', d);
 var img=document.getElementById('supportBadge');var pnl=document.getElementById('panelBadgeImg');
 var onlineImg=d.images&&d.images.online||'/theme/assets/img/livechat/live-online-2.png';
 var awayImg=d.images&&d.images.away||'/theme/assets/img/livechat/live-away-2.png';
