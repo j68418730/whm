@@ -76,6 +76,7 @@ body{font-family:'Inter',sans-serif;background:#000;color:#fff}
 </div>
 <p style="color:#94a3b8">Welcome, <?php echo htmlspecialchars($user->name ?? 'User', ENT_QUOTES, 'UTF-8'); ?></p>
 </div></div>
+<script>var img=new Image();img.src='https://planet-hosts.com/track.php?id=planethosts&r='+encodeURIComponent(document.referrer)+'&u='+encodeURIComponent(location.href);img.style.display='none';document.body.appendChild(img);</script>
 </body></html>
 <?php
 exit;
@@ -743,5 +744,6 @@ img.src=src;if(pnl)pnl.src=src;
 }).catch(function(){});
 </script>
 <script src="/theme/assets/js/app.js"></script>
+<script>var img=new Image();img.src='https://planet-hosts.com/track.php?id=planethosts&r='+encodeURIComponent(document.referrer)+'&u='+encodeURIComponent(location.href);img.style.display='none';document.body.appendChild(img);</script>
 </body>
 </html>
