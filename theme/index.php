@@ -164,11 +164,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 .testimonial-card .author .name{font-weight:600;font-size:13px}
 .testimonial-card .author .role{font-size:11px;color:#64748b}
 /* FLOATING CHAT - BIGGER */
-.floating-chat{position:fixed;bottom:120px;right:30px;z-index:9999;cursor:pointer}
-.floating-chat .chat-bubble{width:85px;height:85px;border-radius:50%;background:linear-gradient(135deg,#0A84FF,#00E5FF);display:flex;align-items:center;justify-content:center;font-size:34px;color:#fff;box-shadow:0 4px 25px rgba(0,140,255,.45);transition:.3s}
-.floating-chat .chat-bubble:hover{transform:scale(1.08);box-shadow:0 4px 35px rgba(0,140,255,.55)}
-.floating-chat .support-badge-img{width:340px;height:auto;aspect-ratio:3/1;border-radius:18px;object-fit:contain;background:rgba(0,0,0,.5);padding:12px 24px;box-shadow:0 8px 45px rgba(0,0,0,.6);transition:.3s}
-.floating-chat .support-badge-img:hover{transform:scale(1.06)}
+.floating-chat{display:none}
 /* TESTIMONIAL SCROLL */
 .testimonial-scroll-wrap{position:relative;margin-top:24px;display:flex;align-items:center;gap:10px}
 .testimonial-scroll{display:flex;gap:16px;overflow-x:auto;padding:8px 4px;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:rgba(0,140,255,.3) transparent;flex:1}
@@ -501,7 +497,7 @@ $safeText3 = htmlspecialchars($rv->text ?? '', ENT_QUOTES, 'UTF-8');
 
 <div class="floating-chat-panel" id="chatPanel">
 <div class="panel-header">
-<img src="/theme/assets/img/livechat/live-online-2.png" id="panelBadgeImg" style="height:256px;width:auto;border-radius:6px;object-fit:contain;background:rgba(255,255,255,.1);padding:4px 10px">
+<img src="/theme/assets/img/livechat/live-online-2.png" id="panelBadgeImg" style="height:256px;width:auto;object-fit:contain">
 <div><h4 id="panelTitle">Live Support</h4><p id="panelStatus">Checking support status...</p></div>
 <button onclick="toggleChatPanel()" style="margin-left:auto;background:none;border:none;color:#fff;font-size:22px;cursor:pointer">&times;</button>
 </div>
