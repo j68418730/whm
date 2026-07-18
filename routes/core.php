@@ -21,6 +21,9 @@ $router->get('/admin/section/accounts', 'Admin\Controllers\SectionController@acc
 $router->get('/admin/section/hosting', 'Admin\Controllers\SectionController@hosting');
 $router->get('/admin/section/billing', 'Admin\Controllers\SectionController@billing');
 $router->get('/admin/section/support', 'Admin\Controllers\SectionController@support');
+$router->post('/admin/support/settings', 'Admin\Controllers\SectionController@supportSettings');
+$router->post('/admin/support/upload-image', 'Admin\Controllers\SectionController@supportUploadImage');
+$router->get('/admin/support/delete-image/{file}', 'Admin\Controllers\SectionController@supportDeleteImage');
 $router->get('/admin/section/radio', 'Admin\Controllers\SectionController@radio');
 $router->get('/admin/section/games', 'Admin\Controllers\SectionController@games');
 $router->get('/admin/section/builder', 'Admin\Controllers\SectionController@builder');

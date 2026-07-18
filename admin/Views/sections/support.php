@@ -21,3 +21,36 @@
 <a href="/admin/reviews" class="section-card"><div class="icon">⭐</div><div class="name">Reviews</div><div class="desc">Customer reviews & ratings</div></a>
 <a href="/admin/support/status" class="section-card"><div class="icon">🟢</div><div class="name">Server Status</div><div class="desc">Server uptime & status</div></a>
 </div>
+
+<div class="card" style="margin-top:20px">
+<h3 style="margin-bottom:14px">⚙️ Support Settings</h3>
+<form method="post" action="/admin/support/settings" style="display:flex;flex-direction:column;gap:12px">
+<?php echo $csrfField ?? ''; ?>
+<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+<input type="hidden" name="live_chat_enabled" value="0"><input type="checkbox" name="live_chat_enabled" value="1" <?php echo ($settings['live_chat_enabled'] ?? '1') === '1' ? 'checked' : ''; ?>> 💬 Enable Live Chat
+</label>
+<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+<input type="hidden" name="visitor_tracking_enabled" value="0"><input type="checkbox" name="visitor_tracking_enabled" value="1" <?php echo ($settings['visitor_tracking_enabled'] ?? '1') === '1' ? 'checked' : ''; ?>> 📊 Enable Visitor Tracking
+</label>
+<button class="btn primary" style="align-self:start">Save Settings</button>
+</form>
+</div>
+
+<div class="card" style="margin-top:12px">
+<h3 style="margin-bottom:14px">🖼️ Support Images</h3>
+<form method="post" action="/admin/support/upload-image" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+<div><label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px">Upload Image</label><input type="file" name="image" accept="image/*" required></div>
+<button class="btn primary">Upload</button>
+</form>
+<?php if (!empty($images)): ?>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:12px">
+<?php foreach ($images as $img): ?>
+<div style="text-align:center;padding:6px;background:rgba(0,0,0,.2);border-radius:6px">
+<img src="/uploads/support/<?php echo rawurlencode($img); ?>" style="width:100%;height:80px;object-fit:cover;border-radius:4px">
+<div style="font-size:10px;color:#64748b;margin-top:4px;word-break:break-all"><?php echo htmlspecialchars($img); ?></div>
+<a href="/admin/support/delete-image/<?php echo rawurlencode($img); ?>" class="btn btn-sm danger" style="padding:2px 6px;font-size:9px;margin-top:4px" onclick="return confirm('Delete?')">Delete</a>
+</div>
+<?php endforeach; ?>
+</div>
+<?php endif; ?>
+</div>
