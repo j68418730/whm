@@ -132,12 +132,25 @@ class ShoutcastDriver implements StreamingDriverInterface
             'user_id' => $userId, 'engine' => 'shoutcast', 'name' => $name,
             'server_type' => 'shoutcast', 'port' => $port,
             'password' => password_hash($password, PASSWORD_DEFAULT),
+            'plain_password' => $password,
             'admin_password' => password_hash($adminPassword, PASSWORD_DEFAULT),
+            'admin_plain_password' => $adminPassword,
             'mount_point' => $this->generateMountPoint($userId, $name), 'bitrate' => $bitrate, 'format' => $format,
             'max_listeners' => $maxListeners, 'public_server' => $public,
             'stream_authhash' => $authhash, 'config_path' => $configPath,
             'systemd_service' => $serviceName, 'status' => 'stopped',
         ]);
+
+        // Also insert into radio_streams for legacy compatibility
+        try {
+            $this->db->table('radio_streams')->insertGetId([
+                'id' => $id, 'user_id' => $userId, 'server_type' => 'shoutcast',
+                'port' => $port, 'mount_point' => $this->generateMountPoint($userId, $name),
+                'bitrate' => $bitrate, 'format' => $format, 'max_listeners' => $maxListeners,
+                'public_server' => $public, 'password' => $password, 'plain_password' => $password,
+                'config_path' => $configPath, 'status' => 'stopped',
+            ]);
+        } catch (\Exception $e) {}
 
         return ['id' => $id, 'port' => $port, 'password' => $password, 'admin_password' => $adminPassword, 'config_path' => $configPath, 'systemd_service' => $serviceName];
     }

@@ -73,7 +73,9 @@ class IcecastDriver implements StreamingDriverInterface
             'server_type' => 'icecast',
             'port' => $port,
             'password' => password_hash($password, PASSWORD_DEFAULT),
+            'plain_password' => $password,
             'admin_password' => password_hash($password, PASSWORD_DEFAULT),
+            'admin_plain_password' => $password,
             'mount_point' => $mount,
             'bitrate' => $bitrate,
             'format' => 'ogg',
@@ -81,6 +83,17 @@ class IcecastDriver implements StreamingDriverInterface
             'config_path' => $configPath,
             'status' => 'stopped',
         ]);
+
+        // Also insert into radio_streams for legacy compatibility
+        try {
+            $this->db->table('radio_streams')->insertGetId([
+                'id' => $id, 'user_id' => $userId, 'server_type' => 'icecast',
+                'port' => $port, 'mount_point' => $mount, 'bitrate' => $bitrate,
+                'format' => 'ogg', 'max_listeners' => $maxListeners,
+                'password' => $password, 'plain_password' => $password,
+                'config_path' => $configPath, 'status' => 'stopped',
+            ]);
+        } catch (\Exception $e) {}
 
         return ['id' => $id, 'port' => $port, 'password' => $password, 'mount_point' => $mount, 'config_path' => $configPath];
     }

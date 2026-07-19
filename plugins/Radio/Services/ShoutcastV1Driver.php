@@ -79,10 +79,21 @@ class ShoutcastV1Driver implements StreamingDriverInterface
             'user_id' => $userId, 'engine' => 'shoutcast1', 'name' => $name,
             'server_type' => 'shoutcast1', 'port' => $port,
             'password' => password_hash($password, PASSWORD_DEFAULT),
+            'plain_password' => $password,
             'mount_point' => '/stream', 'bitrate' => $bitrate, 'format' => $format,
             'max_listeners' => $maxListeners, 'public_server' => $public,
             'config_path' => $configPath, 'systemd_service' => $serviceName, 'status' => 'stopped',
         ]);
+        // Also insert into radio_streams for legacy compatibility
+        try {
+            $this->db->table('radio_streams')->insertGetId([
+                'id' => $id, 'user_id' => $userId, 'server_type' => 'shoutcast1',
+                'port' => $port, 'mount_point' => '/stream', 'bitrate' => $bitrate,
+                'format' => $format, 'max_listeners' => $maxListeners,
+                'public_server' => $public, 'password' => $password, 'plain_password' => $password,
+                'config_path' => $configPath, 'status' => 'stopped',
+            ]);
+        } catch (\Exception $e) {}
         return ['id' => $id, 'port' => $port, 'password' => $password, 'config_path' => $configPath, 'systemd_service' => $serviceName];
     }
 
