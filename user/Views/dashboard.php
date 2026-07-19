@@ -93,7 +93,7 @@ fetch('/admin/support-status/public').then(function(r){return r.json()}).then(fu
 
 <!-- Stats Grid -->
 <div class="dash-grid">
-<div class="dash-card"><div class="icon-box" style="background:rgba(0,140,255,.12)">🖥</div><h3>Services</h3><div class="val" style="color:#0A84FF"><?php echo count($services ?? []); ?></div><div class="sub">Active services</div></div>
+<div class="dash-card"><div class="icon-box" style="background:rgba(0,140,255,.12)">🖥</div><h3>Services</h3><div class="val" style="color:#0A84FF"><?php echo $allServicesCount ?? count($services ?? []); ?></div><div class="sub">Active services</div></div>
 
 <div class="dash-card"><div class="icon-box" style="background:rgba(56,189,248,.12)">🌍</div><h3>Domains</h3><div class="val" style="color:#38bdf8"><?php echo count($domains ?? []); ?></div><div class="sub">Registered domains</div></div>
 
