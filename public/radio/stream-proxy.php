@@ -30,6 +30,7 @@ $ch = curl_init();
 curl_setopt_array($ch, [
     CURLOPT_URL => $srcUrl,
     CURLOPT_HTTPHEADER => ['Icy-MetaData:1'],
+    CURLOPT_HTTP09_ALLOWED => true,
     CURLOPT_HEADER => false,
     CURLOPT_RETURNTRANSFER => false,
     CURLOPT_TIMEOUT => 0,
