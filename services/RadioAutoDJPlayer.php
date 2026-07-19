@@ -32,7 +32,7 @@ class RadioAutoDJPlayer
         $mount = $this->stream->mount_point ?? '/stream';
         $name = $this->stream->name ?? 'Radio';
 
-        if ($engine === 'shoutcast' || $engine === 'shoutcast2') {
+        if ($engine === 'shoutcast' || $engine === 'shoutcast2' || $engine === 'shoutcast1') {
             $playlistPath = $this->generateM3u($files);
             $streamId = $this->stream->id ?? 0;
             $scriptPath = $this->autodjDir . '/runner_' . $streamId . '.php';
