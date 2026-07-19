@@ -150,7 +150,17 @@ textarea.inp{resize:vertical;min-height:60px}
 <?php elseif ($step === 6): ?>
 <div class="wizard-card">
 <h2>Playlist</h2>
-<div class="desc">Create playlists for your station</div>
+<div class="desc">Select existing playlists or create new ones for your station</div>
+<?php if (!empty($playlists)): ?>
+<h4 style="font-size:13px;color:#94a3b8;margin:0 0 8px">Existing Playlists</h4>
+<div class="grid-2" style="margin-bottom:12px">
+<?php foreach ($playlists as $pl): ?>
+<label style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(0,0,0,.3);border-radius:8px;font-size:12px;color:#c0c0c0;cursor:pointer">
+<input type="checkbox" name="playlist_ids[]" value="<?=$pl->id?>"> <span><?=htmlspecialchars($pl->name)?></span></label>
+<?php endforeach; ?>
+</div>
+<?php endif; ?>
+<h4 style="font-size:13px;color:#94a3b8;margin:0 0 8px">Quick Create</h4>
 <div class="grid-2">
 <?php foreach(['Morning','Afternoon','Evening','Night','Weekend','Holiday','Emergency','Default'] as $pl): ?>
 <label style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(0,0,0,.3);border-radius:8px;font-size:12px;color:#c0c0c0;cursor:pointer">
