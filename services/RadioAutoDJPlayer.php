@@ -29,13 +29,15 @@ class RadioAutoDJPlayer
         $port = $this->stream->port ?? 8000;
         $port = $this->stream->port ?? 8000;
         $engine = $this->stream->engine ?? 'icecast';
+        // SHOUTcast v1 uses port+1 for source connections
+        if ($engine === 'shoutcast1') $port++;
         $password = $this->stream->plain_password ?? ($this->stream->password ?? '');
         $bitrate = $this->stream->bitrate ?? 128;
         $mount = $this->stream->mount_point ?? '/stream';
         $name = $this->stream->name ?? 'Radio';
 
-        if ($engine === 'shoutcast' || $engine === 'shoutcast2') {
-            // Use custom PHP source client for SHOUTcast v2
+        if ($engine === 'shoutcast' || $engine === 'shoutcast2' || $engine === 'shoutcast1') {
+            // Use custom PHP source client for SHOUTcast
             $playlistPath = $this->generateM3u($files);
             $streamId = $this->stream->id ?? 0;
             $scriptPath = $this->autodjDir . '/runner_' . $streamId . '.php';

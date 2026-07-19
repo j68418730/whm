@@ -730,6 +730,7 @@ class RadioController extends Controller
             } catch (\Exception $e) {}
             $player = new \Services\RadioAutoDJPlayer($stream, $username, $playlistIds);
             $ok = $player->start();
+            if (!$ok) error_log('AUTODJ: start() returned false for stream ' . $realId . ' playlist=' . json_encode($playlistIds));
             $this->db->table('streaming_stations')->where('id', $realId)->update([
                 'autodj_enabled' => $ok ? 1 : 0
             ]);
