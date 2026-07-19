@@ -747,18 +747,31 @@ class RadioController extends Controller
                 foreach ($files as $f) $concat .= "file '" . str_replace("'", "'\\''", $f) . "'\n";
                 file_put_contents($concatFile, $concat);
                 
-                $port = 8000; // SHOUTcast v2 port (source and client same port)
-                $password = 'Shoutcast171';
+                $port = 11001; // SHOUTcast v1 source port (PortBase+1)
+                $password = $stream->plain_password ?: 'planethosts';
                 $bitrate = (int)($stream->bitrate ?? 128);
-                // Use ffmpeg to push directly (works in Apache context where exec() is available)
-                $concatFile = $autodjDir . '/concat.txt';
-                $concat = "ffconcat version 1.0\n";
-                foreach ($files as $f) $concat .= "file '" . str_replace("'", "'\\''", $f) . "'\n";
-                file_put_contents($concatFile, $concat);
-                $url = "http://source:{$password}@localhost:{$port}/";
-                $cmd = "nohup ffmpeg -re -stream_loop -1 -f concat -safe 0 -i " . escapeshellarg($concatFile)
-                    . " -c:a libmp3lame -b:a {$bitrate}k -f mp3 " . escapeshellarg($url)
-                    . " > {$logPath} 2>&1 & echo \$!";
+                // Generate M3U playlist file
+                $m3uFile = $autodjDir . '/playlist.m3u';
+                $m3u = "#EXTM3U\n";
+                foreach ($files as $f) {
+                    $name = basename($f);
+                    $title = pathinfo($name, PATHINFO_FILENAME);
+                    $artist = ''; $parts = explode(' - ', $title, 2);
+                    if (count($parts) === 2) { $artist = trim($parts[0]); $title = trim($parts[1]); }
+                    $m3u .= "#EXTINF:-1,{$artist} - {$title}\n{$f}\n";
+                }
+                file_put_contents($m3uFile, $m3u);
+                // Create runner script using ShoutcastV1Source (raw TCP, no exec/popen needed)
+                $runnerScript = $autodjDir . '/runner_' . $realId . '.php';
+                $runner = "<?php\n"
+                    . "require_once '/var/www/radiohosting/services/ShoutcastV1Source.php';\n"
+                    . "\$s = new ShoutcastV1Source('localhost', {$port}, '" . addslashes($password) . "', {$bitrate}, '" . addslashes($stream->name ?? 'Radio') . "', {$realId});\n"
+                    . "\$s->setPidFile('{$pidFile}');\n"
+                    . "\$s->setLogFile('{$logPath}');\n"
+                    . "\$s->setPlaylistFile('{$m3uFile}');\n"
+                    . "\$s->run();\n";
+                file_put_contents($runnerScript, $runner);
+                $cmd = "nohup php {$runnerScript} > {$logPath} 2>&1 & echo \$!";
                 exec($cmd, $out, $code);
                 $pid = (int)($out[0] ?? 0);
                 $ok = $pid > 0;
