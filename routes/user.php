@@ -200,6 +200,8 @@ $router->get('/user/radio/autodj/category/delete/{id}', 'User\Controllers\RadioC
 $router->post('/user/radio/autodj/add-log', 'User\Controllers\RadioController@autodjAddLog');
 $router->get('/user/radio/autodj/clear-logs', 'User\Controllers\RadioController@autodjClearLogs');
 $router->get('/user/radio/current-song', 'User\Controllers\RadioController@currentSong');
+$router->get('/user/radio/global-music', 'User\Controllers\RadioController@globalMusic');
+$router->get('/user/radio/global-music/download/{itemId}', 'User\Controllers\RadioController@globalMusicDownload');
 $router->get('/user/radio/widgets', 'User\Controllers\RadioController@widgets');
 
 // DJ Panel Routes (3-layer auth: Planet Hosts API -> DJ Auth -> Stream Auth)
