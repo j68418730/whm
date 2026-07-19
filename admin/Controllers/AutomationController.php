@@ -87,14 +87,14 @@ class AutomationController extends Controller
             if (empty($orders)) $log[] = 'Auto Provision: No pending orders.';
         }
 
-        // Auto Suspend: suspend accounts past due
+        // Auto Suspend: suspend accounts past due (only if they have invoices)
         if (!empty($settings['auto_suspend_enabled'])) {
             $days = (int)($settings['auto_suspend_days'] ?? 7);
             $cutoff = date('Y-m-d', strtotime("-{$days} days"));
-            $overdue = $this->db->table('invoices')->where('status', 'overdue')->get() ?: [];
+            $overdue = $this->db->table('invoices')->where('status', 'overdue')->where('due_date', '<', $cutoff)->get() ?: [];
             $suspended = [];
             foreach ($overdue as $inv) {
-                if ($inv->due_date < $cutoff && !in_array($inv->user_id, $suspended)) {
+                if (!in_array($inv->user_id, $suspended)) {
                     $this->db->table('hosting_users')->where('id', $inv->user_id)->update(['status' => 'suspended']);
                     $suspended[] = $inv->user_id;
                     $log[] = "Suspended user #{$inv->user_id} (overdue invoice #{$inv->invoice_number})";
