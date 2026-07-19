@@ -24,7 +24,9 @@ class RadioAutoDJPlayer
         @mkdir($this->autodjDir, 0755, true);
         @mkdir($this->musicDir, 0755, true);
         $files = $this->scanMusicFiles();
-        if (empty($files)) return false;
+        if (empty($files)) { error_log('AUTODJ: scanMusicFiles empty for dir=' . $this->musicDir . ' ids=' . json_encode($this->playlistIds)); return false; }
+        error_log('AUTODJ: found ' . count($files) . ' files');
+        $port = $this->stream->port ?? 8000;
         $port = $this->stream->port ?? 8000;
         $engine = $this->stream->engine ?? 'icecast';
         $password = $this->stream->plain_password ?? ($this->stream->password ?? '');
@@ -62,7 +64,9 @@ PHP;
             $cmd = "nohup ffmpeg -re -stream_loop -1 -f concat -safe 0 -i " . escapeshellarg($playlistPath)
                 . " -c:a libmp3lame -b:a {$bitrate}k -f mp3 " . escapeshellarg($url)
                 . " > {$logPath} 2>&1 & echo $!";
-            exec($cmd, $out);
+            error_log('AUTODJ: running ffmpeg cmd=' . $cmd);
+            exec($cmd, $out, $code);
+            error_log('AUTODJ: ffmpeg exit=' . $code . ' out=' . json_encode($out));
             $pid = (int)($out[0] ?? 0);
             if ($pid > 0) file_put_contents($pidFile, $pid);
             usleep(500000);
