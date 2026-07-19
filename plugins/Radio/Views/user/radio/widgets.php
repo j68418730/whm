@@ -176,12 +176,12 @@ foreach($extra as $c): ?>
 </div>
 </div>
 <script>
-var BASE_URL = 'https://planet-hosts.com:2083';
+var BASE_URL = 'https://planet-hosts.com';
 var STREAM_HOST = 'planet-hosts.com';
 var STATIONS = <?=json_encode(array_map(function($s){return['id'=>$s->id,'name'=>$s->name,'port'=>$s->port,'type'=>$s->server_type??'icecast','mount'=>$s->mount??'/live'];},$streams))?>;
 var sid = function(){return parseInt(document.getElementById('ws-s').value)};
 var sname = function(){for(var i=0;i<STATIONS.length;i++)if(STATIONS[i].id===sid())return STATIONS[i].name;return'Radio'};
-var sUrl = function(){return 'https://'+STREAM_HOST+':2083/radio/stream-proxy.php?stream='+sid()};
+var sUrl = function(){return 'https://'+STREAM_HOST+'/radio/stream-proxy.php?stream='+sid()};
 var fmt = function(){return document.getElementById('ws-f').value};
 function sw(e,id){
   document.querySelectorAll('.wc-tab').forEach(function(t){t.classList.remove('act')});
@@ -231,7 +231,7 @@ function gw(type){
     'public-djs':'<div id="ph-public-djs-'+x+'"><script src="'+s+'/radio/public_djs.php?stream='+x+'"><\/script><\/div>',
     'schedule-view':ifr(s+'/radio/schedule.php?stream='+x,320,400),
     'listen-live':'<a href="'+s+'/radio/embed.php?stream='+x+'" target="_blank" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#008cff,#0066cc);color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px">Listen Live</a>',
-    'dj-login':'<div style="padding:12px;background:rgba(250,204,21,.06);border:1px solid rgba(250,204,21,.15);border-radius:8px;text-align:center"><div style="font-size:13px;font-weight:600;color:#e0e0e0;margin-bottom:4px">DJ Panel Login</div><div style="font-size:11px;color:#94a3b8;margin-bottom:8px">Give this link to your DJs:</div><input id="dj-login-url" value="https://planet-hosts.com:2083/dj_panel.php" readonly style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#4ade80;font-size:11px;text-align:center;font-family:monospace;margin-bottom:6px"><button class="btn-s btn-p" onclick="navigator.clipboard.writeText(document.getElementById(\'dj-login-url\').value)">Copy Link</button></div>',
+    'dj-login':'<div style="padding:12px;background:rgba(250,204,21,.06);border:1px solid rgba(250,204,21,.15);border-radius:8px;text-align:center"><div style="font-size:13px;font-weight:600;color:#e0e0e0;margin-bottom:4px">DJ Panel Login</div><div style="font-size:11px;color:#94a3b8;margin-bottom:8px">Give this link to your DJs:</div><input id="dj-login-url" value="https://planet-hosts.com/dj_panel.php" readonly style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#4ade80;font-size:11px;text-align:center;font-family:monospace;margin-bottom:6px"><button class="btn-s btn-p" onclick="navigator.clipboard.writeText(document.getElementById(\'dj-login-url\').value)">Copy Link</button></div>',
     'apply':'<div id="ph-apply-'+x+'">DJ application form - create at /user/radio</div>',
     'advertisements':'<div id="ph-ads-'+x+'"><script src="'+s+'/radio/advertisements.php?stream='+x+'"><\/script><\/div>',
   };
