@@ -6,7 +6,7 @@
  */
 class ShoutcastV1Source
 {
-    protected $host, $port, $password, $bitrate, $name, $pidFile, $logFile, $playlistFile, $streamId;
+    protected $host, $port, $password, $bitrate, $name, $pidFile, $logFile, $playlistFile, $streamId, $db;
     protected $running = true;
 
     public function __construct($host, $port, $password, $bitrate = 128, $name = 'Radio', $streamId = null)
@@ -17,6 +17,7 @@ class ShoutcastV1Source
         $this->bitrate = $bitrate;
         $this->name = $name;
         $this->streamId = $streamId;
+        try { $this->db = new PDO("mysql:host=localhost;dbname=radiohosting","radiouser","Skylinehosting171"); } catch (\Exception $e) {}
     }
 
     public function setPidFile($path) { $this->pidFile = $path; }
@@ -34,21 +35,27 @@ class ShoutcastV1Source
         if ($this->pidFile) file_put_contents($this->pidFile, getmypid());
         $this->log("AutoDJ started");
 
+        // Connect once and stay connected
+        $sock = $this->connect();
+        if (!$sock) { $this->log("Initial connection failed"); return; }
+
         while ($this->running) {
             $files = $this->getPlaylistFiles();
             if (empty($files)) { $this->log("No files, waiting..."); sleep(10); continue; }
 
-            shuffle($files);
-            $sock = $this->connect();
-            if (!$sock) { sleep(5); continue; }
-
+            // Play files in order (no shuffle for sequential playback)
             foreach ($files as $file) {
                 if (!$this->running) break;
                 $this->streamFile($file, $sock);
             }
-            fclose($sock);
-            sleep(2); // Wait before reconnecting to let server clean up
+            // If we get here and socket died, try to reconnect
+            if (!$sock) {
+                $this->log("Socket lost, reconnecting...");
+                $sock = $this->connect();
+                if (!$sock) { sleep(10); }
+            }
         }
+        if ($sock) fclose($sock);
         $this->log("AutoDJ stopped");
         if ($this->pidFile) @unlink($this->pidFile);
     }
@@ -56,15 +63,17 @@ class ShoutcastV1Source
     protected function connect()
     {
         $sock = @fsockopen($this->host, $this->port, $errno, $errstr, 10);
-        if (!$sock) { $this->log("Connection failed: $errstr"); sleep(3); return null; }
-        stream_set_timeout($sock, 10);
+        if (!$sock) { $this->log("Connection failed: $errstr"); sleep(5); return null; }
+        stream_set_timeout($sock, 15);
+        // Wait for server banner if any
+        usleep(500000);
         fwrite($sock, $this->password . "\r\n");
         $resp = fread($sock, 1024);
         $this->log("Auth: [" . trim(preg_replace('/[\x00-\x1f]/', ' ', $resp)) . "]");
         if (strpos($resp, 'OK') === false && strpos($resp, 'OK2') === false) {
-            $this->log("Auth rejected, retrying in 3s");
+            $this->log("Auth rejected, retrying in 5s");
             fclose($sock);
-            sleep(3);
+            sleep(5);
             return null;
         }
         $headers = "icy-name: {$this->name}\r\nicy-br: {$this->bitrate}\r\nicy-pub: 1\r\n";
@@ -90,15 +99,29 @@ class ShoutcastV1Source
         if (!file_exists($path)) return;
         $name = basename($path);
         $this->log("Streaming: $name");
+        // Update current song in DB
+        $title = pathinfo($name, PATHINFO_FILENAME);
+        $artist = '';
+        $parts = explode(' - ', $title, 2);
+        if (count($parts) === 2) { $artist = trim($parts[0]); $title = trim($parts[1]); }
+        if ($this->db && $this->streamId) {
+            try {
+                $this->db->exec("UPDATE streaming_stations SET current_song=" . $this->db->quote($title) . ", current_artist=" . $this->db->quote($artist) . ", current_song_started=NOW() WHERE id=" . ((int)$this->streamId % 10000));
+                $this->db->exec("INSERT INTO radio_song_history (stream_id, title, artist, played_at) VALUES (" . ((int)$this->streamId % 10000) . ", " . $this->db->quote($title) . ", " . $this->db->quote($artist) . ", NOW())");
+            } catch (\Exception $e) { $this->log("DB update failed: " . $e->getMessage()); }
+        }
         $fp = fopen($path, 'rb');
         if (!$fp) return;
         $bufSize = 65536;
+        // Calculate delay to match real-time playback speed
+        $bytesPerSec = ($this->bitrate * 1000) / 8; // bitrate in bytes per second
+        $delayPerChunk = ($bufSize / $bytesPerSec) * 1000000; // microseconds
         while ($this->running && !feof($fp)) {
             $data = fread($fp, $bufSize);
             if ($data === false || $data === '') break;
             $written = @fwrite($sock, $data);
             if ($written === false || $written === 0) { $this->log("Write failed"); break; }
-            usleep(50000);
+            usleep($delayPerChunk);
         }
         fclose($fp);
     }

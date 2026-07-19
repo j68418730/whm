@@ -232,6 +232,11 @@ tr:hover td{background:rgba(255,255,255,.02)}
     x.open('GET','/user/radio/autodj/dashboard?station_id=<?=$stationId?>',true);
     x.onload=function(){try{var d=JSON.parse(x.responseText);if(d.config){document.getElementById('ov-song').textContent=d.config.autodj_enabled?'AutoDJ Active':'AutoDJ Stopped'}}catch(e){}};
     x.send();
+    // Fetch current song
+    var y=new XMLHttpRequest();
+    y.open('GET','/user/radio/current-song?station_id=<?=$stationId?>',true);
+    y.onload=function(){try{var s=JSON.parse(y.responseText);if(s&&s.title){var txt=s.artist?s.artist+' - '+s.title:s.title;if(s.played_at){var sec=Math.floor((Date.now()-new Date(s.played_at).getTime())/1000);var m=Math.floor(sec/60);var s2=sec%60;txt+=' ['+m+':'+(s2<10?'0':'')+s2+']';}document.getElementById('ov-song').textContent=txt;}}catch(e){}};
+    y.send();
   },10000);
   </script>
   <div class="stat-grid">

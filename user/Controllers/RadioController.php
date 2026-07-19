@@ -812,7 +812,7 @@ class RadioController extends Controller
             if ($stream->engine === 'shoutcast1') $port++;
             exec("pkill -f \"ffmpeg.*{$port}\" 2>/dev/null");
             exec("pkill -f \"ffmpeg.*{$stream->port}\" 2>/dev/null");
-            $this->db->table('streaming_stations')->where('id', $realId)->update(['autodj_enabled' => 0]);
+            $this->db->table('streaming_stations')->where('id', $realId)->update(['autodj_enabled' => 0, 'current_song' => '', 'current_artist' => '', 'current_song_started' => null]);
             try {
                 $cfg = $this->db->table('radio_autodj_config')->where('station_id', $id)->first();
                 if ($cfg) $this->db->table('radio_autodj_config')->where('station_id', $id)->update(['autodj_enabled' => 0]);
@@ -1241,6 +1241,22 @@ class RadioController extends Controller
             $_SESSION['success'] = 'Logs cleared.';
         }
         header('Location: /user/radio?tab=autodj&station_id=' . ($station->id ?? '')); exit;
+    }
+
+    public function currentSong()
+    {
+        if (!$this->auth->check()) exit;
+        $station = $this->getStation();
+        if (!$station) { header('Content-Type: application/json'); echo json_encode([]); exit; }
+        $realId = $station->streaming_id ?? ($station->id % 10000);
+        $stream = $this->db->table('streaming_stations')->where('id', $realId)->first();
+        header('Content-Type: application/json');
+        if ($stream) {
+            echo json_encode(['title' => $stream->current_song ?? '', 'artist' => $stream->current_artist ?? '', 'played_at' => $stream->current_song_started ?? null]);
+        } else {
+            echo json_encode([]);
+        }
+        exit;
     }
 
     public function autodjAIAsk()
