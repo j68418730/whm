@@ -723,20 +723,44 @@ class RadioController extends Controller
         if ($stream) {
             $hosting = $this->db->table('hosting_users')->where('id', $stream->user_id)->first();
             $username = $hosting ? $hosting->username : 'unknown';
-            $playlistIds = [];
+            $musicDir = "/home/{$username}/radio/musicdatabase";
+            $autodjDir = "/home/{$username}/radio/autodj";
+            $logPath = $autodjDir . '/autodj.log';
+            $pidFile = $autodjDir . '/autodj.pid';
+            @mkdir($autodjDir, 0755, true);
+            
+            // Build concat playlist from all files in the selected playlist directories
+            $cfg = $this->db->table('radio_autodj_config')->where('station_id', $id)->first();
+            $playlistIds = ($cfg && !empty($cfg->playlist_ids)) ? json_decode($cfg->playlist_ids, true) ?: [] : [];
+            $concatFile = $autodjDir . '/concat.txt';
+            $files = [];
+            foreach ($playlistIds as $plId) {
+                $dir = $musicDir . '/playlist_' . (int)$plId;
+                if (!is_dir($dir)) continue;
+                foreach (glob($dir . '/*.{mp3,mp2,ogg,oga,wav,flac,aac,m4a,wma}', GLOB_BRACE) as $f) $files[] = $f;
+            }
+            if (!empty($files)) {
+                $concat = "ffconcat version 1.0\n";
+                foreach ($files as $f) $concat .= "file '" . str_replace("'", "'\\''", $f) . "'\n";
+                file_put_contents($concatFile, $concat);
+                
+                $port = 8000; // Use SHOUTcast v2 server for source connections
+                $password = 'Shoutcast171';
+                $bitrate = (int)($stream->bitrate ?? 128);
+                $url = "http://source:{$password}@localhost:{$port}/";
+                $cmd = "nohup ffmpeg -re -stream_loop -1 -f concat -safe 0 -i " . escapeshellarg($concatFile)
+                    . " -c:a libmp3lame -b:a {$bitrate}k -f mp3 " . escapeshellarg($url)
+                    . " > {$logPath} 2>&1 & echo $!";
+                exec($cmd, $out, $code);
+                $pid = (int)($out[0] ?? 0);
+                $ok = $pid > 0;
+                if ($ok) file_put_contents($pidFile, $pid);
+                error_log('AUTODJ: direct ffmpeg start pid=' . $pid . ' exit=' . $code . ' files=' . count($files));
+            }
+            $this->db->table('streaming_stations')->where('id', $realId)->update(['autodj_enabled' => $ok ? 1 : 0]);
             try {
-                $cfg = $this->db->table('radio_autodj_config')->where('station_id', $id)->first();
-                if ($cfg && !empty($cfg->playlist_ids)) $playlistIds = json_decode($cfg->playlist_ids, true) ?: [];
-            } catch (\Exception $e) {}
-            $player = new \Services\RadioAutoDJPlayer($stream, $username, $playlistIds);
-            $ok = $player->start();
-            if (!$ok) error_log('AUTODJ: start() returned false for stream ' . $realId . ' playlist=' . json_encode($playlistIds));
-            $this->db->table('streaming_stations')->where('id', $realId)->update([
-                'autodj_enabled' => $ok ? 1 : 0
-            ]);
-            try {
-                $cfg = $this->db->table('radio_autodj_config')->where('station_id', $id)->first();
-                if ($cfg) $this->db->table('radio_autodj_config')->where('station_id', $id)->update(['autodj_enabled' => $ok ? 1 : 0]);
+                $cfg2 = $this->db->table('radio_autodj_config')->where('station_id', $id)->first();
+                if ($cfg2) $this->db->table('radio_autodj_config')->where('station_id', $id)->update(['autodj_enabled' => $ok ? 1 : 0]);
             } catch (\Exception $e) {}
         }
         $this->db->table('radio_stations')->where('id', $id)->update(['autodj_status' => $ok ? 'running' : 'error', 'autodj_enabled' => $ok ? 1 : 0]);
@@ -751,8 +775,20 @@ class RadioController extends Controller
         if ($stream) {
             $hosting = $this->db->table('hosting_users')->where('id', $stream->user_id)->first();
             $username = $hosting ? $hosting->username : 'unknown';
-            $player = new \Services\RadioAutoDJPlayer($stream, $username);
-            $player->stop();
+            $autodjDir = "/home/{$username}/radio/autodj";
+            $pidFile = $autodjDir . '/autodj.pid';
+            if (file_exists($pidFile)) {
+                $pid = (int)trim(file_get_contents($pidFile));
+                if ($pid > 0) {
+                    exec("kill {$pid} 2>/dev/null");
+                    exec("kill -9 {$pid} 2>/dev/null");
+                }
+                @unlink($pidFile);
+            }
+            $port = (int)$stream->port;
+            if ($stream->engine === 'shoutcast1') $port++;
+            exec("pkill -f \"ffmpeg.*{$port}\" 2>/dev/null");
+            exec("pkill -f \"ffmpeg.*{$stream->port}\" 2>/dev/null");
             $this->db->table('streaming_stations')->where('id', $realId)->update(['autodj_enabled' => 0]);
             try {
                 $cfg = $this->db->table('radio_autodj_config')->where('station_id', $id)->first();
