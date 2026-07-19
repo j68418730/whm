@@ -36,8 +36,8 @@ class RadioAutoDJPlayer
         $mount = $this->stream->mount_point ?? '/stream';
         $name = $this->stream->name ?? 'Radio';
 
-        if ($engine === 'shoutcast' || $engine === 'shoutcast2' || $engine === 'shoutcast1') {
-            // Use custom PHP source client for SHOUTcast
+        if ($engine === 'shoutcast' || $engine === 'shoutcast2') {
+            // Use ShoutcastSource for SHOUTcast v2 (popen/exec needed for transcoding)
             $playlistPath = $this->generateM3u($files);
             $streamId = $this->stream->id ?? 0;
             $scriptPath = $this->autodjDir . '/runner_' . $streamId . '.php';

@@ -220,6 +220,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <code style="color:#a855f7">DELETE /djs/{id}</code> — delete DJ
       </div>
     </div>
+    <div style="grid-column:1/-1;margin-top:6px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06)">
+      <a href="http://<?=$streamHost?>:<?=$station->port?>/admin.cgi" target="_blank" style="color:#facc15;font-size:11px;text-decoration:none">🔧 SHOUTcast Admin</a>
+    </div>
   </div>
   </div>
 
