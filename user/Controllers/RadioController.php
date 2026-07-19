@@ -728,6 +728,9 @@ class RadioController extends Controller
             $logPath = $autodjDir . '/autodj.log';
             $pidFile = $autodjDir . '/autodj.pid';
             @mkdir($autodjDir, 0755, true);
+            // Kill any existing runner for this stream
+            exec("pkill -f \"runner_{$realId}\" 2>/dev/null");
+            sleep(1);
             
             // Build concat playlist from all files in the selected playlist directories
             $cfg = $this->db->table('radio_autodj_config')->where('station_id', $id)->first();
@@ -744,18 +747,23 @@ class RadioController extends Controller
                 foreach ($files as $f) $concat .= "file '" . str_replace("'", "'\\''", $f) . "'\n";
                 file_put_contents($concatFile, $concat);
                 
-                $port = 8000; // Use SHOUTcast v2 server for source connections
+                $port = 8000; // SHOUTcast v2 port (source and client same port)
                 $password = 'Shoutcast171';
                 $bitrate = (int)($stream->bitrate ?? 128);
+                // Use ffmpeg to push directly (works in Apache context where exec() is available)
+                $concatFile = $autodjDir . '/concat.txt';
+                $concat = "ffconcat version 1.0\n";
+                foreach ($files as $f) $concat .= "file '" . str_replace("'", "'\\''", $f) . "'\n";
+                file_put_contents($concatFile, $concat);
                 $url = "http://source:{$password}@localhost:{$port}/";
                 $cmd = "nohup ffmpeg -re -stream_loop -1 -f concat -safe 0 -i " . escapeshellarg($concatFile)
                     . " -c:a libmp3lame -b:a {$bitrate}k -f mp3 " . escapeshellarg($url)
-                    . " > {$logPath} 2>&1 & echo $!";
+                    . " > {$logPath} 2>&1 & echo \$!";
                 exec($cmd, $out, $code);
                 $pid = (int)($out[0] ?? 0);
                 $ok = $pid > 0;
                 if ($ok) file_put_contents($pidFile, $pid);
-                error_log('AUTODJ: direct ffmpeg start pid=' . $pid . ' exit=' . $code . ' files=' . count($files));
+                error_log('AUTODJ: v1 source start pid=' . $pid . ' exit=' . $code . ' files=' . count($files));
             }
             $this->db->table('streaming_stations')->where('id', $realId)->update(['autodj_enabled' => $ok ? 1 : 0]);
             try {
@@ -777,14 +785,16 @@ class RadioController extends Controller
             $username = $hosting ? $hosting->username : 'unknown';
             $autodjDir = "/home/{$username}/radio/autodj";
             $pidFile = $autodjDir . '/autodj.pid';
+            // Kill all runner processes for this stream
+            exec("pkill -f \"runner_{$realId}\" 2>/dev/null");
             if (file_exists($pidFile)) {
                 $pid = (int)trim(file_get_contents($pidFile));
                 if ($pid > 0) {
-                    exec("kill {$pid} 2>/dev/null");
                     exec("kill -9 {$pid} 2>/dev/null");
                 }
                 @unlink($pidFile);
             }
+            // Also kill any ffmpeg processes on this stream's ports
             $port = (int)$stream->port;
             if ($stream->engine === 'shoutcast1') $port++;
             exec("pkill -f \"ffmpeg.*{$port}\" 2>/dev/null");
