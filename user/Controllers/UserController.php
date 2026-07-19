@@ -114,7 +114,6 @@ class UserController extends Controller
 
         // Services / Orders (all account types)
         $services = $uid ? ($this->db->table('billing_services')->where('user_id', $uid)->get() ?: []) : [];
-        // If no billing services, show the hosting package as a service
         if (empty($services) && $hosting && $pkg) {
             $svc = new \stdClass();
             $svc->id = $hosting->id;
@@ -123,6 +122,10 @@ class UserController extends Controller
             $svc->price = $pkg->monthly_price ?? 0;
             $services = [$svc];
         }
+        $allServicesCount = count($services);
+        try { $allServicesCount += count($this->db->table('streaming_stations')->where('user_id', $uid)->get() ?: []); } catch (\Exception $e) {}
+        try { $allServicesCount += count($this->db->table('game_servers')->where('user_id', $uid)->get() ?: []); } catch (\Exception $e) {}
+        try { $ct = $this->db->table('chatbox_tenants')->where('hosting_user_id', $uid)->first(); if ($ct) $allServicesCount++; } catch (\Exception $e) {}
         $orders = $uid ? ($this->db->table('billing_orders')->where('user_id', $uid)->get() ?: []) : [];
 
         // Game servers (all account types)
@@ -154,7 +157,7 @@ class UserController extends Controller
             'emailCount' => $emailCount, 'emailAllowed' => $emailAllowed,
             'domains' => $domains, 'openTickets' => $openTickets, 'pendingTickets' => $pendingTickets,
             'resolvedTickets' => $resolvedTickets, 'openInvoices' => $openInvoices, 'paidInvoices' => $paidInvoices,
-            'services' => $services, 'orders' => $orders,
+            'services' => $services, 'allServicesCount' => $allServicesCount, 'orders' => $orders,
             'gameServers' => $gameServers, 'hasGames' => $hasGames,
             'chatTenant' => $chatTenant, 'hasChat' => $hasChat,
             'recentActivity' => $recentActivity,
