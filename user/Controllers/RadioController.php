@@ -729,7 +729,7 @@ class RadioController extends Controller
             $pidFile = $autodjDir . '/autodj.pid';
             @mkdir($autodjDir, 0755, true);
             // Kill any existing runner for this stream
-            exec("pkill -f \"runner_{$realId}\" 2>/dev/null");
+            exec("/usr/bin/pkill -f \"runner_{$realId}\" 2>/dev/null");
             sleep(1);
             
             // Build concat playlist from all files in the selected playlist directories
@@ -799,7 +799,7 @@ class RadioController extends Controller
             $autodjDir = "/home/{$username}/radio/autodj";
             $pidFile = $autodjDir . '/autodj.pid';
             // Kill all runner processes for this stream
-            exec("pkill -f \"runner_{$realId}\" 2>/dev/null");
+            exec("/usr/bin/pkill -f \"runner_{$realId}\" 2>/dev/null");
             if (file_exists($pidFile)) {
                 $pid = (int)trim(file_get_contents($pidFile));
                 if ($pid > 0) {
