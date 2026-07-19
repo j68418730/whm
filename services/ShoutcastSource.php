@@ -120,8 +120,12 @@ class ShoutcastSource
         }
 
         // Pipe through FFmpeg to strip metadata (album art etc.)
-        $fp = popen("ffmpeg -i " . escapeshellarg($path) . " -f mp3 -vn -map_metadata -1 -c:a libmp3lame -b:a {$this->bitrate}k - 2>/dev/null", 'r');
-        if (!$fp) { $this->log("Cannot transcode: $path"); return; }
+        $tmpFile = '/tmp/shoutcast_pipe_' . uniqid() . '.raw';
+        $cmd = "ffmpeg -i " . escapeshellarg($path) . " -f mp3 -vn -map_metadata -1 -c:a libmp3lame -b:a {$this->bitrate}k -y " . escapeshellarg($tmpFile) . " 2>/dev/null";
+        exec($cmd, $cmdOut, $cmdCode);
+        if ($cmdCode !== 0 || !is_file($tmpFile)) { $this->log("Cannot transcode: $path"); @unlink($tmpFile); return; }
+        $fp = fopen($tmpFile, 'r');
+        if (!$fp) { $this->log("Cannot open transcoded: $path"); @unlink($tmpFile); return; }
 
         $bufSize = 65536;
         while ($this->running && !feof($fp)) {
@@ -130,17 +134,17 @@ class ShoutcastSource
             $written = @fwrite($sock, $data);
             if ($written === false || $written === 0) {
                 $this->log("Write failed, reconnecting...");
-                fclose($fp);
+                fclose($fp); @unlink($tmpFile);
                 fclose($sock);
                 $sock = $this->connect();
                 if (!$sock) { $this->running = false; return; }
-                // Re-try writing
                 $written = @fwrite($sock, $data);
-                if ($written === false || $written === 0) { $this->running = false; return; }
+                if ($written === false || $written === 0) { $this->running = false; @unlink($tmpFile); return; }
             }
             usleep(50000);
         }
-        pclose($fp);
+        fclose($fp);
+        @unlink($tmpFile);
     }
 
     protected function log($msg)
