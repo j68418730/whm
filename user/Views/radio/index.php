@@ -517,9 +517,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <?php $savedPlIds = !empty($ac->playlist_ids) ? json_decode($ac->playlist_ids, true) : []; ?>
 <form method="post" action="/user/radio/autodj/update" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
 <input type="hidden" name="station_id" value="<?=$stationId?>">
-<?php foreach ($playlists as $p): $checked = empty($savedPlIds) || in_array($p->id, $savedPlIds) ? 'checked' : ''; ?>
+<?php foreach ($playlists as $p): $checked = !empty($savedPlIds) && in_array($p->id, $savedPlIds) ? 'checked' : ''; ?>
 <label style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(0,0,0,.3);border-radius:6px;font-size:11px;color:#c0c0c0;cursor:pointer">
-<input type="checkbox" name="playlist_ids[]" value="<?=$p->id?>" <?=$checked?>> <?=htmlspecialchars($p->name)?>
+<input type="radio" name="playlist_ids[]" value="<?=$p->id?>" <?=$checked?> onchange="this.form.submit()"> <?=htmlspecialchars($p->name)?>
 </label>
 <?php endforeach; ?>
 <button type="submit" class="btn btn-sm btn-primary" style="margin-left:auto">Save Playlists</button>

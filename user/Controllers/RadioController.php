@@ -693,7 +693,7 @@ class RadioController extends Controller
         foreach ($allowed as $f) { if (isset($_POST[$f])) $update[$f] = $_POST[$f]; }
         try { $this->db->table('radio_stations')->where('id', $station->id)->update($update); } catch (\Exception $e) {}
         if (isset($_POST['playlist_ids'])) {
-            $plIds = array_map('intval', (array)$_POST['playlist_ids']);
+            $plIds = [ (int) $_POST['playlist_ids'] ];
             try {
                 $cfg = $this->db->table('radio_autodj_config')->where('station_id', $station->id)->first();
                 if ($cfg) $this->db->table('radio_autodj_config')->where('station_id', $station->id)->update(['playlist_ids' => json_encode($plIds)]);
@@ -1011,6 +1011,34 @@ class RadioController extends Controller
                     $data[$f] = is_numeric($_POST[$f]) ? (int)$_POST[$f] : $_POST[$f];
                 }
             }
+            // Handle playlist creation from step 6
+            if ($step >= 6 && !empty($_POST['playlist_ids'])) {
+                foreach ((array)$_POST['playlist_ids'] as $plId) {
+                    $plId = (int)$plId;
+                    if ($plId > 0) {
+                        try { $this->db->table('radio_autodj_playlists')->insertGetId(['autodj_config_id' => 0, 'playlist_id' => $plId]); } catch (\Exception $e) {}
+                    }
+                }
+            }
+            if ($step >= 6) {
+                $presets = $_POST['preset_playlists'] ?? [];
+                $custom = trim($_POST['custom_playlist'] ?? '');
+                $allNames = array_merge((array)$presets, $custom ? [$custom] : []);
+                foreach ($allNames as $name) {
+                    if ($name) {
+                        try {
+                            $exists = $this->db->table('radio_playlists')->where('stream_id', $station->streaming_id ?? $station->id)->where('name', $name)->first();
+                            if (!$exists) {
+                                $plId = $this->db->table('radio_playlists')->insertGetId([
+                                    'stream_id' => $station->streaming_id ?? $station->id, 'name' => $name, 'playlist_type' => 'default',
+                                ]);
+                                $pdir = $this->getPlaylistDir($station, $plId);
+                                if (!is_dir($pdir)) @mkdir($pdir, 0755, true);
+                            }
+                        } catch (\Exception $e) {}
+                    }
+                }
+            }
             $data['wizard_completed'] = ($step >= 12) ? 1 : 0;
             try {
                 $existing = $this->db->table('radio_autodj_config')->where('station_id', $sid)->first();
@@ -1034,7 +1062,8 @@ class RadioController extends Controller
             header('Location: /user/radio/autodj/setup?step=' . ($step + 1) . '&station_id=' . $sid); exit;
         }
         return $this->view('user.radio.autodj_setup', [
-            'station' => $station, 'config' => $cfg, 'step' => $step, 'title' => 'AutoDJ Setup Wizard'
+            'station' => $station, 'config' => $cfg, 'step' => $step, 'title' => 'AutoDJ Setup Wizard',
+            'playlists' => $this->db->table('radio_playlists')->where('stream_id', $station->streaming_id ?? $station->id)->get() ?: [],
         ]);
     }
 
