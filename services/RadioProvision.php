@@ -7,26 +7,22 @@
 function radioProvision($userId, $packageId) {
     $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
 
-    $user = $pdo->prepare("SELECT * FROM hosting_users WHERE id = ?")->execute([$userId]) ? $pdo->query("SELECT * FROM hosting_users WHERE id=$userId")->fetch(PDO::FETCH_OBJ) : null;
     $stmt = $pdo->prepare("SELECT * FROM hosting_users WHERE id = ?"); $stmt->execute([$userId]); $user = $stmt->fetch(PDO::FETCH_OBJ);
     if (!$user) return false;
 
     $pkg = $pdo->prepare("SELECT * FROM hosting_packages WHERE id = ?"); $pkg->execute([$packageId]); $pkg = $pkg->fetch(PDO::FETCH_OBJ);
     if (!$pkg) return false;
 
-    // Check if user already has a stream
-    $existing = $pdo->prepare("SELECT id FROM radio_streams WHERE user_id = ?"); $existing->execute([$userId]);
-    if ($existing->fetch()) return false; // Already has a stream
+    // Check if user already has a stream in either table
+    $existing = $pdo->prepare("SELECT id FROM streaming_stations WHERE user_id = ?"); $existing->execute([$userId]);
+    if ($existing->fetch()) return false;
 
     // Find available port
     $usedPorts = [];
-    $q = $pdo->query("SELECT port FROM radio_streams");
+    $q = $pdo->query("SELECT port FROM streaming_stations");
     foreach ($q as $r) $usedPorts[(int)$r['port']] = true;
 
-    $pkgFeats = is_string($pkg->features ?? null) ? json_decode($pkg->features, true) ?? [] : ($pkg->features ?? []);
-    $sp = $pkgFeats['streaming_package'] ?? [];
-    $maxList = (int)($sp['max_listeners'] ?? 0);
-    $port = $maxList > 0 ? 6000 : 6000;
+    $port = 8000;
     for ($i = 0; $i < 1000; $i++) {
         if (!isset($usedPorts[$port + $i])) { $port = $port + $i; break; }
     }
@@ -58,16 +54,25 @@ XML;
     $configFile = "{$configDir}/icecast.conf";
     file_put_contents($configFile, $config);
 
-    // Create stream in DB
-    $pdo->prepare("INSERT INTO radio_streams (user_id, server_type, port, password, config_path, status) VALUES (?, 'icecast', ?, ?, ?, 'running')")
-        ->execute([$userId, $port, password_hash($password, PASSWORD_DEFAULT), $configFile]);
+    // Create stream in BOTH tables
+    $pdo->prepare("INSERT INTO streaming_stations (user_id, engine, name, server_type, port, password, plain_password, admin_password, admin_plain_password, mount_point, bitrate, format, max_listeners, config_path, status, autodj_enabled)
+        VALUES (?, 'icecast', ?, 'icecast', ?, ?, ?, ?, ?, '/live', 128, 'mp3', 100, ?, 'stopped', 0)")
+        ->execute([$userId, $user->username . "'s Stream", $port,
+            password_hash($password, PASSWORD_DEFAULT), $password,
+            password_hash($password, PASSWORD_DEFAULT), $password,
+            $configFile]);
     $streamId = $pdo->lastInsertId();
+
+    $pdo->prepare("INSERT INTO radio_streams (id, user_id, server_type, port, password, plain_password, config_path, status)
+        VALUES (?, ?, 'icecast', ?, ?, ?, ?, 'stopped')")
+        ->execute([$streamId, $userId, $port, password_hash($password, PASSWORD_DEFAULT), $password, $configFile]);
 
     // Start Icecast
     exec("nohup /usr/bin/icecast -c {$configFile} > /dev/null 2>&1 & echo \$!", $out);
     $pid = (int)($out[0] ?? 0);
     if ($pid > 0) {
-        $pdo->prepare("UPDATE radio_streams SET pid_file = ? WHERE id = ?")->execute(['/var/run/icecast_' . $streamId . '.pid', $streamId]);
+        $pdo->prepare("UPDATE streaming_stations SET status = 'running' WHERE id = ?")->execute([$streamId]);
+        $pdo->prepare("UPDATE radio_streams SET status = 'running', pid_file = ? WHERE id = ?")->execute(['/var/run/icecast_' . $streamId . '.pid', $streamId]);
     }
 
     return $streamId;
