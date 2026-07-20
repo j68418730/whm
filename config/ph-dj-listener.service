@@ -1,0 +1,18 @@
+[Unit]
+Description=Planet Hosts DJ Port Listener
+After=network.target mariadb.service
+Wants=mariadb.service
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/php /var/www/radiohosting/services/DjPortListener.php start
+ExecStop=/usr/bin/php /var/www/radiohosting/services/DjPortListener.php stop
+ExecReload=/usr/bin/php /var/www/radiohosting/services/DjPortListener.php restart
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/var/log/ph-dj-listener.log
+StandardError=append:/var/log/ph-dj-listener.log
+
+[Install]
+WantedBy=multi-user.target
