@@ -35,7 +35,7 @@ class PlanetStudioController extends Controller
 
     protected function json($data, $code = 200)
     {
-        $this->response->json($data, $code);
+        $this->response->json($data, $code)->send();
         exit;
     }
 
@@ -47,6 +47,7 @@ class PlanetStudioController extends Controller
         $password = $body['password'] ?? $this->request->post('password', '');
         $apiKey = $body['apiKey'] ?? $this->request->post('apiKey', '');
 
+        // Try main dj_accounts first
         $dj = $this->db->table('dj_accounts')->where('username', $username)->where('status', 'active')->first();
         if ($dj && !empty($apiKey)) {
             $valid = !empty($dj->api_key) && hash_equals($dj->api_key, $apiKey);
@@ -54,6 +55,57 @@ class PlanetStudioController extends Controller
         } elseif ($dj) {
             $valid = password_verify($password, $dj->password_hash);
             if (!$valid) $dj = null;
+        }
+
+        // Fallback to radio_djs (DJ Panel accounts)
+        if (!$dj && $password) {
+            $radioDj = $this->db->table('radio_djs')
+                ->where('username', $username)
+                ->where('status', 'active')
+                ->first();
+            if ($radioDj && password_verify($password, $radioDj->password)) {
+                // Auto-create dj_accounts entry for this radio DJ
+                $existing = $this->db->table('dj_accounts')->where('username', $username)->first();
+                if ($existing) {
+                    $dj = $existing;
+                    $this->db->table('dj_accounts')->where('id', $dj->id)->update([
+                        'password_hash' => $radioDj->password,
+                        'status' => $radioDj->status,
+                        'full_name' => $radioDj->name ?: $radioDj->username,
+                        'email' => $radioDj->email ?? '',
+                    ]);
+                    $djId = $dj->id;
+                } else {
+                    $djId = $this->db->table('dj_accounts')->insertGetId([
+                        'username' => $radioDj->username,
+                        'password_hash' => $radioDj->password,
+                        'full_name' => $radioDj->name ?: $radioDj->username,
+                        'email' => $radioDj->email ?? '',
+                        'role' => $radioDj->role ?? 'dj',
+                        'status' => $radioDj->status,
+                    ]);
+                    $dj = $this->db->table('dj_accounts')->where('id', $djId)->first();
+                }
+
+                // Sync station access via dj_stations
+                $station = $this->db->table('streaming_stations')->where('id', $radioDj->stream_id)->first();
+                if ($station) {
+                    $hosting = $this->db->table('hosting_users')->where('id', $station->user_id)->first();
+                    if ($hosting) {
+                        $exists = $this->db->table('dj_stations')
+                            ->where('dj_id', $djId)
+                            ->where('station_id', $hosting->id)
+                            ->first();
+                        if (!$exists) {
+                            $this->db->table('dj_stations')->insertGetId([
+                                'dj_id' => $djId,
+                                'station_id' => $hosting->id,
+                                'permissions' => 'all',
+                            ]);
+                        }
+                    }
+                }
+            }
         }
 
         if (!$dj) {

@@ -33,19 +33,64 @@ class StudioApiController extends Controller
         return $hosting;
     }
 
+    protected function authDesktop()
+    {
+        $token = $this->request->bearerToken();
+        if (!$token) {
+            $token = $this->request->get('token', $this->request->post('token', ''));
+        }
+        if (!$token) return null;
+        $session = $this->db->table('dj_sessions')->where('token', $token)->first();
+        if (!$session) return null;
+        if (!empty($session->expires_at) && strtotime($session->expires_at) < time()) return null;
+        return $this->db->table('dj_accounts')->where('id', $session->dj_id)->where('status', 'active')->first();
+    }
+
+    protected function djCanAccessStation($dj, $station)
+    {
+        $st = $this->db->pdo()->prepare(
+            "SELECT ds.id FROM dj_stations ds
+             JOIN streaming_stations ss ON ss.user_id = ds.station_id
+             WHERE ds.dj_id = ? AND ss.id = ? LIMIT 1"
+        );
+        $st->execute([$dj->id, $station->id]);
+        return (bool)$st->fetchColumn();
+    }
+
+    // GET /api/studio/station/{stationId}
+    public function index($stationId)
+    {
+        return $this->response->json([
+            'station_id' => (int)$stationId,
+            'endpoints' => [
+                'connection' => "/api/studio/station/{$stationId}/connection",
+                'djs' => "/api/studio/station/{$stationId}/djs",
+            ],
+            'docs' => 'Append /connection for station info or /djs for DJ list'
+        ]);
+    }
+
     // GET /api/studio/station/{stationId}/connection
     public function connection($stationId)
     {
-        if (!$this->auth->check()) {
-            return $this->response->json(['error' => 'Unauthorized'], 401);
-        }
         $station = $this->resolveStation($stationId);
         if (!$station) {
             return $this->response->json(['error' => 'Station not found'], 404);
         }
-        $hosting = $this->getHosting();
-        if (!$hosting || $station->user_id != $hosting->id) {
-            return $this->response->json(['error' => 'Forbidden'], 403);
+
+        // Try desktop app auth (Bearer token) first, then web session
+        $dj = $this->authDesktop();
+        if ($dj) {
+            if (!$this->djCanAccessStation($dj, $station)) {
+                return $this->response->json(['error' => 'Forbidden'], 403);
+            }
+        } elseif ($this->auth->check()) {
+            $hosting = $this->getHosting();
+            if (!$hosting || $station->user_id != $hosting->id) {
+                return $this->response->json(['error' => 'Forbidden'], 403);
+            }
+        } else {
+            return $this->response->json(['error' => 'Unauthorized'], 401);
         }
 
         $hostname = $_SERVER['SERVER_NAME'] ?? 'localhost';
@@ -85,16 +130,24 @@ class StudioApiController extends Controller
     // GET /api/studio/station/{stationId}/djs
     public function listDjs($stationId)
     {
-        if (!$this->auth->check()) {
-            return $this->response->json(['error' => 'Unauthorized'], 401);
-        }
         $station = $this->resolveStation($stationId);
         if (!$station) {
             return $this->response->json(['error' => 'Station not found'], 404);
         }
-        $hosting = $this->getHosting();
-        if (!$hosting || $station->user_id != $hosting->id) {
-            return $this->response->json(['error' => 'Forbidden'], 403);
+
+        // Try desktop app auth (Bearer token) first, then web session
+        $dj = $this->authDesktop();
+        if ($dj) {
+            if (!$this->djCanAccessStation($dj, $station)) {
+                return $this->response->json(['error' => 'Forbidden'], 403);
+            }
+        } elseif ($this->auth->check()) {
+            $hosting = $this->getHosting();
+            if (!$hosting || $station->user_id != $hosting->id) {
+                return $this->response->json(['error' => 'Forbidden'], 403);
+            }
+        } else {
+            return $this->response->json(['error' => 'Unauthorized'], 401);
         }
 
         $djs = $this->db->table('radio_djs')
