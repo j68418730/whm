@@ -15,7 +15,7 @@ class DjPortListener
     protected $sockets = [];
     protected $connections = [];
     protected $running = true;
-    protected $pidFile = '/var/run/ph-dj-listener.pid';
+    protected $pidFile = '/tmp/ph-dj-listener.pid';
     protected $logFile = '/var/log/ph-dj-listener.log';
     protected $listenAddr = '0.0.0.0';
 

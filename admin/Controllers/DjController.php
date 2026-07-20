@@ -534,6 +534,26 @@ class DjController extends Controller
         exit;
     }
 
+    public function allocateMissingPorts()
+    {
+        $this->guard();
+        $pm = new \Core\PortManager();
+        $djs = $this->db->pdo()->query("SELECT rd.* FROM radio_djs rd WHERE rd.dj_port IS NULL AND rd.can_stream = 1 AND rd.status = 'active'")->fetchAll(\PDO::FETCH_OBJ);
+        $count = 0;
+        foreach ($djs as $dj) {
+            $ss = $this->db->table('streaming_stations')->where('id', $dj->stream_id)->first();
+            if (!$ss) continue;
+            $port = $pm->allocateDjPort($dj->id, $dj->stream_id, $ss->user_id);
+            if ($port) {
+                $this->db->table('radio_djs')->where('id', $dj->id)->update(['dj_port' => $port]);
+                $count++;
+            }
+        }
+        $_SESSION['success'] = "Allocated DJ ports for $count DJ(s).";
+        header('Location: /admin/djs/ports');
+        exit;
+    }
+
     public function listenerAction($action)
     {
         $this->guard();
