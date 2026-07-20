@@ -100,7 +100,7 @@ class PlanetStudioController extends Controller
                             $this->db->table('dj_stations')->insertGetId([
                                 'dj_id' => $djId,
                                 'station_id' => $hosting->id,
-                                'permissions' => 'all',
+                                'role' => 'dj',
                             ]);
                         }
                     }
