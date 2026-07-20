@@ -218,6 +218,18 @@ class DjPortListener
                 // For SHOUTcast v2, source port = station port
                 // For Icecast, mount point based auth
 
+                // Kill any existing AutoDJ for this station first
+                try {
+                    $this->pdo->exec("UPDATE streaming_stations SET autodj_enabled=0 WHERE id=" . (int)$dj->station_id);
+                    // Try reading AutoDJ PID file
+                    $pidFile = "/home/" . ($dj->dj_username ?? '') . "/radio/autodj/autodj.pid";
+                    if (file_exists($pidFile)) {
+                        $pid = (int)trim(@file_get_contents($pidFile));
+                        if ($pid > 0) @posix_kill($pid, 15);
+                    }
+                } catch (\Exception $e) {}
+                usleep(500000);
+
                 $upstream = @fsockopen($stationHost, $stationPort, $errno, $errstr, 5);
                 if (!$upstream) {
                     $this->log("Failed to connect to station source port $stationPort: $errstr");
@@ -229,21 +241,12 @@ class DjPortListener
 
                 // Authenticate to station source
                 $stationPass = $dj->station_password ?? '';
-                // SHOUTcast v1 sends a banner first — read it before sending password
-                usleep(300000);
-                // Try to read any initial banner/response
-                $banner = '';
-                stream_set_blocking($upstream, true);
-                stream_set_timeout($upstream, 2);
-                $banner = @fread($upstream, 1024);
-                stream_set_blocking($upstream, false);
-                // Send password
+                // SHOUTcast v1: send password immediately, read response
                 fwrite($upstream, $stationPass . "\r\n");
-                usleep(300000);
+                usleep(500000);
                 $resp = @fread($upstream, 1024);
-                $combined = $banner . $resp;
-                $this->log("Station auth response on port $stationPort: [" . trim(preg_replace('/[\x00-\x1f]/', ' ', $combined)) . "]");
-                if (strpos($combined, 'OK') === false && strpos($combined, 'OK2') === false) {
+                $this->log("Station auth response on port $stationPort: [" . trim(preg_replace('/[\x00-\x1f]/', ' ', $resp)) . "]");
+                if (strpos($resp, 'OK') === false && strpos($resp, 'OK2') === false) {
                     $this->log("Station auth failed on port $stationPort");
                     @fwrite($conn['client'], "FAIL\r\n");
                     fclose($upstream);
@@ -254,10 +257,10 @@ class DjPortListener
                 // Send OK to encoder
                 @fwrite($conn['client'], "OK2\r\n");
 
-                // Send remaining buffered data (headers after password)
-                if (!empty($conn['buf'])) {
-                    fwrite($upstream, $conn['buf']);
-                }
+                // Send SHOUTcast source headers (what the encoder sends after auth)
+                $headers = "icy-name: {$dj->station_name}\r\nicy-br: 128\r\nicy-pub: 1\r\n";
+                fwrite($upstream, $headers . "\r\n");
+                usleep(100000);
 
                 // Update DB: set live DJ
                 try {
