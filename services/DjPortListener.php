@@ -47,7 +47,6 @@ class DjPortListener
             @unlink($this->pidFile);
         }
         file_put_contents($this->pidFile, getmypid());
-        $this->log("DJ Port Listener started (PID " . getmypid() . ")");
         $this->listen();
     }
 
@@ -230,9 +229,21 @@ class DjPortListener
 
                 // Authenticate to station source
                 $stationPass = $dj->station_password ?? '';
+                // SHOUTcast v1 sends a banner first — read it before sending password
+                usleep(300000);
+                // Try to read any initial banner/response
+                $banner = '';
+                stream_set_blocking($upstream, true);
+                stream_set_timeout($upstream, 2);
+                $banner = @fread($upstream, 1024);
+                stream_set_blocking($upstream, false);
+                // Send password
                 fwrite($upstream, $stationPass . "\r\n");
-                $resp = fread($upstream, 1024);
-                if (strpos($resp, 'OK') === false) {
+                usleep(300000);
+                $resp = @fread($upstream, 1024);
+                $combined = $banner . $resp;
+                $this->log("Station auth response on port $stationPort: [" . trim(preg_replace('/[\x00-\x1f]/', ' ', $combined)) . "]");
+                if (strpos($combined, 'OK') === false && strpos($combined, 'OK2') === false) {
                     $this->log("Station auth failed on port $stationPort");
                     @fwrite($conn['client'], "FAIL\r\n");
                     fclose($upstream);
