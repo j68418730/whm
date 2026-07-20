@@ -524,7 +524,7 @@ class DjController extends Controller
             $_SESSION['error'] = 'Port not found or not a DJ port.';
         } else {
             if ($pm->release($portId)) {
-                $this->db->table('radio_djs')->where('dj_port', $port->port_start)->update(['dj_port' => null]);
+                $this->db->pdo()->prepare("UPDATE streaming_stations SET dj_port=NULL WHERE id=?")->execute([$port->station_id]);
                 $_SESSION['success'] = "DJ port {$port->port_start} released.";
             } else {
                 $_SESSION['error'] = 'Failed to release port.';
@@ -538,18 +538,21 @@ class DjController extends Controller
     {
         $this->guard();
         $pm = new \Core\PortManager();
-        $djs = $this->db->pdo()->query("SELECT rd.* FROM radio_djs rd WHERE rd.dj_port IS NULL AND rd.can_stream = 1 AND rd.status = 'active'")->fetchAll(\PDO::FETCH_OBJ);
+        $stations = $this->db->pdo()->query(
+            "SELECT ss.id, ss.name, ss.dj_port, ss.user_id
+             FROM streaming_stations ss
+             WHERE ss.dj_port IS NULL AND ss.status = 'running'
+             AND EXISTS (SELECT 1 FROM radio_djs rd WHERE rd.stream_id = ss.id AND rd.status = 'active')"
+        )->fetchAll(\PDO::FETCH_OBJ);
         $count = 0;
-        foreach ($djs as $dj) {
-            $ss = $this->db->table('streaming_stations')->where('id', $dj->stream_id)->first();
-            if (!$ss) continue;
-            $port = $pm->allocateDjPort($dj->id, $dj->stream_id, $ss->user_id);
+        foreach ($stations as $s) {
+            $port = $pm->allocateStationDjPort($s->id, $s->user_id);
             if ($port) {
-                $this->db->table('radio_djs')->where('id', $dj->id)->update(['dj_port' => $port]);
+                $this->db->pdo()->prepare("UPDATE streaming_stations SET dj_port=? WHERE id=?")->execute([$port, $s->id]);
                 $count++;
             }
         }
-        $_SESSION['success'] = "Allocated DJ ports for $count DJ(s).";
+        $_SESSION['success'] = "Allocated DJ ports for $count station(s).";
         header('Location: /admin/djs/ports');
         exit;
     }

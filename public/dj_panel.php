@@ -573,7 +573,7 @@ $streamId = $djData->stream_id ?? 0;
 $ss = $pdo->prepare("SELECT * FROM streaming_stations WHERE id = ?");
 $ss->execute([$streamId]);
 $station = $ss->fetch(PDO::FETCH_OBJ);
-$djPort = $station->port ?? 8000;
+$djPort = $station->dj_port ?? $station->port ?? 8000;
 $djPass = $station->plain_password ?? '';
 $djHost = 'planet-hosts.com';
 $djUsername = $_SESSION['dj_user']['username'] ?? '';
@@ -590,7 +590,7 @@ $isOwner = !empty($_SESSION['dj_user']['is_owner']);
 <div class="card-desc">Connect your broadcasting software with these details.</div>
 <div class="sam-notice">
 <div class="sam-title">📻 SAM Broadcaster Users</div>
-<div class="sam-text">Enter your credentials as <strong class="text-bright">djusername:djpassword</strong> in the <strong class="text-bright">Password</strong> field on port <strong class="text-green">9000</strong>. SAM only has one password field — combine them with a colon.</div>
+<div class="sam-text">Enter your credentials as <strong class="text-bright">djusername:djpassword</strong> in the <strong class="text-bright">Password</strong> field. SAM only has one password field — combine your DJ username and password with a colon.</div>
 </div>
 <div class="conn-box">
 <div class="conn-row">

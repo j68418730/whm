@@ -63,6 +63,7 @@ class RadioController extends Controller
                     'requests_enabled' => $rs ? (int)$rs->requests_enabled : 1,
                     'timezone' => 'UTC',
                     'format' => $s->format ?? 'mp3',
+                    'dj_port' => $s->dj_port ?? null,
                 ];
             }
         } catch (\Exception $e) {}
@@ -243,14 +244,16 @@ class RadioController extends Controller
                     'status' => 'active', 'can_stream' => 1,
                 ]);
 
-                // Auto-assign DJ port
+                // Auto-assign station DJ port (shared by all DJs of this station)
                 try {
                     $pm = new \Core\PortManager();
                     $ss = $this->db->table('streaming_stations')->where('id', $realStationId)->first();
-                    $huId = $ss ? $ss->user_id : null;
-                    $djPort = $pm->allocateDjPort($djId, $realStationId, $huId);
-                    if ($djPort) {
-                        $this->db->table('radio_djs')->where('id', $djId)->update(['dj_port' => $djPort]);
+                    if ($ss) {
+                        $huId = $ss->user_id;
+                        $port = $pm->allocateStationDjPort($realStationId, $huId);
+                        if ($port) {
+                            $this->db->table('streaming_stations')->where('id', $realStationId)->update(['dj_port' => $port]);
+                        }
                     }
                 } catch (\Exception $e) {
                     // Port allocation failure is non-fatal for DJ creation
@@ -327,13 +330,6 @@ class RadioController extends Controller
                         if ($tenant) $this->db->table('chatbox_users')->where('tenant_id', $tenant->id)->where('username', $dj->username)->delete();
                     }
                 } catch (\Exception $e) {}
-                // Release DJ port before deleting
-                if ($dj->dj_port) {
-                    try {
-                        $pm = new \Core\PortManager();
-                        $pm->releaseDjPort($dj->dj_port);
-                    } catch (\Exception $e) {}
-                }
                 $this->db->table('radio_djs')->where('id', $id)->delete();
             }
             $_SESSION['success'] = 'DJ deleted.';
