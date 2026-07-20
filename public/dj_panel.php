@@ -59,7 +59,7 @@ if ($_POST && $action === 'login') {
             'name' => $dj->name ?: $dj->username, 'stream_name' => 'Stream',
             'port' => $dj->port, 'stream_status' => $dj->stream_status,
         ];
-        $pdo->prepare("UPDATE radio_djs SET last_login = NOW() WHERE id = ?")->execute([$dj->id]);
+        $pdo->prepare("UPDATE radio_djs SET last_active = NOW() WHERE id = ?")->execute([$dj->id]);
     header('Location: /dj_panel.php?action=dashboard');
     exit;
 }
