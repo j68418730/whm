@@ -213,11 +213,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div style="font-size:10px;color:#64748b;margin-top:4px;line-height:1.6">
         <code style="color:#a855f7">GET /connection</code> — station info
         <span style="margin:0 4px;color:rgba(255,255,255,.08)">|</span>
-        <code style="color:#a855f7">GET /djs</code> — list DJs
-        <span style="margin:0 4px;color:rgba(255,255,255,.08)">|</span>
-        <code style="color:#a855f7">POST /djs</code> — create DJ
-        <span style="margin:0 4px;color:rgba(255,255,255,.08)">|</span>
-        <code style="color:#a855f7">DELETE /djs/{id}</code> — delete DJ
+        <code style="color:#a855f7">GET /djs</code> - list DJs
       </div>
     </div>
     <div style="grid-column:1/-1;margin-top:6px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06)">
