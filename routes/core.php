@@ -668,6 +668,7 @@ $router->post('/admin/dj/stream-config/update/{id}/{stationId}', 'Admin\Controll
 $router->get('/admin/dj/ports', 'Admin\Controllers\DjController@ports');
 $router->get('/admin/dj/ports/release/{id}', 'Admin\Controllers\DjController@releaseDjPort');
 $router->get('/admin/dj/ports/listener/{action}', 'Admin\Controllers\DjController@listenerAction');
+$router->get('/admin/dj/ports/allocate-missing', 'Admin\Controllers\DjController@allocateMissingPorts');
 
 // DJ API endpoints (for Studio app)
 $router->post('/api/dj/login', 'Admin\Controllers\Api\DjController@login');

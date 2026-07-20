@@ -26,6 +26,7 @@ td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.04)}
   <a href="/admin/dj/ports/listener/stop" class="btn" style="background:rgba(248,113,113,.12);color:#f87171">Stop Listener</a>
   <a href="/admin/dj/ports/listener/restart" class="btn" style="background:rgba(250,204,21,.1);color:#facc15">Restart Listener</a>
   <a href="/admin/dj/ports/listener/status" class="btn" style="background:rgba(56,189,248,.1);color:#38bdf8">Status</a>
+  <a href="/admin/dj/ports/allocate-missing" class="btn" style="background:rgba(168,85,247,.1);color:#a855f7">Allocate Missing Ports</a>
 </div>
 
 <?php if (isset($_SESSION['info'])): ?>
