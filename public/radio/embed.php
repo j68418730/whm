@@ -80,7 +80,7 @@ body{font-family:Inter,system-ui,sans-serif;background:<?php echo $bg; ?>;color:
 <div class="stat"><span class="num"><?php echo $bitrate; ?></span><span class="lbl">Kbps</span></div>
 <div class="stat"><span class="num" id="peakCount"><?php echo $stats['peak']; ?></span><span class="lbl">Peak</span></div>
 </div>
-<audio id="audioPlayer" src="<?php echo $sUrl; ?>" preload="none"></audio>
+<audio id="audioPlayer" src="<?php echo $sUrl; ?>" preload="auto"></audio>
 <div class="controls">
 <button class="play" id="playBtn" onclick="togglePlay()">▶ Play</button>
 <button class="pause" onclick="document.getElementById('audioPlayer').pause();document.getElementById('playBtn').innerHTML='▶ Play'">⏸ Pause</button>

@@ -77,7 +77,7 @@ body{font-family:Inter,system-ui,sans-serif;background:<?=$isDark?'#0a0e1a':'#f0
 <div class="song" id="songDisplay"><?=htmlspecialchars($streams[$defaultIdx]['song']?:'Not Playing')?></div>
 <div class="artist" id="artistDisplay"><?=htmlspecialchars($streams[$defaultIdx]['artist']??'')?></div>
 <div class="stats"><div class="stat"><span class="stat-num" id="listenerCount">0</span><span class="stat-lbl">Listeners</span></div><div class="stat"><span class="stat-num" id="peakCount">0</span><span class="stat-lbl">Peak</span></div></div>
-<audio id="audio" src="https://planet-hosts.com:2083/radio/stream-proxy.php?stream=<?=$streams[$defaultIdx]['id']?>" preload="none"></audio>
+<audio id="audio" src="https://planet-hosts.com:2083/radio/stream-proxy.php?stream=<?=$streams[$defaultIdx]['id']?>" preload="auto"></audio>
 <div class="controls">
 <button class="pp-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
 <button style="background:<?=$isDark?'rgba(255,255,255,.06)':'rgba(0,0,0,.04)'?>;color:<?=$isDark?'#e0e0e0':'#1a1a2e'?>;border:1px solid <?=$isDark?'rgba(255,255,255,.08)':'rgba(0,0,0,.08)'?>" onclick="audio.pause();playBtn.innerHTML='▶ Play'">⏸ Pause</button>

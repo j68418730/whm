@@ -69,7 +69,7 @@ audio{display:none}
 <?php if ($nowPlaying): ?>
 <div class="ph-song"><span class="ph-song-label">NOW PLAYING</span><div class="ph-song-title"><?php echo $nowPlaying; ?></div></div>
 <?php endif; ?>
-<audio id="ph-audio-<?php echo $streamId; ?>" src="<?php echo $sUrl; ?>" preload="none"></audio>
+<audio id="ph-audio-<?php echo $streamId; ?>" src="<?php echo $sUrl; ?>" preload="auto"></audio>
 <div class="ph-controls">
 <button class="ph-play-btn" id="ph-btn-<?php echo $streamId; ?>" onclick="var a=document.getElementById('ph-audio-<?php echo $streamId; ?>');if(a.paused){a.play();this.innerHTML='&#9646;&#9646;';document.getElementById('ph-wave-<?php echo $streamId; ?>').querySelectorAll('.ph-bar').forEach(function(b){b.classList.add('active')})}else{a.pause();this.innerHTML='&#9654;';document.getElementById('ph-wave-<?php echo $streamId; ?>').querySelectorAll('.ph-bar').forEach(function(b){b.classList.remove('active')})}">&#9654;</button>
 <div class="ph-wave" id="ph-wave-<?php echo $streamId; ?>">
@@ -124,7 +124,7 @@ h+='</style>';
 h+='<div class="ph-w"><div class="ph-t"><div class="ph-n">'+s.name+'</div>';
 h+='<span class="ph-b '+(s.online?"ph-b-l":"ph-b-o")+'"><span class="ph-d '+(s.online?"ph-d-l":"ph-d-o")+'"></span>'+(s.online?"LIVE":"OFFAIR")+'</span></div>';
 if(s.nowPlaying){h+='<div class="ph-ng"><span class="ph-ng-l">NOW PLAYING</span><div class="ph-ng-t">'+s.nowPlaying+'</div></div>';}
-h+='<audio id="pha'+s.id+'" src="'+s.url+'" preload="none"></audio>';
+h+='<audio id="pha'+s.id+'" src="'+s.url+'" preload="auto"></audio>';
 h+='<div class="ph-c"><button class="ph-p" id="phb'+s.id+'" onclick="var a=document.getElementById(\'pha'+s.id+'\');if(a.paused){a.play();this.innerHTML=\'&#9646;&#9646;\';document.getElementById(\'phw'+s.id+'\').querySelectorAll(\'.ph-br\').forEach(function(b){b.classList.add(\'ph-br-a\')})}else{a.pause();this.innerHTML=\'&#9654;\';document.getElementById(\'phw'+s.id+'\').querySelectorAll(\'.ph-br\').forEach(function(b){b.classList.remove(\'ph-br-a\')})}">&#9654;</button>';
 h+='<div class="ph-wv" id="phw'+s.id+'">';
 for(var i=0;i<12;i++)h+='<div class="ph-br"></div>';

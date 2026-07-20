@@ -90,7 +90,7 @@ audio{width:100%;height:40px;border-radius:8px;margin-top:12px}
 <a href="<?php echo $sSlUrl; ?>" class="listen" target="_blank">▶ Listen Live</a>
 <a href="<?php echo $sUrl; ?>" class="direct" target="_blank">Direct Stream</a>
 </div>
-<audio src="<?php echo $sSlUrl; ?>" preload="none" controls></audio>
+<audio src="<?php echo $sSlUrl; ?>" preload="auto" controls></audio>
 </div>
 <div class="grid">
 <div class="card"><span class="num"><?php echo $listeners; ?></span><span class="lbl">Listeners</span></div>
