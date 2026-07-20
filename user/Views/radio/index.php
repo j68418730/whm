@@ -139,7 +139,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div style="font-size:12px;color:#94a3b8" id="ov-song"><?=($autodjCfg&&$autodjCfg->autodj_enabled)?'Loading...':'AutoDJ Stopped'?></div>
     </div>
     <div style="flex-shrink:0;min-width:200px">
-      <audio src="<?=$listenUrl?>" preload="none" controls style="width:100%;height:36px;border-radius:8px"></audio>
+      <audio src="<?=$listenUrl?>" preload="auto" controls style="width:100%;height:36px;border-radius:8px"></audio>
     </div>
     <div style="display:flex;gap:6px;flex-shrink:0">
       <a href="https://planet-hosts.com/radio/embed.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-primary" style="font-size:10px;padding:6px 10px">Player</a>

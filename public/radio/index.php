@@ -78,7 +78,7 @@ p.desc{color:#64748b;font-size:13px;margin-top:4px}
 <?php echo $song; ?>
 </div>
 <div class="player-section">
-<audio src="<?php echo $sUrl; ?>" controls preload="none" style="width:100%;height:40px"></audio>
+<audio src="<?php echo $sUrl; ?>" controls preload="auto" style="width:100%;height:40px"></audio>
 </div>
 <div class="widget-links">
 <a class="widget-link" href="<?php echo $baseUrl; ?>/radio/embed.php?stream=<?php echo $s->id; ?>" target="_blank">🎵 Player</a>
