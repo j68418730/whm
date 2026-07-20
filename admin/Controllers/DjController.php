@@ -499,4 +499,38 @@ class DjController extends Controller
             ],
         ])->send();
     }
+
+    public function ports()
+    {
+        $this->guard();
+        $pm = new \Core\PortManager();
+        $ports = $pm->getAllDjPorts();
+        $stats = $pm->getUsage();
+        $djRange = null;
+        foreach ($stats as $s) { if ($s->service_type === 'dj') $djRange = $s; }
+        return $this->view('admin/Views/djs/ports', [
+            'ports' => $ports,
+            'djRange' => $djRange,
+            'allStats' => $stats,
+        ]);
+    }
+
+    public function releaseDjPort($portId)
+    {
+        $this->guard();
+        $pm = new \Core\PortManager();
+        $port = $pm->getById($portId);
+        if (!$port || $port->service_type !== 'dj') {
+            $_SESSION['error'] = 'Port not found or not a DJ port.';
+        } else {
+            if ($pm->release($portId)) {
+                $this->db->table('radio_djs')->where('dj_port', $port->port_start)->update(['dj_port' => null]);
+                $_SESSION['success'] = "DJ port {$port->port_start} released.";
+            } else {
+                $_SESSION['error'] = 'Failed to release port.';
+            }
+        }
+        header('Location: /admin/djs/ports');
+        exit;
+    }
 }

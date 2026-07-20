@@ -665,6 +665,8 @@ $router->post('/admin/dj/api-keys/generate/{id}', 'Admin\Controllers\DjControlle
 $router->get('/admin/dj/api-keys/revoke/{id}/{keyId}', 'Admin\Controllers\DjController@revokeApiKey');
 $router->get('/admin/dj/stream-config/{id}/{stationId}', 'Admin\Controllers\DjController@streamConfig');
 $router->post('/admin/dj/stream-config/update/{id}/{stationId}', 'Admin\Controllers\DjController@updateStreamConfig');
+$router->get('/admin/dj/ports', 'Admin\Controllers\DjController@ports');
+$router->get('/admin/dj/ports/release/{id}', 'Admin\Controllers\DjController@releaseDjPort');
 
 // DJ API endpoints (for Studio app)
 $router->post('/api/dj/login', 'Admin\Controllers\Api\DjController@login');

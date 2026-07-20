@@ -367,47 +367,112 @@ p{color:#64748b;font-size:13px;margin-bottom:20px}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#02050e;color:#fff;font-family:'Inter',sans-serif}
-.bg{position:fixed;inset:0;background:linear-gradient(rgba(2,8,23,.92),rgba(2,8,23,.98)),url(/theme/assets/img/background.png);background-size:cover;z-index:-2}
-.topbar{background:rgba(8,16,28,.9);border-bottom:1px solid rgba(0,191,255,.1);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
-.topbar h2{font-size:18px;font-weight:800}
-.topbar h2 span{color:#008cff}
-.topbar a{color:#f87171;text-decoration:none;font-size:13px}
-.container{max-width:900px;margin:0 auto;padding:24px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px}
-.stat-card{background:rgba(8,16,28,.6);border:1px solid rgba(0,191,255,.1);border-radius:12px;padding:20px;text-align:center}
-.stat-card .num{font-size:28px;font-weight:800;color:var(--c,#008cff)}
-.stat-card .label{font-size:12px;color:#64748b;margin-top:4px}
-.card{background:rgba(8,16,28,.6);border:1px solid rgba(0,191,255,.1);border-radius:12px;padding:24px;margin-bottom:16px}
-.card h3{font-size:15px;color:var(--accent,#008cff);margin-bottom:12px}
-.profile-section{display:flex;gap:20px;align-items:start;flex-wrap:wrap}
-.avatar-box{width:120px;height:120px;border-radius:50%;border:3px solid rgba(0,191,255,.2);overflow:hidden;flex-shrink:0;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:40px}
-.avatar-box img{width:100%;height:100%;object-fit:cover}
-.upload-btn{display:inline-block;padding:8px 16px;border-radius:6px;background:rgba(0,140,255,.1);border:1px solid rgba(0,191,255,.15);color:#e0e0e0;cursor:pointer;font-size:12px;transition:.3s}
-.upload-btn:hover{background:rgba(0,140,255,.2)}
-input,textarea{width:100%;padding:10px 14px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box;font-family:'Inter',sans-serif}
-input:focus,textarea:focus{border-color:rgba(0,191,255,.3)}
+body{background:#02050e;color:#e2e8f0;font-family:'Inter',sans-serif}
+.bg{position:fixed;inset:0;background:linear-gradient(145deg,rgba(2,8,23,.92),rgba(15,23,42,.98)),url(/theme/assets/img/background.png);background-size:cover;z-index:-2}
+.topbar{background:rgba(15,23,42,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(56,189,248,.08);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+.topbar h2{font-size:18px;font-weight:800;background:linear-gradient(135deg,#e2e8f0,#94a3b8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.topbar h2 span{-webkit-text-fill-color:#008cff}
+.topbar a{color:#f87171;text-decoration:none;font-size:13px;transition:color .2s}
+.topbar a:hover{color:#fca5a5}
+.container{max-width:960px;margin:0 auto;padding:24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:rgba(15,23,42,.5);border:1px solid rgba(56,189,248,.08);border-radius:16px;padding:22px 16px;text-align:center;transition:border-color .3s,transform .2s}
+.stat-card:hover{border-color:rgba(56,189,248,.2);transform:translateY(-2px)}
+.stat-card .num{font-size:30px;font-weight:800;color:var(--c,#008cff);line-height:1.2}
+.stat-card .label{font-size:11px;color:#64748b;margin-top:6px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.card{background:rgba(15,23,42,.5);border:1px solid rgba(56,189,248,.06);border-radius:16px;padding:20px;margin-bottom:16px;transition:border-color .3s}
+.card:hover{border-color:rgba(56,189,248,.15)}
+.card h3{font-size:14px;color:#008cff;margin-bottom:12px;font-weight:700;display:flex;align-items:center;gap:8px}
+.card h3 i{font-size:15px;opacity:.8}
+input,textarea,select{width:100%;padding:10px 14px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.06);border-radius:10px;color:#e2e8f0;font-size:13px;outline:none;box-sizing:border-box;font-family:'Inter',sans-serif;transition:border-color .2s}
+input:focus,textarea:focus,select:focus{border-color:rgba(56,189,248,.35);box-shadow:0 0 0 3px rgba(56,189,248,.06)}
 textarea{min-height:80px;resize:vertical}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
 .form-group{margin-bottom:12px}
-.form-group label{display:block;font-size:12px;color:#94a3b8;margin-bottom:4px;font-weight:600}
-.btn{padding:10px 20px;border-radius:8px;border:none;font-weight:600;font-size:13px;cursor:pointer;transition:.3s;font-family:'Inter',sans-serif}
-.btn-primary{background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff}
-.btn-primary:hover{transform:translateY(-2px)}
-.banner{width:100%;height:180px;border-radius:12px;overflow:hidden;margin-bottom:20px;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:14px;color:#64748b}
+.form-group label{display:block;font-size:11px;color:#64748b;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.btn{padding:10px 20px;border-radius:10px;border:none;font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:linear-gradient(135deg,#008cff,#38bdf8);color:#fff;box-shadow:0 4px 14px rgba(0,140,255,.2)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,140,255,.3)}
+.btn-danger{background:rgba(248,113,113,.12);color:#f87171}
+.btn-danger:hover{background:rgba(248,113,113,.2)}
+.btn-warning{background:rgba(250,204,21,.1);color:#facc15}
+.btn-warning:hover{background:rgba(250,204,21,.18)}
+.btn-sm{padding:6px 14px;font-size:11px;border-radius:8px}
+.btn-xs{padding:3px 8px;font-size:10px;border-radius:6px}
+.banner{width:100%;height:180px;border-radius:16px;overflow:hidden;margin-bottom:20px;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:14px;color:#475569;border:1px solid rgba(56,189,248,.06)}
 .banner img{width:100%;height:100%;object-fit:cover}
-.banner-upload{margin-top:8px}
-.stream-status{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
-.stream-status.online{background:rgba(74,222,128,.12);color:#4ade80}
-.stream-status.offline{background:rgba(248,113,113,.12);color:#f87171}
-.dj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:0}
+.banner-empty-icon{font-size:32px;opacity:.3}
+.station-info{font-size:12px;color:#94a3b8;line-height:1.7}
+.station-info strong{color:#64748b}
+.dj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
 .dj-grid .card{margin-bottom:0}
 @media(min-width:1200px){.dj-grid{grid-template-columns:repeat(5,1fr)}}
 .dj-tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap}
-.dj-tab{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:.15s;color:#64748b;background:rgba(255,255,255,.04);border:1px solid transparent}
-.dj-tab:hover{background:rgba(0,140,255,.08);color:#0A84FF}
-.dj-tab.act{background:rgba(0,140,255,.15);border-color:rgba(0,140,255,.3);color:#0A84FF}
+.dj-tab{padding:8px 18px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;color:#64748b;background:rgba(255,255,255,.03);border:1px solid transparent}
+.dj-tab:hover{background:rgba(56,189,248,.07);color:#38bdf8}
+.dj-tab.act{background:rgba(56,189,248,.12);border-color:rgba(56,189,248,.25);color:#38bdf8}
 .dj-panel{display:none}
 .dj-panel.act{display:block}
+.conn-grid{display:flex;flex-direction:column;gap:8px}
+.conn-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+.conn-row+.conn-row{border-top:1px solid rgba(255,255,255,.04)}
+.conn-label{color:#64748b;font-size:12px}
+.conn-value{color:#4ade80;font-family:monospace;font-size:13px;font-weight:600}
+.conn-value.pw{color:#facc15}
+.conn-value.api{color:#a855f7}
+.api-row{font-size:10px;color:#64748b;line-height:1.8}
+.api-row code{color:#a855f7;font-size:11px}
+.api-row .sep{margin:0 4px;color:rgba(255,255,255,.06)}
+.copy-btn{background:rgba(255,255,255,.04);color:#64748b;border:none;border-radius:6px;cursor:pointer;transition:all .2s;padding:4px 8px;font-size:10px}
+.copy-btn:hover{background:rgba(255,255,255,.08);color:#94a3b8}
+.conn-box{background:rgba(0,0,0,.35);border-radius:12px;padding:16px;font-family:monospace;font-size:12px;line-height:2}
+.conn-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.text-bright{color:#e2e8f0}
+.text-green{color:#4ade80}
+.card-desc{font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:12px}
+.sam-notice{background:rgba(250,204,21,.06);border:1px solid rgba(250,204,21,.15);border-radius:10px;padding:12px;margin-bottom:12px}
+.sam-title{font-size:11px;color:#facc15;font-weight:600;margin-bottom:4px}
+.sam-text{font-size:11px;color:#94a3b8;line-height:1.6}
+.sam-text strong{color:#e2e8f0}
+.sch-form{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.sch-table{width:100%;border-collapse:collapse;font-size:12px}
+.sch-table th{padding:8px 6px;text-align:left;color:#64748b;font-weight:600;border-bottom:1px solid rgba(255,255,255,.06)}
+.sch-table td{padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.04)}
+.req-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.req-item:last-child{border-bottom:none}
+.req-title{font-size:14px;font-weight:600}
+.req-meta{font-size:11px;color:#64748b}
+.req-msg{font-size:11px;color:#94a3b8;font-style:italic}
+.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.gallery-item{position:relative;border-radius:8px;overflow:hidden;background:rgba(0,0,0,.35);aspect-ratio:3/2}
+.gallery-item img,.gallery-item video{width:100%;height:100%;object-fit:cover}
+.gallery-del{position:absolute;top:4px;right:4px;padding:2px 6px;font-size:10px;width:auto;background:rgba(248,113,113,.85);color:#fff;border:none;border-radius:4px;cursor:pointer;transition:background .2s}
+.gallery-del:hover{background:#ef4444}
+.upload-zone{border:1px dashed rgba(56,189,248,.2);border-radius:10px;padding:16px;text-align:center;margin-bottom:12px}
+.upload-zone input[type="file"]{display:inline-block;font-size:11px;color:#94a3b8}
+.stream-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.stream-row:last-child{border-bottom:none}
+.stream-name{font-weight:600;font-size:13px}
+.stream-meta{font-size:11px;color:#64748b;margin-top:2px}
+.stream-status-badge{font-weight:500}
+.banner-preview{width:100%;max-height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px}
+.alert{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);border-radius:10px;padding:10px 14px;color:#4ade80;font-size:13px;margin-bottom:16px}
+.alert-error{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);color:#f87171}
+.color-picker{display:flex;gap:12px;flex-wrap:wrap}
+.color-picker label{font-size:11px;color:#94a3b8}
+.color-picker input[type="color"]{width:60px;height:40px;padding:2px;cursor:pointer}
+.gallery-sub{font-size:11px;color:#64748b;font-weight:400}
+.upload-hint{display:block;color:#64748b;margin-top:4px;font-size:10px}
+.file-input{font-size:11px;color:#94a3b8;margin-bottom:6px}
+.profile-photo-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.avatar-pic{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(56,189,248,.15)}
+.avatar-placeholder{width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font-size:28px;border:2px solid rgba(255,255,255,.06)}
+.upload-btn{display:inline-block;padding:6px 12px;border-radius:8px;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:#e2e8f0;cursor:pointer;font-size:11px;transition:all .2s}
+.upload-btn:hover{background:rgba(56,189,248,.18)}
+.empty-text{color:#64748b;font-size:13px}
+.save-row{margin-top:12px;text-align:center}
+.check-label{display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px;cursor:pointer}
+.check-label input{cursor:pointer}
 </style></head><body>
 <div class="bg"></div>
 <div class="topbar">
@@ -420,8 +485,8 @@ textarea{min-height:80px;resize:vertical}
 </div>
 <div class="container">
 
-<?php if ($success): ?><div class="alert" style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);border-radius:8px;padding:10px 14px;color:#4ade80;font-size:13px;margin-bottom:16px"><?php echo htmlspecialchars($success); ?></div><?php endif; ?>
-<?php if ($error): ?><div class="alert" style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:10px 14px;color:#f87171;font-size:13px;margin-bottom:16px"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
+<?php if ($success): ?><div class="alert"><?php echo htmlspecialchars($success); ?></div><?php endif; ?>
+<?php if ($error): ?><div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
 
 <div class="dj-tabs">
     <div class="dj-tab act" onclick="sw(event,'overview')">Overview</div>
@@ -475,16 +540,16 @@ textarea{min-height:80px;resize:vertical}
             echo "<div class=\"dj-panel" . ($isActiveStation ? ' act' : '') . "\" id=\"pn-station-{$stationId}\">\n";
             
             // Station-specific content
-            echo "<div class=\"card\" style=\"border-color:rgba(0,191,255,.2)\">\n";
+            echo "<div class=\"card\">\n";
             $statusColor = $station->status === 'running' ? '#4ade80' : '#f87171';
-            echo "<h3 style=\"color:#0A84FF\"><i class=\"fas fa-broadcast-tower\"></i> Station Info\n" . htmlspecialchars($station->name) . "</h3>\n";
-            echo "<div style=\"font-size:12px;color:#94a3b8;line-height:1.5\">\n";
+            echo "<h3><i class=\"fas fa-broadcast-tower\"></i> " . htmlspecialchars($station->name) . "</h3>\n";
+            echo "<div class=\"station-info\">\n";
             echo "<strong>Engine:</strong> " . htmlspecialchars($station->engine) . "<br>\n";
             echo "<strong>Port:</strong> " . htmlspecialchars($station->port) . "<br>\n";
             echo "<strong>Status:</strong> <span style=\"color:{$statusColor};\">" . htmlspecialchars($station->status) . "</span><br>\n";
             echo "<strong>Stream ID:</strong> {$station->id}<br>\n";
             echo "</div>\n";
-            echo "<button class=\"btn btn-primary\" onclick=\"window.location.href='/dj_panel.php?action=dashboard&stream_id={$stationId}'\" style=\"width:auto;margin-top:8px;\">\n";
+            echo "<button class=\"btn btn-primary btn-sm\" onclick=\"window.location.href='/dj_panel.php?action=dashboard&stream_id={$stationId}'\" style=\"margin-top:8px;\">\n";
             echo "Go to Station Dashboard\n";
             echo "</button>\n";
             echo "</div>\n";
@@ -493,68 +558,8 @@ textarea{min-height:80px;resize:vertical}
     }
     ?>
 
-    <!-- Station tabs content -->
-    <?php
-    $userId = $_SESSION['dj_user']['id'] ?? 0;
-    $isOwner = !empty($_SESSION['dj_user']['is_owner']);
-    if ($isOwner || $userId > 0) {
-        if ($isOwner) {
-            $hostId = $hRow->user_id ?? 0;
-            $userId = $hostId;
-        }
-        $stationQuery = $pdo->prepare("SELECT COUNT(*) as count FROM streaming_stations WHERE user_id=?");
-        $stationQuery->execute([$userId]);
-        $stationCount = $stationQuery->fetchColumn();
-        if ($stationCount > 1) {
-            $activeStreamId = $_SESSION['dj_user']['stream_id'] ?? 0;
-            if ($activeStreamId > 0) {
-                echo "<script>\n";
-                echo "window.location.href = '/dj_panel.php?action=dashboard&stream_id=" . $activeStreamId . "';\n";
-                echo "</script>\n";
-                echo "<div style=\"text-align:center;padding:40px;\">\n";
-                echo "<div class=\"card\" style=\"max-width:400px;margin:0 auto;\">\n";
-                echo "<h2>Redirecting to Station Dashboard...</h2>\n";
-                echo "<p>Your dashboard is showing the active station above. Please use the station tabs to navigate to other stations.</p>\n";
-                echo "</div>\n";
-                echo "</div>\n";
-                echo "<?php exit; ?>\n";
-            }
-        }
-    }
-    ?>
 
-    <!-- Redirect Logic for Multi-Station Users -->
-    <?php
-    $userId = $_SESSION['dj_user']['id'] ?? 0;
-    $isOwner = !empty($_SESSION['dj_user']['is_owner']);
-    if ($userId > 0 && !$isOwner) {
-        $userId = $hostingId;
-    }
-    if ($userId > 0) {
-        $stationQuery = $pdo->prepare("SELECT COUNT(*) FROM streaming_stations WHERE user_id=?");
-        $stationQuery->execute([$userId]);
-        $stationCount = $stationQuery->fetchColumn();
-        if ($stationCount > 1) {
-            $activeStreamId = $_SESSION['dj_user']['stream_id'] ?? 0;
-            if ($activeStreamId > 0) {
-                echo "<script>\n";
-                echo "window.location.href = '/dj_panel.php?action=dashboard&stream_id=" . $activeStreamId . "';\n";
-                echo "</script>\n";
-                echo "<div style=\"text-align:center;padding:40px;\">\n";
-                echo "<div class=\"card\" style=\"max-width:400px;margin:0 auto;\">\n";
-                echo "<h2>Redirecting to Station Dashboard...</h2>\n";
-                echo "<p>Your dashboard is showing the active station above. Please use the station tabs to navigate to other stations.</p>\n";
-                echo "</div>\n";
-                echo "</div>\n";
-                echo "<?php exit; ?>\n";
-            }
-        }
-    }
-    ?>
 
-    <!-- Stats -->
-    <div class="grid">
-<!-- Stats -->
 <div class="grid">
 <div class="stat-card" style="--c:#4ade80"><div class="num"><?php echo $djData->stream_status ?? 'N/A'; ?></div><div class="label">Stream Status</div></div>
 <div class="stat-card" style="--c:#38bdf8"><div class="num"><?php echo $djData->listener_count ?? 0; ?></div><div class="label">Current Listeners</div></div>
@@ -580,39 +585,37 @@ $isOwner = !empty($_SESSION['dj_user']['is_owner']);
 <div class="dj-grid">
 
 <!-- Broadcaster Info -->
-<div class="card" style="border-color:rgba(0,191,255,.2)">
-<h3 style="color:#0A84FF"><i class="fas fa-broadcast-tower"></i> Broadcaster Info</h3>
-<div style="margin-bottom:12px;font-size:13px;color:#94a3b8;line-height:1.5">
-Connect your broadcasting software with these details.
+<div class="card" style="border-color:rgba(56,189,248,.2)">
+<h3><i class="fas fa-broadcast-tower"></i> Broadcaster Info</h3>
+<div class="card-desc">Connect your broadcasting software with these details.</div>
+<div class="sam-notice">
+<div class="sam-title">📻 SAM Broadcaster Users</div>
+<div class="sam-text">Enter your credentials as <strong class="text-bright">djusername:djpassword</strong> in the <strong class="text-bright">Password</strong> field on port <strong class="text-green">9000</strong>. SAM only has one password field — combine them with a colon.</div>
 </div>
-<div class="card" style="background:rgba(250,204,21,.06);border:1px solid rgba(250,204,21,.15);border-radius:8px;padding:12px;margin-bottom:12px">
-<div style="font-size:11px;color:#facc15;font-weight:600;margin-bottom:4px">📻 SAM Broadcaster Users</div>
-<div style="font-size:11px;color:#94a3b8">Enter your credentials as <strong style="color:#e0e0e0">djusername:djpassword</strong> in the <strong style="color:#e0e0e0">Password</strong> field on port <strong style="color:#4ade80">9000</strong>. SAM only has one password field — combine them with a colon.</div>
+<div class="conn-box">
+<div class="conn-row">
+<span><span class="conn-label">Server:</span> <span class="conn-value" id="bi-server"><?php echo $djHost; ?></span></span>
+<button class="copy-btn" onclick="copyField('bi-server')">Copy</button>
 </div>
-<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:16px;font-family:monospace;font-size:12px;line-height:2">
-<div style="display:flex;justify-content:space-between;align-items:center">
-<span><strong style="color:#64748b">Server:</strong> <span style="color:#4ade80" id="bi-server"><?php echo $djHost; ?></span></span>
-<button class="btn" style="padding:2px 8px;font-size:10px;background:rgba(255,255,255,.06);color:#94a3b8;border:none;border-radius:4px;cursor:pointer" onclick="copyField('bi-server')">Copy</button>
+<div class="conn-row">
+<span><span class="conn-label">Port:</span> <span class="conn-value" id="bi-port"><?php echo $djPort; ?></span> <span class="conn-label" style="font-size:10px">(DJ auth)</span></span>
+<button class="copy-btn" onclick="copyField('bi-port')">Copy</button>
 </div>
-<div style="display:flex;justify-content:space-between;align-items:center">
-<span><strong style="color:#64748b">Port:</strong> <span style="color:#4ade80" id="bi-port"><?php echo $djPort; ?></span> <span style="color:#64748b;font-size:10px">(DJ auth)</span></span>
-<button class="btn" style="padding:2px 8px;font-size:10px;background:rgba(255,255,255,.06);color:#94a3b8;border:none;border-radius:4px;cursor:pointer" onclick="copyField('bi-port')">Copy</button>
+<div class="conn-row">
+<span><span class="conn-label">Username:</span> <span class="conn-value" style="color:#38bdf8" id="bi-user"><?php echo htmlspecialchars($djUsername); ?></span></span>
+<button class="copy-btn" onclick="copyField('bi-user')">Copy</button>
 </div>
-<div style="display:flex;justify-content:space-between;align-items:center">
-<span><strong style="color:#64748b">Username:</strong> <span style="color:#38bdf8" id="bi-user"><?php echo htmlspecialchars($djUsername); ?></span></span>
-<button class="btn" style="padding:2px 8px;font-size:10px;background:rgba(255,255,255,.06);color:#94a3b8;border:none;border-radius:4px;cursor:pointer" onclick="copyField('bi-user')">Copy</button>
+<div class="conn-row">
+<span><span class="conn-label">Password:</span> <span class="conn-value pw" id="bi-pass"><?php echo $isOwner ? htmlspecialchars($djPass) : '••••••••'; ?></span></span>
+<button class="copy-btn" onclick="togglePass()"><?php echo $isOwner ? 'Hide' : 'Show'; ?></button>
 </div>
-<div style="display:flex;justify-content:space-between;align-items:center">
-<span><strong style="color:#64748b">Password:</strong> <span style="color:#facc15" id="bi-pass"><?php echo $isOwner ? htmlspecialchars($djPass) : '••••••••'; ?></span></span>
-<button class="btn" style="padding:2px 8px;font-size:10px;background:rgba(255,255,255,.06);color:#94a3b8;border:none;border-radius:4px;cursor:pointer" onclick="togglePass()"><?php echo $isOwner ? 'Hide' : 'Show'; ?></button>
-</div>
-<div style="display:flex;justify-content:space-between;align-items:center">
-<span><strong style="color:#64748b">Format:</strong> <span style="color:#94a3b8">MP3 · <?php echo $station->bitrate ?? 128; ?> kbps</span></span>
+<div class="conn-row">
+<span><span class="conn-label">Format:</span> <span class="conn-label">MP3 · <?php echo $station->bitrate ?? 128; ?> kbps</span></span>
 </div>
 </div>
-<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-<button class="btn btn-primary" style="font-size:12px;padding:8px 16px" onclick="copyAll()">📋 Copy All</button>
-<button class="btn" style="font-size:12px;padding:8px 16px;background:rgba(248,113,113,.15);color:#f87171" onclick="window.location.href='/dj_panel.php?action=takeover'">🎤 Stop AutoDJ &amp; Connect</button>
+<div class="conn-actions">
+<button class="btn btn-primary btn-sm" onclick="copyAll()">📋 Copy All</button>
+<button class="btn btn-danger btn-sm" onclick="window.location.href='/dj_panel.php?action=takeover'">🎤 Stop AutoDJ &amp; Connect</button>
 </div>
 </div>
 <script>
@@ -623,19 +626,17 @@ function copyAll(){var t='Server: <?php echo addslashes($djHost); ?>\nPort: <?ph
 
 <!-- API Connection -->
 <div class="card" style="border-color:rgba(168,85,247,.2)">
-<h3 style="color:#a855f7"><i class="fas fa-code"></i> API Connection</h3>
-<div style="margin-bottom:12px;font-size:13px;color:#94a3b8;line-height:1.5">
-Access station data programmatically. Uses your DJ session cookie for auth.
+<h3><i class="fas fa-code"></i> API Connection</h3>
+<div class="card-desc">Access station data programmatically. Uses your DJ session cookie for auth.</div>
+<div class="conn-box">
+<div class="conn-row">
+<span><span class="conn-label">Base URL:</span> <span class="conn-value api" id="api-base">https://planet-hosts.com/api/studio/station/<?php echo $_SESSION['dj_user']['stream_id'] ?? 0; ?></span></span>
+<button class="copy-btn" onclick="copyField('api-base')">Copy</button>
 </div>
-<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:16px;font-family:monospace;font-size:12px;line-height:2">
-<div style="display:flex;justify-content:space-between;align-items:center">
-<span><strong style="color:#64748b">Base URL:</strong> <span style="color:#a855f7" id="api-base">https://planet-hosts.com/api/studio/station/<?php echo $_SESSION['dj_user']['stream_id'] ?? 0; ?></span></span>
-<button class="btn" style="padding:2px 8px;font-size:10px;background:rgba(255,255,255,.06);color:#94a3b8;border:none;border-radius:4px;cursor:pointer" onclick="copyField('api-base')">Copy</button>
-</div>
-<div style="font-size:10px;color:#64748b;margin-top:8px;line-height:1.8">
-<code style="color:#a855f7">GET /connection</code> — station info & stream details
-<span style="margin:0 4px;color:rgba(255,255,255,.08)">|</span>
-<code style="color:#a855f7">GET /djs</code> — list DJs
+<div class="api-row">
+<code>GET /connection</code> — station info & stream details
+<span class="sep">|</span>
+<code>GET /djs</code> — list DJs
 </div>
 </div>
 </div>
@@ -645,7 +646,7 @@ Access station data programmatically. Uses your DJ session cookie for auth.
 <?php if ($djData->banner): ?>
 <img src="/<?php echo $djData->banner; ?>" alt="Banner">
 <?php else: ?>
-<i class="fas fa-image" style="font-size:32px;opacity:.3"></i> No banner set
+<i class="fas fa-image banner-empty-icon"></i> No banner set
 <?php endif; ?>
 </div>
 
@@ -670,36 +671,36 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 
 <!-- Banner Upload -->
 <div class="card" style="border-color:rgba(250,204,21,.15)">
-<h3 style="color:#facc15"><i class="fas fa-image"></i> Profile Banner</h3>
+<h3><i class="fas fa-image"></i> Profile Banner</h3>
 <?php if ($djData->banner): ?>
-<img src="/<?php echo $djData->banner; ?>" style="width:100%;max-height:100px;object-fit:cover;border-radius:6px;margin-bottom:8px">
+<img src="/<?php echo $djData->banner; ?>" class="banner-preview">
 <?php endif; ?>
 <form method="POST" enctype="multipart/form-data">
 <input type="hidden" name="action" value="upload_banner">
-<input type="file" name="file" accept="image/*" style="font-size:11px;color:#94a3b8;margin-bottom:6px">
-<button class="btn" style="padding:6px 14px;font-size:11px;width:auto;background:rgba(250,204,21,.12);color:#facc15">Upload Banner</button>
+<input type="file" name="file" accept="image/*" class="file-input">
+<button class="btn btn-warning btn-sm">Upload Banner</button>
 </form>
 </div>
 
 <!-- Kick Stream -->
 <div class="card" style="border-color:rgba(248,113,113,.2)">
-<h3 style="color:#f87171"><i class="fas fa-ban"></i> Kick Source</h3>
-<p style="font-size:12px;color:#94a3b8;margin-bottom:12px">Force-disconnect the current source (AutoDJ or Live DJ). The stream will stop until someone reconnects.</p>
+<h3><i class="fas fa-ban"></i> Kick Source</h3>
+<p class="card-desc">Force-disconnect the current source (AutoDJ or Live DJ). The stream will stop until someone reconnects.</p>
 <?php if (empty($myStreams)): ?>
-<p style="color:#64748b;font-size:13px">No streams available.</p>
+<p class="empty-text">No streams available.</p>
 <?php else: ?>
 <?php foreach ($myStreams as $st): 
   $stEngine = strtolower($st->engine ?? $st->server_type ?? 'icecast');
   $stLabel = strtoupper($stEngine === 'shoutcast' || $stEngine === 'shoutcast1' || $stEngine === 'shoutcast2' ? 'SHOUTcast' : 'Icecast');
 ?>
-<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+<div class="stream-row">
 <div>
-<strong><?php echo htmlspecialchars($st->name ?? "Stream #{$st->id}"); ?></strong>
-<div style="font-size:11px;color:#64748b"><?php echo $stLabel; ?> · Port <?php echo $st->port; ?> · <span style="color:<?php echo $st->status === 'running' ? '#4ade80' : '#f87171'; ?>"><?php echo $st->status; ?></span></div>
+<div class="stream-name"><?php echo htmlspecialchars($st->name ?? "Stream #{$st->id}"); ?></div>
+<div class="stream-meta"><?php echo $stLabel; ?> · Port <?php echo $st->port; ?> · <span class="stream-status-badge" style="color:<?php echo $st->status === 'running' ? '#4ade80' : '#f87171'; ?>"><?php echo $st->status; ?></span></div>
 </div>
 <form method="POST" action="/dj_panel.php?action=kick" style="display:inline" onsubmit="return confirm('Kick the source on <?php echo htmlspecialchars($st->name ?? 'this stream'); ?>?');">
 <input type="hidden" name="stream_id" value="<?php echo $st->id; ?>">
-<button class="btn" style="padding:6px 14px;font-size:11px;background:rgba(248,113,113,.15);color:#f87171;width:auto">Kick</button>
+<button class="btn btn-danger btn-sm">Kick</button>
 </form>
 </div>
 <?php endforeach; ?>
@@ -726,25 +727,25 @@ $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
 ?>
 <div class="card">
 <h3><i class="fas fa-calendar-alt"></i> My Schedule</h3>
-<form method="POST" action="/dj_panel.php?action=add_schedule" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-<input name="show_name" placeholder="Show name" required style="flex:1;min-width:100px;padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<select name="day_of_week" style="padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
+<form method="POST" action="/dj_panel.php?action=add_schedule" class="sch-form">
+<input name="show_name" placeholder="Show name" required style="flex:1;min-width:100px">
+<select name="day_of_week">
 <?php foreach($days as $i=>$d): ?><option value="<?=$i?>"><?=$d?></option><?php endforeach; ?>
 </select>
-<input name="start_time" type="time" required style="padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<input name="end_time" type="time" required style="padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;outline:none">
-<button class="btn btn-primary" style="padding:7px 14px;font-size:11px;width:auto">Add Show</button>
+<input name="start_time" type="time" required>
+<input name="end_time" type="time" required>
+<button class="btn btn-primary btn-sm">Add Show</button>
 </form>
 <?php if (empty($mySchedule)): ?>
-<p style="color:#64748b;font-size:13px">No shows scheduled yet.</p>
+<p class="empty-text">No shows scheduled yet.</p>
 <?php else: ?>
-<table style="width:100%;border-collapse:collapse;font-size:12px">
-<tr style="border-bottom:1px solid rgba(255,255,255,.06)"><th style="padding:8px 6px;text-align:left;color:#64748b;font-weight:600">Show</th><th style="padding:8px 6px;text-align:left;color:#64748b;font-weight:600">Day</th><th style="padding:8px 6px;text-align:left;color:#64748b;font-weight:600">Time</th></tr>
+<table class="sch-table">
+<tr><th>Show</th><th>Day</th><th>Time</th></tr>
 <?php foreach ($mySchedule as $sh): ?>
-<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
-<td style="padding:8px 6px"><?php echo htmlspecialchars($sh->show_name ?? 'Untitled'); ?></td>
-<td style="padding:8px 6px"><?php echo $days[$sh->day_of_week] ?? $sh->day_of_week; ?></td>
-<td style="padding:8px 6px"><?php echo htmlspecialchars($sh->start_time ?? '') . ' - ' . htmlspecialchars($sh->end_time ?? ''); ?></td>
+<tr>
+<td><?php echo htmlspecialchars($sh->show_name ?? 'Untitled'); ?></td>
+<td><?php echo $days[$sh->day_of_week] ?? $sh->day_of_week; ?></td>
+<td><?php echo htmlspecialchars($sh->start_time ?? '') . ' - ' . htmlspecialchars($sh->end_time ?? ''); ?></td>
 </tr>
 <?php endforeach; ?>
 </table>
@@ -763,23 +764,24 @@ $requests = $reqs->fetchAll(PDO::FETCH_OBJ);
 <div class="card">
 <h3><i class="fas fa-music"></i> Song Requests (<?php echo count($requests); ?>)</h3>
 <?php if (empty($requests)): ?>
-<p style="color:#64748b;font-size:13px">No pending requests.</p>
+<p class="empty-text">No pending requests.</p>
 <?php else: ?>
 <?php foreach ($requests as $r): ?>
-<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">
-<div><strong style="font-size:14px"><?php echo htmlspecialchars($r->artist . ' - ' . $r->title); ?></strong>
-<?php if ($r->guest_name): ?><div style="font-size:11px;color:#64748b">Requested by: <?php echo htmlspecialchars($r->guest_name); ?></div><?php endif; ?>
-<?php if ($r->message): ?><div style="font-size:11px;color:#94a3b8;font-style:italic">"<?php echo htmlspecialchars($r->message); ?>"</div><?php endif; ?>
+<div class="req-item">
+<div>
+<div class="req-title"><?php echo htmlspecialchars($r->artist . ' - ' . $r->title); ?></div>
+<?php if ($r->guest_name): ?><div class="req-meta">Requested by: <?php echo htmlspecialchars($r->guest_name); ?></div><?php endif; ?>
+<?php if ($r->message): ?><div class="req-msg">"<?php echo htmlspecialchars($r->message); ?>"</div><?php endif; ?>
 </div>
-<a href="/dj_panel.php?action=remove_request&req_id=<?php echo $r->id; ?>" class="btn" style="padding:4px 10px;font-size:11px;width:auto;background:rgba(248,113,113,.15);color:#f87171">✕ Remove</a>
+<a href="/dj_panel.php?action=remove_request&req_id=<?php echo $r->id; ?>" class="btn btn-danger btn-xs">✕ Remove</a>
 </div>
 <?php endforeach; ?>
 <?php endif; ?>
 </div>
 <div class="card">
 <h3><i class="fas fa-tools"></i> DJ Tools</h3>
-<a href="/dj_panel.php?action=download_playlist" class="btn" style="display:inline-flex;width:auto;padding:8px 16px;font-size:12px;margin-bottom:8px">📥 Download SAM Playlist (.lst)</a>
-<p style="font-size:11px;color:#64748b">Downloads a SAM Broadcaster compatible playlist file.</p>
+<a href="/dj_panel.php?action=download_playlist" class="btn btn-primary btn-sm" style="margin-bottom:8px">📥 Download SAM Playlist (.lst)</a>
+<p class="upload-hint">Downloads a SAM Broadcaster compatible playlist file.</p>
 </div>
 </div>
 </div>
@@ -793,12 +795,12 @@ function pf($k, $d=''){global $pd; return htmlspecialchars($pd[$k] ?? $d);}
 <div class="dj-grid">
 <div class="card">
 <h3><i class="fas fa-camera"></i> Photo</h3>
-<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+<div class="profile-photo-row">
 <?php if ($djData->avatar): ?>
-<img src="/<?php echo $djData->avatar; ?>" style="width:64px;height:64px;border-radius:50%;object-fit:cover">
-<?php else: ?><div style="width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:28px">🎤</div><?php endif; ?>
-<label class="upload-btn" style="cursor:pointer;padding:6px 12px;background:rgba(0,140,255,.1);border:1px solid rgba(0,140,255,.2);border-radius:6px;font-size:11px">Change Photo<input type="file" name="file" style="display:none" onchange="var f=this.form;f.action='/dj_panel.php?action=upload_avatar';f.submit()"></label>
-<label class="upload-btn" style="cursor:pointer;padding:6px 12px;background:rgba(250,204,21,.1);border:1px solid rgba(250,204,21,.2);border-radius:6px;font-size:11px">Change Banner<input type="file" name="file" style="display:none" onchange="var f=this.form;f.action='/dj_panel.php?action=upload_banner';f.submit()"></label>
+<img src="/<?php echo $djData->avatar; ?>" class="avatar-pic">
+<?php else: ?><div class="avatar-placeholder">🎤</div><?php endif; ?>
+<label class="upload-btn">Change Photo<input type="file" name="file" style="display:none" onchange="var f=this.form;f.action='/dj_panel.php?action=upload_avatar';f.submit()"></label>
+<label class="upload-btn" style="background:rgba(250,204,21,.1);border-color:rgba(250,204,21,.2)">Change Banner<input type="file" name="file" style="display:none" onchange="var f=this.form;f.action='/dj_panel.php?action=upload_banner';f.submit()"></label>
 </div>
 </div>
 
@@ -850,10 +852,10 @@ function pf($k, $d=''){global $pd; return htmlspecialchars($pd[$k] ?? $d);}
 <div class="card"><h3>Music Preferences</h3>
 <div class="form-group"><label>Preferred Genres</label><input name="preferred_genres" value="<?php echo pf('preferred_genres'); ?>" placeholder="Rock, Pop, EDM"></div>
 <div class="form-group"><label>Preferred Decades</label><input name="preferred_decades" value="<?php echo pf('preferred_decades'); ?>" placeholder="80s, 90s, 2000s"></div>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="clean_music_only" value="1" <?php echo pf('clean_music_only')?'checked':''; ?>> Clean Music Only</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="explicit_allowed" value="1" <?php echo pf('explicit_allowed')?'checked':''; ?>> Explicit Allowed</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="request_friendly" value="1" <?php echo pf('request_friendly')?'checked':''; ?>> Request Friendly</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="open_format" value="1" <?php echo pf('open_format')?'checked':''; ?>> Open Format</label>
+<label class="check-label"><input type="checkbox" name="clean_music_only" value="1" <?php echo pf('clean_music_only')?'checked':''; ?>> Clean Music Only</label>
+<label class="check-label"><input type="checkbox" name="explicit_allowed" value="1" <?php echo pf('explicit_allowed')?'checked':''; ?>> Explicit Allowed</label>
+<label class="check-label"><input type="checkbox" name="request_friendly" value="1" <?php echo pf('request_friendly')?'checked':''; ?>> Request Friendly</label>
+<label class="check-label"><input type="checkbox" name="open_format" value="1" <?php echo pf('open_format')?'checked':''; ?>> Open Format</label>
 </div>
 
 <div class="card"><h3>Skills</h3>
@@ -879,51 +881,51 @@ function pf($k, $d=''){global $pd; return htmlspecialchars($pd[$k] ?? $d);}
 </div>
 
 <div class="card"><h3>Listener Interaction</h3>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="accept_requests" value="1" <?php echo pf('accept_requests')?'checked':''; ?>> Accept Song Requests</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="accept_dedications" value="1" <?php echo pf('accept_dedications')?'checked':''; ?>> Accept Dedications</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="live_chat_enabled" value="1" <?php echo pf('live_chat_enabled')?'checked':''; ?>> Live Chat Enabled</label>
+<label class="check-label"><input type="checkbox" name="accept_requests" value="1" <?php echo pf('accept_requests')?'checked':''; ?>> Accept Song Requests</label>
+<label class="check-label"><input type="checkbox" name="accept_dedications" value="1" <?php echo pf('accept_dedications')?'checked':''; ?>> Accept Dedications</label>
+<label class="check-label"><input type="checkbox" name="live_chat_enabled" value="1" <?php echo pf('live_chat_enabled')?'checked':''; ?>> Live Chat Enabled</label>
 </div>
 
 <div class="card"><h3>Privacy</h3>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="public_profile" value="1" <?php echo pf('public_profile', '1')?'checked':''; ?>> Public Profile</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="hidden_email" value="1" <?php echo pf('hidden_email')?'checked':''; ?>> Hide Email</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0;margin-bottom:6px"><input type="checkbox" name="hidden_birthday" value="1" <?php echo pf('hidden_birthday')?'checked':''; ?>> Hide Birthday</label>
+<label class="check-label"><input type="checkbox" name="public_profile" value="1" <?php echo pf('public_profile', '1')?'checked':''; ?>> Public Profile</label>
+<label class="check-label"><input type="checkbox" name="hidden_email" value="1" <?php echo pf('hidden_email')?'checked':''; ?>> Hide Email</label>
+<label class="check-label"><input type="checkbox" name="hidden_birthday" value="1" <?php echo pf('hidden_birthday')?'checked':''; ?>> Hide Birthday</label>
 </div>
 
 <div class="card"><h3>Custom Theme</h3>
-<div style="display:flex;gap:12px;flex-wrap:wrap">
-<div><label style="font-size:11px;color:#94a3b8">Profile Color</label><input name="profile_color" type="color" value="<?php echo pf('profile_color','#008cff'); ?>" style="width:60px;height:40px;padding:2px"></div>
-<div><label style="font-size:11px;color:#94a3b8">Accent Color</label><input name="accent_color" type="color" value="<?php echo pf('accent_color','#a855f7'); ?>" style="width:60px;height:40px;padding:2px"></div>
+<div class="color-picker">
+<div><label>Profile Color</label><input name="profile_color" type="color" value="<?php echo pf('profile_color','#008cff'); ?>"></div>
+<div><label>Accent Color</label><input name="accent_color" type="color" value="<?php echo pf('accent_color','#a855f7'); ?>"></div>
 </div>
 </div>
 
 </div>
-<div style="margin-top:12px;text-align:center"><button class="btn btn-primary" style="padding:12px 40px;font-size:14px">Save All Profile Changes</button></div>
+<div class="save-row"><button class="btn btn-primary" style="padding:12px 40px;font-size:14px">Save All Profile Changes</button></div>
 </form>
 </div>
 
 <div class="dj-panel" id="pn-gallery">
 <div class="dj-grid">
 <div class="card">
-<h3><i class="fas fa-images"></i> Gallery <span style="font-size:11px;color:#64748b;font-weight:400">Photos &amp; Clips</span></h3>
-<form method="POST" enctype="multipart/form-data" style="margin-bottom:12px;padding:12px;border:1px dashed rgba(0,140,255,.2);border-radius:8px;text-align:center">
+<h3><i class="fas fa-images"></i> Gallery <span class="gallery-sub">Photos &amp; Clips</span></h3>
+<form method="POST" enctype="multipart/form-data" class="upload-zone">
 <input type="hidden" name="action" value="upload_gallery">
-<input type="file" name="file" style="display:inline-block;font-size:11px;color:#94a3b8">
-<button class="btn btn-primary" style="padding:6px 14px;font-size:11px;width:auto;margin-left:6px">Upload</button>
-<small style="display:block;color:#64748b;margin-top:4px;font-size:10px">JPG, PNG, GIF, WEBP, MP4, MOV — max 20MB</small>
+<input type="file" name="file">
+<button class="btn btn-primary btn-sm" style="margin-left:6px">Upload</button>
+<small class="upload-hint">JPG, PNG, GIF, WEBP, MP4, MOV — max 20MB</small>
 </form>
 <?php
 $galleryData = $djData->gallery ? json_decode($djData->gallery, true) : [];
 if (!empty($galleryData)): ?>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px">
+<div class="gallery-grid">
 <?php foreach ($galleryData as $i=>$item): ?>
-<div style="position:relative;border-radius:6px;overflow:hidden;background:rgba(0,0,0,.3)">
+<div class="gallery-item">
 <?php if (($item['type']??'image') === 'video'): ?>
-<video src="<?php echo htmlspecialchars($item['url']); ?>" style="width:100%;height:80px;object-fit:cover"></video>
+<video src="<?php echo htmlspecialchars($item['url']); ?>"></video>
 <?php else: ?>
-<img src="<?php echo htmlspecialchars($item['url']); ?>" style="width:100%;height:80px;object-fit:cover">
+<img src="<?php echo htmlspecialchars($item['url']); ?>">
 <?php endif; ?>
-<a href="/dj_panel.php?action=delete_gallery&idx=<?php echo $i; ?>" class="btn" style="position:absolute;top:2px;right:2px;padding:2px 6px;font-size:10px;width:auto;background:rgba(248,113,113,.8);color:#fff;border:none;border-radius:3px">✕</a>
+<a href="/dj_panel.php?action=delete_gallery&idx=<?php echo $i; ?>" class="gallery-del">✕</a>
 </div>
 <?php endforeach; ?>
 </div>
