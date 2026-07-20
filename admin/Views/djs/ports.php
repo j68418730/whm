@@ -19,7 +19,18 @@ td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.04)}
 </style>
 
 <h2 style="margin-bottom:6px">DJ Port Manager</h2>
-<p style="color:#64748b;font-size:13px;margin-bottom:20px">Manage dedicated DJ source ports — one port per DJ account.</p>
+<p style="color:#64748b;font-size:13px;margin-bottom:12px">Manage dedicated DJ source ports — one port per DJ account.</p>
+
+<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+  <a href="/admin/dj/ports/listener/start" class="btn btn-primary">Start Listener</a>
+  <a href="/admin/dj/ports/listener/stop" class="btn" style="background:rgba(248,113,113,.12);color:#f87171">Stop Listener</a>
+  <a href="/admin/dj/ports/listener/restart" class="btn" style="background:rgba(250,204,21,.1);color:#facc15">Restart Listener</a>
+  <a href="/admin/dj/ports/listener/status" class="btn" style="background:rgba(56,189,248,.1);color:#38bdf8">Status</a>
+</div>
+
+<?php if (isset($_SESSION['info'])): ?>
+<div style="background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.15);border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:#38bdf8;font-family:monospace;white-space:pre-wrap"><?=$_SESSION['info']; unset($_SESSION['info']);?></div>
+<?php endif; ?>
 
 <div class="stat-cards">
   <div class="stat-card" style="--c:#38bdf8"><div class="num"><?=count($ports)?></div><div class="label">Total DJ Ports</div></div>

@@ -533,4 +533,27 @@ class DjController extends Controller
         header('Location: /admin/djs/ports');
         exit;
     }
+
+    public function listenerAction($action)
+    {
+        $this->guard();
+        $allowed = ['start', 'stop', 'restart', 'status'];
+        if (!in_array($action, $allowed)) {
+            $_SESSION['error'] = 'Invalid action. Use start, stop, restart, or status.';
+            header('Location: /admin/djs/ports');
+            exit;
+        }
+        $bin = '/var/www/radiohosting/services/DjPortListener.php';
+        if ($action === 'status') {
+            $output = shell_exec("php $bin status 2>&1");
+            $_SESSION['info'] = nl2br(htmlspecialchars($output ?? 'No output'));
+        } else {
+            exec("nohup php $bin $action > /dev/null 2>&1 &", $out, $code);
+            sleep(1);
+            $output = shell_exec("php $bin status 2>&1");
+            $_SESSION['success'] = "Listener $action: " . nl2br(htmlspecialchars($output ?? ''));
+        }
+        header('Location: /admin/djs/ports');
+        exit;
+    }
 }
