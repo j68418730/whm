@@ -256,11 +256,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </div>
 <div class="tab <?=$tab==='djs'?'active':''?>">
   <div class="card"><div class="hdr"><h3>DJs</h3></div>
-  <table><tr><th>Username</th><th>Name</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr>
-    <?php if (empty($djs)): ?><tr><td colspan="5" class="empty-state">No DJs yet</td></tr>
+  <table><tr><th>DJ Port</th><th>Username</th><th>Name</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr>
+    <?php if (empty($djs)): ?><tr><td colspan="7" class="empty-state">No DJs yet</td></tr>
     <?php else: ?>
     <?php foreach ($djs as $dj): ?>
     <tr>
+      <td><code style="color:#38bdf8"><?=$dj->dj_port ? ':' . $dj->dj_port : '—'?></code></td>
       <td><?=htmlspecialchars($dj->username??'')?></td>
       <td><?=htmlspecialchars($dj->name??$dj->username??'')?></td>
       <td><?=htmlspecialchars($dj->role??'dj')?></td>
@@ -268,6 +269,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <td><?=htmlspecialchars($dj->last_login??'Never')?></td>
       <td class="actions">
         <a href="?station_id=<?=$stationId?>&tab=djs&edit_dj=<?=$dj->id?>" class="btn btn-sm btn-primary">Edit</a>
+        <?php if ($dj->dj_port): ?>
+        <a href="#" class="btn btn-sm btn-secondary" onclick="showDjInfo(<?=$dj->id?>,'<?=$dj->username?>',<?=$dj->dj_port?>);return false">Info</a>
+        <?php endif; ?>
         <a href="/user/radio/dj/toggle/<?=$dj->id?>" class="btn btn-sm btn-warning"><?=$dj->status==='active'?'Suspend':'Activate'?></a>
         <a href="/user/radio/dj/delete/<?=$dj->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a>
       </td>
@@ -275,6 +279,50 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <?php endforeach; ?>
     <?php endif; ?>
   </table></div>
+
+<div id="dj-info-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;align-items:center;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
+<div style="background:rgba(8,16,28,.95);border:1px solid rgba(56,189,248,.15);border-radius:16px;padding:28px;max-width:440px;width:92%;margin:auto">
+<div style="font-size:18px;font-weight:700;margin-bottom:16px;color:#38bdf8">🔌 DJ Connection Info</div>
+<div style="background:rgba(0,0,0,.3);border-radius:10px;padding:16px;font-family:monospace;font-size:12px;line-height:2">
+<div style="display:flex;justify-content:space-between"><span style="color:#64748b">Server:</span><span style="color:#4ade80" id="dji-server">planet-hosts.com</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:#64748b">DJ Port:</span><span style="color:#38bdf8" id="dji-port"></span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:#64748b">Password:</span><span style="color:#facc15" id="dji-pass">••••••••</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:#64748b">Protocol:</span><span style="color:#94a3b8">SHOUTcast v1</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:#64748b">Format:</span><span style="color:#94a3b8">MP3</span></div>
+</div>
+<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn btn-sm btn-primary" onclick="copyDjInfo()">📋 Copy All</button>
+<button class="btn btn-sm btn-secondary" onclick="toggleDjPass()">Show/Hide Password</button>
+<button class="btn btn-sm btn-secondary" onclick="document.getElementById('dj-info-modal').style.display='none'">Close</button>
+</div>
+</div>
+</div>
+<script>
+var _dji = {id:0,user:'',port:0,pass:''};
+function showDjInfo(id,user,port){
+  _dji = {id,user,port,pass:''};
+  document.getElementById('dji-port').textContent = port;
+  document.getElementById('dji-pass').textContent = '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
+  document.getElementById('dj-info-modal').style.display = 'flex';
+  // Fetch actual password via AJAX (server returns masked unless owner)
+  var x = new XMLHttpRequest();
+  x.open('GET','/user/radio/dj/connection-info/'+id,true);
+  x.onload = function(){try{var d=JSON.parse(x.responseText);if(d.password)_dji.pass=d.password;}catch(e){}};
+  x.send();
+}
+function copyDjInfo(){
+  var t = 'Server: planet-hosts.com\nDJ Port: '+_dji.port+'\nPassword: '+_dji.pass+'\nProtocol: SHOUTcast v1\nFormat: MP3';
+  navigator.clipboard.writeText(t);
+}
+function toggleDjPass(){
+  var el = document.getElementById('dji-pass');
+  if(el.textContent=='\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'){
+    el.textContent = _dji.pass || '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
+  } else {
+    el.textContent = '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
+  }
+}
+</script>
   
   <div class="card"><h3>Add DJ</h3>
   <form method="post" action="/user/radio/dj/create">

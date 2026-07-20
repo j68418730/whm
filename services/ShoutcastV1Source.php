@@ -113,9 +113,9 @@ class ShoutcastV1Source
         $fp = fopen($path, 'rb');
         if (!$fp) return;
         $bufSize = 65536;
-        // Calculate delay to match real-time playback speed
-        $bytesPerSec = ($this->bitrate * 1000) / 8; // bitrate in bytes per second
-        $delayPerChunk = ($bufSize / $bytesPerSec) * 1000000; // microseconds
+        // Slightly faster than real-time to maintain buffer (0.9x delay = 1.1x speed)
+        $bytesPerSec = ($this->bitrate * 1000) / 8;
+        $delayPerChunk = ($bufSize / $bytesPerSec) * 900000;
         while ($this->running && !feof($fp)) {
             $data = fread($fp, $bufSize);
             if ($data === false || $data === '') break;

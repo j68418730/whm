@@ -240,8 +240,21 @@ class RadioController extends Controller
                     'stream_id' => $realStationId, 'username' => $username,
                     'password' => password_hash($password, PASSWORD_DEFAULT),
                     'name' => $name, 'email' => $_POST['email'] ?? '',
-                    'status' => 'active',
+                    'status' => 'active', 'can_stream' => 1,
                 ]);
+
+                // Auto-assign DJ port
+                try {
+                    $pm = new \Core\PortManager();
+                    $ss = $this->db->table('streaming_stations')->where('id', $realStationId)->first();
+                    $huId = $ss ? $ss->user_id : null;
+                    $djPort = $pm->allocateDjPort($djId, $realStationId, $huId);
+                    if ($djPort) {
+                        $this->db->table('radio_djs')->where('id', $djId)->update(['dj_port' => $djPort]);
+                    }
+                } catch (\Exception $e) {
+                    // Port allocation failure is non-fatal for DJ creation
+                }
 
                 // Handle multiple station assignments
                 $stationIds = $_POST['station_ids'] ?? [];
@@ -314,6 +327,13 @@ class RadioController extends Controller
                         if ($tenant) $this->db->table('chatbox_users')->where('tenant_id', $tenant->id)->where('username', $dj->username)->delete();
                     }
                 } catch (\Exception $e) {}
+                // Release DJ port before deleting
+                if ($dj->dj_port) {
+                    try {
+                        $pm = new \Core\PortManager();
+                        $pm->releaseDjPort($dj->dj_port);
+                    } catch (\Exception $e) {}
+                }
                 $this->db->table('radio_djs')->where('id', $id)->delete();
             }
             $_SESSION['success'] = 'DJ deleted.';
@@ -941,6 +961,28 @@ class RadioController extends Controller
         $this->db->table('radio_dj_applications')->where('id', $id)->update(['status' => 'rejected']);
         $_SESSION['success'] = 'Application rejected.';
         header('Location: /user/radio?tab=applications'); exit;
+    }
+
+    public function djConnectionInfo($id)
+    {
+        if (!$this->auth->check()) { http_response_code(401); exit; }
+        $hosting = $this->getHosting();
+        if (!$hosting) { http_response_code(403); exit; }
+        $dj = $this->db->table('radio_djs')->where('id', $id)->first();
+        if (!$dj) { http_response_code(404); exit; }
+        $ss = $this->db->table('streaming_stations')->where('id', $dj->stream_id)->first();
+        if (!$ss || $ss->user_id != $hosting->id) { http_response_code(403); exit; }
+        $hostname = $_SERVER['SERVER_NAME'] ?? 'planet-hosts.com';
+        header('Content-Type: application/json');
+        echo json_encode([
+            'server' => $hostname,
+            'port' => (int)$dj->dj_port,
+            'password' => $dj->password ? 'dj-password-required' : '',
+            'protocol' => 'shoutcast_v1',
+            'format' => $dj->allowed_format ?? 'mp3',
+            'bitrate' => (int)($dj->max_bitrate ?? 128),
+        ]);
+        exit;
     }
 
     public function setup()

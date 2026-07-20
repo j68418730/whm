@@ -270,6 +270,54 @@ class PortManager
         return $errors;
     }
 
+    // ─── DJ Port Helpers ───────────────────────────────────────────
+
+    public function allocateDjPort($djId, $stationId, $customerId = null)
+    {
+        $result = $this->allocate('dj', $customerId, $stationId);
+        if (!$result) return null;
+        // Link port to DJ
+        $this->pdo->prepare("UPDATE stream_ports SET station_id=?, customer_id=? WHERE port_start=?")
+            ->execute([$stationId, $customerId, $result->port_start]);
+        $this->logAction(null, 1, 'dj', $customerId, $stationId, 'allocate', null, 'assigned', "DJ port {$result->port_start} allocated for dj_id=$djId");
+        return $result->port_start;
+    }
+
+    public function releaseDjPort($djPort)
+    {
+        $q = $this->pdo->prepare("SELECT id, port_start FROM stream_ports WHERE port_start=? AND service_type='dj' AND status='assigned'");
+        $q->execute([$djPort]);
+        $port = $q->fetch(\PDO::FETCH_OBJ);
+        if (!$port) return false;
+        return $this->release($port->id);
+    }
+
+    public function getDjPortByDjId($djId)
+    {
+        $q = $this->pdo->prepare(
+            "SELECT sp.* FROM stream_ports sp
+             JOIN radio_djs rd ON rd.dj_port = sp.port_start
+             WHERE rd.id = ? AND sp.service_type = 'dj' AND sp.status = 'assigned'
+             LIMIT 1"
+        );
+        $q->execute([$djId]);
+        return $q->fetch(\PDO::FETCH_OBJ);
+    }
+
+    public function getAllDjPorts($status = null)
+    {
+        $query = "SELECT sp.*, rd.username AS dj_username, rd.name AS dj_name, ss.name AS station_name
+                  FROM stream_ports sp
+                  LEFT JOIN radio_djs rd ON rd.dj_port = sp.port_start
+                  LEFT JOIN streaming_stations ss ON ss.id = rd.stream_id
+                  WHERE sp.service_type = 'dj'";
+        if ($status) $query .= " AND sp.status = ?";
+        $query .= " ORDER BY sp.port_start";
+        $q = $this->pdo->prepare($query);
+        $q->execute($status ? [$status] : []);
+        return $q->fetchAll(\PDO::FETCH_OBJ);
+    }
+
     // ─── Firewall ───────────────────────────────────────────────────
 
     public function addFirewallRule($port, $serviceType)

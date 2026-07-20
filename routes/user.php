@@ -165,6 +165,7 @@ $router->get('/user/apps/python/delete/{id}', 'User\Controllers\AppsController@p
 $router->post('/user/radio/dj/apply', 'User\Controllers\RadioController@djApply');
 $router->get('/user/radio/dj/approve/{id}', 'User\Controllers\RadioController@djApprove');
 $router->get('/user/radio/dj/reject/{id}', 'User\Controllers\RadioController@djReject');
+$router->get('/user/radio/dj/connection-info/{id}', 'User\Controllers\RadioController@djConnectionInfo');
 $router->get('/user/radio/dj/create', 'User\Controllers\RadioController@createDj');
 $router->post('/user/radio/dj/create', 'User\Controllers\RadioController@createDj');
 $router->post('/user/radio/dj/update/{id}', 'User\Controllers\RadioController@updateDj');
