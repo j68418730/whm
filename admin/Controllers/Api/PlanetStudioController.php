@@ -326,6 +326,7 @@ class PlanetStudioController extends Controller
                        ss.id AS stream_id, ss.engine, ss.name AS stream_name, ss.bitrate,
                        ss.status, ss.listener_count, ss.port, ss.mount_point, ss.password,
                        ss.plain_password, ss.admin_password, ss.admin_plain_password, ss.format,
+                       ss.dj_port,
                        sc.icecast_hostname, sc.icecast_port, sc.icecast_username, sc.icecast_password,
                        sc.icecast_mount, sc.icecast_protocol,
                        sc.shoutcast_v2_hostname, sc.shoutcast_v2_port,
@@ -386,6 +387,7 @@ class PlanetStudioController extends Controller
                     'codec' => $codec,
                     'bitrate' => (int)($s->bitrate ?? 128),
                 ],
+                'djPort' => (int)($s->dj_port ?? 0),
                 'genre' => 'Mixed',
                 'description' => $s->stream_name ?: '',
             ];

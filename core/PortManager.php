@@ -270,46 +270,46 @@ class PortManager
         return $errors;
     }
 
-    // ─── DJ Port Helpers ───────────────────────────────────────────
+    // ─── DJ Port Helpers (per-station, shared by all station DJs) ──
 
-    public function allocateDjPort($djId, $stationId, $customerId = null)
+    public function allocateStationDjPort($stationId, $customerId = null)
     {
+        // Check if station already has a DJ port
+        $q = $this->pdo->prepare("SELECT port_start FROM stream_ports WHERE station_id=? AND service_type='dj' AND status='assigned'");
+        $q->execute([$stationId]);
+        $existing = $q->fetchColumn();
+        if ($existing) return (int)$existing;
+
         $result = $this->allocate('dj', $customerId, $stationId);
         if (!$result) return null;
-        // Link port to DJ
         $this->pdo->prepare("UPDATE stream_ports SET station_id=?, customer_id=? WHERE port_start=?")
             ->execute([$stationId, $customerId, $result->port_start]);
-        $this->logAction(null, 1, 'dj', $customerId, $stationId, 'allocate', null, 'assigned', "DJ port {$result->port_start} allocated for dj_id=$djId");
+        $this->logAction(null, 1, 'dj', $customerId, $stationId, 'allocate', null, 'assigned', "DJ port {$result->port_start} allocated for station_id=$stationId");
         return $result->port_start;
     }
 
-    public function releaseDjPort($djPort)
+    public function releaseStationDjPort($stationId)
     {
-        $q = $this->pdo->prepare("SELECT id, port_start FROM stream_ports WHERE port_start=? AND service_type='dj' AND status='assigned'");
-        $q->execute([$djPort]);
-        $port = $q->fetch(\PDO::FETCH_OBJ);
-        if (!$port) return false;
-        return $this->release($port->id);
+        $q = $this->pdo->prepare("SELECT id FROM stream_ports WHERE station_id=? AND service_type='dj' AND status='assigned'");
+        $q->execute([$stationId]);
+        $portId = $q->fetchColumn();
+        if (!$portId) return false;
+        return $this->release($portId);
     }
 
-    public function getDjPortByDjId($djId)
+    public function getStationDjPort($stationId)
     {
-        $q = $this->pdo->prepare(
-            "SELECT sp.* FROM stream_ports sp
-             JOIN radio_djs rd ON rd.dj_port = sp.port_start
-             WHERE rd.id = ? AND sp.service_type = 'dj' AND sp.status = 'assigned'
-             LIMIT 1"
-        );
-        $q->execute([$djId]);
+        $q = $this->pdo->prepare("SELECT sp.* FROM stream_ports sp WHERE sp.station_id=? AND sp.service_type='dj' AND sp.status='assigned' LIMIT 1");
+        $q->execute([$stationId]);
         return $q->fetch(\PDO::FETCH_OBJ);
     }
 
     public function getAllDjPorts($status = null)
     {
-        $query = "SELECT sp.*, rd.username AS dj_username, rd.name AS dj_name, ss.name AS station_name
+        $query = "SELECT sp.*, ss.name AS station_name, ss.id AS station_id,
+                         (SELECT COUNT(*) FROM radio_djs rd WHERE rd.stream_id = ss.id AND rd.status='active') AS dj_count
                   FROM stream_ports sp
-                  LEFT JOIN radio_djs rd ON rd.dj_port = sp.port_start
-                  LEFT JOIN streaming_stations ss ON ss.id = rd.stream_id
+                  JOIN streaming_stations ss ON ss.id = sp.station_id
                   WHERE sp.service_type = 'dj'";
         if ($status) $query .= " AND sp.status = ?";
         $query .= " ORDER BY sp.port_start";
