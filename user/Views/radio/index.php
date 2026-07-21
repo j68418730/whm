@@ -129,6 +129,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <a href="?station_id=<?=$stationId?>&tab=backups" class="<?=$tab==='backups'?'active':''?>">Backups</a>
   <a href="/user/radio/global-music" style="color:#4ade80;font-weight:700">🌐 Global Music</a>
   <a href="/user/radio/widgets?station_id=<?=$stationId?>" style="color:#a855f7;font-weight:700">🎨 Widgets</a>
+  <?php if (!empty($djs)): foreach($djs as $dj): ?>
+  <a href="/dj?u=<?=urlencode($dj->username)?>" target="_blank" style="color:#34d399;font-weight:600">📻 <?=htmlspecialchars($dj->name?:$dj->username)?>'s Page</a>
+  <?php break; endforeach; endif; ?>
   <a href="/dj_panel.php" target="_blank" style="color:#facc15;font-weight:600">🎧 DJ Panel</a>
 </div>
 <div class="tab <?=$tab==='overview'?'active':''?>">

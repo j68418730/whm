@@ -480,6 +480,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 <div style="display:flex;align-items:center;gap:12px">
 <span style="font-size:13px;color:#94a3b8"><?php echo htmlspecialchars($_SESSION['dj_user']['name'] ?? ''); ?></span>
 <a href="/dj_panel.php?action=logout">Logout</a>
+<a href="/dj?u=<?php echo urlencode($_SESSION['dj_user']['username'] ?? ''); ?>" target="_blank" style="color:#34d399;text-decoration:none;font-size:13px">📻 My Page</a>
 <a href="/studio/index.php" target="_blank" style="color:#a855f7;text-decoration:none;font-size:13px;margin-left:12px">🎛️ Studio</a>
 </div>
 </div>
