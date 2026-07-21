@@ -63,6 +63,8 @@ if ($_POST && $action === 'login') {
     header('Location: /dj_panel.php?action=dashboard');
     exit;
 }
+    $error = 'Invalid DJ name or password, or account inactive.';
+}
 
 // ─── SAVE PROFILE DATA ───
 if ($action === 'save_profile_data' && $_POST && isset($_SESSION['dj_user'])) {
@@ -80,7 +82,6 @@ if ($action === 'save_profile_data' && $_POST && isset($_SESSION['dj_user'])) {
     $profileData = [];
     foreach ($fields as $f) { $profileData[$f] = $_POST[$f] ?? ''; }
     foreach ($simple as $f) { $profileData[$f] = isset($_POST[$f]) ? 1 : 0; }
-    // Social media
     foreach (['facebook','instagram','twitter','tiktok','youtube','twitch','discord','spotify','apple_music','soundcloud','mixcloud','beatport'] as $s) {
         $profileData[$s] = $_POST[$s] ?? '';
     }
@@ -89,8 +90,6 @@ if ($action === 'save_profile_data' && $_POST && isset($_SESSION['dj_user'])) {
     $_SESSION['dj_user']['name'] = $_POST['name'] ?: $_SESSION['dj_user']['name'];
     $success = 'Profile saved!';
     $action = 'dashboard';
-}
-    $error = 'Invalid DJ name or password, or account inactive.';
 }
 
 if ($action === 'logout') {
@@ -561,6 +560,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 
 
 
+<div class="dj-panel act" id="pn-overview">
 <div class="grid">
 <div class="stat-card" style="--c:#4ade80"><div class="num"><?php echo $djData->stream_status ?? 'N/A'; ?></div><div class="label">Stream Status</div></div>
 <div class="stat-card" style="--c:#38bdf8"><div class="num"><?php echo $djData->listener_count ?? 0; ?></div><div class="label">Current Listeners</div></div>
@@ -709,6 +709,7 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 </div>
 </div>
 
+</div>
 </div>
 </div>
 
@@ -940,7 +941,8 @@ function sw(e,id){
   document.querySelectorAll('.dj-tab').forEach(function(t){t.classList.remove('act')});
   document.querySelectorAll('.dj-panel').forEach(function(p){p.classList.remove('act')});
   e.currentTarget.classList.add('act');
-  document.getElementById('pn-'+id).classList.add('act');
+  var el=document.getElementById('pn-'+id);
+  if(el) el.classList.add('act');
   history.replaceState(null,'','?action=dashboard&tab='+id);
 }
 // Restore tab from URL
