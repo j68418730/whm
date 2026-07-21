@@ -448,4 +448,68 @@ class PlanetStudioController extends Controller
         }
         return $out;
     }
+
+    // GET /api/dj/api-config — returns the authenticated DJ's API config
+    public function djApiConfig()
+    {
+        $dj = $this->authDj();
+        if (!$dj) return $this->json(['error' => 'Unauthorized'], 401);
+
+        // Map dj_accounts to radio_djs via stream
+        $rdj = $this->db->pdo()->prepare(
+            "SELECT rd.id AS radio_dj_id, rd.stream_id, rd.username, rd.name
+             FROM radio_djs rd
+             WHERE rd.username = ? AND rd.status = 'active' LIMIT 1"
+        );
+        $rdj->execute([$dj->username]);
+        $radioDj = $rdj->fetch(\PDO::FETCH_OBJ);
+        if (!$radioDj) return $this->json(['error' => 'DJ not found'], 404);
+
+        // Get or create API config
+        $config = $this->db->table('dj_api_config')->where('dj_id', $radioDj->radio_dj_id)->first();
+        if (!$config) {
+            $this->db->table('dj_api_config')->insert([
+                'dj_id' => $radioDj->radio_dj_id,
+                'stream_id' => $radioDj->stream_id,
+                'dj_name' => $radioDj->name ?: $radioDj->username,
+                'dj_display_name' => $radioDj->name ?: $radioDj->username,
+                'api_key' => bin2hex(random_bytes(16)),
+                'request_api_url' => 'https://planet-hosts.com/connector/station/' . $radioDj->stream_id . '/requests',
+            ]);
+            $config = $this->db->table('dj_api_config')->where('dj_id', $radioDj->radio_dj_id)->first();
+        }
+
+        return $this->json(['success' => true, 'data' => $config]);
+    }
+
+    // POST /api/dj/api-config — update DJ API config
+    public function updateDjApiConfig()
+    {
+        $dj = $this->authDj();
+        if (!$dj) return $this->json(['error' => 'Unauthorized'], 401);
+
+        $rdj = $this->db->pdo()->prepare(
+            "SELECT rd.id AS radio_dj_id, rd.stream_id FROM radio_djs rd WHERE rd.username = ? AND rd.status = 'active' LIMIT 1"
+        );
+        $rdj->execute([$dj->username]);
+        $radioDj = $rdj->fetch(\PDO::FETCH_OBJ);
+        if (!$radioDj) return $this->json(['error' => 'DJ not found'], 404);
+
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $allowed = ['dj_name','dj_display_name','enable_dj_api','api_url','api_key',
+            'enable_song_requests','request_api_url','request_polling_enabled','poll_interval_seconds',
+            'show_request_notification','auto_queue_approved','send_now_playing','send_artist',
+            'send_title','send_album','send_dj_name','send_stream_name'];
+
+        $update = [];
+        foreach ($allowed as $f) {
+            if (isset($input[$f])) $update[$f] = $input[$f];
+        }
+
+        if (!empty($update)) {
+            $this->db->table('dj_api_config')->where('dj_id', $radioDj->radio_dj_id)->update($update);
+        }
+
+        return $this->json(['success' => true, 'message' => 'API config updated']);
+    }
 }

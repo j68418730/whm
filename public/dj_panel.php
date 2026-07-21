@@ -282,6 +282,34 @@ if ($action === 'remove_request' && isset($_GET['req_id']) && isset($_SESSION['d
     exit;
 }
 
+// ─── GET DJ API CONFIG (AJAX endpoint) ───
+if ($action === 'get_api_config' && isset($_SESSION['dj_user'])) {
+    header('Content-Type: application/json');
+    try {
+        $djId = $_SESSION['dj_user']['id'] ?? 0;
+        $streamId = $_SESSION['dj_user']['stream_id'] ?? 0;
+        
+        // Get or create API config
+        $config = $pdo->prepare("SELECT * FROM dj_api_config WHERE dj_id = ?");
+        $config->execute([$djId]);
+        $cfg = $config->fetch(PDO::FETCH_OBJ);
+        
+        if (!$cfg) {
+            $apiKey = bin2hex(random_bytes(16));
+            $reqUrl = "https://planet-hosts.com/connector/station/{$streamId}/requests";
+            $pdo->prepare("INSERT INTO dj_api_config (dj_id, stream_id, dj_name, dj_display_name, api_key, request_api_url) VALUES (?,?,?,?,?,?)")
+                ->execute([$djId, $streamId, $_SESSION['dj_user']['name'] ?? '', $_SESSION['dj_user']['name'] ?? '', $apiKey, $reqUrl]);
+            $config->execute([$djId]);
+            $cfg = $config->fetch(PDO::FETCH_OBJ);
+        }
+        
+        echo json_encode(['success' => true, 'data' => $cfg]);
+    } catch (\Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
 // ─── GET FRESH DJ DATA ───
 $djData = null;
 if (isset($_SESSION['dj_user'])) {
@@ -509,6 +537,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
     <div class="dj-tab" onclick="sw(event,'requests')">Requests</div>
     <div class="dj-tab" onclick="sw(event,'profile')">Profile</div>
     <div class="dj-tab" onclick="sw(event,'gallery')">Gallery</div>
+    <div class="dj-tab" onclick="sw(event,'api')">API</div>
 </div>
 
 <!-- Station tabs content -->
@@ -1021,6 +1050,51 @@ if (!empty($galleryData)): ?>
 </div>
 </div>
 
+<div class="dj-panel" id="pn-api">
+<div class="card" style="max-width:600px;margin:0 auto">
+<h3><i class="fas fa-code"></i> DJ API Configuration</h3>
+<p class="card-desc">Your personal API credentials for the Planet Hosts Studio desktop app and third-party integrations.</p>
+<div id="dj-api-config">
+<div style="text-align:center;padding:20px;color:#64748b;font-size:13px">Loading...</div>
+</div>
+</div>
+</div>
+
+<script>
+// Load DJ API config
+(function(){
+  var x=new XMLHttpRequest();
+  x.open('GET','/dj_panel.php?action=get_api_config',true);
+  x.onload=function(){
+    try{
+      var r=JSON.parse(x.responseText);
+      if(r.success&&r.data){
+        var d=r.data,html='';
+        html+='<div class="conn-box" style="margin-top:12px">';
+        html+='<div class="conn-row"><span><span class="conn-label">DJ Name:</span> <span class="conn-value">'+escapeHtml(d.dj_name||'')+'</span></span></div>';
+        html+='<div class="conn-row"><span><span class="conn-label">Display Name:</span> <span class="conn-value">'+escapeHtml(d.dj_display_name||'')+'</span></span></div>';
+        html+='<div class="conn-row"><span><span class="conn-label">API URL:</span> <span class="conn-value api" id="dj-api-url">'+(d.api_url||'')+'</span></span><button class="copy-btn" onclick="copyField(\'dj-api-url\')">Copy</button></div>';
+        html+='<div class="conn-row"><span><span class="conn-label">API Key:</span> <span class="conn-value pw" id="dj-api-key">'+(d.api_key||'')+'</span></span><button class="copy-btn" onclick="copyField(\'dj-api-key\')">Copy</button></div>';
+        html+='<div class="conn-row"><span><span class="conn-label">Requests URL:</span> <span class="conn-value api" id="dj-req-url">'+(d.request_api_url||'')+'</span></span><button class="copy-btn" onclick="copyField(\'dj-req-url\')">Copy</button></div>';
+        html+='<div class="conn-row"><span><span class="conn-label">Song Requests:</span> <span class="conn-value" style="color:'+(d.enable_song_requests?'#4ade80':'#f87171')+'">'+(d.enable_song_requests?'Enabled':'Disabled')+'</span></span></div>';
+        html+='<div class="conn-row"><span><span class="conn-label">Now Playing:</span> <span class="conn-value" style="color:'+(d.send_now_playing?'#4ade80':'#f87171')+'">'+(d.send_now_playing?'Enabled':'Disabled')+'</span></span></div>';
+        html+='</div>';
+        document.getElementById('dj-api-config').innerHTML=html;
+      } else {
+        document.getElementById('dj-api-config').innerHTML='<div style="text-align:center;padding:20px;color:#64748b;font-size:13px">Could not load API config.</div>';
+      }
+    }catch(e){
+      document.getElementById('dj-api-config').innerHTML='<div style="text-align:center;padding:20px;color:#64748b;font-size:13px">Error loading config.</div>';
+    }
+  };
+  x.onerror=function(){
+    document.getElementById('dj-api-config').innerHTML='<div style="text-align:center;padding:20px;color:#64748b;font-size:13px">Could not connect.</div>';
+  };
+  x.send();
+})();
+function escapeHtml(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+function copyField(id){var t=document.getElementById(id).textContent;navigator.clipboard.writeText(t);var b=event.target;b.textContent='Copied!';setTimeout(function(){b.textContent='Copy'},1500);}
+</script>
 <script>
 function sw(e,id){
   document.querySelectorAll('.dj-tab').forEach(function(t){t.classList.remove('act')});
