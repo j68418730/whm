@@ -69,6 +69,8 @@ body{font-family:Inter,system-ui,sans-serif;background:<?php echo $bg; ?>;color:
 <div class="status-row">
 <span class="status-dot <?php echo $online ? 'online' : 'offline'; ?>" id="statusDot"></span>
 <span class="status-text" id="statusText"><?php echo $online ? 'LIVE' : 'OFFLINE'; ?></span>
+<?php $liveDj = $stats['live_dj'] ? htmlspecialchars($stats['live_dj']) : null; ?>
+<?php if ($liveDj): ?><span style="font-size:11px;color:#4ade80;font-weight:700" id="djDisplay">🎤 <?php echo $liveDj; ?></span><?php endif; ?>
 <span style="color:<?php echo $muted; ?>;font-size:11px" id="listenerDisplay"><?php echo $listeners; ?> listeners</span>
 </div>
 <div class="cover-art" id="coverArt"><?php echo $online ? '🎵' : '🔇'; ?></div>

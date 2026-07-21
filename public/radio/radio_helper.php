@@ -53,6 +53,17 @@ function radio_ssl_stream_url(int $streamId): string
     return "https://planet-hosts.com:2083/radio/stream-proxy.php?stream={$streamId}";
 }
 
+function radio_get_live_dj(int $streamId): ?stdClass
+{
+    static $pdo = null;
+    if ($pdo === null) {
+        $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','Skylinehosting171');
+    }
+    $s = $pdo->prepare("SELECT current_dj, current_song, current_artist, current_song_started FROM streaming_stations WHERE id=? AND current_dj IS NOT NULL AND current_dj != ''");
+    $s->execute([$streamId]);
+    return $s->fetch(PDO::FETCH_OBJ) ?: null;
+}
+
 function radio_fetch_stats(stdClass $stream): array
 {
     $default = [
@@ -60,9 +71,10 @@ function radio_fetch_stats(stdClass $stream): array
         'peak' => (int)($stream->listener_count ?? 0),
         'bitrate' => (int)($stream->bitrate ?? 128),
         'song' => $stream->current_song ?? $stream->name ?? '',
-        'artist' => '',
+        'artist' => $stream->current_artist ?? '',
         'status' => $stream->status === 'running',
         'uptime' => '',
+        'live_dj' => $stream->current_dj ?? null,
     ];
     if ($stream->status !== 'running') return $default;
 
