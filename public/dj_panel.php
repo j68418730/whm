@@ -159,17 +159,30 @@ if ($action === 'add_schedule' && $_POST && isset($_SESSION['dj_user'])) {
     $sId = $_SESSION['dj_user']['stream_id'] ?? 0;
     $djId = $_SESSION['dj_user']['id'] ?? 0;
     $sn = trim($_POST['show_name'] ?? '');
-    $dw = (int)($_POST['day_of_week'] ?? 0);
+    $sd = trim($_POST['scheduled_date'] ?? '');
     $st = trim($_POST['start_time'] ?? '');
     $et = trim($_POST['end_time'] ?? '');
-    if ($sn && $st && $et && $sId) {
+    if ($sn && $sd && $st && $sId) {
         try {
-            $pdo->prepare("INSERT INTO radio_dj_schedule (stream_id, dj_id, show_name, day_of_week, start_time, end_time, is_active, created_by) VALUES (?,?,?,?,?,?,1,'dj')")
-                ->execute([$sId, $djId, $sn, $dw, $st, $et]);
-            $success = 'Show added to your schedule.';
-        } catch (\Exception $e) { $error = 'Failed to add show.'; }
+            $timeSlot = $st . '-' . $et;
+            $dw = date('w', strtotime($sd));
+            $pdo->prepare("INSERT INTO radio_dj_schedule (stream_id, dj_id, scheduled_date, time_slot, show_name, day_of_week, start_time, end_time, is_active, created_by, status) VALUES (?,?,?,?,?,?,?,?,1,'dj','booked')")
+                ->execute([$sId, $djId, $sd, $timeSlot, $sn, $dw, $st, $et]);
+            $success = 'Show booked!';
+        } catch (\Exception $e) { $error = 'Failed to book: ' . $e->getMessage(); }
     } else { $error = 'Please fill all fields.'; }
-    header('Location: /dj_panel.php?action=dashboard');
+    header('Location: /dj_panel.php?action=dashboard&tab=schedule&sched_month=' . date('n') . '&sched_year=' . date('Y'));
+    exit;
+}
+
+// ─── REMOVE SCHEDULE ───
+if ($action === 'remove_schedule' && isset($_GET['id']) && isset($_SESSION['dj_user'])) {
+    $schedId = (int)$_GET['id'];
+    try {
+        $pdo->prepare("DELETE FROM radio_dj_schedule WHERE id = ? AND stream_id = ?")->execute([$schedId, $_SESSION['dj_user']['stream_id']]);
+        $success = 'Show unbooked.';
+    } catch (\Exception $e) { $error = 'Failed to unbook.'; }
+    header('Location: /dj_panel.php?action=dashboard&tab=schedule');
     exit;
 }
 
@@ -714,46 +727,123 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 </div>
 
 <div class="dj-panel" id="pn-schedule">
-<div class="dj-grid">
-<!-- My Schedule -->
 <?php
 $sId = $_SESSION['dj_user']['stream_id'] ?? 0;
 $djId = $_SESSION['dj_user']['id'] ?? 0;
+
+// Fetch all schedule entries for this station
 $mySchedule = [];
 try {
-    $schStmt = $pdo->prepare("SELECT * FROM radio_dj_schedule WHERE stream_id = ? AND (dj_id = ? OR dj_id = 0 OR dj_id IS NULL) ORDER BY scheduled_date, time_slot");
+    $schStmt = $pdo->prepare("SELECT * FROM radio_dj_schedule WHERE stream_id = ? AND (dj_id = ? OR dj_id = 0 OR dj_id IS NULL) ORDER BY day_of_week, start_time");
     $schStmt->execute([$sId, $djId]);
     $mySchedule = $schStmt->fetchAll(PDO::FETCH_OBJ);
 } catch (\Exception $e) {}
-$days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+// Build calendar data
+$month = (int)($_GET['sched_month'] ?? date('n'));
+$year = (int)($_GET['sched_year'] ?? date('Y'));
+if ($month < 1) { $month = 1; $year--; }
+if ($month > 12) { $month = 12; $year++; }
+$firstDay = mktime(0,0,0,$month,1,$year);
+$daysInMonth = date('t', $firstDay);
+$startWeekday = date('w', $firstDay);
+$prevMonth = $month - 1; $prevYear = $year;
+if ($prevMonth < 1) { $prevMonth = 12; $prevYear--; }
+$nextMonth = $month + 1; $nextYear = $year;
+if ($nextMonth > 12) { $nextMonth = 1; $nextYear++; }
+$dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+$fullDayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 ?>
-<div class="card">
-<h3><i class="fas fa-calendar-alt"></i> My Schedule</h3>
-<form method="POST" action="/dj_panel.php?action=add_schedule" class="sch-form">
-<input name="show_name" placeholder="Show name" required style="flex:1;min-width:100px">
-<select name="day_of_week">
-<?php foreach($days as $i=>$d): ?><option value="<?=$i?>"><?=$d?></option><?php endforeach; ?>
-</select>
-<input name="start_time" type="time" required>
-<input name="end_time" type="time" required>
-<button class="btn btn-primary btn-sm">Add Show</button>
-</form>
-<?php if (empty($mySchedule)): ?>
-<p class="empty-text">No shows scheduled yet.</p>
-<?php else: ?>
-<table class="sch-table">
-<tr><th>Show</th><th>Day</th><th>Time</th></tr>
-<?php foreach ($mySchedule as $sh): ?>
-<tr>
-<td><?php echo htmlspecialchars($sh->show_name ?? 'Untitled'); ?></td>
-<td><?php echo $days[$sh->day_of_week] ?? $sh->day_of_week; ?></td>
-<td><?php echo htmlspecialchars($sh->start_time ?? '') . ' - ' . htmlspecialchars($sh->end_time ?? ''); ?></td>
-</tr>
+<div style="max-width:700px;margin:0 auto">
+<div class="card" style="text-align:center">
+<h3><i class="fas fa-calendar-alt"></i> My Schedule — <?php echo date('F Y', $firstDay); ?></h3>
+<div style="display:flex;justify-content:center;gap:8px;margin-bottom:16px">
+<a href="?action=dashboard&tab=schedule&sched_month=<?=$prevMonth?>&sched_year=<?=$prevYear?>" class="btn btn-sm btn-secondary">◀ Prev</a>
+<a href="?action=dashboard&tab=schedule&sched_month=<?=$nextMonth?>&sched_year=<?=$nextYear?>" class="btn btn-sm btn-secondary">Next ▶</a>
+</div>
+<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;max-width:500px;margin:0 auto">
+<?php foreach ($dayNames as $dn): ?>
+<div style="text-align:center;font-size:11px;color:#64748b;font-weight:600;padding:4px 0"><?=$dn?></div>
 <?php endforeach; ?>
-</table>
+<?php for ($i=0; $i<$startWeekday; $i++): ?>
+<div></div>
+<?php endfor; ?>
+<?php for ($d=1; $d<=$daysInMonth; $d++): 
+    $ts = mktime(0,0,0,$month,$d,$year);
+    $dateStr = sprintf('%04d-%02d-%02d', $year, $month, $d);
+    $daySched = array_filter($mySchedule, function($s) use ($dateStr) { return ($s->scheduled_date ?? '') === $dateStr; });
+    $isBooked = !empty($daySched);
+    $isToday = (date('Y-m-d') === $dateStr);
+?>
+<div style="text-align:center;padding:6px 2px;border-radius:8px;background:<?=$isBooked?'rgba(74,222,128,.15)':($isToday?'rgba(56,189,248,.1)':'rgba(0,0,0,.15)')?>;border:1px solid <?=$isToday?'rgba(56,189,248,.3)':'transparent'?>;cursor:pointer;font-size:12px;position:relative" onclick="toggleDate(this,'<?=$dateStr?>')" title="<?=$isBooked?'Click to unbook':'Click to book'?>">
+<div style="font-weight:<?=$isToday?'700':'400'?>;color:<?=$isBooked?'#4ade80':($isToday?'#38bdf8':'#94a3b8')?>"><?=$d?></div>
+<?php if ($isBooked): $firstSched = reset($daySched); ?>
+<div style="font-size:8px;color:#4ade80;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?=htmlspecialchars($firstSched->show_name??'Booked')?></div>
+<?php endif; ?>
+</div>
+<?php endfor; ?>
+</div>
+
+<!-- Show details for selected date -->
+<div id="sched-detail" style="display:none;margin-top:16px;padding:16px;background:rgba(0,0,0,.2);border-radius:10px;text-align:center"></div>
+
+<!-- Add schedule form (hidden, shown on date click) -->
+<div id="sched-form" style="display:none;margin-top:12px;padding:16px;background:rgba(15,23,42,.5);border:1px solid rgba(56,189,248,.1);border-radius:12px;max-width:400px;margin-left:auto;margin-right:auto">
+<h4 style="margin-bottom:10px;color:#38bdf8">📅 Book Show</h4>
+<form method="POST" action="/dj_panel.php?action=add_schedule" onsubmit="document.getElementById('sched_date_input').value=document.getElementById('sched-form').dataset.date">
+<input type="hidden" name="scheduled_date" id="sched_date_input">
+<div class="form-group"><label>Show Name</label><input name="show_name" id="sched_name" required placeholder="My Show"></div>
+<div style="display:flex;gap:8px">
+<div class="form-group" style="flex:1"><label>Start</label><input name="start_time" id="sched_start" type="time" required></div>
+<div class="form-group" style="flex:1"><label>End</label><input name="end_time" id="sched_end" type="time" required></div>
+</div>
+<button type="submit" class="btn btn-primary btn-sm" style="width:100%">Book Show</button>
+</form>
+</div>
+
+<?php if (!empty($mySchedule)): ?>
+<div style="margin-top:20px;text-align:center">
+<h4 style="font-size:13px;color:#94a3b8;margin-bottom:8px">All Shows</h4>
+<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
+<?php 
+$shown = [];
+foreach ($mySchedule as $sh): 
+    $key = $sh->scheduled_date . '_' . $sh->time_slot;
+    if (in_array($key, $shown)) continue;
+    $shown[] = $key;
+?>
+<div style="background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.12);border-radius:8px;padding:8px 12px;font-size:11px;text-align:center">
+<div style="font-weight:600;color:#e0e0e0;font-size:12px"><?=htmlspecialchars($sh->show_name??'Show')?></div>
+<div style="color:#64748b;font-size:10px"><?=htmlspecialchars($sh->scheduled_date)?> · <?=htmlspecialchars($sh->time_slot)?></div>
+<a href="/dj_panel.php?action=remove_schedule&id=<?=$sh->id?>" style="color:#f87171;font-size:10px;text-decoration:none" onclick="return confirm('Unbook this show?')">✕ Unbook</a>
+</div>
+<?php endforeach; ?>
+</div></div>
 <?php endif; ?>
 </div>
 </div>
+
+<script>
+function toggleDate(el,date){
+  var detail=document.getElementById('sched-detail'),form=document.getElementById('sched-form');
+  var alreadyBooked=el.querySelector('div[style*="color:#4ade80"]');
+  if(alreadyBooked){
+    detail.style.display='block';
+    detail.innerHTML='<div style="color:#4ade80;font-size:13px;font-weight:600">✅ Booked</div><div style="color:#64748b;font-size:11px;margin-top:4px">'+date+'</div><a href="#" style="color:#f87171;font-size:12px;text-decoration:none;margin-top:8px;display:inline-block" onclick="document.getElementById(\'sched-form\').style.display=\'block\';document.getElementById(\'sched-form\').dataset.date=date;document.getElementById(\'sched_name\').value=\'\';document.getElementById(\'sched_start\').value=\'\';document.getElementById(\'sched_end\').value=\'\';return false">✕ Remove or Rebook</a>';
+    form.style.display='none';
+  } else {
+    form.style.display='block';
+    form.dataset.date=date;
+    document.getElementById('sched_date_input').value=date;
+    document.getElementById('sched_name').value='';
+    document.getElementById('sched_start').value='';
+    document.getElementById('sched_end').value='';
+    detail.style.display='none';
+  }
+}
+// Preselect today's date on load
+(function(){var d=new Date();var ds=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);document.getElementById('sched-form').dataset.date=ds;document.getElementById('sched_date_input').value=ds;})();
+</script>
 </div>
 
 <div class="dj-panel" id="pn-requests">
