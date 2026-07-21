@@ -21,6 +21,17 @@ ksort($grouped);
 <div class="stat-card"><h3>Clients</h3><div class="value"><?php echo count($grouped); ?></div></div>
 </div>
 
+<div class="card" style="margin-bottom:16px;padding:12px 18px">
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+<span style="font-weight:600;font-size:13px;color:var(--text,#e0e0e0);margin-right:8px">Bulk Actions:</span>
+<a href="/admin/streams/start-all" class="btn btn-sm btn-success" onclick="return confirm('Start ALL stations?')">▶ Start All</a>
+<a href="/admin/streams/stop-all" class="btn btn-sm btn-danger" onclick="return confirm('Stop ALL stations?')">⏹ Stop All</a>
+<a href="/admin/streams/restart-all" class="btn btn-sm btn-warning" onclick="return confirm('Restart ALL running stations?')">🔄 Restart All</a>
+<a href="/admin/streams/start-all-autodj" class="btn btn-sm btn-success" onclick="return confirm('Start AutoDJ on ALL stations?')">▶ AutoDJ Start All</a>
+<a href="/admin/streams/stop-all-autodj" class="btn btn-sm btn-danger" onclick="return confirm('Stop AutoDJ on ALL stations?')">⏹ AutoDJ Stop All</a>
+</div>
+</div>
+
 <?php if (!empty($streams)): foreach ($grouped as $client => $clientStreams): ?>
 <div class="card" style="margin-bottom:14px;padding:14px 18px">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
