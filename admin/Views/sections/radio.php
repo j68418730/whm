@@ -19,5 +19,6 @@
 <a href="/admin/radio/widgets" class="section-card"><div class="icon">🪟</div><div class="name">Radio Widgets</div><div class="desc">Embeddable radio widgets</div></a>
 <a href="/admin/streaming" class="section-card"><div class="icon">🔀</div><div class="name">Streaming Engine</div><div class="desc">SHOUTcast/Icecast multi-engine</div></a>
 <a href="/admin/radio/global-playlists" class="section-card"><div class="icon">🌐</div><div class="name">Global Playlists</div><div class="desc">Shared music library for all stations</div></a>
+<a href="/admin/radio/downloads" class="section-card"><div class="icon">📥</div><div class="name">Radio Downloads</div><div class="desc">Upload files for DJs</div></a>
 <a href="/admin/radiosettings" class="section-card"><div class="icon">⚙️</div><div class="name">Radio Settings</div><div class="desc">Radio configuration</div></a>
 </div>

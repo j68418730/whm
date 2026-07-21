@@ -684,6 +684,8 @@ $router->post('/api/dj/logout', 'Admin\Controllers\Api\DjController@logout');
 $router->get('/api/dj/stations', 'Admin\Controllers\Api\DjController@stations');
 $router->get('/api/dj/stream-config/{stationId}', 'Admin\Controllers\Api\DjController@streamConfig');
 $router->post('/api/dj/validate', 'Admin\Controllers\Api\DjController@validate');
+$router->get('/api/dj/api-config', 'Admin\Controllers\Api\PlanetStudioController@djApiConfig');
+$router->post('/api/dj/api-config', 'Admin\Controllers\Api\PlanetStudioController@updateDjApiConfig');
 
 // DJ Stream Config Routes
 $router->get('/admin/dj/stream-config/{id}/{stationId}', 'Admin\Controllers\DjController@streamConfig');

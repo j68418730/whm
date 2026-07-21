@@ -1,0 +1,27 @@
+CREATE TABLE IF NOT EXISTS dj_api_config (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    dj_id INT NOT NULL UNIQUE,
+    stream_id INT NOT NULL,
+    dj_name VARCHAR(255) DEFAULT '',
+    dj_display_name VARCHAR(255) DEFAULT '',
+    enable_dj_api TINYINT(1) DEFAULT 0,
+    api_url VARCHAR(500) DEFAULT '',
+    api_key VARCHAR(255) DEFAULT '',
+    enable_song_requests TINYINT(1) DEFAULT 0,
+    request_api_url VARCHAR(500) DEFAULT '',
+    request_polling_enabled TINYINT(1) DEFAULT 1,
+    poll_interval_seconds INT DEFAULT 15,
+    show_request_notification TINYINT(1) DEFAULT 1,
+    auto_queue_approved TINYINT(1) DEFAULT 1,
+    send_now_playing TINYINT(1) DEFAULT 1,
+    send_artist TINYINT(1) DEFAULT 1,
+    send_title TINYINT(1) DEFAULT 1,
+    send_album TINYINT(1) DEFAULT 0,
+    send_dj_name TINYINT(1) DEFAULT 1,
+    send_stream_name TINYINT(1) DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (dj_id) REFERENCES radio_djs(id) ON DELETE CASCADE,
+    INDEX (stream_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+SELECT 'DJ_API_CONFIG_OK' AS result;
