@@ -240,6 +240,35 @@ class PlanetStudioController extends Controller
         return $this->json(['requests' => $requests]);
     }
 
+    // POST /api/requests/action — approve or reject a request
+    public function requestAction()
+    {
+        $dj = $this->authDj();
+        if (!$dj) return $this->json(['error' => 'Unauthorized'], 401);
+
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $reqId = (int)($input['request_id'] ?? $this->request->post('request_id', 0));
+        $action = $input['action'] ?? $this->request->post('action', '');
+        $stationId = (int)($input['stationId'] ?? $this->request->post('stationId', 0));
+
+        if (!$reqId || !$action || !$stationId) {
+            return $this->json(['error' => 'request_id, action, and stationId required'], 400);
+        }
+
+        $req = $this->db->table('radio_requests')->where('id', $reqId)->where('stream_id', $stationId)->first();
+        if (!$req) return $this->json(['error' => 'Request not found'], 404);
+
+        if ($action === 'approve') {
+            $this->db->table('radio_requests')->where('id', $reqId)->update(['status' => 'played']);
+            return $this->json(['success' => true, 'message' => 'Request approved']);
+        } elseif ($action === 'reject' || $action === 'deny') {
+            $this->db->table('radio_requests')->where('id', $reqId)->update(['status' => 'removed']);
+            return $this->json(['success' => true, 'message' => 'Request rejected']);
+        }
+
+        return $this->json(['error' => 'Invalid action. Use "approve" or "reject".'], 400);
+    }
+
     // GET /api/tracks/{trackId}?stationId=
     public function downloadTrack($trackId)
     {

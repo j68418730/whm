@@ -399,6 +399,8 @@ $router->get('/api/djs', 'Admin\Controllers\Api\PlanetStudioController@djs');
 $router->get('/api/statistics', 'Admin\Controllers\Api\PlanetStudioController@statistics');
 $router->get('/api/playlists', 'Admin\Controllers\Api\PlanetStudioController@playlists');
 $router->get('/api/requests', 'Admin\Controllers\Api\PlanetStudioController@requests');
+$router->post('/api/requests/action', 'Admin\Controllers\Api\PlanetStudioController@requestAction');
+$router->get('/dj', 'User\Controllers\RadioController@publicDjPage');
 $router->get('/api/tracks/{trackId}', 'Admin\Controllers\Api\PlanetStudioController@downloadTrack');
 $router->post('/api/stations/{stationId}/upload', 'Admin\Controllers\Api\PlanetStudioController@uploadTrack');
 
