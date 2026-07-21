@@ -63,6 +63,73 @@ class RadioDashboardController extends Controller
         ]);
     }
 
+    public function downloads()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','Skylinehosting171');
+        $downloads = $pdo->query("SELECT rd.*, ss.name AS station_name FROM radio_downloads rd LEFT JOIN streaming_stations ss ON ss.id=rd.station_id ORDER BY rd.created_at DESC")->fetchAll(\PDO::FETCH_OBJ);
+        return $this->view('admin.radio_dashboard.downloads', [
+            'user' => $user, 'downloads' => $downloads,
+            'theme_settings' => json_decode($user->theme_settings ?? '{}', true)
+        ]);
+    }
+
+    public function uploadDownload()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','Skylinehosting171');
+        
+        if ($_POST && isset($_FILES['file'])) {
+            $name = trim($_POST['name'] ?? pathinfo($_FILES['file']['name'], PATHINFO_FILENAME));
+            $desc = trim($_POST['description'] ?? '');
+            $stationId = !empty($_POST['station_id']) ? (int)$_POST['station_id'] : null;
+            $ext = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
+            $allowed = ['mp3','aac','ogg','flac','wav','m4a','zip','pdf','jpg','png','gif','txt','csv','pdf','doc','docx','xls','xlsx'];
+            if (!in_array($ext, $allowed)) { $_SESSION['error'] = 'Invalid file type.'; $this->response->redirect('/admin/radio/downloads'); exit; }
+            
+            $dir = '/var/www/radiohosting/storage/radio_downloads';
+            if (!is_dir($dir)) @mkdir($dir, 0755, true);
+            $filename = bin2hex(random_bytes(8)) . '.' . $ext;
+            $dest = $dir . '/' . $filename;
+            
+            if (move_uploaded_file($_FILES['file']['tmp_name'], $dest)) {
+                $pdo->prepare("INSERT INTO radio_downloads (station_id, name, description, file_path, file_size, uploaded_by) VALUES (?,?,?,?,?,?)")
+                    ->execute([$stationId, $name, $desc, $dest, filesize($dest), $user->id ?? 0]);
+                $_SESSION['success'] = 'File uploaded.';
+            } else {
+                $_SESSION['error'] = 'Upload failed.';
+            }
+        }
+        $this->response->redirect('/admin/radio/downloads');
+    }
+
+    public function deleteDownload($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','Skylinehosting171');
+        $dl = $pdo->prepare("SELECT * FROM radio_downloads WHERE id=?")->execute([$id]);
+        // Use a direct delete
+        $pdo->prepare("DELETE FROM radio_downloads WHERE id=?")->execute([$id]);
+        $_SESSION['success'] = 'Download deleted.';
+        $this->response->redirect('/admin/radio/downloads');
+    }
+
+    public function serveDownload($id)
+    {
+        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','Skylinehosting171');
+        $dl = $pdo->prepare("SELECT * FROM radio_downloads WHERE id=?");
+        $dl->execute([$id]);
+        $d = $dl->fetch(\PDO::FETCH_OBJ);
+        if (!$d || !file_exists($d->file_path)) { http_response_code(404); exit; }
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="' . basename($d->file_path) . '"');
+        header('Content-Length: ' . filesize($d->file_path));
+        readfile($d->file_path);
+        exit;
+    }
+
     public function widgets()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) {

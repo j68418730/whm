@@ -282,30 +282,6 @@ if ($action === 'remove_request' && isset($_GET['req_id']) && isset($_SESSION['d
     exit;
 }
 
-// ─── DOWNLOAD SAM PLAYLIST ───
-if ($action === 'download_playlist' && isset($_SESSION['dj_user'])) {
-    $sid = $_SESSION['dj_user']['stream_id'];
-    $pl = $pdo->prepare("SELECT pi.* FROM radio_playlist_items pi JOIN radio_playlists p ON pi.playlist_id = p.id WHERE p.stream_id = ? ORDER BY pi.id");
-    $pl->execute([$sid]);
-    $tracks = $pl->fetchAll(PDO::FETCH_OBJ);
-    $dj = $_SESSION['dj_user'];
-    
-    // SAM Broadcaster .lst format
-    $content = "; SAM Broadcaster Playlist\n";
-    $content .= "; Generated for: {$dj['name']}\n";
-    $content .= "; Stream: {$dj['stream_name']}\n";
-    $content .= "; Date: " . date('Y-m-d H:i') . "\n";
-    $content .= "; Total tracks: " . count($tracks) . "\n\n";
-    foreach ($tracks as $t) {
-        $content .= $t->file_path . "\n";
-    }
-    
-    header('Content-Type: application/octet-stream');
-    header('Content-Disposition: attachment; filename="playlist_' . $dj['username'] . '_' . date('Ymd') . '.lst"');
-    echo $content;
-    exit;
-}
-
 // ─── GET FRESH DJ DATA ───
 $djData = null;
 if (isset($_SESSION['dj_user'])) {
@@ -871,9 +847,28 @@ $requests = $reqs->fetchAll(PDO::FETCH_OBJ);
 <?php endif; ?>
 </div>
 <div class="card">
-<h3><i class="fas fa-tools"></i> DJ Tools</h3>
-<a href="/dj_panel.php?action=download_playlist" class="btn btn-primary btn-sm" style="margin-bottom:8px">📥 Download SAM Playlist (.lst)</a>
-<p class="upload-hint">Downloads a SAM Broadcaster compatible playlist file.</p>
+<h3><i class="fas fa-download"></i> Downloads</h3>
+<?php
+try {
+    $sid = $_SESSION['dj_user']['stream_id'] ?? 0;
+    $dlStmt = $pdo->prepare("SELECT * FROM radio_downloads WHERE station_id IS NULL OR station_id = ? ORDER BY created_at DESC");
+    $dlStmt->execute([$sid]);
+    $dls = $dlStmt->fetchAll(PDO::FETCH_OBJ);
+    if (!empty($dls)): ?>
+<div style="display:flex;flex-direction:column;gap:6px">
+<?php foreach ($dls as $d): ?>
+<a href="/admin/radio/downloads/serve/<?=$d->id?>" class="btn btn-sm btn-primary" style="text-align:left;justify-content:flex-start;margin:0" target="_blank">
+📥 <?=htmlspecialchars($d->name)?>
+<?php if ($d->description): ?><span style="font-weight:400;font-size:10px;color:#94a3b8;margin-left:6px">— <?=htmlspecialchars($d->description)?></span><?php endif; ?>
+</a>
+<?php endforeach; ?>
+</div>
+<?php else: ?>
+<p class="empty-text">No downloads available.</p>
+<?php endif;
+} catch (\Exception $e) { ?>
+<p class="empty-text">No downloads available.</p>
+<?php } ?>
 </div>
 </div>
 </div>
