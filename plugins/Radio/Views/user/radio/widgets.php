@@ -192,7 +192,7 @@ function sw(e,id){
 }
 function gw(type){
   var el=document.getElementById('c-'+type),s=BASE_URL,x=sid(),f=fmt(),sn=sname(),u=sUrl();
-  var ifr=function(url,w,h){return f==='iframe'?'<iframe src="'+url+'" width="'+w+'" height="'+h+'" frameborder="0" style="border-radius:10px;max-width:100%"></iframe>':url};
+  var ifr=function(url,w,h){return f==='iframe'?'<iframe src="'+url+'" width="'+w+'" height="'+h+'" frameborder="0" style="border-radius:10px;max-width:100%"></iframe>':'<div class="ph-embed" data-src="'+url+'" style="min-height:'+h+'px"><script src="'+url+'"><\/script><\/div>'};
   // Find or create preview container in the parent card
   var pv = document.getElementById('pv-'+type);
   if (!pv) {
@@ -204,7 +204,7 @@ function gw(type){
   }
   var codes = {
     'p-full':'<div id="ph-player" data-stream="'+x+'"><script src="'+s+'/radio/widgets/player.php?stream='+x+'"><\/script><\/div>',
-    'p-mini':'<div style="background:rgba(8,16,28,.9);border-radius:10px;padding:10px;text-align:center;max-width:200px"><div style="font-size:11px;color:#94a3b8">Now Playing</div><audio src="'+u+'" preload="none" controls style="width:100%;height:30px"></audio></div>',
+    'p-mini':'<div style="background:rgba(8,16,28,.9);border-radius:10px;padding:10px;text-align:center;max-width:200px"><div style="font-size:11px;color:#94a3b8">Now Playing</div><audio src="'+u+'" preload="auto" controls style="width:100%;height:30px"></audio></div>',
     'p-float':'<div id="ph-float" style="position:fixed;bottom:20px;right:20px;z-index:9999;width:320px;border-radius:10px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.3)"><script src="'+s+'/radio/widgets/player.php?stream='+x+'"><\/script><\/div>',
     'p-popup':'<a href="'+s+'/radio/embed.php?stream='+x+'" target="_blank" onclick="window.open(\''+s+'/radio/embed.php?stream='+x+'\',\'radio\',\'width=380,height=250\');return false" style="padding:10px 20px;background:#008cff;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">Open Player</a>',
     'p-side':'<div style="max-width:240px"><script src="'+s+'/radio/widgets/player.php?stream='+x+'"><\/script><\/div>',
@@ -222,24 +222,24 @@ function gw(type){
     'history-10':ifr(s+'/radio/widgets/songhistory.php?stream='+x+'&limit=10',320,300),
     'history-25':ifr(s+'/radio/widgets/songhistory.php?stream='+x+'&limit=25',320,400),
     'history-50':ifr(s+'/radio/widgets/songhistory.php?stream='+x+'&limit=50',320,500),
-    'dj-live':'<div id="ph-dj-live-'+x+'"><script src="'+s+'/radio/djs.php?stream='+x+'"><\/script><\/div>',
-    'dj-schedule':'<iframe src="'+s+'/radio/schedule.php?stream='+x+'" width="100%" height="500" frameborder="0" style="border-radius:10px"></iframe>',
-    'dj-social':'<div id="ph-dj-social-'+x+'">Social links widget</div>',
+    'dj-live':'<script src="'+s+'/radio/widgets/djs.php?stream='+x+'"><\/script>',
+    'dj-schedule':'<iframe src="'+s+'/radio/widgets/schedule.php?stream='+x+'" width="100%" height="300" frameborder="0" style="border-radius:10px"></iframe>',
+    'dj-social':'<div style="text-align:center;font-family:Inter,sans-serif;padding:10px;color:#94a3b8;font-size:12px">Configure social links in station settings</div>',
     'list-current':'<div id="ph-listeners-'+x+'"><script src="'+s+'/radio/widgets/listeners.php?stream='+x+'"><\/script><\/div>',
     'list-peak':'<div id="ph-stats-'+x+'"><script src="'+s+'/radio/widgets/stats.php?stream='+x+'"><\/script><\/div>',
     'list-daily':'<div id="ph-stats-'+x+'"><script src="'+s+'/radio/widgets/stats.php?stream='+x+'"><\/script><\/div>',
-    'req-form':'<div id="ph-request-'+x+'"><script src="'+s+'/radio/request.php?stream='+x+'"><\/script><\/div>',
-    'social':'<div id="ph-social-'+x+'"><script src="'+s+'/radio/widgets/social.php?stream='+x+'"><\/script><\/div>',
-    'share':'<div style="display:flex;gap:8px"><a href="https://facebook.com/sharer.php?u='+encodeURIComponent(s+'/radio/embed.php?stream='+x)+'" target="_blank" style="text-decoration:none">📘</a><a href="https://twitter.com/intent/tweet?url='+encodeURIComponent(s+'/radio/embed.php?stream='+x)+'" target="_blank" style="text-decoration:none">🐦</a></div>',
-    'donate':'<form action="https://www.paypal.com/donate" method="post" target="_blank"><input type="hidden" name="business" value=""><button type="submit" style="padding:10px 20px;background:#ffc439;color:#000;border:none;border-radius:6px;font-weight:600;cursor:pointer">Donate</button></form>',
-    'podcast':'<div id="ph-podcast-'+x+'">Add your RSS feed URL</div>',
-    'events':'<div id="ph-events-'+x+'">Event calendar widget</div>',
-    'weather':'<div id="ph-weather-'+x+'">Weather widget placeholder</div>',
-    'contact':'<form style="max-width:300px"><div style="margin-bottom:8px"><input placeholder="Name" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0"></div><div style="margin-bottom:8px"><input placeholder="Email" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0"></div><div style="margin-bottom:8px"><textarea placeholder="Message" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;min-height:60px"></textarea></div><button style="padding:8px 16px;background:#008cff;color:#fff;border:none;border-radius:6px;cursor:pointer">Send</button></form>',
-    'qr':'<div id="ph-qr-'+x+'"><script src="'+s+'/radio/qr.php?stream='+x+'"><\/script><\/div>',
-    'embed-gen':'<div style="padding:10px;background:rgba(0,0,0,.3);border-radius:8px"><label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:4px">Page URL</label><input id="embed-url" value="'+s+'/radio/embed.php?stream='+x+'" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px"><div style="margin-top:6px"><button class="btn-s btn-p" onclick="navigator.clipboard.writeText(document.getElementById(\'embed-url\').value)">Copy URL</button></div></div>',
-    'public-djs':'<div id="ph-public-djs-'+x+'"><script src="'+s+'/radio/public_djs.php?stream='+x+'"><\/script><\/div>',
-    'schedule-view':ifr(s+'/radio/schedule.php?stream='+x,320,400),
+    'req-form':'<script src="'+s+'/radio/widgets/request.php?stream='+x+'"><\/script>',
+    'social':'<script src="'+s+'/radio/widgets/social.php?stream='+x+'"><\/script>',
+    'share':'<div style="display:flex;gap:8px;font-family:Inter,sans-serif"><a href="https://facebook.com/sharer.php?u='+encodeURIComponent(s+'/radio/embed.php?stream='+x)+'" target="_blank" style="text-decoration:none;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:16px">📘</a><a href="https://twitter.com/intent/tweet?url='+encodeURIComponent(s+'/radio/embed.php?stream='+x)+'" target="_blank" style="text-decoration:none;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:16px">🐦</a></div>',
+    'donate':'<form action="https://www.paypal.com/donate" method="post" target="_blank" style="text-align:center;font-family:Inter,sans-serif"><input type="hidden" name="business" value=""><button type="submit" style="padding:10px 20px;background:#ffc439;color:#000;border:none;border-radius:6px;font-weight:600;cursor:pointer">❤️ Donate</button></form>',
+    'podcast':'<div style="text-align:center;font-family:Inter,sans-serif;padding:10px;color:#64748b;font-size:12px">Add your RSS feed URL in station settings</div>',
+    'events':'<div style="text-align:center;font-family:Inter,sans-serif;padding:10px;color:#64748b;font-size:12px">Configure events in station settings</div>',
+    'weather':'<div style="text-align:center;font-family:Inter,sans-serif;padding:10px;color:#64748b;font-size:12px">Weather widget coming soon</div>',
+    'contact':'<form style="max-width:300px;font-family:Inter,sans-serif"><div style="margin-bottom:6px"><input placeholder="Name" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px;box-sizing:border-box"></div><div style="margin-bottom:6px"><input placeholder="Email" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px;box-sizing:border-box"></div><div style="margin-bottom:6px"><textarea placeholder="Message" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px;min-height:60px;box-sizing:border-box"></textarea></div><button style="padding:8px 16px;background:#008cff;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px">Send</button></form>',
+    'qr':'<script src="'+s+'/radio/widgets/qr.php?stream='+x+'"><\/script>',
+    'embed-gen':'<div style="padding:10px;background:rgba(0,0,0,.3);border-radius:8px;font-family:Inter,sans-serif"><label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:4px">Page URL</label><input id="embed-url" value="'+s+'/radio/embed.php?stream='+x+'" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:11px;box-sizing:border-box"><div style="margin-top:6px"><button class="btn-s btn-p" onclick="navigator.clipboard.writeText(document.getElementById(\'embed-url\').value)">Copy URL</button></div></div>',
+    'public-djs':'<script src="'+s+'/radio/widgets/public_djs.php?stream='+x+'"><\/script>',
+    'schedule-view':ifr(s+'/radio/widgets/schedule.php?stream='+x,320,400),
     'listen-live':'<a href="'+s+'/radio/embed.php?stream='+x+'" target="_blank" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#008cff,#0066cc);color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px">Listen Live</a>',
     'dj-login':'<div style="padding:12px;background:rgba(250,204,21,.06);border:1px solid rgba(250,204,21,.15);border-radius:8px;text-align:center"><div style="font-size:13px;font-weight:600;color:#e0e0e0;margin-bottom:4px">DJ Panel Login</div><div style="font-size:11px;color:#94a3b8;margin-bottom:8px">Give this link to your DJs:</div><input id="dj-login-url" value="https://planet-hosts.com/dj_panel.php" readonly style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#4ade80;font-size:11px;text-align:center;font-family:monospace;margin-bottom:6px"><button class="btn-s btn-p" onclick="navigator.clipboard.writeText(document.getElementById(\'dj-login-url\').value)">Copy Link</button></div>',
     'apply':'<div id="ph-apply-'+x+'">DJ application form - create at /user/radio</div>',
