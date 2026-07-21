@@ -33,14 +33,16 @@ $stmt = $pdo->prepare("SELECT id, user_type, permissions FROM api_keys WHERE key
 // ─── PUBLIC REQUEST SUBMISSION (no API key needed) ───
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && preg_match('#^/connector/station/(\d+)/requests$#', $uriPath, $m)) {
     $stationId = (int)$m[1];
-    $input = json_decode(file_get_contents('php://input'), true) ?: [];
-    if (!empty($input['title'])) {
+    $raw = file_get_contents('php://input');
+    $input = json_decode($raw, true) ?: [];
+    if (!empty($input['title']) || !empty($input['songTitle'])) {
+        $title = $input['songTitle'] ?? $input['title'];
         $ins = $pdo->prepare("INSERT INTO radio_requests (stream_id, guest_name, artist, title, message, status) VALUES (?, ?, ?, ?, ?, 'pending')");
-        $ins->execute([$stationId, $input['guest_name'] ?? '', $input['artist'] ?? '', $input['title'], $input['message'] ?? '']);
+        $ins->execute([$stationId, $input['guest_name'] ?? '', $input['artist'] ?? '', $title, $input['message'] ?? '']);
         echo json_encode(['success' => true, 'message' => 'Request submitted']);
         exit;
     }
-    echo json_encode(['success' => false, 'error' => 'Title required']);
+    echo json_encode(['success' => false, 'error' => 'Title required', 'debug_raw' => bin2hex($raw), 'debug_uri' => $uriPath]);
     exit;
 }
 
