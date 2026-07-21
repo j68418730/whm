@@ -33,8 +33,7 @@ $stmt = $pdo->prepare("SELECT id, user_type, permissions FROM api_keys WHERE key
 // ─── PUBLIC REQUEST SUBMISSION (no API key needed) ───
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && preg_match('#^/connector/station/(\d+)/requests$#', $uriPath, $m)) {
     $stationId = (int)$m[1];
-    $raw = file_get_contents('php://input');
-    $input = json_decode($raw, true) ?: [];
+    $input = json_decode(file_get_contents('php://input'), true) ?: [];
     if (!empty($input['title']) || !empty($input['songTitle'])) {
         $title = $input['songTitle'] ?? $input['title'];
         $ins = $pdo->prepare("INSERT INTO radio_requests (stream_id, guest_name, artist, title, message, status) VALUES (?, ?, ?, ?, ?, 'pending')");
@@ -42,7 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && preg_match('#^/connector/station/(\
         echo json_encode(['success' => true, 'message' => 'Request submitted']);
         exit;
     }
-    echo json_encode(['success' => false, 'error' => 'Title required', 'debug_raw' => bin2hex($raw), 'debug_uri' => $uriPath]);
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'Title required']);
     exit;
 }
 
