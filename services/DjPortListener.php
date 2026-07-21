@@ -82,7 +82,7 @@ class DjPortListener
         $q = $this->pdo->query(
             "SELECT ss.id AS station_id, ss.name AS station_name, ss.dj_port,
                     ss.port AS station_port, ss.plain_password AS station_password,
-                    ss.engine, ss.liquidsoap_port,
+                    ss.engine, ss.liquidsoap_port, ss.mount_point,
                     (SELECT COUNT(*) FROM radio_djs WHERE stream_id=ss.id AND status='active' AND can_stream=1) AS dj_count
              FROM streaming_stations ss
              WHERE ss.dj_port IS NOT NULL AND ss.status = 'running'"
@@ -200,19 +200,16 @@ class DjPortListener
                 } catch (\Exception $e) {}
                 usleep(500000);
 
-                // Check if Liquidsoap is available for this station
-                $useLiquidsoap = !empty($dj->liquidsoap_port) && $dj->liquidsoap_port > 0;
+                // Determine station source port and protocol based on engine
+                $engine = strtolower($dj->engine ?? 'icecast');
                 $stationPort = (int)$dj->station_port;
                 $stationHost = '127.0.0.1';
+                $stationPass = $dj->station_password ?? '';
 
-                if ($useLiquidsoap) {
-                    // Feed into Liquidsoap harbor input instead of station source
+                // Check if Liquidsoap is available for this station
+                if (!empty($dj->liquidsoap_port) && $dj->liquidsoap_port > 0) {
                     $stationPort = (int)$dj->liquidsoap_port;
-                } else {
-                    // Direct to station source port (existing behavior)
-                    if (strpos($dj->engine ?? '', 'shoutcast1') !== false) {
-                        $stationPort = $stationPort + 1;
-                    }
+                    $engine = 'liquidsoap';
                 }
 
                 $upstream = @fsockopen($stationHost, $stationPort, $errno, $errstr, 5);
@@ -224,23 +221,68 @@ class DjPortListener
                 }
                 stream_set_blocking($upstream, false);
 
-                // Auth to station with station source password
-                $stationPass = $dj->station_password ?? '';
-                fwrite($upstream, $stationPass . "\r\n");
-                usleep(500000);
-                $resp = @fread($upstream, 1024);
-                if (strpos($resp, 'OK') === false && strpos($resp, 'OK2') === false) {
-                    $this->log("Station auth failed on port $stationPort");
+                $authOk = false;
+                $mount = $dj->mount_point ?? '/stream';
+
+                if ($engine === 'shoutcast1') {
+                    // SHOUTcast v1 source protocol: send password\n, expect OK2
+                    $stationPortSC = $stationPort + 1;
+                    if (empty($dj->liquidsoap_port)) {
+                        fclose($upstream);
+                        $upstream = @fsockopen($stationHost, $stationPortSC, $errno, $errstr, 5);
+                        if (!$upstream) { @fwrite($conn['client'], "FAIL\r\n"); $this->closeConnection($idx, 'station_unreachable'); return; }
+                        stream_set_blocking($upstream, false);
+                    }
+                    fwrite($upstream, $stationPass . "\r\n");
+                    usleep(500000);
+                    $resp = @fread($upstream, 1024);
+                    $authOk = (strpos($resp, 'OK') !== false || strpos($resp, 'OK2') !== false);
+                    if ($authOk) {
+                        @fwrite($conn['client'], "OK2\r\n");
+                        fwrite($upstream, "icy-name: {$dj->station_name}\r\nicy-br: 128\r\nicy-pub: 1\r\n\r\n");
+                        usleep(100000);
+                    }
+                } elseif ($engine === 'shoutcast' || $engine === 'shoutcast2') {
+                    // SHOUTcast v2 source protocol: HTTP-style SOURCE request
+                    fwrite($upstream, "SOURCE /stream\r\n");
+                    fwrite($upstream, "Content-Type: audio/mpeg\r\n");
+                    fwrite($upstream, "Authorization: Basic " . base64_encode("source:$stationPass") . "\r\n");
+                    fwrite($upstream, "icy-name: {$dj->station_name}\r\n");
+                    fwrite($upstream, "icy-pub: 1\r\n\r\n");
+                    usleep(500000);
+                    $resp = @fread($upstream, 1024);
+                    $authOk = (strpos($resp, 'OK') !== false || strpos($resp, 'OK2') !== false);
+                    if ($authOk) @fwrite($conn['client'], "OK2\r\n");
+                } elseif ($engine === 'icecast' || $engine === 'liquidsoap') {
+                    // Icecast source protocol: HTTP PUT with basic auth
+                    $putPath = $engine === 'liquidsoap' ? '/live_dj' : $mount;
+                    if (!str_starts_with($putPath, '/')) $putPath = "/$putPath";
+                    $authHeader = base64_encode("source:$stationPass");
+                    fwrite($upstream, "PUT $putPath HTTP/1.0\r\n");
+                    fwrite($upstream, "Host: $stationHost\r\n");
+                    fwrite($upstream, "Authorization: Basic $authHeader\r\n");
+                    fwrite($upstream, "Content-Type: audio/mpeg\r\n");
+                    fwrite($upstream, "icy-name: {$dj->station_name}\r\n\r\n");
+                    usleep(500000);
+                    $resp = @fread($upstream, 1024);
+                    $authOk = (strpos($resp, '200') !== false || strpos($resp, 'OK') !== false);
+                    if ($authOk) @fwrite($conn['client'], "OK2\r\n");
+                } else {
+                    // Fallback to raw password (legacy)
+                    fwrite($upstream, $stationPass . "\r\n");
+                    usleep(500000);
+                    $resp = @fread($upstream, 1024);
+                    $authOk = (strpos($resp, 'OK') !== false || strpos($resp, 'OK2') !== false);
+                    if ($authOk) @fwrite($conn['client'], "OK2\r\n");
+                }
+
+                if (!$authOk) {
+                    $this->log("Station auth failed on port $stationPort ($engine)");
                     @fwrite($conn['client'], "FAIL\r\n");
                     fclose($upstream);
                     $this->closeConnection($idx, 'station_auth_failed');
                     return;
                 }
-
-                @fwrite($conn['client'], "OK2\r\n");
-                $headers = "icy-name: {$dj->station_name}\r\nicy-br: 128\r\nicy-pub: 1\r\n";
-                fwrite($upstream, $headers . "\r\n");
-                usleep(100000);
 
                 // Log connection
                 try {
@@ -262,7 +304,7 @@ class DjPortListener
             "SELECT rd.id AS dj_id, rd.username, rd.password AS dj_password,
                     ss.name AS station_name, ss.port AS station_port,
                     ss.plain_password AS station_password, ss.engine,
-                    ss.liquidsoap_port
+                    ss.liquidsoap_port, ss.mount_point
              FROM radio_djs rd
              JOIN streaming_stations ss ON ss.id = rd.stream_id
              WHERE rd.stream_id = ? AND rd.username = ? AND rd.can_stream = 1 AND rd.status = 'active'
