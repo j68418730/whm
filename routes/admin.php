@@ -45,6 +45,11 @@ $router->get('/admin/streams/restart/{id}', 'Admin\Controllers\StreamsController
 $router->get('/admin/streams/suspend/{id}', 'Admin\Controllers\StreamsController@suspend');
 $router->get('/admin/streams/unsuspend/{id}', 'Admin\Controllers\StreamsController@unsuspend');
 $router->get('/admin/streams/clone/{id}', 'Admin\Controllers\StreamsController@clone');
+$router->get('/admin/streams/start-all', 'Admin\Controllers\StreamsController@startAll');
+$router->get('/admin/streams/stop-all', 'Admin\Controllers\StreamsController@stopAll');
+$router->get('/admin/streams/restart-all', 'Admin\Controllers\StreamsController@restartAll');
+$router->get('/admin/streams/start-all-autodj', 'Admin\Controllers\StreamsController@startAllAutodj');
+$router->get('/admin/streams/stop-all-autodj', 'Admin\Controllers\StreamsController@stopAllAutodj');
 
 // Admin Server Overview Routes
 $router->get('/admin/server', 'Admin\Controllers\ServerOverviewController@index');
