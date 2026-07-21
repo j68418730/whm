@@ -29,14 +29,16 @@ class LiquidsoapManager
 
     public function isInstalled()
     {
-        $out = trim(shell_exec('which liquidsoap 2>/dev/null') ?: '');
-        return !empty($out);
+        return file_exists($this->liquidsoapBin);
     }
 
     public function getVersion()
     {
-        $out = shell_exec($this->liquidsoapBin . ' --version 2>/dev/null');
+        $out = @file_get_contents($this->liquidsoapBin, false, null, 0, 1024);
         if (preg_match('/Liquidsoap ([\d.]+)/', $out, $m)) return $m[1];
+        // Fallback: try exec via system which may work in Apache
+        $v = trim(`$this->liquidsoapBin --version 2>/dev/null`);
+        if (preg_match('/Liquidsoap ([\d.]+)/', $v, $m)) return $m[1];
         return null;
     }
 
@@ -46,7 +48,7 @@ class LiquidsoapManager
         if (!file_exists($pidFile)) return false;
         $pid = (int)trim(@file_get_contents($pidFile));
         if ($pid <= 0) return false;
-        return @posix_kill($pid, 0);
+        return @\posix_kill($pid, 0);
     }
 
     public function generateConfig($stationId)
@@ -77,7 +79,7 @@ class LiquidsoapManager
         elseif ($format === 'opus') $encoder = '%opus(bitrate=' . $bitrate . ')';
         elseif ($format === 'flac') $encoder = '%flac()';
 
-        if ($engine === 'shoutcast' || $engine === 'shoutcast2') {
+        if ($engine === 'shoutcast' || $engine === 'shoutcast2' || $engine === 'shoutcast1') {
             $output = "output.shoutcast($encoder, host=\"$host\", port=$port, password=\"$sourcePass\", name=\"$name\", public=true, radio)";
         } else {
             $output = "output.icecast($encoder, host=\"$host\", port=$port, password=\"$sourcePass\", mount=\"$mount\", name=\"$name\", radio)";
