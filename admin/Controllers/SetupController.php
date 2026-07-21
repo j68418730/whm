@@ -917,6 +917,11 @@ class SetupController extends Controller
         if ($shoutcastUp) $streaming[] = 'SHOUTcast';
         $results['streaming'] = ['label' => 'Streaming Services', 'status' => !empty($streaming) ? 'pass' : 'info', 'message' => !empty($streaming) ? implode(', ', $streaming) : 'Not configured'];
 
+        // Storage
+        $storageDir = '/var/www/radiohosting/storage/radio_downloads';
+        $storageWritable = is_dir($storageDir) && is_writable($storageDir);
+        $results['storage'] = ['label' => 'Storage Directories', 'status' => $storageWritable ? 'pass' : 'fail', 'message' => $storageWritable ? 'Writable' : 'Not writable — run Storage Setup'];
+
         return $results;
     }
 

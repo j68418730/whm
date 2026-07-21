@@ -32,4 +32,5 @@
 <a href="/admin/filesystem" class="section-card"><div class="icon">📁</div><div class="name">Filesystem</div><div class="desc">File system manager</div></a>
 <a href="/admin/backup" class="section-card"><div class="icon">💾</div><div class="name">Backup Manager</div><div class="desc">System backups</div></a>
 <a href="/admin/themes" class="section-card"><div class="icon">🎨</div><div class="name">Theme Manager</div><div class="desc">Admin theme management</div></a>
+<a href="/admin/system/storage-setup" class="section-card" onclick="return confirm('Run storage setup script?')"><div class="icon">📦</div><div class="name">Storage Setup</div><div class="desc">Fix upload directory permissions</div></a>
 </div>

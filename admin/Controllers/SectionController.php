@@ -104,6 +104,21 @@ class SectionController extends Controller
         return $this->view('admin.sections.system', ['user' => $user, 'title' => 'System']);
     }
 
+    public function storageSetup()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { header('Location: /admin/login'); exit; }
+        $script = BASE_PATH . '/scripts/setup_storage.sh';
+        if (file_exists($script)) {
+            exec("sudo bash " . escapeshellarg($script) . " 2>&1", $out, $code);
+            $output = implode("\n", $out);
+            $_SESSION['success_message'] = 'Storage setup completed.<br><pre style="font-size:11px;margin-top:6px">' . nl2br(htmlspecialchars($output ?? '')) . '</pre>';
+        } else {
+            $_SESSION['error_message'] = 'Setup script not found.';
+        }
+        header('Location: /admin/section/system');
+        exit;
+    }
+
     public function supportSettings()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { header('Location: /admin/login'); exit; }

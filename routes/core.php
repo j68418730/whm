@@ -32,6 +32,7 @@ $router->get('/admin/section/builder', 'Admin\Controllers\SectionController@buil
 $router->get('/admin/section/domains', 'Admin\Controllers\SectionController@domains');
 $router->get('/admin/section/security', 'Admin\Controllers\SectionController@security');
 $router->get('/admin/section/system', 'Admin\Controllers\SectionController@system');
+$router->get('/admin/system/storage-setup', 'Admin\Controllers\SectionController@storageSetup');
 $router->get('/admin/support-status', 'Admin\Controllers\SupportStatusController@get');
 $router->post('/admin/support-status', 'Admin\Controllers\SupportStatusController@set');
 $router->get('/admin/support-status/public', 'Admin\Controllers\SupportStatusController@publicStatus');
