@@ -79,7 +79,7 @@ class RadioDashboardController extends Controller
             'user' => $user,
             'theme_settings' => $theme_settings,
             'streams' => $streams,
-            'baseUrl' => 'https://planet-hosts.com/radio-proxy.php',
+            'baseUrl' => 'https://planet-hosts.com',
         ]);
     }
 }
