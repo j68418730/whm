@@ -70,6 +70,7 @@
 foreach($cards as $c): ?>
 <div class="wc-card"><h4><?=$c[0]?></h4><p><?=$c[2]?></p>
 <code id="c-p-<?=$c[1]?>">Select stream &amp; generate</code>
+<div id="pv-p-<?=$c[1]?>" class="pv-box" style="display:none;margin-top:8px"></div>
 <div class="wc-acts"><button class="btn-s btn-p" onclick="gw('p-<?=$c[1]?>')">Generate</button><button class="btn-s btn-s2" onclick="cp('c-p-<?=$c[1]?>')">Copy</button></div></div>
 <?php endforeach; ?>
 </div>
@@ -175,8 +176,6 @@ foreach($extra as $c): ?>
 </div>
 </div>
 </div>
-<div id="preview-area" style="display:none;margin-top:20px;padding:16px;background:rgba(8,16,28,.6);border:1px solid rgba(56,189,248,.08);border-radius:12px"></div>
-
 <script>
 var BASE_URL = 'https://planet-hosts.com';
 var STREAM_HOST = 'planet-hosts.com';
@@ -194,9 +193,15 @@ function sw(e,id){
 function gw(type){
   var el=document.getElementById('c-'+type),s=BASE_URL,x=sid(),f=fmt(),sn=sname(),u=sUrl();
   var ifr=function(url,w,h){return f==='iframe'?'<iframe src="'+url+'" width="'+w+'" height="'+h+'" frameborder="0" style="border-radius:10px;max-width:100%"></iframe>':url};
-    var prv = document.getElementById('preview-area');
-  prv.style.display='block';
-  prv.innerHTML='<div style="margin-bottom:10px;font-size:12px;color:#94a3b8">Preview:</div>';
+  // Find or create preview container in the parent card
+  var pv = document.getElementById('pv-'+type);
+  if (!pv) {
+    pv = document.createElement('div');
+    pv.id = 'pv-'+type;
+    pv.className = 'pv-box';
+    pv.style.cssText = 'display:none;margin-top:8px;background:rgba(0,0,0,.15);border-radius:8px;padding:10px;overflow:hidden';
+    el.parentNode.insertBefore(pv, el.nextSibling);
+  }
   var codes = {
     'p-full':'<div id="ph-player" data-stream="'+x+'"><script src="'+s+'/radio/widgets/player.php?stream='+x+'"><\/script><\/div>',
     'p-mini':'<div style="background:rgba(8,16,28,.9);border-radius:10px;padding:10px;text-align:center;max-width:200px"><div style="font-size:11px;color:#94a3b8">Now Playing</div><audio src="'+u+'" preload="none" controls style="width:100%;height:30px"></audio></div>',
@@ -241,15 +246,15 @@ function gw(type){
     'advertisements':'<div id="ph-ads-'+x+'"><script src="'+s+'/radio/advertisements.php?stream='+x+'"><\/script><\/div>',
   };
   el.textContent = codes[type] || 'Generate failed: unknown type '+type;
-  // Render live preview for iframe/widget types
-  var prv = document.getElementById('preview-area');
+  // Render live preview inside the card
   var code = codes[type] || '';
+  pv.style.display = 'block';
   if (code.indexOf('<iframe') === 0) {
-    prv.innerHTML = '<div style="margin-bottom:8px;font-size:11px;color:#64748b">Preview:</div>' + code;
+    pv.innerHTML = code;
   } else if (code.indexOf('<div') === 0 || code.indexOf('<a') === 0 || code.indexOf('<form') === 0) {
-    prv.innerHTML = '<div style="margin-bottom:8px;font-size:11px;color:#64748b">Preview:</div><div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.04);border-radius:10px;padding:16px;max-width:400px;overflow:hidden">' + code + '</div>';
+    pv.innerHTML = code;
   } else {
-    prv.innerHTML = '<div style="margin-bottom:8px;font-size:11px;color:#64748b">Preview:</div><div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.04);border-radius:10px;padding:16px;max-width:400px;overflow:hidden">' + code + '</div>';
+    pv.innerHTML = code;
   }
 }
 function cp(id){
