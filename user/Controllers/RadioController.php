@@ -1434,6 +1434,33 @@ class RadioController extends Controller
         header('Location: /user/radio/global-music'); exit;
     }
 
+    // GET /api/radio/queue/{stationId} — upcoming songs from playlist
+    public function queue($stationId)
+    {
+        header('Content-Type: application/json');
+        header('Access-Control-Allow-Origin: *');
+        $config = $this->db->table('radio_autodj_config')->where('station_id', $stationId)->first();
+        $playlistIds = $config ? json_decode($config->playlist_ids ?? '[]', true) : [];
+        $items = [];
+        if (!empty($playlistIds)) {
+            $ids = implode(',', array_map('intval', $playlistIds));
+            $items = $this->db->pdo()->query(
+                "SELECT id, title, artist, duration, file_path FROM radio_playlist_items WHERE playlist_id IN ($ids) ORDER BY RAND() LIMIT 10"
+            )->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        }
+        // Fallback: get any playlist items for this station
+        if (empty($items)) {
+            $pl = $this->db->table('radio_playlists')->where('stream_id', $stationId)->get() ?: [];
+            foreach ($pl as $p) {
+                $plItems = $this->db->table('radio_playlist_items')->where('playlist_id', $p->id)->orderBy('RAND()')->limit(10)->get() ?: [];
+                $items = array_merge($items, $plItems);
+                if (count($items) >= 10) break;
+            }
+        }
+        echo json_encode(['queue' => array_slice($items, 0, 10)]);
+        exit;
+    }
+
     // GET /api/radio/live-dj/{stationId} — public "On Air Now" widget
     public function liveDjStatus($stationId)
     {

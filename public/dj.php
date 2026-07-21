@@ -64,6 +64,11 @@ foreach (['website_url'=>'🌐 Website','facebook'=>'📘 Facebook','instagram'=
 if ($socialLinks): ?><div class="social"><?=implode("\n",$socialLinks)?></div><?php endif; ?>
 
 <div class="card">
+<h2>🎧 Up Next</h2>
+<div id="queue-list"><div style="text-align:center;color:#64748b;font-size:12px;padding:10px">Loading...</div></div>
+</div>
+
+<div class="card">
 <h2>🎤 Request a Song</h2>
 <form id="req-form" onsubmit="return submitRequest(event)">
 <div class="form-group"><label>Artist</label><input name="artist" required placeholder="Artist name"></div>
@@ -78,6 +83,12 @@ if ($socialLinks): ?><div class="social"><?=implode("\n",$socialLinks)?></div><?
 <footer>Powered by Planet Hosts Radio</footer>
 </div>
 <script>
+// Load queue
+fetch('/api/radio/queue/<?=$dj->station_id?>').then(function(r){return r.json()}).then(function(d){
+  var html='';if(d.queue&&d.queue.length){d.queue.forEach(function(s){html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)"><div style="flex:1"><div style="font-size:13px;font-weight:600">'+(s.artist?s.artist+' - ':'')+s.title+'</div><div style="font-size:10px;color:#64748b">'+(s.duration?Math.floor(s.duration/60)+':'+(s.duration%60<10?'0':'')+s.duration%60:'')+'</div></div></div>';})}else{html='<div style="text-align:center;color:#64748b;font-size:12px;padding:10px">No upcoming songs</div>';}
+  document.getElementById('queue-list').innerHTML=html;
+}).catch(function(){document.getElementById('queue-list').innerHTML='<div style="text-align:center;color:#64748b;font-size:12px;padding:10px">Could not load queue</div>';});
+
 function submitRequest(e){
   e.preventDefault(); var f=e.target,btn=document.getElementById('req-btn'),s=document.getElementById('req-success');
   btn.disabled=true; btn.textContent='Sending...';
