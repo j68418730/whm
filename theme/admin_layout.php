@@ -144,6 +144,8 @@ function filterSidebar(val) {
 <a href="/admin/radio_dashboard" class="<?php echo str_contains($currentUrl,'/admin/radio_dashboard')?'active':''; ?>">📡 Radio Dashboard</a>
 <a href="/admin/streams" class="<?php echo str_contains($currentUrl,'/admin/streams')?'active':''; ?>">🎵 Streams</a>
 <a href="/admin/djs" class="<?php echo str_contains($currentUrl,'/admin/djs')?'active':''; ?>">🎤 DJ Accounts</a>
+<a href="/admin/dj/ports" class="<?php echo str_contains($currentUrl,'/admin/dj/ports')?'active':''; ?>">🔌 DJ Ports</a>
+<a href="/admin/dj/connections" class="<?php echo str_contains($currentUrl,'/admin/dj/connections')?'active':''; ?>">📋 DJ History</a>
 <a href="/admin/autodj" class="<?php echo str_contains($currentUrl,'/admin/autodj')?'active':''; ?>">🤖 AutoDJ</a>
 <a href="/admin/radiosettings" class="<?php echo str_contains($currentUrl,'/admin/radiosettings')?'active':''; ?>">⚙️ Radio Settings</a>
 <a href="/admin/games" class="<?php echo str_contains($currentUrl,'/admin/games')?'active':''; ?>">🎮 Game Servers</a>

@@ -82,7 +82,7 @@ class DjPortListener
         $q = $this->pdo->query(
             "SELECT ss.id AS station_id, ss.name AS station_name, ss.dj_port,
                     ss.port AS station_port, ss.plain_password AS station_password,
-                    ss.engine,
+                    ss.engine, ss.liquidsoap_port,
                     (SELECT COUNT(*) FROM radio_djs WHERE stream_id=ss.id AND status='active' AND can_stream=1) AS dj_count
              FROM streaming_stations ss
              WHERE ss.dj_port IS NOT NULL AND ss.status = 'running'"
@@ -192,19 +192,30 @@ class DjPortListener
                 $conn['dj'] = $dj;
                 $this->log("Auth OK: $djUser on station {$conn['station_id']} -> $dj->station_name");
 
-                // Kill any existing AutoDJ or source for this station
+                // Update DB: mark DJ live, update metadata
                 try {
-                    $this->pdo->exec("UPDATE streaming_stations SET autodj_enabled=0, current_dj=" . $this->pdo->quote($djUser) . " WHERE id=" . (int)$conn['station_id']);
+                    $this->pdo->exec("UPDATE streaming_stations SET autodj_enabled=0, current_dj=" . $this->pdo->quote($djUser) . ", current_song='Now Playing...', current_artist=" . $this->pdo->quote($djUser) . ", current_song_started=NOW() WHERE id=" . (int)$conn['station_id']);
+                    $this->pdo->prepare("INSERT INTO radio_song_history (stream_id, title, artist, played_at) VALUES (?,?,?,NOW())")
+                        ->execute([$conn['station_id'], 'Now Playing...', $djUser]);
                 } catch (\Exception $e) {}
                 usleep(500000);
 
-                // Connect to station source port
+                // Check if Liquidsoap is available for this station
+                $useLiquidsoap = !empty($dj->liquidsoap_port) && $dj->liquidsoap_port > 0;
                 $stationPort = (int)$dj->station_port;
-                if (strpos($dj->engine ?? '', 'shoutcast1') !== false) {
-                    $stationPort = $stationPort + 1;
+                $stationHost = '127.0.0.1';
+
+                if ($useLiquidsoap) {
+                    // Feed into Liquidsoap harbor input instead of station source
+                    $stationPort = (int)$dj->liquidsoap_port;
+                } else {
+                    // Direct to station source port (existing behavior)
+                    if (strpos($dj->engine ?? '', 'shoutcast1') !== false) {
+                        $stationPort = $stationPort + 1;
+                    }
                 }
 
-                $upstream = @fsockopen('127.0.0.1', $stationPort, $errno, $errstr, 5);
+                $upstream = @fsockopen($stationHost, $stationPort, $errno, $errstr, 5);
                 if (!$upstream) {
                     $this->log("Station unreachable on port $stationPort: $errstr");
                     @fwrite($conn['client'], "FAIL\r\n");
@@ -250,7 +261,8 @@ class DjPortListener
         $q = $this->pdo->prepare(
             "SELECT rd.id AS dj_id, rd.username, rd.password AS dj_password,
                     ss.name AS station_name, ss.port AS station_port,
-                    ss.plain_password AS station_password, ss.engine
+                    ss.plain_password AS station_password, ss.engine,
+                    ss.liquidsoap_port
              FROM radio_djs rd
              JOIN streaming_stations ss ON ss.id = rd.stream_id
              WHERE rd.stream_id = ? AND rd.username = ? AND rd.can_stream = 1 AND rd.status = 'active'
@@ -272,10 +284,13 @@ class DjPortListener
         if ($conn['state'] === 'proxying' && !empty($conn['dj'])) {
             $this->log("Disconnect: {$conn['dj']->username} on station {$conn['station_id']} ($reason)");
             try {
-                $this->pdo->prepare("UPDATE streaming_stations SET current_dj=NULL, autodj_enabled=1 WHERE id=?")
+                $this->pdo->prepare("UPDATE streaming_stations SET current_dj=NULL, current_song='AutoDJ Resumed', current_artist='', autodj_enabled=1 WHERE id=?")
                     ->execute([$conn['station_id']]);
                 $this->pdo->prepare("UPDATE dj_connections SET disconnected_at=NOW(), disconnect_reason=? WHERE dj_id=? AND station_id=? AND disconnected_at IS NULL ORDER BY id DESC LIMIT 1")
                     ->execute([$reason, $conn['dj']->dj_id, $conn['station_id']]);
+                // Log resume in song history
+                $this->pdo->prepare("INSERT INTO radio_song_history (stream_id, title, artist, played_at) VALUES (?,?,?,NOW())")
+                    ->execute([$conn['station_id'], 'AutoDJ Resumed', "DJ {$conn['dj']->username} disconnected"]);
             } catch (\Exception $e) {}
         }
 
