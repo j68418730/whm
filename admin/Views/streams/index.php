@@ -233,16 +233,18 @@
         </div>
 
         <nav class="nav">
-            <h2>Stream Management Functions</h2>
+            <h2>Stream Management</h2>
             <ul>
                 <li><a href="/admin/streams/create">Create Stream</a></li>
-                <li><a href="/admin/streams/list">List Streams</a></li>
-                <li><a href="/admin/streams/edit">Edit Stream</a></li>
-                <li><a href="/admin/streams/delete">Delete Stream</a></li>
-                <li><a href="/admin/streams/restart">Restart Stream</a></li>
-                <li><a href="/admin/streams/suspend">Suspend Stream</a></li>
-                <li><a href="/admin/streams/unsuspend">Unsuspend Stream</a></li>
                 <li><a href="/admin/streams/clone">Clone Stream</a></li>
+            </ul>
+            <h2 style="margin-top:16px">Bulk Actions</h2>
+            <ul>
+                <li><a href="/admin/streams/start-all" onclick="return confirm('Start ALL stations?')">▶ Start All Stations</a></li>
+                <li><a href="/admin/streams/stop-all" onclick="return confirm('Stop ALL stations?')">⏹ Stop All Stations</a></li>
+                <li><a href="/admin/streams/restart-all" onclick="return confirm('Restart ALL running stations?')">🔄 Restart All Stations</a></li>
+                <li><a href="/admin/streams/start-all-autodj" onclick="return confirm('Start AutoDJ on ALL stations?')">▶ Start All AutoDJs</a></li>
+                <li><a href="/admin/streams/stop-all-autodj" onclick="return confirm('Stop AutoDJ on ALL stations?')">⏹ Stop All AutoDJs</a></li>
             </ul>
         </nav>
     </div>
