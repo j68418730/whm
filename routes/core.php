@@ -352,6 +352,10 @@ $router->get('/admin/todo/delete/{id}', 'Admin\Controllers\TodoController@destro
 $router->get('/admin/todo/delete-category/{category}', 'Admin\Controllers\TodoController@destroyCategory');
 // ── Desktop API Routes ──
 $router->get('/admin/radio/widgets', 'Admin\Controllers\RadioDashboardController@widgets');
+$router->get('/admin/radio/downloads', 'Admin\Controllers\RadioDashboardController@downloads');
+$router->post('/admin/radio/downloads/upload', 'Admin\Controllers\RadioDashboardController@uploadDownload');
+$router->get('/admin/radio/downloads/delete/{id}', 'Admin\Controllers\RadioDashboardController@deleteDownload');
+$router->get('/admin/radio/downloads/serve/{id}', 'Admin\Controllers\RadioDashboardController@serveDownload');
 $router->get('/api/auth/verify', 'Admin\Controllers\Api\DesktopController@verify');
 $router->post('/api/auth/login', 'Admin\Controllers\Api\DesktopController@login');
 $router->get('/api/dashboard', 'Admin\Controllers\Api\DesktopController@dashboard');
