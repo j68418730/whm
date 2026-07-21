@@ -910,6 +910,9 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
         <?php elseif ($vv['status'] === 'info'): ?>ℹ INFO
         <?php else: ?>✗ FAIL<?php endif; ?>
       </span>
+      <?php if ($vv['label'] === 'Storage Directories' && $vv['status'] !== 'pass'): ?>
+      <a href="/admin/system/storage-setup" class="btn btn-sm" style="padding:4px 10px;background:rgba(250,204,21,.15);color:#facc15;border-radius:6px;font-size:10px;font-weight:600;text-decoration:none;margin-left:8px">Fix</a>
+      <?php endif; ?>
     </div>
     <?php endforeach; ?>
   </div>
