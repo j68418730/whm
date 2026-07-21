@@ -144,5 +144,5 @@ function radio_embed_html(string $jsCode, string $iframeCode, string $type = 'js
 
 function radio_host(): string
 {
-    return 'https://planet-hosts.com/radio-proxy.php';
+    return 'https://planet-hosts.com';
 }
