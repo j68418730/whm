@@ -1470,5 +1470,15 @@ class RadioController extends Controller
         echo json_encode(['live' => $live]);
         exit;
     }
+
+    // GET /dj — public DJ page (renders the standalone dj.php)
+    public function publicDjPage()
+    {
+        $username = $_GET['u'] ?? $_GET['username'] ?? '';
+        if (!$username) { http_response_code(404); exit; }
+        $_SERVER['DJ_USERNAME'] = $username;
+        require BASE_PATH . '/public/dj.php';
+        exit;
+    }
 }
 
