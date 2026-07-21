@@ -557,6 +557,36 @@ class DjController extends Controller
         exit;
     }
 
+    public function connections()
+    {
+        $this->guard();
+        $conns = $this->db->pdo()->query(
+            "SELECT dc.*, rd.username AS dj_username, rd.name AS dj_name, ss.name AS station_name
+             FROM dj_connections dc
+             JOIN radio_djs rd ON rd.id = dc.dj_id
+             JOIN streaming_stations ss ON ss.id = dc.station_id
+             ORDER BY dc.connected_at DESC LIMIT 200"
+        )->fetchAll(\PDO::FETCH_OBJ);
+        return $this->view('admin/Views/djs/connections', ['connections' => $conns]);
+    }
+
+    public function liquidsoapAction($stationId, $action)
+    {
+        $this->guard();
+        $lm = new \LiquidsoapManager();
+        $allowed = ['start', 'stop', 'restart', 'status'];
+        if (!in_array($action, $allowed)) { $_SESSION['error'] = 'Invalid action.'; header('Location: /admin/streams'); exit; }
+        if ($action === 'status') {
+            $_SESSION['info'] = 'Liquidsoap ' . ($lm->isRunning($stationId) ? 'RUNNING' : 'STOPPED') . ' (v' . ($lm->getVersion() ?? 'unknown') . ')';
+        } else {
+            $lm->$action($stationId);
+            sleep(1);
+            $_SESSION['success'] = "Liquidsoap $action on station #$stationId: " . ($lm->isRunning($stationId) ? 'RUNNING' : 'STOPPED');
+        }
+        header('Location: /admin/streams');
+        exit;
+    }
+
     public function listenerAction($action)
     {
         $this->guard();

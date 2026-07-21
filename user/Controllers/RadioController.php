@@ -1433,5 +1433,42 @@ class RadioController extends Controller
         } else { $_SESSION['error'] = 'Failed to copy file.'; }
         header('Location: /user/radio/global-music'); exit;
     }
+
+    // GET /api/radio/live-dj/{stationId} — public "On Air Now" widget
+    public function liveDjStatus($stationId)
+    {
+        $station = $this->db->table('streaming_stations')->where('id', $stationId)->first();
+        if (!$station) { http_response_code(404); echo json_encode(['live' => false]); exit; }
+        $isLive = !empty($station->current_dj);
+        header('Content-Type: application/json');
+        header('Access-Control-Allow-Origin: *');
+        echo json_encode([
+            'live' => $isLive,
+            'dj' => $isLive ? $station->current_dj : null,
+            'song' => $station->current_song ?? '',
+            'artist' => $station->current_artist ?? '',
+            'listeners' => (int)$station->listener_count,
+            'started_at' => $station->current_song_started ? date('c', strtotime($station->current_song_started)) : null,
+            'station_name' => $station->name,
+            'stream_url' => 'https://' . ($_SERVER['SERVER_NAME'] ?? 'planet-hosts.com') . '/radio/stream-proxy.php?stream=' . $station->id,
+        ]);
+        exit;
+    }
+
+    // GET /api/radio/live-djs — public list of all live DJs
+    public function liveDjsList()
+    {
+        header('Content-Type: application/json');
+        header('Access-Control-Allow-Origin: *');
+        $live = $this->db->pdo()->query(
+            "SELECT ss.id, ss.name AS station_name, ss.current_dj, ss.current_song, ss.current_artist,
+                    ss.listener_count, ss.current_song_started
+             FROM streaming_stations ss
+             WHERE ss.current_dj IS NOT NULL AND ss.current_dj != '' AND ss.status = 'running'
+             ORDER BY ss.name"
+        )->fetchAll(\PDO::FETCH_OBJ);
+        echo json_encode(['live' => $live]);
+        exit;
+    }
 }
 
