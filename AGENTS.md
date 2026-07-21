@@ -6,7 +6,8 @@ After every commit/push, automatically deploy to the live server:
 2. SSH into `debian@15.204.114.226` with `$env:SSH_ASKPASS` and `git pull origin master`
 3. Run PHP lint on changed files
 4. Run any new DB migrations in `database/migrations/`
-5. Update `K:\site_del\Masterinstall` with `git pull origin master`
+5. Run storage setup: `sudo bash scripts/setup_storage.sh`
+6. Update `K:\site_del\Masterinstall` with `git pull origin master`
 
 ## Server Info
 - **IP:** 15.204.114.226
