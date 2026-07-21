@@ -85,10 +85,16 @@ if ($socialLinks): ?><div class="social"><?=implode("\n",$socialLinks)?></div><?
 <script>
 // Load queue
 fetch('/api/radio/queue/<?=$dj->station_id?>').then(function(r){return r.json()}).then(function(d){
-  var html='';if(d.queue&&d.queue.length){d.queue.forEach(function(s){html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)"><div style="flex:1"><div style="font-size:13px;font-weight:600">'+(s.artist?s.artist+' - ':'')+s.title+'</div><div style="font-size:10px;color:#64748b">'+(s.duration?Math.floor(s.duration/60)+':'+(s.duration%60<10?'0':'')+s.duration%60:'')+'</div></div></div>';})}else{html='<div style="text-align:center;color:#64748b;font-size:12px;padding:10px">No upcoming songs</div>';}
+  var html='';if(d.queue&&d.queue.length){d.queue.forEach(function(s,i){var a=s.artist?s.artist+' - ':'',t=s.title||'Unknown';html+='<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+a+t+'</div><div style="font-size:10px;color:#64748b">'+(s.duration?Math.floor(s.duration/60)+':'+(s.duration%60<10?'0':'')+s.duration%60:'')+'</div></div><button class="req-btn" data-artist="'+(s.artist||'')+'" data-title="'+(s.title||'')+'" onclick="openRequest(this)" style="padding:4px 10px;border-radius:6px;background:rgba(56,189,248,.12);color:#38bdf8;border:none;cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;flex-shrink:0">Request</button></div>';})}else{html='<div style="text-align:center;color:#64748b;font-size:12px;padding:10px">No upcoming songs</div>';}
   document.getElementById('queue-list').innerHTML=html;
 }).catch(function(){document.getElementById('queue-list').innerHTML='<div style="text-align:center;color:#64748b;font-size:12px;padding:10px">Could not load queue</div>';});
 
+function openRequest(btn){
+  document.querySelector('[name="artist"]').value=btn.dataset.artist;
+  document.querySelector('[name="title"]').value=btn.dataset.title;
+  document.querySelector('[name="title"]').focus();
+  document.getElementById('req-form').scrollIntoView({behavior:'smooth'});
+}
 function submitRequest(e){
   e.preventDefault(); var f=e.target,btn=document.getElementById('req-btn'),s=document.getElementById('req-success');
   btn.disabled=true; btn.textContent='Sending...';
