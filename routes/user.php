@@ -253,3 +253,4 @@ $router->get('/user/radio/global-music/download/{itemId}', 'User\Controllers\Rad
 // Public Live DJ Widget API
 $router->get('/api/radio/live-dj/{stationId}', 'User\Controllers\RadioController@liveDjStatus');
 $router->get('/api/radio/live-djs', 'User\Controllers\RadioController@liveDjsList');
+$router->get('/api/radio/queue/{stationId}', 'User\Controllers\RadioController@queue');
