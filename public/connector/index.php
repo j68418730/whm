@@ -15,7 +15,7 @@ $uriPath = parse_url($uri, PHP_URL_PATH);
 if ($_POST && $uriPath === '/connector/auth') {
     $apiKey = $_POST['api_key'] ?? '';
     $hash = hash('sha256', $apiKey);
-    $stmt = $pdo->prepare("SELECT id, user_type, permissions FROM api_keys WHERE key_hash = ? AND is_active = 1");
+$stmt = $pdo->prepare("SELECT id, user_type, permissions FROM api_keys WHERE key_hash = ?");
     $stmt->execute([$hash]);
     $key = $stmt->fetch(PDO::FETCH_OBJ);
     
@@ -27,6 +27,20 @@ if ($_POST && $uriPath === '/connector/auth') {
     
     $token = bin2hex(random_bytes(32));
     echo json_encode(['success' => true, 'data' => ['token' => $token]]);
+    exit;
+}
+
+// ─── PUBLIC REQUEST SUBMISSION (no API key needed) ───
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && preg_match('#^/connector/station/(\d+)/requests$#', $uriPath, $m)) {
+    $stationId = (int)$m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?: [];
+    if (!empty($input['title'])) {
+        $ins = $pdo->prepare("INSERT INTO radio_requests (stream_id, guest_name, artist, title, message, status) VALUES (?, ?, ?, ?, ?, 'pending')");
+        $ins->execute([$stationId, $input['guest_name'] ?? '', $input['artist'] ?? '', $input['title'], $input['message'] ?? '']);
+        echo json_encode(['success' => true, 'message' => 'Request submitted']);
+        exit;
+    }
+    echo json_encode(['success' => false, 'error' => 'Title required']);
     exit;
 }
 
