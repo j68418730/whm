@@ -141,6 +141,3 @@ $router->get('/admin/radio/global-playlists/delete/{id}', 'Plugins\Radio\Control
 $router->post('/admin/radio/global-playlists/upload/{id}', 'Plugins\Radio\Controllers\Admin\GlobalPlaylistsController@upload');
 $router->get('/admin/radio/global-playlists/remove-song/{itemId}', 'Plugins\Radio\Controllers\Admin\GlobalPlaylistsController@removeSong');
 
-// Global Music Library (User)
-$router->get('/user/radio/global-music', 'Plugins\Radio\Controllers\User\RadioController@globalMusic');
-$router->get('/user/radio/global-music/download/{itemId}', 'Plugins\Radio\Controllers\User\RadioController@globalMusicDownload');

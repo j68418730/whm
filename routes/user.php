@@ -247,9 +247,6 @@ $router->get('/reseller/branding', 'User\Controllers\ResellerPortalController@br
 $router->get('/reseller/billing', 'User\Controllers\ResellerPortalController@billing');
 $router->get('/reseller/support', 'User\Controllers\ResellerPortalController@support');
 
-// Global Music Library
-$router->get('/user/radio/global-music', 'User\Controllers\RadioController@globalMusic');
-$router->get('/user/radio/global-music/download/{itemId}', 'User\Controllers\RadioController@globalMusicDownload');
 // Public Live DJ Widget API
 $router->get('/api/radio/live-dj/{stationId}', 'User\Controllers\RadioController@liveDjStatus');
 $router->get('/api/radio/live-djs', 'User\Controllers\RadioController@liveDjsList');
