@@ -341,11 +341,36 @@ if (isset($_SESSION['dj_user'])) {
             'port' => $s->port ?? 0,
         ];
     } else {
-        $stmt = $pdo->prepare("SELECT d.*, ss.status as stream_status, ss.listener_count, ss.current_song, ss.autodj_enabled as autodj_active, hu.username as hosting_username,
-            (SELECT COUNT(*) FROM radio_playlist_items pi JOIN radio_playlists p ON pi.playlist_id = p.id WHERE p.stream_id = d.stream_id) as track_count
-            FROM radio_djs d JOIN streaming_stations ss ON d.stream_id = ss.id JOIN hosting_users hu ON ss.user_id = hu.id WHERE d.id = ?");
-        $stmt->execute([$_SESSION['dj_user']['id']]);
-        $djData = $stmt->fetch(PDO::FETCH_OBJ);
+        $selStreamId = (int)$_SESSION['dj_user']['stream_id'];
+        // Get DJ profile data (banner, avatar, etc.)
+        $djProfile = $pdo->prepare("SELECT id, name, bio, website_url, banner, avatar, profile_data, gallery FROM radio_djs WHERE id = ?");
+        $djProfile->execute([$_SESSION['dj_user']['id']]);
+        $dp = $djProfile->fetch(PDO::FETCH_OBJ);
+        // Get station data for the selected stream
+        $stmt = $pdo->prepare("SELECT ss.status as stream_status, ss.listener_count, ss.current_song, ss.autodj_enabled as autodj_active, ss.current_dj, ss.port, ss.bitrate,
+            (SELECT COUNT(*) FROM radio_playlist_items pi JOIN radio_playlists p ON pi.playlist_id = p.id WHERE p.stream_id = ?) as track_count
+            FROM streaming_stations ss WHERE ss.id = ?");
+        $stmt->execute([$selStreamId, $selStreamId]);
+        $sData = $stmt->fetch(PDO::FETCH_OBJ);
+        $djData = (object)[
+            'id' => $dp->id ?? $_SESSION['dj_user']['id'],
+            'name' => $dp->name ?? $_SESSION['dj_user']['name'],
+            'bio' => $dp->bio ?? '',
+            'website_url' => $dp->website_url ?? '',
+            'banner' => $dp->banner ?? null,
+            'avatar' => $dp->avatar ?? null,
+            'profile_data' => $dp->profile_data ?? null,
+            'gallery' => $dp->gallery ?? null,
+            'stream_status' => $sData->stream_status ?? 'stopped',
+            'listener_count' => $sData->listener_count ?? 0,
+            'current_song' => $sData->current_song ?? '',
+            'autodj_active' => $sData->autodj_active ?? 0,
+            'track_count' => $sData->track_count ?? 0,
+            'stream_id' => $selStreamId,
+            'current_dj' => $sData->current_dj ?? null,
+            'port' => $sData->port ?? 0,
+            'bitrate' => $sData->bitrate ?? 128,
+        ];
         if (!$djData) { session_destroy(); header('Location: /dj_panel.php'); exit; }
     }
 }
