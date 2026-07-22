@@ -631,6 +631,10 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 <div class="sam-notice">
 <div class="sam-title">📻 SAM Users</div>
 <div class="sam-text">Enter as <strong class="text-bright">djusername:djpassword</strong> in the <strong class="text-bright">Password</strong> field.</div>
+<div style="margin-top:6px;display:flex;gap:6px;align-items:center;background:rgba(0,0,0,.3);border-radius:6px;padding:6px 10px;font-family:monospace;font-size:12px">
+<span style="color:#4ade80;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="sam-creds"><?php echo htmlspecialchars($djUsername); ?>:<?php echo $isOwner ? htmlspecialchars($djPass) : 'yourpassword'; ?></span>
+<button class="copy-btn" onclick="cf('sam-creds')">Copy</button>
+</div>
 </div>
 <div style="background:rgba(0,0,0,.3);border-radius:10px;padding:14px;font-family:monospace;font-size:12px">
 <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0"><span style="color:#64748b">Server:</span><span style="color:#4ade80" id="bi-server"><?php echo $djHost; ?></span><button class="copy-btn" onclick="cf('bi-server')">Copy</button></div>
@@ -726,7 +730,7 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 </div>
 
 <script>
-function cf(id){var t=document.getElementById(id).textContent;navigator.clipboard.writeText(t);var b=event.target;b.textContent='Copy';}
+function cf(id){var t=document.getElementById(id).textContent;navigator.clipboard.writeText(t);var b=event.target;b.textContent='Copied!';setTimeout(function(){b.textContent='Copy'},1500);}
 function tp(){var p=document.getElementById('bi-pass');if(p.textContent=='••••••••'){p.textContent='<?php echo addslashes($djPass); ?>';event.target.textContent='Hide'}else{p.textContent='••••••••';event.target.textContent='Show'}}
 function ca(){navigator.clipboard.writeText('Server: <?php echo addslashes($djHost); ?>\nPort: <?php echo $djPort; ?>\nUsername: <?php echo addslashes($djUsername); ?>\nPassword: <?php echo $isOwner ? addslashes($djPass) : '<your DJ password>'; ?>\nFormat: MP3 <?php echo $station->bitrate ?? 128; ?>kbps');event.target.textContent='Copied!';setTimeout(function(){event.target.textContent='📋 Copy All'},2000);}
 </script>
