@@ -115,8 +115,20 @@ class DomainsController extends Controller
                 $vhostCfg = "<VirtualHost *:80>\n    ServerName {$full}\n    DocumentRoot {$docRoot}\n    <Directory {$docRoot}>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n    ErrorLog /var/log/apache2/{$full}_error.log\n    CustomLog /var/log/apache2/{$full}_access.log combined\n</VirtualHost>\n";
                 $tmpFile = '/tmp/vhost_' . $full . '.conf';
                 file_put_contents($tmpFile, $vhostCfg);
-                @exec("sudo cp {$tmpFile} /etc/apache2/sites-available/{$full}.conf && sudo a2ensite {$full}.conf && sudo systemctl reload apache2 2>/dev/null");
+                @exec("sudo cp {$tmpFile} /etc/apache2/sites-available/{$full}.conf && sudo a2ensite {$full}.conf 2>/dev/null");
                 @unlink($tmpFile);
+
+                // Create SSL vhost using existing cert
+                $certFile = '/etc/letsencrypt/live/' . $domain . '/fullchain.pem';
+                $keyFile = '/etc/letsencrypt/live/' . $domain . '/privkey.pem';
+                if (file_exists($certFile)) {
+                    $sslCfg = "<IfModule mod_ssl.c>\n<VirtualHost *:443>\n    ServerName {$full}\n    DocumentRoot {$docRoot}\n    <Directory {$docRoot}>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n    ErrorLog /var/log/apache2/{$full}_error.log\n    CustomLog /var/log/apache2/{$full}_access.log combined\n    SSLEngine on\n    SSLCertificateFile {$certFile}\n    SSLCertificateKeyFile {$keyFile}\n</VirtualHost>\n</IfModule>\n";
+                    $sslFile = '/tmp/vhost_ssl_' . $full . '.conf';
+                    file_put_contents($sslFile, $sslCfg);
+                    @exec("sudo cp {$sslFile} /etc/apache2/sites-available/{$full}-le-ssl.conf && sudo a2ensite {$full}-le-ssl.conf 2>/dev/null");
+                    @unlink($sslFile);
+                }
+                @exec("sudo systemctl reload apache2 2>/dev/null");
                 $msg .= " Vhost created for {$full}.";
                 if (!empty($_POST['create_ftp'])) {
                     $ftpUser = trim($_POST['ftp_username'] ?: $subdomain);
@@ -160,7 +172,7 @@ class DomainsController extends Controller
             $ownerUser = $domainOwner ? $domainOwner->username : $this->hostingUser->username;
             $full = $record->name . '.' . ($zone->domain ?? '');
             $this->db->table('dns_records')->where('id', $id)->delete();
-            @exec("sudo a2dissite {$full}.conf 2>/dev/null && sudo rm -f /etc/apache2/sites-available/{$full}.conf && sudo systemctl reload apache2 2>/dev/null");
+            @exec("sudo a2dissite {$full}.conf 2>/dev/null && sudo a2dissite {$full}-le-ssl.conf 2>/dev/null && sudo rm -f /etc/apache2/sites-available/{$full}.conf /etc/apache2/sites-available/{$full}-le-ssl.conf && sudo systemctl reload apache2 2>/dev/null");
             @exec("sudo rm -rf /home/{$ownerUser}/public_html/{$record->name} 2>/dev/null");
             $_SESSION['success'] = "Subdomain {$full} deleted.";
         }
