@@ -208,8 +208,13 @@ class DjPortListener
                             @\posix_kill($pid, 9);
                         }
                     }
-                    // Also pkill by station ID pattern (may work if exec is available)
-                    @\posix_kill((int)`pgrep -f "runner_{$conn['station_id']}" 2>/dev/null`, 9);
+                    // Kill via known PID locations
+                    foreach (['/home/testacct/radio/autodj/autodj.pid', '/home/planethosts/radio/autodj/autodj.pid'] as $pf) {
+                        if (file_exists($pf)) {
+                            $pid = (int)trim(@file_get_contents($pf));
+                            if ($pid > 0) { @\posix_kill($pid, 15); usleep(100000); @\posix_kill($pid, 9); }
+                        }
+                    }
                 } catch (\Exception $e) {}
                 usleep(500000);
 
