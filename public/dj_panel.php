@@ -579,14 +579,6 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 
 
 <div class="dj-panel act" id="pn-overview">
-<div class="grid">
-<div class="stat-card" style="--c:#4ade80"><div class="num"><?php echo $djData->stream_status ?? 'N/A'; ?></div><div class="label">Stream Status</div></div>
-<div class="stat-card" style="--c:#38bdf8"><div class="num"><?php echo $djData->listener_count ?? 0; ?></div><div class="label">Current Listeners</div></div>
-<div class="stat-card" style="--c:#facc15"><div class="num"><?php echo $djData->track_count ?? 0; ?></div><div class="label">Library Tracks</div></div>
-<div class="stat-card" style="--c:#a78bfa"><div class="num" id="dj-source-status"><?php echo $djData->autodj_active ? 'AutoDJ' : ($djData->current_dj ? 'Live DJ' : 'Offline'); ?></div><div class="label">Source</div></div>
-</div>
-
-<!-- DJ Takeover -->
 <?php
 $streamId = $djData->stream_id ?? 0;
 $ss = $pdo->prepare("SELECT * FROM streaming_stations WHERE id = ?");
@@ -596,115 +588,124 @@ $djPort = $station->dj_port ?? $station->port ?? 8000;
 $djPass = $station->plain_password ?? '';
 $djHost = 'planet-hosts.com';
 $djUsername = $_SESSION['dj_user']['username'] ?? '';
-$djRealPass = $_SESSION['dj_user']['real_password'] ?? 'your-dj-password'; // Will be set below if available
-// Try to get the actual DJ password from the DB (if this user owns the stream, show the source password instead)
 $isOwner = !empty($_SESSION['dj_user']['is_owner']);
-?>
 
-<div class="dj-grid">
-
-<!-- Broadcaster Info -->
-<div class="card" style="border-color:rgba(56,189,248,.2)">
-<h3><i class="fas fa-broadcast-tower"></i> Broadcaster Info</h3>
-<div class="card-desc">Connect your broadcasting software with these details.</div>
-<div class="sam-notice">
-<div class="sam-title">📻 SAM Broadcaster Users</div>
-<div class="sam-text">Enter your credentials as <strong class="text-bright">djusername:djpassword</strong> in the <strong class="text-bright">Password</strong> field. SAM only has one password field — combine your DJ username and password with a colon.</div>
-</div>
-<div class="conn-box">
-<div class="conn-row">
-<span><span class="conn-label">Server:</span> <span class="conn-value" id="bi-server"><?php echo $djHost; ?></span></span>
-<button class="copy-btn" onclick="copyField('bi-server')">Copy</button>
-</div>
-<div class="conn-row">
-<span><span class="conn-label">Port:</span> <span class="conn-value" id="bi-port"><?php echo $djPort; ?></span> <span class="conn-label" style="font-size:10px">(DJ auth)</span></span>
-<button class="copy-btn" onclick="copyField('bi-port')">Copy</button>
-</div>
-<div class="conn-row">
-<span><span class="conn-label">Username:</span> <span class="conn-value" style="color:#38bdf8" id="bi-user"><?php echo htmlspecialchars($djUsername); ?></span></span>
-<button class="copy-btn" onclick="copyField('bi-user')">Copy</button>
-</div>
-<div class="conn-row">
-<span><span class="conn-label">Password:</span> <span class="conn-value pw" id="bi-pass"><?php echo $isOwner ? htmlspecialchars($djPass) : '••••••••'; ?></span></span>
-<button class="copy-btn" onclick="togglePass()"><?php echo $isOwner ? 'Hide' : 'Show'; ?></button>
-</div>
-<div class="conn-row">
-<span><span class="conn-label">Format:</span> <span class="conn-label">MP3 · <?php echo $station->bitrate ?? 128; ?> kbps</span></span>
-</div>
-</div>
-<div class="conn-actions">
-<button class="btn btn-primary btn-sm" onclick="copyAll()">📋 Copy All</button>
-<button class="btn btn-danger btn-sm" onclick="window.location.href='/dj_panel.php?action=takeover'">🎤 Stop AutoDJ &amp; Connect</button>
-</div>
-</div>
-<script>
-function copyField(id){var t=document.getElementById(id).textContent;navigator.clipboard.writeText(t);var b=event.target;b.textContent='Copied!';setTimeout(function(){b.textContent='Copy'},1500);}
-function togglePass(){var p=document.getElementById('bi-pass');if(p.textContent=='••••••••'){p.textContent='<?php echo addslashes($djPass); ?>';event.target.textContent='Hide'}else{p.textContent='••••••••';event.target.textContent='Show'}}
-function copyAll(){var t='Server: <?php echo addslashes($djHost); ?>\nPort: <?php echo $djPort; ?>\nUsername: <?php echo addslashes($djUsername); ?>\nPassword: <?php echo $isOwner ? addslashes($djPass) : '<your DJ password>'; ?>\nFormat: MP3 <?php echo $station->bitrate ?? 128; ?>kbps';navigator.clipboard.writeText(t);var b=event.target;b.textContent='Copied All!';setTimeout(function(){b.textContent='📋 Copy All'},2000);}
-</script>
-
-<!-- API Connection -->
-<div class="card" style="border-color:rgba(168,85,247,.2)">
-<h3><i class="fas fa-code"></i> API Connection</h3>
-<div class="card-desc">Access station data programmatically. Uses your DJ session cookie for auth.</div>
-<div class="conn-box">
-<div class="conn-row">
-<span><span class="conn-label">Base URL:</span> <span class="conn-value api" id="api-base">https://planet-hosts.com/api/studio/station/<?php echo $_SESSION['dj_user']['stream_id'] ?? 0; ?></span></span>
-<button class="copy-btn" onclick="copyField('api-base')">Copy</button>
-</div>
-<div class="api-row">
-<code>GET /connection</code> — station info & stream details
-<span class="sep">|</span>
-<code>GET /djs</code> — list DJs
-</div>
-</div>
-</div>
-
-<!-- Banner -->
-<div class="banner">
-<?php if ($djData->banner): ?>
-<img src="/<?php echo $djData->banner; ?>" alt="Banner">
-<?php else: ?>
-<i class="fas fa-image banner-empty-icon"></i> No banner set
-<?php endif; ?>
-</div>
-
-
-
-<?php
-// Get user's streams for kick feature
-$userId = $_SESSION['dj_user']['id'] ?? 0;
-$streamId = $_SESSION['dj_user']['stream_id'] ?? 0;
-$isOwner = !empty($_SESSION['dj_user']['is_owner']);
-// Find hosting_user_id from stream
+// Get streams for kick feature
 $hSt = $pdo->prepare("SELECT user_id FROM streaming_stations WHERE id=?");
 $hSt->execute([$streamId]);
 $hRow = $hSt->fetch(PDO::FETCH_OBJ);
 $hostingId = $hRow->user_id ?? 0;
-// Get all streams for this user
 $userStreams = $pdo->prepare("SELECT id, name, engine, port, status FROM streaming_stations WHERE user_id=? ORDER BY id");
 $userStreams->execute([$hostingId]);
 $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 ?>
+
+<!-- Status Bar -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
+  <div style="background:rgba(15,23,42,.5);border:1px solid rgba(56,189,248,.08);border-radius:14px;padding:16px;text-align:center">
+    <div style="font-size:26px;font-weight:800;color:#4ade80"><?php echo $djData->stream_status ?? 'N/A'; ?></div>
+    <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;font-weight:600">Status</div>
+  </div>
+  <div style="background:rgba(15,23,42,.5);border:1px solid rgba(56,189,248,.08);border-radius:14px;padding:16px;text-align:center">
+    <div style="font-size:26px;font-weight:800;color:#38bdf8"><?php echo $djData->listener_count ?? 0; ?></div>
+    <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;font-weight:600">Listeners</div>
+  </div>
+  <div style="background:rgba(15,23,42,.5);border:1px solid rgba(56,189,248,.08);border-radius:14px;padding:16px;text-align:center">
+    <div style="font-size:26px;font-weight:800;color:#facc15"><?php echo $djData->track_count ?? 0; ?></div>
+    <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;font-weight:600">Tracks</div>
+  </div>
+  <div style="background:rgba(15,23,42,.5);border:1px solid rgba(56,189,248,.08);border-radius:14px;padding:16px;text-align:center">
+    <div style="font-size:26px;font-weight:800;color:#a78bfa" id="dj-source-status"><?php echo $djData->autodj_active ? 'AutoDJ' : ($djData->current_dj ? 'Live DJ' : 'Offline'); ?></div>
+    <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;font-weight:600">Source</div>
+  </div>
 </div>
 
-<!-- Banner Upload -->
-<div class="card" style="border-color:rgba(250,204,21,.15)">
-<h3><i class="fas fa-image"></i> Profile Banner</h3>
-<?php if ($djData->banner): ?>
-<img src="/<?php echo $djData->banner; ?>" class="banner-preview">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+
+<!-- Broadcaster Info -->
+<div style="background:rgba(15,23,42,.5);border:1px solid rgba(56,189,248,.1);border-radius:14px;padding:18px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+<div style="width:32px;height:32px;border-radius:8px;background:rgba(56,189,248,.12);display:flex;align-items:center;justify-content:center;font-size:16px">📡</div>
+<div><div style="font-size:14px;font-weight:700;color:#e0e0e0">Broadcaster Info</div><div style="font-size:10px;color:#64748b">Connection details for your encoder</div></div>
+</div>
+<div class="sam-notice">
+<div class="sam-title">📻 SAM Users</div>
+<div class="sam-text">Enter as <strong class="text-bright">djusername:djpassword</strong> in the <strong class="text-bright">Password</strong> field.</div>
+</div>
+<div style="background:rgba(0,0,0,.3);border-radius:10px;padding:14px;font-family:monospace;font-size:12px">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0"><span style="color:#64748b">Server:</span><span style="color:#4ade80" id="bi-server"><?php echo $djHost; ?></span><button class="copy-btn" onclick="cf('bi-server')">Copy</button></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0"><span style="color:#64748b">Port:</span><span style="color:#38bdf8" id="bi-port"><?php echo $djPort; ?></span><button class="copy-btn" onclick="cf('bi-port')">Copy</button></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0"><span style="color:#64748b">User:</span><span style="color:#38bdf8" id="bi-user"><?php echo htmlspecialchars($djUsername); ?></span><button class="copy-btn" onclick="cf('bi-user')">Copy</button></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0"><span style="color:#64748b">Password:</span><span style="color:#facc15" id="bi-pass"><?php echo $isOwner ? htmlspecialchars($djPass) : '••••••••'; ?></span><button class="copy-btn" onclick="tp()"><?php echo $isOwner ? 'Hide' : 'Show'; ?></button></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0"><span style="color:#64748b">Format:</span><span style="color:#94a3b8">MP3 · <?php echo $station->bitrate ?? 128; ?> kbps</span></div>
+</div>
+<div style="display:flex;gap:6px;margin-top:10px">
+<button class="btn btn-primary btn-sm" onclick="ca()">📋 Copy All</button>
+<button class="btn btn-danger btn-sm" onclick="window.location.href='/dj_panel.php?action=takeover'">🎤 Stop AutoDJ</button>
+</div>
+</div>
+
+<!-- API Connection + Live Status -->
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="background:rgba(15,23,42,.5);border:1px solid rgba(168,85,247,.1);border-radius:14px;padding:18px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<div style="width:32px;height:32px;border-radius:8px;background:rgba(168,85,247,.12);display:flex;align-items:center;justify-content:center;font-size:16px">🔌</div>
+<div><div style="font-size:14px;font-weight:700;color:#e0e0e0">API</div><div style="font-size:10px;color:#64748b">Programmatic access</div></div>
+</div>
+<div style="background:rgba(0,0,0,.3);border-radius:10px;padding:14px;font-family:monospace;font-size:12px">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0"><span style="color:#64748b">Base URL:</span><span style="color:#a855f7;font-size:11px" id="api-base">/api/studio/station/<?php echo $_SESSION['dj_user']['stream_id'] ?? 0; ?></span><button class="copy-btn" onclick="cf('api-base')">Copy</button></div>
+<div style="font-size:10px;color:#64748b;margin-top:4px"><code style="color:#a855f7">GET /connection</code> · <code style="color:#a855f7">GET /djs</code></div>
+</div>
+</div>
+
+<!-- Live Now Status -->
+<div style="background:rgba(15,23,42,.5);border:1px solid rgba(74,222,128,.1);border-radius:14px;padding:18px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<div style="width:32px;height:32px;border-radius:50%;background:<?php echo $djData->current_dj ? 'rgba(74,222,128,.15)' : 'rgba(100,116,139,.12)'; ?>;display:flex;align-items:center;justify-content:center;font-size:16px"><?php echo $djData->current_dj ? '🔴' : '⏹'; ?></div>
+<div><div style="font-size:14px;font-weight:700;color:#e0e0e0"><?php echo $djData->current_dj ? 'Live Now' : 'Offline'; ?></div><div style="font-size:10px;color:#64748b"><?php echo $djData->current_dj ? htmlspecialchars($djData->current_dj) : 'No DJ connected'; ?></div></div>
+</div>
+<?php if ($djData->current_dj): ?>
+<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:10px;font-size:12px;line-height:1.6">
+<div><span style="color:#64748b">Song:</span> <span style="color:#e0e0e0"><?php echo htmlspecialchars($station->current_song ?? 'N/A'); ?></span></div>
+<div><span style="color:#64748b">Listeners:</span> <span style="color:#4ade80"><?php echo (int)($station->listener_count ?? 0); ?></span></div>
+</div>
 <?php endif; ?>
-<form method="POST" enctype="multipart/form-data">
+</div>
+</div>
+
+</div>
+
+<!-- Banner & Upload row -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+
+<div style="background:rgba(15,23,42,.5);border:1px solid rgba(56,189,248,.06);border-radius:14px;overflow:hidden;position:relative;min-height:120px;display:flex;align-items:center;justify-content:center">
+<?php if ($djData->banner): ?>
+<img src="/<?php echo $djData->banner; ?>" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">
+<?php else: ?>
+<div style="text-align:center;color:#475569"><i class="fas fa-image" style="font-size:28px;opacity:.3;display:block;margin-bottom:4px"></i><span style="font-size:12px">No Banner</span></div>
+<?php endif; ?>
+</div>
+
+<div style="background:rgba(15,23,42,.5);border:1px solid rgba(250,204,21,.08);border-radius:14px;padding:16px">
+<div style="font-size:13px;font-weight:700;color:#e0e0e0;margin-bottom:8px">📷 Profile Banner</div>
+<?php if ($djData->banner): ?>
+<img src="/<?php echo $djData->banner; ?>" style="width:100%;max-height:60px;object-fit:cover;border-radius:6px;margin-bottom:6px">
+<?php endif; ?>
+<form method="POST" enctype="multipart/form-data" style="display:flex;gap:6px">
 <input type="hidden" name="action" value="upload_banner">
-<input type="file" name="file" accept="image/*" class="file-input">
-<button class="btn btn-warning btn-sm">Upload Banner</button>
+<input type="file" name="file" accept="image/*" style="flex:1;font-size:11px;color:#94a3b8;padding:4px 0">
+<button class="btn btn-warning btn-sm">Upload</button>
 </form>
 </div>
 
-<!-- Kick Stream -->
-<div class="card" style="border-color:rgba(248,113,113,.2)">
-<h3><i class="fas fa-ban"></i> Kick Source</h3>
-<p class="card-desc">Force-disconnect the current source (AutoDJ or Live DJ). The stream will stop until someone reconnects.</p>
+</div>
+
+<!-- Kick Source -->
+<div style="background:rgba(15,23,42,.5);border:1px solid rgba(248,113,113,.1);border-radius:14px;padding:16px;margin-bottom:14px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+<div style="width:32px;height:32px;border-radius:8px;background:rgba(248,113,113,.12);display:flex;align-items:center;justify-content:center;font-size:16px">⛔</div>
+<div><div style="font-size:14px;font-weight:700;color:#e0e0e0">Kick Source</div><div style="font-size:10px;color:#64748b">Force-disconnect current source from a stream</div></div>
+</div>
 <?php if (empty($myStreams)): ?>
 <p class="empty-text">No streams available.</p>
 <?php else: ?>
@@ -712,12 +713,10 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
   $stEngine = strtolower($st->engine ?? $st->server_type ?? 'icecast');
   $stLabel = strtoupper($stEngine === 'shoutcast' || $stEngine === 'shoutcast1' || $stEngine === 'shoutcast2' ? 'SHOUTcast' : 'Icecast');
 ?>
-<div class="stream-row">
-<div>
-<div class="stream-name"><?php echo htmlspecialchars($st->name ?? "Stream #{$st->id}"); ?></div>
-<div class="stream-meta"><?php echo $stLabel; ?> · Port <?php echo $st->port; ?> · <span class="stream-status-badge" style="color:<?php echo $st->status === 'running' ? '#4ade80' : '#f87171'; ?>"><?php echo $st->status; ?></span></div>
-</div>
-<form method="POST" action="/dj_panel.php?action=kick" style="display:inline" onsubmit="return confirm('Kick the source on <?php echo htmlspecialchars($st->name ?? 'this stream'); ?>?');">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+<div><div style="font-weight:600;font-size:13px;color:#e0e0e0"><?php echo htmlspecialchars($st->name ?? "Stream #{$st->id}"); ?></div>
+<div style="font-size:11px;color:#64748b"><?php echo $stLabel; ?> · Port <?php echo $st->port; ?> · <span style="color:<?php echo $st->status === 'running' ? '#4ade80' : '#f87171'; ?>"><?php echo $st->status; ?></span></div></div>
+<form method="POST" action="/dj_panel.php?action=kick" onsubmit="return confirm('Kick source on <?php echo htmlspecialchars($st->name ?? 'this stream'); ?>?');">
 <input type="hidden" name="stream_id" value="<?php echo $st->id; ?>">
 <button class="btn btn-danger btn-sm">Kick</button>
 </form>
@@ -725,9 +724,12 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 <?php endforeach; ?>
 <?php endif; ?>
 </div>
-</div>
 
-</div>
+<script>
+function cf(id){var t=document.getElementById(id).textContent;navigator.clipboard.writeText(t);var b=event.target;b.textContent='Copy';}
+function tp(){var p=document.getElementById('bi-pass');if(p.textContent=='••••••••'){p.textContent='<?php echo addslashes($djPass); ?>';event.target.textContent='Hide'}else{p.textContent='••••••••';event.target.textContent='Show'}}
+function ca(){navigator.clipboard.writeText('Server: <?php echo addslashes($djHost); ?>\nPort: <?php echo $djPort; ?>\nUsername: <?php echo addslashes($djUsername); ?>\nPassword: <?php echo $isOwner ? addslashes($djPass) : '<your DJ password>'; ?>\nFormat: MP3 <?php echo $station->bitrate ?? 128; ?>kbps');event.target.textContent='Copied!';setTimeout(function(){event.target.textContent='📋 Copy All'},2000);}
+</script>
 </div>
 </div>
 
