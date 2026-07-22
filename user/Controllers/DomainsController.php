@@ -175,6 +175,10 @@ class DomainsController extends Controller
         if (!empty($input['value'])) $update['value'] = $input['value'];
         if (!empty($input['ttl'])) $update['ttl'] = (int)$input['ttl'];
         if (!empty($input['type'])) $update['type'] = strtoupper($input['type']);
+        if (!empty($input['name'] ?? '')) {
+            $name = preg_replace('/[^a-z0-9\-\.]/i', '', $input['name']);
+            if (strlen($name) > 0) $update['name'] = $name;
+        }
         if (!empty($update)) {
             $this->db->table('dns_records')->where('id', $id)->update($update);
             $zone = $this->db->table('dns_zones')->where('id', $record->zone_id)->first();
