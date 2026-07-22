@@ -632,8 +632,12 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 <div class="sam-title">📻 SAM Users</div>
 <div class="sam-text">Enter as <strong class="text-bright">djusername:djpassword</strong> in the <strong class="text-bright">Password</strong> field.</div>
 <div style="margin-top:6px;display:flex;gap:6px;align-items:center;background:rgba(0,0,0,.3);border-radius:6px;padding:6px 10px;font-family:monospace;font-size:12px">
-<span style="color:#4ade80;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="sam-creds"><?php echo htmlspecialchars($djUsername); ?>:<?php echo $isOwner ? htmlspecialchars($djPass) : 'yourpassword'; ?></span>
-<button class="copy-btn" onclick="cf('sam-creds')">Copy</button>
+<span style="color:#4ade80;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="sam-user"><?php echo htmlspecialchars($djUsername); ?></span>
+<span style="color:#facc15" id="sam-pass-sep">:</span>
+<span style="color:#facc15" id="sam-pass-display">••••••••</span>
+<span style="color:#facc15;display:none" id="sam-pass-value"><?php echo $isOwner ? htmlspecialchars($djPass) : 'your-dj-password'; ?></span>
+<button class="copy-btn" onclick="sc()">Copy</button>
+<button class="copy-btn" onclick="stp()" id="sam-toggle-btn">Show</button>
 </div>
 </div>
 <div style="background:rgba(0,0,0,.3);border-radius:10px;padding:14px;font-family:monospace;font-size:12px">
@@ -731,6 +735,8 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 
 <script>
 function cf(id){var t=document.getElementById(id).textContent;navigator.clipboard.writeText(t);var b=event.target;b.textContent='Copied!';setTimeout(function(){b.textContent='Copy'},1500);}
+function sc(){var u=document.getElementById('sam-user').textContent,p=document.getElementById('sam-pass-value').textContent;navigator.clipboard.writeText(u+':'+p);event.target.textContent='Copied!';setTimeout(function(){event.target.textContent='Copy'},1500);}
+function stp(){var p=document.getElementById('sam-pass-display'),v=document.getElementById('sam-pass-value'),b=document.getElementById('sam-toggle-btn');if(p.style.display==='none'){p.style.display='';v.style.display='none';b.textContent='Show'}else{p.style.display='none';v.style.display='';b.textContent='Hide'}}
 function tp(){var p=document.getElementById('bi-pass');if(p.textContent=='••••••••'){p.textContent='<?php echo addslashes($djPass); ?>';event.target.textContent='Hide'}else{p.textContent='••••••••';event.target.textContent='Show'}}
 function ca(){navigator.clipboard.writeText('Server: <?php echo addslashes($djHost); ?>\nPort: <?php echo $djPort; ?>\nUsername: <?php echo addslashes($djUsername); ?>\nPassword: <?php echo $isOwner ? addslashes($djPass) : '<your DJ password>'; ?>\nFormat: MP3 <?php echo $station->bitrate ?? 128; ?>kbps');event.target.textContent='Copied!';setTimeout(function(){event.target.textContent='📋 Copy All'},2000);}
 </script>
