@@ -203,7 +203,7 @@ document.querySelectorAll('.nav-section').forEach(function(section) {
 })();
 
 // Enhanced menu search
-function filterMenu(q){q=q.toLowerCase().trim();document.querySelectorAll('.sidebar .nav-link').forEach(function(a){var m=!q||a.textContent.toLowerCase().indexOf(q)>-1;a.style.display=m?'':'';});document.getElementById('collapseToggle').style.display='none';}
+function filterMenu(q){q=q.toLowerCase().trim();document.querySelectorAll('.sidebar .nav-link').forEach(function(a){var m=!q||a.textContent.toLowerCase().indexOf(q)>-1;a.style.display=m?'':'';});var ct=document.getElementById('collapseToggle');if(ct)ct.style.display='none';}
 
 // Chat waiting count polling
 (function() {
