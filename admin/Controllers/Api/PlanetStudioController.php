@@ -512,4 +512,15 @@ class PlanetStudioController extends Controller
 
         return $this->json(['success' => true, 'message' => 'API config updated']);
     }
+
+    // GET /api/autodj/restart/{compositeId} — restart AutoDJ (called from DJ Port Listener on disconnect)
+    public function restartAutodj($compositeId)
+    {
+        $realId = (int)$compositeId % 10000;
+        $player = new \Services\RadioAutoDJPlayer((int)$compositeId);
+        $player->stop();
+        sleep(1);
+        $ok = $player->start();
+        return $this->json(['success' => $ok, 'message' => $ok ? 'AutoDJ restarted' : 'Failed to restart AutoDJ']);
+    }
 }
