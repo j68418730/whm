@@ -192,6 +192,27 @@ class DjPortListener
                 $conn['dj'] = $dj;
                 $this->log("Auth OK: $djUser on station {$conn['station_id']} -> $dj->station_name");
 
+                // Kill any existing AutoDJ for this station before connecting to source port
+                try {
+                    // Find and kill the AutoDJ runner process
+                    $pidFile = "/home/" . ($dj->hosting_username ?? '') . "/radio/autodj/autodj.pid";
+                    if (!file_exists($pidFile)) {
+                        // Try alternative paths
+                        $pidFile = "/home/planethosts/radio/autodj/autodj.pid";
+                    }
+                    if (file_exists($pidFile)) {
+                        $pid = (int)trim(@file_get_contents($pidFile));
+                        if ($pid > 0) {
+                            @\posix_kill($pid, 15);
+                            usleep(300000);
+                            @\posix_kill($pid, 9);
+                        }
+                    }
+                    // Also pkill by station ID pattern (may work if exec is available)
+                    @\posix_kill((int)`pgrep -f "runner_{$conn['station_id']}" 2>/dev/null`, 9);
+                } catch (\Exception $e) {}
+                usleep(500000);
+
                 // Update DB: mark DJ live, update metadata
                 try {
                     $this->pdo->exec("UPDATE streaming_stations SET autodj_enabled=0, current_dj=" . $this->pdo->quote($djUser) . ", current_song='Now Playing...', current_artist=" . $this->pdo->quote($djUser) . ", current_song_started=NOW() WHERE id=" . (int)$conn['station_id']);
@@ -304,9 +325,11 @@ class DjPortListener
             "SELECT rd.id AS dj_id, rd.username, rd.password AS dj_password,
                     ss.name AS station_name, ss.port AS station_port,
                     ss.plain_password AS station_password, ss.engine,
-                    ss.liquidsoap_port, ss.mount_point
+                    ss.liquidsoap_port, ss.mount_point,
+                    hu.username AS hosting_username
              FROM radio_djs rd
              JOIN streaming_stations ss ON ss.id = rd.stream_id
+             JOIN hosting_users hu ON hu.id = ss.user_id
              WHERE rd.stream_id = ? AND rd.username = ? AND rd.can_stream = 1 AND rd.status = 'active'
                AND ss.status = 'running'
              LIMIT 1"
