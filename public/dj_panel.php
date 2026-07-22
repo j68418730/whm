@@ -54,12 +54,14 @@ if ($_POST && $action === 'login') {
     $stmt->execute([$username]);
     $dj = $stmt->fetch(PDO::FETCH_OBJ);
     if ($dj && password_verify($password, $dj->password)) {
+        // Store plain password in DB and session (for display in SAM credentials)
+        $pdo->prepare("UPDATE radio_djs SET plain_password=?, last_active=NOW() WHERE id=?")->execute([$password, $dj->id]);
         $_SESSION['dj_user'] = [
             'id' => $dj->id, 'stream_id' => $dj->stream_id, 'username' => $dj->username,
             'name' => $dj->name ?: $dj->username, 'stream_name' => 'Stream',
             'port' => $dj->port, 'stream_status' => $dj->stream_status,
+            'plain_password' => $password,
         ];
-        $pdo->prepare("UPDATE radio_djs SET last_active = NOW() WHERE id = ?")->execute([$dj->id]);
     header('Location: /dj_panel.php?action=dashboard');
     exit;
 }
@@ -279,6 +281,44 @@ if ($action === 'remove_request' && isset($_GET['req_id']) && isset($_SESSION['d
     $pdo->prepare("UPDATE radio_requests SET status = 'removed' WHERE id = ? AND stream_id = ?")
         ->execute([$reqId, $_SESSION['dj_user']['stream_id']]);
     header('Location: /dj_panel.php?action=dashboard');
+    exit;
+}
+
+// ─── SAVE DJ API CONFIG ───
+if ($action === 'save_api_config' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SESSION['dj_user'])) {
+    header('Content-Type: application/json');
+    try {
+        $djId = $_SESSION['dj_user']['id'] ?? 0;
+        $streamId = $_SESSION['dj_user']['stream_id'] ?? 0;
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        
+        // Ensure config record exists
+        $config = $pdo->prepare("SELECT id FROM dj_api_config WHERE dj_id = ?");
+        $config->execute([$djId]);
+        if (!$config->fetchColumn()) {
+            $apiKey = bin2hex(random_bytes(16));
+            $pdo->prepare("INSERT INTO dj_api_config (dj_id, stream_id, dj_name, dj_display_name, api_key, request_api_url) VALUES (?,?,?,?,?,?)")
+                ->execute([$djId, $streamId, $_SESSION['dj_user']['name'] ?? '', $_SESSION['dj_user']['name'] ?? '', $apiKey, 'https://planet-hosts.com/connector/station/' . $streamId . '/requests']);
+        }
+        
+        $update = [];
+        if (isset($input['api_url'])) $update['api_url'] = $input['api_url'];
+        if (isset($input['api_key'])) $update['api_key'] = $input['api_key'];
+        if (isset($input['request_api_url'])) $update['request_api_url'] = $input['request_api_url'];
+        if (isset($input['enable_song_requests'])) $update['enable_song_requests'] = (int)$input['enable_song_requests'];
+        if (isset($input['send_now_playing'])) $update['send_now_playing'] = (int)$input['send_now_playing'];
+        
+        if (!empty($update)) {
+            $sets = []; $params = [];
+            foreach ($update as $k => $v) { $sets[] = "$k=?"; $params[] = $v; }
+            $params[] = $djId;
+            $pdo->prepare("UPDATE dj_api_config SET " . implode(',', $sets) . " WHERE dj_id=?")->execute($params);
+        }
+        
+        echo json_encode(['success' => true]);
+    } catch (\Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
     exit;
 }
 
@@ -635,7 +675,15 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 <span style="color:#4ade80;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="sam-user"><?php echo htmlspecialchars($djUsername); ?></span>
 <span style="color:#facc15" id="sam-pass-sep">:</span>
 <span style="color:#facc15" id="sam-pass-display">••••••••</span>
-<span style="color:#facc15;display:none" id="sam-pass-value"><?php echo $isOwner ? htmlspecialchars($djPass) : 'your-dj-password'; ?></span>
+<span style="color:#facc15;display:none" id="sam-pass-value"><?php 
+$samPass = $_SESSION['dj_user']['plain_password'] ?? '';
+if (!$samPass) {
+    $sp = $pdo->prepare("SELECT plain_password FROM radio_djs WHERE id=?");
+    $sp->execute([$_SESSION['dj_user']['id'] ?? 0]);
+    $samPass = $sp->fetchColumn() ?: 'password';
+}
+echo htmlspecialchars($samPass);
+?></span>
 <button class="copy-btn" onclick="sc()">Copy</button>
 <button class="copy-btn" onclick="stp()" id="sam-toggle-btn">Show</button>
 </div>
@@ -1072,8 +1120,10 @@ if (!empty($galleryData)): ?>
 </div>
 </div>
 
+<div id="api-save-msg" style="display:none;max-width:600px;margin:10px auto 0;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);border-radius:8px;padding:8px 12px;color:#4ade80;font-size:12px;text-align:center"></div>
+
 <script>
-// Load DJ API config
+var _apiData = null;
 (function(){
   var x=new XMLHttpRequest();
   x.open('GET','/dj_panel.php?action=get_api_config',true);
@@ -1081,17 +1131,8 @@ if (!empty($galleryData)): ?>
     try{
       var r=JSON.parse(x.responseText);
       if(r.success&&r.data){
-        var d=r.data,html='';
-        html+='<div class="conn-box" style="margin-top:12px">';
-        html+='<div class="conn-row"><span><span class="conn-label">DJ Name:</span> <span class="conn-value">'+escapeHtml(d.dj_name||'')+'</span></span></div>';
-        html+='<div class="conn-row"><span><span class="conn-label">Display Name:</span> <span class="conn-value">'+escapeHtml(d.dj_display_name||'')+'</span></span></div>';
-        html+='<div class="conn-row"><span><span class="conn-label">API URL:</span> <span class="conn-value api" id="dj-api-url">'+(d.api_url||'')+'</span></span><button class="copy-btn" onclick="copyField(\'dj-api-url\')">Copy</button></div>';
-        html+='<div class="conn-row"><span><span class="conn-label">API Key:</span> <span class="conn-value pw" id="dj-api-key">'+(d.api_key||'')+'</span></span><button class="copy-btn" onclick="copyField(\'dj-api-key\')">Copy</button></div>';
-        html+='<div class="conn-row"><span><span class="conn-label">Requests URL:</span> <span class="conn-value api" id="dj-req-url">'+(d.request_api_url||'')+'</span></span><button class="copy-btn" onclick="copyField(\'dj-req-url\')">Copy</button></div>';
-        html+='<div class="conn-row"><span><span class="conn-label">Song Requests:</span> <span class="conn-value" style="color:'+(d.enable_song_requests?'#4ade80':'#f87171')+'">'+(d.enable_song_requests?'Enabled':'Disabled')+'</span></span></div>';
-        html+='<div class="conn-row"><span><span class="conn-label">Now Playing:</span> <span class="conn-value" style="color:'+(d.send_now_playing?'#4ade80':'#f87171')+'">'+(d.send_now_playing?'Enabled':'Disabled')+'</span></span></div>';
-        html+='</div>';
-        document.getElementById('dj-api-config').innerHTML=html;
+        _apiData = r.data;
+        renderApiForm(r.data);
       } else {
         document.getElementById('dj-api-config').innerHTML='<div style="text-align:center;padding:20px;color:#64748b;font-size:13px">Could not load API config.</div>';
       }
@@ -1104,8 +1145,38 @@ if (!empty($galleryData)): ?>
   };
   x.send();
 })();
+function renderApiForm(d){
+  var h='';
+  h+='<div class="form-group"><label>API URL</label><input id="f-api-url" value="'+escapeHtml(d.api_url||'https://planet-hosts.com/api')+'" placeholder="https://planet-hosts.com/api"></div>';
+  h+='<div class="form-group"><label>API Key / Token</label><input id="f-api-key" value="'+escapeHtml(d.api_key||'')+'" placeholder="Your API key"></div>';
+  h+='<div class="form-group"><label>Request API URL</label><input id="f-req-url" value="'+escapeHtml(d.request_api_url||'')+'" placeholder="https://planet-hosts.com/connector/station/'+d.stream_id+'/requests"></div>';
+  h+='<div style="display:flex;gap:12px;margin-bottom:12px">';
+  h+='<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0"><input type="checkbox" id="f-enable-req"'+(d.enable_song_requests?' checked':'')+'> Song Requests</label>';
+  h+='<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0"><input type="checkbox" id="f-enable-np"'+(d.send_now_playing?' checked':'')+'> Now Playing</label>';
+  h+='</div>';
+  h+='<button class="btn btn-primary btn-sm" onclick="saveApiConfig()">Save Settings</button>';
+  document.getElementById('dj-api-config').innerHTML = h;
+}
+function saveApiConfig(){
+  var data = {
+    api_url: document.getElementById('f-api-url').value,
+    api_key: document.getElementById('f-api-key').value,
+    request_api_url: document.getElementById('f-req-url').value,
+    enable_song_requests: document.getElementById('f-enable-req').checked ? 1 : 0,
+    send_now_playing: document.getElementById('f-enable-np').checked ? 1 : 0
+  };
+  var x=new XMLHttpRequest();
+  x.open('POST','/dj_panel.php?action=save_api_config',true);
+  x.setRequestHeader('Content-Type','application/json');
+  x.onload=function(){
+    var msg=document.getElementById('api-save-msg');
+    msg.style.display='block';
+    try{var r=JSON.parse(x.responseText);msg.textContent=r.success?'Settings saved!':'Save failed.';msg.style.background=r.success?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)';msg.style.color=r.success?'#4ade80':'#f87171';}catch(e){msg.textContent='Saved.'}
+    setTimeout(function(){msg.style.display='none'},3000);
+  };
+  x.send(JSON.stringify(data));
+}
 function escapeHtml(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML;}
-function copyField(id){var t=document.getElementById(id).textContent;navigator.clipboard.writeText(t);var b=event.target;b.textContent='Copied!';setTimeout(function(){b.textContent='Copy'},1500);}
 </script>
 <script>
 function sw(e,id){
