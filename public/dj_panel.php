@@ -559,19 +559,52 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
             $isActiveStation = $stationId === $_SESSION['dj_user']['stream_id'];
             echo "<div class=\"dj-panel" . ($isActiveStation ? ' act' : '') . "\" id=\"pn-station-{$stationId}\">\n";
             
-            // Station-specific content
-            echo "<div class=\"card\">\n";
-            $statusColor = $station->status === 'running' ? '#4ade80' : '#f87171';
-            echo "<h3><i class=\"fas fa-broadcast-tower\"></i> " . htmlspecialchars($station->name) . "</h3>\n";
-            echo "<div class=\"station-info\">\n";
-            echo "<strong>Engine:</strong> " . htmlspecialchars($station->engine) . "<br>\n";
-            echo "<strong>Port:</strong> " . htmlspecialchars($station->port) . "<br>\n";
-            echo "<strong>Status:</strong> <span style=\"color:{$statusColor};\">" . htmlspecialchars($station->status) . "</span><br>\n";
-            echo "<strong>Stream ID:</strong> {$station->id}<br>\n";
+            // Full Broadcaster Info card for each station
+            $sPort = $station->dj_port ?? $station->port ?? 8000;
+            $sPass = $station->plain_password ?? '';
+            $sEngine = strtolower($station->engine ?? 'icecast');
+            $sLabel = ($sEngine === 'shoutcast' || $sEngine === 'shoutcast1' || $sEngine === 'shoutcast2') ? 'SHOUTcast' : 'Icecast';
+            $sUser = $_SESSION['dj_user']['username'] ?? '';
+            $djName = htmlspecialchars($station->name ?? "Stream #{$stationId}");
+            $djUserE = htmlspecialchars($sUser);
+            
+            echo "<div style=\"background:rgba(15,23,42,.5);border:1px solid rgba(56,189,248,.1);border-radius:14px;padding:18px;margin-bottom:14px\">\n";
+            echo "<div style=\"display:flex;align-items:center;gap:8px;margin-bottom:12px\">\n";
+            echo "<div style=\"width:32px;height:32px;border-radius:8px;background:rgba(56,189,248,.12);display:flex;align-items:center;justify-content:center;font-size:16px\">📡</div>\n";
+            echo "<div><div style=\"font-size:14px;font-weight:700;color:#e0e0e0\">Broadcaster Info — {$djName}</div><div style=\"font-size:10px;color:#64748b\">{$sLabel} · Port {$station->port} · <span style=\"color:" . ($station->status === 'running' ? '#4ade80' : '#f87171') . "\">{$station->status}</span></div></div>\n";
             echo "</div>\n";
-            echo "<button class=\"btn btn-primary btn-sm\" onclick=\"window.location.href='/dj_panel.php?action=dashboard&stream_id={$stationId}'\" style=\"margin-top:8px;\">\n";
-            echo "Go to Station Dashboard\n";
-            echo "</button>\n";
+            
+            // SAM Credentials
+            $sp = $pdo->prepare("SELECT plain_password FROM radio_djs WHERE id=?");
+            $sp->execute([$_SESSION['dj_user']['id'] ?? 0]);
+            $pw = $sp->fetchColumn() ?: 'password';
+            
+            echo "<div style=\"background:rgba(250,204,21,.06);border:1px solid rgba(250,204,21,.15);border-radius:8px;padding:10px;margin-bottom:10px\">\n";
+            echo "<div style=\"font-size:11px;color:#facc15;font-weight:600;margin-bottom:4px\">📻 SAM Users</div>\n";
+            echo "<div style=\"font-size:11px;color:#94a3b8\">Enter as <strong style=\"color:#e0e0e0\">djusername:djpassword</strong> in the <strong style=\"color:#e0e0e0\">Password</strong> field.</div>\n";
+            echo "<div style=\"margin-top:6px;display:flex;gap:6px;align-items:center;background:rgba(0,0,0,.3);border-radius:6px;padding:6px 10px;font-family:monospace;font-size:12px\">\n";
+            echo "<span style=\"color:#4ade80\" id=\"sam-user-{$stationId}\">{$djUserE}</span>\n";
+            echo "<span style=\"color:#facc15\">:</span>\n";
+            echo "<span style=\"color:#facc15\" id=\"sam-pass-display-{$stationId}\">••••••••</span>\n";
+            echo "<span style=\"color:#facc15;display:none\" id=\"sam-pass-value-{$stationId}\">" . htmlspecialchars($pw) . "</span>\n";
+            echo "<button class=\"copy-btn\" onclick=\"sc2({$stationId})\">Copy</button>\n";
+            echo "<button class=\"copy-btn\" onclick=\"stp2({$stationId})\" id=\"sam-toggle-{$stationId}\">Show</button>\n";
+            echo "</div></div>\n";
+            
+            // Connection details
+            echo "<div style=\"background:rgba(0,0,0,.3);border-radius:10px;padding:14px;font-family:monospace;font-size:12px\">\n";
+            echo "<div style=\"display:flex;justify-content:space-between;align-items:center;padding:4px 0\"><span style=\"color:#64748b\">Server:</span><span style=\"color:#4ade80\" id=\"bi-server-{$stationId}\">{$djHost}</span><button class=\"copy-btn\" onclick=\"cf('bi-server-{$stationId}')\">Copy</button></div>\n";
+            echo "<div style=\"display:flex;justify-content:space-between;align-items:center;padding:4px 0\"><span style=\"color:#64748b\">DJ Port:</span><span style=\"color:#38bdf8\" id=\"bi-port-{$stationId}\">{$sPort}</span><button class=\"copy-btn\" onclick=\"cf('bi-port-{$stationId}')\">Copy</button></div>\n";
+            echo "<div style=\"display:flex;justify-content:space-between;align-items:center;padding:4px 0\"><span style=\"color:#64748b\">User:</span><span style=\"color:#38bdf8\">{$djUserE}</span></div>\n";
+            echo "<div style=\"display:flex;justify-content:space-between;align-items:center;padding:4px 0\"><span style=\"color:#64748b\">Password:</span><span style=\"color:#facc15\" id=\"bi-pass-{$stationId}\">" . ($isOwner ? htmlspecialchars($sPass) : '••••••••') . "</span><button class=\"copy-btn\" onclick=\"tp2({$stationId})\">" . ($isOwner ? 'Hide' : 'Show') . "</button></div>\n";
+            echo "<div style=\"display:flex;justify-content:space-between;align-items:center;padding:4px 0\"><span style=\"color:#64748b\">Format:</span><span style=\"color:#94a3b8\">MP3 · " . ((int)($station->bitrate ?? 128)) . " kbps</span></div>\n";
+            echo "</div>\n";
+            
+            // Copy All and Kick buttons
+            echo "<div style=\"display:flex;gap:6px;margin-top:10px\">\n";
+            echo "<button class=\"btn btn-primary btn-sm\" onclick=\"ca2({$stationId},'{$djHost}','{$sPort}','{$djUserE}','" . htmlspecialchars($pw) . "')\">📋 Copy All</button>\n";
+            echo "<button class=\"btn btn-danger btn-sm\" onclick=\"window.location.href='/dj_panel.php?action=takeover'\">🎤 Stop AutoDJ</button>\n";
+            echo "</div>\n";
             echo "</div>\n";
             echo "</div>\n";
         }
@@ -749,6 +782,10 @@ function sc(){var u=document.getElementById('sam-user').textContent,p=document.g
 function stp(){var p=document.getElementById('sam-pass-display'),v=document.getElementById('sam-pass-value'),b=document.getElementById('sam-toggle-btn');if(p.style.display==='none'){p.style.display='';v.style.display='none';b.textContent='Show'}else{p.style.display='none';v.style.display='';b.textContent='Hide'}}
 function tp(){var p=document.getElementById('bi-pass');if(p.textContent=='••••••••'){p.textContent='<?php echo addslashes($djPass); ?>';event.target.textContent='Hide'}else{p.textContent='••••••••';event.target.textContent='Show'}}
 function ca(){navigator.clipboard.writeText('Server: <?php echo addslashes($djHost); ?>\nPort: <?php echo $djPort; ?>\nUsername: <?php echo addslashes($djUsername); ?>\nPassword: <?php echo $isOwner ? addslashes($djPass) : '<your DJ password>'; ?>\nFormat: MP3 <?php echo $station->bitrate ?? 128; ?>kbps');event.target.textContent='Copied!';setTimeout(function(){event.target.textContent='📋 Copy All'},2000);}
+function sc2(s){var u=document.getElementById('sam-user-'+s).textContent,p=document.getElementById('sam-pass-value-'+s).textContent;navigator.clipboard.writeText(u+':'+p);event.target.textContent='Copied!';setTimeout(function(){event.target.textContent='Copy'},1500);}
+function stp2(s){var p=document.getElementById('sam-pass-display-'+s),v=document.getElementById('sam-pass-value-'+s),b=document.getElementById('sam-toggle-'+s);if(p.style.display==='none'){p.style.display='';v.style.display='none';b.textContent='Show'}else{p.style.display='none';v.style.display='';b.textContent='Hide'}}
+function tp2(s){var p=document.getElementById('bi-pass-'+s);if(p.textContent=='••••••••'){p.textContent='<?php echo addslashes($djPass); ?>';event.target.textContent='Hide'}else{p.textContent='••••••••';event.target.textContent='Show'}}
+function ca2(s,h,pt,u,pw){navigator.clipboard.writeText('Server: '+h+'\nDJ Port: '+pt+'\nUsername: '+u+'\nPassword: '+pw+'\nFormat: MP3 128kbps');event.target.textContent='Copied!';setTimeout(function(){event.target.textContent='📋 Copy All'},2000);}
 </script>
 </div>
 </div>
