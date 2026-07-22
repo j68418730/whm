@@ -36,6 +36,7 @@ $router->post('/user/domains/record/{zoneId}', 'User\Controllers\DomainsControll
 $router->get('/user/domains/record/delete/{zoneId}/{recordId}', 'User\Controllers\DomainsController@deleteRecord');
 $router->get('/user/subdomains', 'User\Controllers\DomainsController@subdomains');
 $router->post('/user/subdomains/create', 'User\Controllers\DomainsController@createSubdomain');
+$router->post('/user/subdomains/dns-update/{id}', 'User\Controllers\DomainsController@updateDnsRecord');
 $router->get('/user/subdomains/delete/{id}', 'User\Controllers\DomainsController@deleteSubdomain');
 $router->get('/user/redirects', 'User\Controllers\DomainsController@redirects');
 $router->post('/user/redirects/add', 'User\Controllers\DomainsController@addRedirect');
