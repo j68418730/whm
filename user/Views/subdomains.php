@@ -71,7 +71,7 @@ input,select{padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,25
 <div id="dns-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.8);align-items:center;justify-content:center" onclick="if(event.target===this)closeDns()">
 <div style="background:rgba(8,16,28,.95);border:1px solid rgba(56,189,248,.15);border-radius:16px;padding:28px;max-width:400px;width:92%;margin:auto">
 <div style="font-size:16px;font-weight:700;margin-bottom:16px;color:#38bdf8">🌍 Edit DNS Record</div>
-<div class="form-group"><label>Record Name</label><input id="dns-name" readonly style="background:rgba(0,0,0,.2);font-family:monospace"></div>
+<div class="form-group"><label>Record Name</label><input id="dns-name" placeholder="subdomain (e.g. blog)" style="font-family:monospace"></div>
 <div class="form-group"><label>Type</label><select id="dns-type" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px;outline:none"><option value="A">A (IPv4)</option><option value="AAAA">AAAA (IPv6)</option><option value="CNAME">CNAME</option><option value="TXT">TXT</option></select></div>
 <div class="form-group"><label>Value</label><input id="dns-value" placeholder="IP address or target"></div>
 <div class="form-group"><label>TTL (seconds)</label><input id="dns-ttl" type="number" value="300"></div>
@@ -87,7 +87,7 @@ input,select{padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,25
 var _dnsId = 0;
 function editDns(id,name,value,ttl){
   _dnsId=id;
-  document.getElementById('dns-name').value=name+'.planet-hosts.com';
+  document.getElementById('dns-name').value=name;
   document.getElementById('dns-value').value=value;
   document.getElementById('dns-ttl').value=ttl||300;
   document.getElementById('dns-type').value='A';
@@ -101,6 +101,7 @@ function saveDns(){
   var val=document.getElementById('dns-value').value.trim();
   var ttl=document.getElementById('dns-ttl').value;
   var type=document.getElementById('dns-type').value;
+  var name=document.getElementById('dns-name').value.trim();
   if(!val){document.getElementById('dns-msg').textContent='Enter a value.';return;}
   var x=new XMLHttpRequest();
   x.open('POST','/user/subdomains/dns-update/'+_dnsId,true);
@@ -108,7 +109,7 @@ function saveDns(){
   x.onload=function(){
     try{var r=JSON.parse(x.responseText);document.getElementById('dns-msg').style.color=r.success?'#4ade80':'#f87171';document.getElementById('dns-msg').textContent=r.message||(r.success?'Saved!':'Failed.');if(r.success)setTimeout(closeDns,1000);}catch(e){document.getElementById('dns-msg').textContent='Error.';}
   };
-  x.send(JSON.stringify({value:val,ttl:parseInt(ttl)||300,type:type}));
+  x.send(JSON.stringify({name:name,value:val,ttl:parseInt(ttl)||300,type:type}));
 }
 </script>
 <?php endif; ?>
