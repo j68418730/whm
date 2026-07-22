@@ -284,44 +284,6 @@ if ($action === 'remove_request' && isset($_GET['req_id']) && isset($_SESSION['d
     exit;
 }
 
-// ─── SAVE DJ API CONFIG ───
-if ($action === 'save_api_config' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SESSION['dj_user'])) {
-    header('Content-Type: application/json');
-    try {
-        $djId = $_SESSION['dj_user']['id'] ?? 0;
-        $streamId = $_SESSION['dj_user']['stream_id'] ?? 0;
-        $input = json_decode(file_get_contents('php://input'), true) ?: [];
-        
-        // Ensure config record exists
-        $config = $pdo->prepare("SELECT id FROM dj_api_config WHERE dj_id = ?");
-        $config->execute([$djId]);
-        if (!$config->fetchColumn()) {
-            $apiKey = bin2hex(random_bytes(16));
-            $pdo->prepare("INSERT INTO dj_api_config (dj_id, stream_id, dj_name, dj_display_name, api_key, request_api_url) VALUES (?,?,?,?,?,?)")
-                ->execute([$djId, $streamId, $_SESSION['dj_user']['name'] ?? '', $_SESSION['dj_user']['name'] ?? '', $apiKey, 'https://planet-hosts.com/connector/station/' . $streamId . '/requests']);
-        }
-        
-        $update = [];
-        if (isset($input['api_url'])) $update['api_url'] = $input['api_url'];
-        if (isset($input['api_key'])) $update['api_key'] = $input['api_key'];
-        if (isset($input['request_api_url'])) $update['request_api_url'] = $input['request_api_url'];
-        if (isset($input['enable_song_requests'])) $update['enable_song_requests'] = (int)$input['enable_song_requests'];
-        if (isset($input['send_now_playing'])) $update['send_now_playing'] = (int)$input['send_now_playing'];
-        
-        if (!empty($update)) {
-            $sets = []; $params = [];
-            foreach ($update as $k => $v) { $sets[] = "$k=?"; $params[] = $v; }
-            $params[] = $djId;
-            $pdo->prepare("UPDATE dj_api_config SET " . implode(',', $sets) . " WHERE dj_id=?")->execute($params);
-        }
-        
-        echo json_encode(['success' => true]);
-    } catch (\Exception $e) {
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-    }
-    exit;
-}
-
 // ─── GET DJ API CONFIG (AJAX endpoint) ───
 if ($action === 'get_api_config' && isset($_SESSION['dj_user'])) {
     header('Content-Type: application/json');
@@ -1112,18 +1074,15 @@ if (!empty($galleryData)): ?>
 
 <div class="dj-panel" id="pn-api">
 <div class="card" style="max-width:600px;margin:0 auto">
-<h3><i class="fas fa-code"></i> DJ API Configuration</h3>
-<p class="card-desc">Your personal API credentials for the Planet Hosts Studio desktop app and third-party integrations.</p>
+<h3><i class="fas fa-code"></i> DJ API Credentials</h3>
+<p class="card-desc">Copy these credentials into Planet Hosts Studio (Edit Stream → DJ API & Request Settings tab).</p>
 <div id="dj-api-config">
 <div style="text-align:center;padding:20px;color:#64748b;font-size:13px">Loading...</div>
 </div>
 </div>
 </div>
 
-<div id="api-save-msg" style="display:none;max-width:600px;margin:10px auto 0;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);border-radius:8px;padding:8px 12px;color:#4ade80;font-size:12px;text-align:center"></div>
-
 <script>
-var _apiData = null;
 (function(){
   var x=new XMLHttpRequest();
   x.open('GET','/dj_panel.php?action=get_api_config',true);
@@ -1131,8 +1090,19 @@ var _apiData = null;
     try{
       var r=JSON.parse(x.responseText);
       if(r.success&&r.data){
-        _apiData = r.data;
-        renderApiForm(r.data);
+        var d=r.data;
+        var apiUrl = d.api_url || 'https://planet-hosts.com/api';
+        var apiKey = d.api_key || '';
+        var reqUrl = d.request_api_url || 'https://planet-hosts.com/connector/station/'+d.stream_id+'/requests';
+        var h='<div class="conn-box">';
+        h+='<div class="conn-row"><span><span class="conn-label">API URL:</span> <span class="conn-value api" id="api-apiurl">'+escapeHtml(apiUrl)+'</span></span><button class="copy-btn" onclick="cf(\'api-apiurl\')">Copy</button></div>';
+        h+='<div class="conn-row"><span><span class="conn-label">API Key:</span> <span class="conn-value pw" id="api-apikey">'+escapeHtml(apiKey)+'</span></span><button class="copy-btn" onclick="cf(\'api-apikey\')">Copy</button></div>';
+        h+='<div class="conn-row"><span><span class="conn-label">Requests URL:</span> <span class="conn-value api" id="api-requrl">'+escapeHtml(reqUrl)+'</span></span><button class="copy-btn" onclick="cf(\'api-requrl\')">Copy</button></div>';
+        h+='</div>';
+        h+='<div style="margin-top:12px;padding:10px;background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.1);border-radius:8px;font-size:11px;color:#94a3b8;line-height:1.6">';
+        h+='In Planet Hosts Studio, go to <strong style="color:#e0e0e0">Edit Stream → DJ API &amp; Request Settings</strong> and enter the API URL and API Key above. The Request URL feeds song requests into your station.';
+        h+='</div>';
+        document.getElementById('dj-api-config').innerHTML = h;
       } else {
         document.getElementById('dj-api-config').innerHTML='<div style="text-align:center;padding:20px;color:#64748b;font-size:13px">Could not load API config.</div>';
       }
@@ -1145,37 +1115,6 @@ var _apiData = null;
   };
   x.send();
 })();
-function renderApiForm(d){
-  var h='';
-  h+='<div class="form-group"><label>API URL</label><input id="f-api-url" value="'+escapeHtml(d.api_url||'https://planet-hosts.com/api')+'" placeholder="https://planet-hosts.com/api"></div>';
-  h+='<div class="form-group"><label>API Key / Token</label><input id="f-api-key" value="'+escapeHtml(d.api_key||'')+'" placeholder="Your API key"></div>';
-  h+='<div class="form-group"><label>Request API URL</label><input id="f-req-url" value="'+escapeHtml(d.request_api_url||'')+'" placeholder="https://planet-hosts.com/connector/station/'+d.stream_id+'/requests"></div>';
-  h+='<div style="display:flex;gap:12px;margin-bottom:12px">';
-  h+='<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0"><input type="checkbox" id="f-enable-req"'+(d.enable_song_requests?' checked':'')+'> Song Requests</label>';
-  h+='<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c0c0c0"><input type="checkbox" id="f-enable-np"'+(d.send_now_playing?' checked':'')+'> Now Playing</label>';
-  h+='</div>';
-  h+='<button class="btn btn-primary btn-sm" onclick="saveApiConfig()">Save Settings</button>';
-  document.getElementById('dj-api-config').innerHTML = h;
-}
-function saveApiConfig(){
-  var data = {
-    api_url: document.getElementById('f-api-url').value,
-    api_key: document.getElementById('f-api-key').value,
-    request_api_url: document.getElementById('f-req-url').value,
-    enable_song_requests: document.getElementById('f-enable-req').checked ? 1 : 0,
-    send_now_playing: document.getElementById('f-enable-np').checked ? 1 : 0
-  };
-  var x=new XMLHttpRequest();
-  x.open('POST','/dj_panel.php?action=save_api_config',true);
-  x.setRequestHeader('Content-Type','application/json');
-  x.onload=function(){
-    var msg=document.getElementById('api-save-msg');
-    msg.style.display='block';
-    try{var r=JSON.parse(x.responseText);msg.textContent=r.success?'Settings saved!':'Save failed.';msg.style.background=r.success?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)';msg.style.color=r.success?'#4ade80':'#f87171';}catch(e){msg.textContent='Saved.'}
-    setTimeout(function(){msg.style.display='none'},3000);
-  };
-  x.send(JSON.stringify(data));
-}
 function escapeHtml(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML;}
 </script>
 <script>
