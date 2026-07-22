@@ -361,6 +361,9 @@ class DjPortListener
                 // Log resume in song history
                 $this->pdo->prepare("INSERT INTO radio_song_history (stream_id, title, artist, played_at) VALUES (?,?,?,NOW())")
                     ->execute([$conn['station_id'], 'AutoDJ Resumed', "DJ {$conn['dj']->username} disconnected"]);
+                // Trigger AutoDJ restart via internal API (no auth required)
+                $compositeId = 10000 + (int)$conn['station_id'];
+                @file_get_contents("http://localhost/api/autodj/restart/{$compositeId}", false, stream_context_create(['http' => ['timeout' => 3]]));
             } catch (\Exception $e) {}
         }
 
