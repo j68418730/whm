@@ -5,6 +5,15 @@ $error = '';
 $success = '';
 $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
 
+// Allow switching stream via URL param
+if (isset($_GET['stream_id']) && isset($_SESSION['dj_user'])) {
+    $_SESSION['dj_user']['stream_id'] = (int)$_GET['stream_id'];
+    // Persist in a cookie so it survives across pages
+    setcookie('dj_stream_id', (int)$_GET['stream_id'], time() + 86400 * 30, '/');
+} elseif (isset($_COOKIE['dj_stream_id']) && isset($_SESSION['dj_user'])) {
+    $_SESSION['dj_user']['stream_id'] = (int)$_COOKIE['dj_stream_id'];
+}
+
 // ─── AUTO-LOGIN for account owners ───
 if (!isset($_SESSION['dj_user']) && isset($_SESSION['user'])) {
     $user = $_SESSION['user'];
@@ -495,7 +504,30 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 <div class="bg"></div>
 <div class="topbar">
 <h2>🎤 Planet <span>DJ</span></h2>
-<div style="display:flex;align-items:center;gap:12px">
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+<?php
+// Station picker
+$sp = $pdo->prepare("SELECT id, name FROM streaming_stations WHERE user_id=? ORDER BY name");
+$sp->execute([$_SESSION['dj_user']['stream_id'] > 10000 ? ($_SESSION['dj_user']['stream_id'] - 10000) : $_SESSION['dj_user']['stream_id']]);
+$allStations = $pdo->query("SELECT id, name FROM streaming_stations WHERE user_id IN (SELECT user_id FROM streaming_stations WHERE id=" . ((int)($_SESSION['dj_user']['stream_id'] ?? 0)) . ") ORDER BY name")->fetchAll(PDO::FETCH_OBJ);
+if (!$allStations) {
+    // Fallback: get by hosting user
+    $hu = $pdo->prepare("SELECT user_id FROM streaming_stations WHERE id=?");
+    $hu->execute([$_SESSION['dj_user']['stream_id'] ?? 0]);
+    $uid = $hu->fetchColumn();
+    if ($uid) {
+        $allStations = $pdo->prepare("SELECT id, name FROM streaming_stations WHERE user_id=? ORDER BY name");
+        $allStations->execute([$uid]);
+        $allStations = $allStations->fetchAll(PDO::FETCH_OBJ);
+    }
+}
+if (!empty($allStations) && count($allStations) > 1): ?>
+<select onchange="window.location.href='/dj_panel.php?action=dashboard&stream_id='+this.value" style="padding:5px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px;outline:none">
+<?php foreach ($allStations as $s): ?>
+<option value="<?=$s->id?>" <?=$s->id==($_SESSION['dj_user']['stream_id']??0)?'selected':''?>><?=htmlspecialchars($s->name)?></option>
+<?php endforeach; ?>
+</select>
+<?php endif; ?>
 <span style="font-size:13px;color:#94a3b8"><?php echo htmlspecialchars($_SESSION['dj_user']['name'] ?? ''); ?></span>
 <a href="/dj_panel.php?action=logout">Logout</a>
 <a href="/dj?u=<?php echo urlencode($_SESSION['dj_user']['username'] ?? ''); ?>" target="_blank" style="color:#34d399;text-decoration:none;font-size:13px">📻 My Page</a>
