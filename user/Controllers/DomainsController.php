@@ -162,6 +162,30 @@ class DomainsController extends Controller
         $this->response->redirect('/user/subdomains');
     }
 
+    public function updateDnsRecord($id)
+    {
+        $u = $this->requireUser();
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $record = $this->db->table('dns_records')->where('id', $id)->where('is_user_subdomain', 1)->first();
+        if (!$record) {
+            echo json_encode(['success' => false, 'message' => 'Record not found.']);
+            exit;
+        }
+        $update = [];
+        if (!empty($input['value'])) $update['value'] = $input['value'];
+        if (!empty($input['ttl'])) $update['ttl'] = (int)$input['ttl'];
+        if (!empty($input['type'])) $update['type'] = strtoupper($input['type']);
+        if (!empty($update)) {
+            $this->db->table('dns_records')->where('id', $id)->update($update);
+            $zone = $this->db->table('dns_zones')->where('id', $record->zone_id)->first();
+            if ($zone) $this->dns->syncZoneToBind($zone->id);
+            echo json_encode(['success' => true, 'message' => 'DNS record updated.']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No changes.']);
+        }
+        exit;
+    }
+
     public function deleteSubdomain($id)
     {
         $u = $this->requireUser();
