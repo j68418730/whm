@@ -10,7 +10,7 @@ if (!$stream) exit;
 
 $stats = radio_fetch_stats($stream);
 $name = htmlspecialchars($stream->server_name ?: 'Radio');
-$sUrl = radio_stream_url($stream);
+$sUrl = radio_ssl_stream_url($streamId);
 $online = $stats['status'];
 $listeners = $stats['listeners'];
 $bitrate = $stats['bitrate'];
