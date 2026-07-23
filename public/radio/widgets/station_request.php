@@ -10,24 +10,34 @@ $liveDj = $stream->current_dj ?? '';
 $song = htmlspecialchars($stream->current_song ?? '');
 $artist = htmlspecialchars($stream->current_artist ?? '');
 $queue = [];
-$compositeId = $streamId > 10000 ? $streamId : $streamId + 10000;
-$ac = $pdo->prepare("SELECT playlist_ids FROM radio_autodj_config WHERE station_id=?");
-$ac->execute([$compositeId]);
-$cfg = $ac->fetch(PDO::FETCH_OBJ);
-$plIds = $cfg ? json_decode($cfg->playlist_ids ?? '[]', true) : [];
-if (!empty($plIds)) {
-    $ids = implode(',', array_map('intval', $plIds));
-    $items = $pdo->query("SELECT title, artist FROM radio_playlist_items WHERE playlist_id IN ($ids) ORDER BY RAND() LIMIT 8")->fetchAll(PDO::FETCH_OBJ);
-    foreach ($items as $i) $queue[] = ['t' => addslashes($i->title ?? ''), 'a' => addslashes($i->artist ?? '')];
-}
-if (empty($queue)) {
-    $pl = $pdo->prepare("SELECT id FROM radio_playlists WHERE stream_id=? LIMIT 1");
-    $pl->execute([$streamId]);
-    $plId = $pl->fetchColumn();
-    if ($plId) {
-        $items = $pdo->prepare("SELECT title, artist FROM radio_playlist_items WHERE playlist_id=? ORDER BY RAND() LIMIT 8");
-        $items->execute([$plId]);
+
+// Try desktop app queue first (dj_queue table)
+$dq = $pdo->prepare("SELECT title, artist FROM dj_queue WHERE stream_id=? ORDER BY position LIMIT 10");
+$dq->execute([$streamId]);
+$dqItems = $dq->fetchAll(PDO::FETCH_OBJ);
+if (!empty($dqItems) && $dqItems[0]->title) {
+    foreach ($dqItems as $i) $queue[] = ['t' => addslashes($i->title ?? ''), 'a' => addslashes($i->artist ?? '')];
+} else {
+    // Fallback to radio playlist
+    $compositeId = $streamId > 10000 ? $streamId : $streamId + 10000;
+    $ac = $pdo->prepare("SELECT playlist_ids FROM radio_autodj_config WHERE station_id=?");
+    $ac->execute([$compositeId]);
+    $cfg = $ac->fetch(PDO::FETCH_OBJ);
+    $plIds = $cfg ? json_decode($cfg->playlist_ids ?? '[]', true) : [];
+    if (!empty($plIds)) {
+        $ids = implode(',', array_map('intval', $plIds));
+        $items = $pdo->query("SELECT title, artist FROM radio_playlist_items WHERE playlist_id IN ($ids) ORDER BY RAND() LIMIT 8")->fetchAll(PDO::FETCH_OBJ);
         foreach ($items as $i) $queue[] = ['t' => addslashes($i->title ?? ''), 'a' => addslashes($i->artist ?? '')];
+    }
+    if (empty($queue)) {
+        $pl = $pdo->prepare("SELECT id FROM radio_playlists WHERE stream_id=? LIMIT 1");
+        $pl->execute([$streamId]);
+        $plId = $pl->fetchColumn();
+        if ($plId) {
+            $items = $pdo->prepare("SELECT title, artist FROM radio_playlist_items WHERE playlist_id=? ORDER BY RAND() LIMIT 8");
+            $items->execute([$plId]);
+            foreach ($items as $i) $queue[] = ['t' => addslashes($i->title ?? ''), 'a' => addslashes($i->artist ?? '')];
+        }
     }
 }
 $name = addslashes($stream->server_name ?: $stream->name ?: 'Radio');
