@@ -40,6 +40,8 @@ $sUrl = radio_ssl_stream_url($streamId);
 <div style="font-size:13px;font-weight:700;color:#e0e0e0;margin-bottom:6px"><?=$name?></div>
 <?php if ($liveDj): ?>
 <div style="font-size:11px;color:#4ade80;font-weight:700;margin-bottom:4px">🔴 LIVE — <?=htmlspecialchars($liveDj)?></div>
+<?php else: ?>
+<div style="font-size:11px;color:#38bdf8;font-weight:700;margin-bottom:4px">🎧 AutoDJ is online</div>
 <?php endif; ?>
 <div style="font-size:12px;color:#94a3b8"><?=$artist?htmlspecialchars($artist).' — ':''?><?=htmlspecialchars($song?:'No song playing')?></div>
 <audio src="<?=$sUrl?>" preload="auto" controls style="width:100%;height:32px;margin-top:8px;border-radius:6px"></audio>
