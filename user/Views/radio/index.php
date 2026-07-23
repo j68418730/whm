@@ -365,6 +365,19 @@ function copyDjInfo(){
     <button class="btn btn-sm btn-primary" onclick="var i=this.previousElementSibling;i.select();navigator.clipboard.writeText(i.value);this.textContent='Copied!';setTimeout(function(){this.textContent='Copy'}.bind(this),2000)">Copy</button>
   </div>
   </div>
+
+  <?php if (!empty($djs)): ?>
+  <div class="card"><h3>📻 Request Page Link</h3>
+  <p style="font-size:11px;color:#64748b;margin-bottom:8px">Share this URL so listeners can request songs from your DJs:</p>
+  <?php foreach ($djs as $dj): ?>
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+    <span style="font-size:11px;color:#94a3b8;min-width:80px"><?=htmlspecialchars($dj->name?:$dj->username)?>:</span>
+    <input class="inp inp-sm" value="https://planet-hosts.com/dj?u=<?=urlencode($dj->username)?>" readonly style="flex:1;font-family:monospace;font-size:12px;color:#38bdf8">
+    <button class="btn btn-sm btn-primary" onclick="var i=this.previousElementSibling;i.select();navigator.clipboard.writeText(i.value);this.textContent='Copied!';setTimeout(function(){this.textContent='Copy'}.bind(this),2000)">Copy</button>
+  </div>
+  <?php endforeach; ?>
+  </div>
+  <?php endif; ?>
   <?php $editDjId = (int)($_GET['edit_dj']??0); $editDj = null; foreach($djs as $d){if($d->id==$editDjId){$editDj=$d;break;}} ?>
   <?php if ($editDj): ?>
   <div class="card"><h3>Edit DJ: <?=htmlspecialchars($editDj->name?:$editDj->username)?></h3>
