@@ -517,10 +517,18 @@ class PlanetStudioController extends Controller
     public function restartAutodj($compositeId)
     {
         $realId = (int)$compositeId % 10000;
-        $player = new \Services\RadioAutoDJPlayer((int)$compositeId);
-        $player->stop();
-        sleep(1);
-        $ok = $player->start();
-        return $this->json(['success' => $ok, 'message' => $ok ? 'AutoDJ restarted' : 'Failed to restart AutoDJ']);
+        $station = $this->db->table('streaming_stations')->where('id', $realId)->first();
+        if (!$station) return $this->json(['success' => false, 'message' => 'Station not found'], 404);
+        $hosting = $this->db->table('hosting_users')->where('id', $station->user_id)->first();
+        $username = $hosting ? $hosting->username : 'unknown';
+        try {
+            $player = new \Services\RadioAutoDJPlayer($station, $username);
+            $player->stop();
+            sleep(1);
+            $ok = $player->start();
+            return $this->json(['success' => $ok, 'message' => $ok ? 'AutoDJ restarted' : 'Failed to restart AutoDJ']);
+        } catch (\Exception $e) {
+            return $this->json(['success' => false, 'message' => $e->getMessage()]);
+        }
     }
 }
