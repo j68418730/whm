@@ -574,6 +574,11 @@ if (!empty($allStations) && count($allStations) > 1): ?>
         // Get all streams for this user (owner mode) or DJ (non-owner)
         if ($isOwner) {
             $userId = $hostingId ?? 0;
+        } else {
+            // For DJ login: find the hosting user from the assigned station
+            $huDj = $pdo->prepare("SELECT user_id FROM streaming_stations WHERE id=?");
+            $huDj->execute([$_SESSION['dj_user']['stream_id'] ?? 0]);
+            $userId = $huDj->fetchColumn() ?: 0;
         }
         $stationQuery = $pdo->prepare("SELECT id, name, engine, port, status FROM streaming_stations WHERE user_id=? ORDER BY name");
         $stationQuery->execute([$userId]);
