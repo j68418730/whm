@@ -15,7 +15,8 @@ if ($liveDj): ?>
 <?php if ($song || $artist): ?><div style="color:#94a3b8;font-size:12px;margin-top:4px"><?=$artist?> — <?=$song?></div><?php endif; ?>
 </div>
 <?php else: ?>
-<div style="background:rgba(100,116,139,.08);border:1px solid rgba(100,116,139,.15);border-radius:10px;padding:12px;font-family:Inter,sans-serif;text-align:center">
-<div style="color:#94a3b8;font-size:12px">No DJ currently live</div>
+<div style="background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.1);border-radius:10px;padding:12px;font-family:Inter,sans-serif;text-align:center">
+<div style="color:#38bdf8;font-size:11px;font-weight:700;margin-bottom:4px">🎧 AutoDJ</div>
+<div style="color:#94a3b8;font-size:12px"><?=$artist ? htmlspecialchars($artist) . ' — ' : ''?><?=htmlspecialchars($song ?: 'Playing...')?></div>
 </div>
 <?php endif; ?>
