@@ -1,10 +1,12 @@
 <?php
 $streamId = (int)($_GET['stream'] ?? 0);
 if (!$streamId) { http_response_code(400); exit; }
+// Handle composite station IDs (10000+offset)
+$realId = $streamId > 10000 ? ($streamId % 10000) : $streamId;
 
 $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
 $s = $pdo->prepare("SELECT * FROM streaming_stations WHERE id = ?");
-$s->execute([$streamId]);
+$s->execute([$realId]);
 $stream = $s->fetch(PDO::FETCH_OBJ);
 if (!$stream) { http_response_code(404); exit; }
 
