@@ -244,17 +244,31 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Track Name</th>
-                        <th>Artist</th>
-                        <th>Album</th>
-                        <th>Genre</th>
-                        <th>Duration</th>
-                        <th>Bitrate</th>
+                        <th>Stream</th>
+                        <th>Status</th>
+                        <th>Songs</th>
+                        <th>Last Song</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td colspan="5" style="text-align:center;padding:2rem;color:#999;">No tracks uploaded yet.</td></tr>
+                    <?php $stations = $stations ?? []; if (empty($stations)): ?>
+                    <tr><td colspan="5" style="text-align:center;padding:2rem;color:#999;">No streams found.</td></tr>
+                    <?php else: ?>
+                    <?php foreach ($stations as $s): ?>
+                    <tr>
+                        <td><strong><?=htmlspecialchars($s->name)?></strong></td>
+                        <td><span class="status-badge <?=$s->autodj_running?'status-active':'status-inactive'?>"><?=$s->autodj_running?'Running':'Stopped'?></span></td>
+                        <td><?=(int)$s->track_count?></td>
+                        <td><?=htmlspecialchars($s->current_song ?? 'N/A')?></td>
+                        <td>
+                            <a href="/user/radio/autodj/start/<?=10000+(int)$s->id?>" class="btn btn-sm" <?php if($s->autodj_running):?>style="opacity:.5;pointer-events:none"<?php endif;?>>Start</a>
+                            <a href="/user/radio/autodj/stop/<?=10000+(int)$s->id?>" class="btn btn-sm btn-secondary" <?php if(!$s->autodj_running):?>style="opacity:.5;pointer-events:none"<?php endif;?>>Stop</a>
+                            <a href="/admin/streams/edit/<?=$s->id?>" class="btn btn-sm btn-secondary">Edit</a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
