@@ -14,8 +14,10 @@ function radio_get_stream(int $id): ?stdClass
             [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
         );
     }
+    // Handle composite station IDs (10000+offset)
+    $realId = $id > 10000 ? ($id % 10000) : $id;
     $s = $pdo->prepare("SELECT *, name AS server_name FROM streaming_stations WHERE id = ?");
-    $s->execute([$id]);
+    $s->execute([$realId]);
     return $s->fetch(PDO::FETCH_OBJ) ?: null;
 }
 
