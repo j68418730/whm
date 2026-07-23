@@ -521,14 +521,29 @@ class PlanetStudioController extends Controller
         if (!$station) return $this->json(['success' => false, 'message' => 'Station not found'], 404);
         $hosting = $this->db->table('hosting_users')->where('id', $station->user_id)->first();
         $username = $hosting ? $hosting->username : 'unknown';
+        $execAvailable = function_exists('exec');
+        $files = [];
+        $dir = "/home/{$username}/radio/musicdatabase";
+        if (is_dir($dir)) {
+            $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir));
+            foreach ($it as $f) {
+                if ($f->isFile() && in_array(strtolower($f->getExtension()), ['mp3','wav','flac','ogg','aac'])) {
+                    $files[] = $f->getPathname();
+                }
+            }
+        }
         try {
             $player = new \Services\RadioAutoDJPlayer($station, $username);
             $player->stop();
             sleep(1);
             $ok = $player->start();
-            return $this->json(['success' => $ok, 'message' => $ok ? 'AutoDJ restarted' : 'Failed to restart AutoDJ']);
+            return $this->json([
+                'success' => $ok,
+                'message' => $ok ? 'AutoDJ restarted' : 'Failed to restart AutoDJ',
+                'debug' => ['exec' => $execAvailable ? 'available' : 'DISABLED', 'files_found' => count($files), 'disable_functions' => ini_get('disable_functions')],
+            ]);
         } catch (\Exception $e) {
-            return $this->json(['success' => false, 'message' => $e->getMessage()]);
+            return $this->json(['success' => false, 'message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
         }
     }
 }
