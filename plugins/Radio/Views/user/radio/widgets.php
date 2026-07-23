@@ -166,6 +166,7 @@ foreach($cards as $c): ?>
   ['QR Code Generator','qr','QR code linking to your station'],
   ['Embed Code Generator','embed-gen','Generate embed code from URL'],
   ['Advertisements','advertisements','Display station ads'],
+  ['Station Request Widget','station-request','Live DJ, queue & request form for your station'],
   ['DJ Application','apply','DJ application form for your site'],
 ];
 foreach($extra as $c): ?>
@@ -229,6 +230,7 @@ function gw(type){
     'list-peak':'<div id="ph-stats-'+x+'"><script src="'+s+'/radio/widgets/stats.php?stream='+x+'"><\/script><\/div>',
     'list-daily':'<div id="ph-stats-'+x+'"><script src="'+s+'/radio/widgets/stats.php?stream='+x+'"><\/script><\/div>',
     'req-form':'<script src="'+s+'/radio/widgets/request.php?stream='+x+'"><\/script>',
+    'station-request':ifr(s+'/radio/widgets/station_request.php?stream='+x,400,600),
     'social':'<script src="'+s+'/radio/widgets/social.php?stream='+x+'"><\/script>',
     'share':'<div style="display:flex;gap:8px;font-family:Inter,sans-serif"><a href="https://facebook.com/sharer.php?u='+encodeURIComponent(s+'/radio/embed.php?stream='+x)+'" target="_blank" style="text-decoration:none;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:16px">📘</a><a href="https://twitter.com/intent/tweet?url='+encodeURIComponent(s+'/radio/embed.php?stream='+x)+'" target="_blank" style="text-decoration:none;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:16px">🐦</a></div>',
     'donate':'<form action="https://www.paypal.com/donate" method="post" target="_blank" style="text-align:center;font-family:Inter,sans-serif"><input type="hidden" name="business" value=""><button type="submit" style="padding:10px 20px;background:#ffc439;color:#000;border:none;border-radius:6px;font-weight:600;cursor:pointer">❤️ Donate</button></form>',
