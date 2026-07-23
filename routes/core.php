@@ -408,6 +408,8 @@ $router->post('/api/requests/action', 'Admin\Controllers\Api\PlanetStudioControl
 $router->get('/dj', 'User\Controllers\RadioController@publicDjPage');
 $router->get('/api/tracks/{trackId}', 'Admin\Controllers\Api\PlanetStudioController@downloadTrack');
 $router->post('/api/stations/{stationId}/upload', 'Admin\Controllers\Api\PlanetStudioController@uploadTrack');
+$router->post('/api/dj/queue', 'Admin\Controllers\Api\PlanetStudioController@updateQueue');
+$router->get('/api/dj/queue/{stationId}', 'Admin\Controllers\Api\PlanetStudioController@getQueue');
 $router->get('/api/autodj/restart/{compositeId}', 'Admin\Controllers\Api\PlanetStudioController@restartAutodj');
 
 $router->get('/api/packages', 'Admin\Controllers\PackageController@apiList');

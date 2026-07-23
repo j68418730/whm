@@ -513,6 +513,34 @@ class PlanetStudioController extends Controller
         return $this->json(['success' => true, 'message' => 'API config updated']);
     }
 
+    // POST /api/dj/queue — desktop app pushes its current queue
+    public function updateQueue()
+    {
+        $dj = $this->authDj();
+        if (!$dj) return $this->json(['error' => 'Unauthorized'], 401);
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $stationId = (int)($input['stationId'] ?? 0);
+        $songs = $input['songs'] ?? [];
+        if (!$stationId) return $this->json(['error' => 'stationId required'], 400);
+        // Clear old queue for this station, insert new
+        $this->db->pdo()->prepare("DELETE FROM dj_queue WHERE stream_id=?")->execute([$stationId]);
+        foreach ($songs as $i => $s) {
+            $this->db->pdo()->prepare("INSERT INTO dj_queue (stream_id, title, artist, added_by, position) VALUES (?,?,?,'desktop',?)")
+                ->execute([$stationId, $s['title'] ?? '', $s['artist'] ?? '', $i]);
+        }
+        return $this->json(['success' => true, 'count' => count($songs)]);
+    }
+
+    // GET /api/dj/queue/{stationId} — get current queue
+    public function getQueue($stationId)
+    {
+        $realId = (int)$stationId > 10000 ? (int)$stationId % 10000 : (int)$stationId;
+        $q = $this->db->pdo()->prepare("SELECT title, artist, added_by FROM dj_queue WHERE stream_id=? ORDER BY position LIMIT 10");
+        $q->execute([$realId]);
+        $songs = $q->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+        return $this->json(['queue' => $songs]);
+    }
+
     // GET /api/autodj/restart/{compositeId} — restart AutoDJ (called from DJ Port Listener on disconnect)
     public function restartAutodj($compositeId)
     {
