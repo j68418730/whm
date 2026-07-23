@@ -52,7 +52,7 @@ function radio_stream_url(stdClass $stream): string
 
 function radio_ssl_stream_url(int $streamId): string
 {
-    return "https://planet-hosts.com:2083/radio/stream-proxy.php?stream={$streamId}";
+    return "https://planet-hosts.com/radio/stream-proxy.php?stream={$streamId}";
 }
 
 function radio_get_live_dj(int $streamId): ?stdClass
