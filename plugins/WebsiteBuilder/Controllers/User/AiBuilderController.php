@@ -82,14 +82,14 @@ class AiBuilderController extends Controller
 
         $siteName = $siteData["site_name"] ?? $answers["business_name"] . " Website";
         $slug = strtolower(preg_replace('/[^a-z0-9-]/', '', str_replace(' ', '-', $siteName)));
-        $buildSettings = $this->db->table("wb_build_settings")->where("user_id", $hosting->id)->first();
+        $bs = $this->db->table("wb_build_settings")->where("user_id", $hosting->id)->first();
         $siteId = $this->db->table("wb_sites")->insertGetId([
             "user_id" => $hosting->id,
             "name" => $siteName,
-            "domain" => $buildSettings->subdomain ?: $slug . ".planet-hosts.com",
-            "directory" => $buildSettings->directory ?: $slug,
-            "subdomain" => $buildSettings->subdomain ?: "",
-            "install_path" => $buildSettings->install_path ?: "",
+            "domain" => ($bs->subdomain ?? '') ?: $slug . ".planet-hosts.com",
+            "directory" => ($bs->directory ?? '') ?: $slug,
+            "subdomain" => $bs->subdomain ?? '',
+            "install_path" => $bs->install_path ?? '',
             "status" => "draft",
             "created_at" => date("Y-m-d H:i:s"),
         ]);
