@@ -49,6 +49,20 @@
 <div class="wizard-step" data-step="6"><div class="card" style="padding:20px;text-align:center">
 <h4 style="margin-bottom:12px">Ready to generate!</h4>
 <p style="color:#94a3b8;font-size:13px;margin-bottom:16px">AI will build a complete website with pages, content, and design based on your answers.</p>
+<?php $dir = ($settings->directory ?? '') ?: '&lt;auto from business name&gt;'; ?>
+<?php $sub = ($settings->subdomain ?? '') ?: '&lt;auto from business name&gt;'; ?>
+<?php $path = ($settings->install_path ?? '') ?: 'public_html/'; ?>
+<?php $php = ($settings->php_version ?? '8.3'); ?>
+<div style="background:rgba(0,0,0,.2);border-radius:10px;padding:14px;margin-bottom:16px;text-align:left">
+<h5 style="font-size:12px;color:#94a3b8;margin:0 0 8px;text-transform:uppercase;letter-spacing:1px">Install Path</h5>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
+<div><span style="color:#64748b">Directory:</span> <span style="color:#e0e0e0" id="reviewDir"><?php echo htmlspecialchars($dir); ?></span></div>
+<div><span style="color:#64748b">Subdomain:</span> <span style="color:#e0e0e0" id="reviewSub"><?php echo htmlspecialchars($sub); ?></span></div>
+<div><span style="color:#64748b">Install Path:</span> <span style="color:#e0e0e0" id="reviewPath"><?php echo htmlspecialchars($path); ?></span></div>
+<div><span style="color:#64748b">PHP Version:</span> <span style="color:#e0e0e0" id="reviewPhp"><?php echo htmlspecialchars($php); ?></span></div>
+</div>
+<a href="/user/websites/ai/build-settings" class="btn btn-sm secondary" style="font-size:10px;margin-top:10px;display:inline-block"><i class="bi bi-gear"></i> Change in Settings</a>
+</div>
 <button type="submit" class="btn primary" style="padding:12px 40px;font-size:15px;font-weight:600"><i class="bi bi-magic"></i> Generate My Website</button>
 </div></div>
 </form>

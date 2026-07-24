@@ -51,8 +51,10 @@ class AiBuilderController extends Controller
     public function wizard()
     {
         $hosting = $this->loadUser();
+        $settings = $this->db->table("wb_build_settings")->where("user_id", $hosting->id)->first();
         return $this->view("Plugins.WebsiteBuilder.Views.user.ai.wizard", [
-            "user" => $this->auth->user(), "hosting" => $hosting, "title" => "AI Wizard"
+            "user" => $this->auth->user(), "hosting" => $hosting,
+            "settings" => $settings, "title" => "AI Wizard"
         ]);
     }
 
