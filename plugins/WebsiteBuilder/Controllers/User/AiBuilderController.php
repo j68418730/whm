@@ -81,10 +81,15 @@ class AiBuilderController extends Controller
         }
 
         $siteName = $siteData["site_name"] ?? $answers["business_name"] . " Website";
+        $slug = strtolower(preg_replace('/[^a-z0-9-]/', '', str_replace(' ', '-', $siteName)));
+        $buildSettings = $this->db->table("wb_build_settings")->where("user_id", $hosting->id)->first();
         $siteId = $this->db->table("wb_sites")->insertGetId([
             "user_id" => $hosting->id,
             "name" => $siteName,
-            "domain" => strtolower(preg_replace('/[^a-z0-9-]/', '', str_replace(' ', '-', $siteName))) . ".planet-hosts.com",
+            "domain" => $buildSettings->subdomain ?: $slug . ".planet-hosts.com",
+            "directory" => $buildSettings->directory ?: $slug,
+            "subdomain" => $buildSettings->subdomain ?: "",
+            "install_path" => $buildSettings->install_path ?: "",
             "status" => "draft",
             "created_at" => date("Y-m-d H:i:s"),
         ]);
@@ -401,6 +406,42 @@ class AiBuilderController extends Controller
         $this->response->json(["success" => true, "themes" => $themes, "style" => $style]);
         $this->response->send();
         exit;
+    }
+
+    public function buildSettings()
+    {
+        $hosting = $this->loadUser();
+        $settings = $this->db->table("wb_build_settings")->where("user_id", $hosting->id)->first();
+        $userDomains = $this->db->table("hosting_domains")->where("user_id", $hosting->id)->get() ?: [];
+        return $this->view("Plugins.WebsiteBuilder.Views.user.ai.build_settings", [
+            "user" => $this->auth->user(), "hosting" => $hosting,
+            "settings" => $settings, "domains" => $userDomains, "title" => "Build Settings"
+        ]);
+    }
+
+    public function buildSettingsSave()
+    {
+        $hosting = $this->loadUser();
+        $data = [
+            "directory" => trim($this->request->post("directory", "")),
+            "subdomain" => trim($this->request->post("subdomain", "")),
+            "install_path" => trim($this->request->post("install_path", "")),
+            "php_version" => trim($this->request->post("php_version", "8.3")),
+        ];
+        if (empty($data["directory"])) {
+            $_SESSION["error_message"] = "Directory name is required.";
+            $this->response->redirect("/user/websites/ai/build-settings");
+            exit;
+        }
+        $existing = $this->db->table("wb_build_settings")->where("user_id", $hosting->id)->first();
+        if ($existing) {
+            $this->db->table("wb_build_settings")->where("id", $existing->id)->update($data);
+        } else {
+            $data["user_id"] = $hosting->id;
+            $this->db->table("wb_build_settings")->insert($data);
+        }
+        $_SESSION["success_message"] = "Build settings saved.";
+        $this->response->redirect("/user/websites/ai");
     }
 
     // Admin controller methods

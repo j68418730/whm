@@ -39,6 +39,8 @@ $router->post('/user/websites/ai/analyze/run', 'Plugins\WebsiteBuilder\Controlle
 $router->get('/user/websites/ai/memory', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@memory');
 $router->get('/user/websites/ai/memory/{siteId}', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@memorySite');
 $router->post('/user/websites/ai/memory/save', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@memorySave');
+$router->get('/user/websites/ai/build-settings', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@buildSettings');
+$router->post('/user/websites/ai/build-settings/save', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@buildSettingsSave');
 $router->get('/user/websites/ai/themes', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@themes');
 $router->get('/user/websites/ai/themes/{siteId}', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@themes');
 $router->post('/user/websites/ai/themes/generate', 'Plugins\WebsiteBuilder\Controllers\User\AiBuilderController@themesGenerate');

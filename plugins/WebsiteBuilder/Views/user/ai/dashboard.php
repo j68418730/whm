@@ -22,6 +22,7 @@
 <a href="/user/websites/ai/images" class="ai-card green"><div class="icon">🖼️</div><div class="name">AI Images</div><div class="desc">Generate images with AI</div></a>
 <a href="/user/websites/ai/analyze" class="ai-card orange"><div class="icon">🔍</div><div class="name">Site Analysis</div><div class="desc">Analyze & improve any website</div></a>
 <a href="/user/websites/ai/memory" class="ai-card blue"><div class="icon">🧠</div><div class="name">AI Memory</div><div class="desc">Builder remembers your project</div></a>
+<a href="/user/websites/ai/build-settings" class="ai-card orange"><div class="icon">⚙️</div><div class="name">Build Settings</div><div class="desc">Directory, subdomain & install options</div></a>
 </div>
 <?php if (!empty($sites)): ?>
 <div class="card" style="margin-top:16px">
