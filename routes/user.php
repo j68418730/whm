@@ -32,6 +32,7 @@ $router->get('/user/domains', 'User\Controllers\DomainsController@index');
 $router->get('/user/domains/add', 'User\Controllers\DomainsController@add');
 $router->post('/user/domains/add', 'User\Controllers\DomainsController@add');
 $router->get('/user/domains/zone/{id}', 'User\Controllers\DomainsController@zone');
+$router->get('/user/domains/zone-records/{id}', 'User\Controllers\DomainsController@zoneRecords');
 $router->post('/user/domains/record/{zoneId}', 'User\Controllers\DomainsController@addRecord');
 $router->get('/user/domains/record/delete/{zoneId}/{recordId}', 'User\Controllers\DomainsController@deleteRecord');
 $router->get('/user/subdomains', 'User\Controllers\DomainsController@subdomains');

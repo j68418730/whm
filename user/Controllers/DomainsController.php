@@ -56,6 +56,15 @@ class DomainsController extends Controller
         return $this->view('user.domains', ['user' => $u, 'hosting' => $this->hostingUser, 'domains' => [], 'subdomains' => [], 'title' => 'Add Domain']);
     }
 
+    public function zoneRecords($id)
+    {
+        $u = $this->requireUser();
+        $zone = $this->db->table('dns_zones')->where('id', $id)->first();
+        $records = $zone ? $this->dns->getRecords($id) : [];
+        echo json_encode(['success' => true, 'records' => $records]);
+        exit;
+    }
+
     public function zone($id)
     {
         $u = $this->requireUser();
