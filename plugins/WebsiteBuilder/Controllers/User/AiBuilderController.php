@@ -428,7 +428,7 @@ class AiBuilderController extends Controller
         }
 
         // Get existing subdomains from DNS records
-        $zones = $this->db->table('dns_zones')->where('domain', $hosting->domain)->orWhere('domain', 'LIKE', '%.' . $hosting->domain)->get() ?: [];
+        $zones = $this->db->table('dns_zones')->where('domain', $hosting->domain)->get() ?: [];
         $subdomainRecords = [];
         foreach ($zones as $z) {
             $records = $this->db->table('dns_records')->where('zone_id', $z->id)->where('type', 'A')->where('is_user_subdomain', 1)->get() ?: [];
