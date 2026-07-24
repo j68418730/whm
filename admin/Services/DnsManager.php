@@ -72,9 +72,14 @@ class DnsManager
             $ttl = $r->ttl ?: 14400;
             if ($r->type === 'SOA' || $r->type === 'NS') continue;
             if ($r->type === 'MX') {
-                $lines[] = "{$n}\tIN\tMX\t{$r->priority}\t{$r->value}.";
+                $val = rtrim($r->value, '.');
+                $lines[] = "{$n}\tIN\tMX\t{$r->priority}\t{$val}.";
             } else {
-                $lines[] = "{$n}\tIN\t{$r->type}\t{$r->value}" . (in_array($r->type, ['CNAME', 'NS', 'MX', 'SRV']) ? '.' : '');
+                $val = $r->value;
+                if (in_array($r->type, ['CNAME', 'NS', 'MX', 'SRV']) && $val !== '@') {
+                    $val = rtrim($val, '.') . '.';
+                }
+                $lines[] = "{$n}\tIN\t{$r->type}\t{$val}";
             }
         }
         $content = implode("\n", $lines) . "\n";
