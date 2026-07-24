@@ -55,6 +55,7 @@ desktop-connector/node_modules/
 *.bat
 10000
 *.sql
+!database/migrations/*.sql
 dj_panel_fixed.php
 patch_*.php
 update_*.php
