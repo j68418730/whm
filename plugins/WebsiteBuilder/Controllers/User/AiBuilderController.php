@@ -413,9 +413,33 @@ class AiBuilderController extends Controller
         $hosting = $this->loadUser();
         $settings = $this->db->table("wb_build_settings")->where("user_id", $hosting->id)->first();
         $userDomains = $this->db->table("hosting_domains")->where("user_id", $hosting->id)->get() ?: [];
+
+        // Scan existing directories in user's public_html
+        $existingDirs = [];
+        $homeDir = $hosting->username ? '/home/' . $hosting->username . '/public_html' : '';
+        if ($homeDir && is_dir($homeDir)) {
+            $items = scandir($homeDir);
+            foreach ($items as $item) {
+                if ($item === '.' || $item === '..') continue;
+                if (is_dir($homeDir . '/' . $item)) {
+                    $existingDirs[] = $item;
+                }
+            }
+        }
+
+        // Get existing subdomains from DNS records
+        $zones = $this->db->table('dns_zones')->where('domain', $hosting->domain)->orWhere('domain', 'LIKE', '%.' . $hosting->domain)->get() ?: [];
+        $subdomainRecords = [];
+        foreach ($zones as $z) {
+            $records = $this->db->table('dns_records')->where('zone_id', $z->id)->where('type', 'A')->where('is_user_subdomain', 1)->get() ?: [];
+            foreach ($records as $r) $subdomainRecords[] = $r;
+        }
+
         return $this->view("Plugins.WebsiteBuilder.Views.user.ai.build_settings", [
             "user" => $this->auth->user(), "hosting" => $hosting,
-            "settings" => $settings, "domains" => $userDomains, "title" => "Build Settings"
+            "settings" => $settings, "domains" => $userDomains,
+            "existingDirs" => $existingDirs, "subdomainRecords" => $subdomainRecords,
+            "title" => "Build Settings"
         ]);
     }
 
