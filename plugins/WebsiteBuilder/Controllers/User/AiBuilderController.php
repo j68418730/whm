@@ -63,17 +63,35 @@ class AiBuilderController extends Controller
         $hosting = $this->loadUser();
         $ai = new AiBuilderService();
 
+        $features = $this->request->post("features", []);
+        if (is_string($features)) $features = [];
+        $pages = $this->request->post("pages", []);
+        if (is_string($pages)) $pages = [];
+
         $answers = [
             "business_name" => $this->request->post("business_name", ""),
             "business_type" => $this->request->post("business_type", ""),
-            "description" => $this->request->post("description", ""),
             "primary_color" => $this->request->post("primary_color", "#0A84FF"),
-            "need_store" => (int)$this->request->post("need_store", 0),
-            "need_booking" => (int)$this->request->post("need_booking", 0),
-            "need_blog" => (int)$this->request->post("need_blog", 0),
-            "need_chat" => (int)$this->request->post("need_chat", 0),
-            "need_newsletter" => (int)$this->request->post("need_newsletter", 0),
+            "style" => $this->request->post("style", "modern"),
+            "features" => $features,
+            "pages" => $pages,
         ];
+
+        // Handle logo upload
+        $logoAction = $this->request->post("logo_action", "");
+        $logoPath = "";
+        if ($logoAction === "upload" && isset($_FILES["logo"]) && $_FILES["logo"]["error"] === UPLOAD_ERR_OK) {
+            $ext = strtolower(pathinfo($_FILES["logo"]["name"], PATHINFO_EXTENSION));
+            if (in_array($ext, ["png", "jpg", "jpeg", "svg", "webp"])) {
+                $dir = "storage/logos";
+                if (!is_dir($dir)) @mkdir($dir, 0755, true);
+                $logoPath = $dir . "/site_" . $hosting->id . "_" . time() . "." . $ext;
+                move_uploaded_file($_FILES["logo"]["tmp_name"], $logoPath);
+                $answers["logo"] = "/" . $logoPath;
+            }
+        } elseif ($logoAction === "generate") {
+            $answers["logo"] = "ai_generated";
+        }
 
         $siteData = $ai->generateSiteFromQuestions($answers);
         if (isset($siteData["error"])) {
