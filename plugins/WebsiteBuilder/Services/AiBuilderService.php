@@ -143,6 +143,7 @@ class AiBuilderService
             ["role" => "user", "content" => "Answers: " . json_encode($answers)],
         ];
         $result = $this->chat($messages, "gpt-4o-mini", 0.5);
+        if (is_array($result)) return $result;
         $result = trim($result);
         $result = preg_replace('/^```(?:json)?\s*|\s*```$/i', '', $result);
         return json_decode($result, true) ?: ["error" => "Failed to generate site"];
