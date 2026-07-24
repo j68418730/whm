@@ -34,10 +34,15 @@ class EmailController extends Controller
     public function index()
     {
         $this->requireUser();
-        $accounts = $this->db->table('mail_accounts')->where('domain', $this->domain)->get() ?: [];
-        $forwarders = $this->db->table('mail_forwarders')->where('domain', $this->domain)->get() ?: [];
-        $autoresponders = $this->db->table('mail_autoresponder')->where('domain', $this->domain)->get() ?: [];
-        $spam = $this->db->table('mail_spam')->where('domain', $this->domain)->get() ?: [];
+        $domain = $this->domain;
+        $accounts = [];
+        $forwarders = [];
+        $autoresponders = [];
+        $spam = [];
+        try { $st = $this->db->pdo()->prepare("SELECT * FROM mail_accounts WHERE email LIKE ?"); $st->execute(['%@' . $domain]); $accounts = $st->fetchAll(\PDO::FETCH_OBJ) ?: []; } catch (\Exception $e) {}
+        try { $forwarders = $this->db->table('mail_forwarders')->where('domain', $domain)->get() ?: []; } catch (\Exception $e) {}
+        try { $autoresponders = $this->db->table('mail_autoresponder')->where('domain', $domain)->get() ?: []; } catch (\Exception $e) {}
+        try { $spam = $this->db->table('mail_spam')->where('domain', $domain)->get() ?: []; } catch (\Exception $e) {}
         return $this->view('user.email', [
             'user' => $this->auth->user(), 'hosting' => $this->hostingUser,
             'domain' => $this->domain,
