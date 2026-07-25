@@ -35,11 +35,28 @@ while ($skipped < 4096) {
 }
 if (!$gotHeaders) { http_response_code(502); fclose($sock); exit; }
 
-// Send first audio chunk immediately, no waiting
-$initial = @fread($sock, 131072);
-if ($initial !== false && $initial !== '') {
-    echo $initial;
+// Skip junk bytes until we find an MP3 sync word (FF FB or FF F3)
+$buffer = '';
+$synced = false;
+$maxScan = 131072;
+while (!$synced && strlen($buffer) < $maxScan) {
+    $chunk = @fread($sock, 8192);
+    if ($chunk === false || $chunk === '') break;
+    $buffer .= $chunk;
+    // Look for MP3 frame sync: 0xFF 0xFB or 0xFF 0xF3 or 0xFF 0xF2
+    for ($i = 0; $i < strlen($buffer) - 1; $i++) {
+        $b = ord($buffer[$i]);
+        if ($b === 0xFF && (ord($buffer[$i+1]) & 0xF0) === 0xF0) {
+            $buffer = substr($buffer, $i);
+            $synced = true;
+            break;
+        }
+    }
 }
+if (!$synced) { http_response_code(502); fclose($sock); exit; }
+
+// Send first audio data at MP3 sync
+echo $buffer;
 flush();
 
 set_time_limit(0);
