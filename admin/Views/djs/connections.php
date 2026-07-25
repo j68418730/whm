@@ -52,19 +52,23 @@ fetch('/api/stream-debug.php?station=12').then(function(r){
 if(!r.ok){document.getElementById("admin-debug-panel").innerHTML='<div style="color:#f87171">HTTP '+r.status+'</div>';nx();return;}
 r.json().then(function(d){
 var chk=d.autodj_running&&d.source_connected&&d.proxy_reachable;
-var h='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:6px">';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:4px;padding:5px;text-align:center"><div style="font-size:12px;font-weight:700;color:'+(d.status==="running"?"#4ade80":"#f87171")+'">'+esc(d.status)+'</div><div style="font-size:7px;color:#64748b">Station</div></div>';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:4px;padding:5px;text-align:center"><div style="font-size:12px;font-weight:700;color:'+(d.autodj_running?"#4ade80":"#f87171")+'">'+(d.autodj_running?"Run":"Stop")+'</div><div style="font-size:7px;color:#64748b">AutoDJ</div></div>';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:4px;padding:5px;text-align:center"><div style="font-size:12px;font-weight:700;color:'+(d.source_connected?"#4ade80":"#f87171")+'">'+(d.source_connected?"OK":"OFF")+'</div><div style="font-size:7px;color:#64748b">Src</div></div>';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:4px;padding:5px;text-align:center"><div style="font-size:12px;font-weight:700;color:'+(d.proxy_reachable?"#4ade80":"#f87171")+'">'+(d.proxy_reachable?d.proxy_response_ms+"ms":"DOWN")+'</div><div style="font-size:7px;color:#64748b">Proxy</div></div>';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:4px;padding:5px;text-align:center"><div style="font-size:12px;font-weight:700;color:'+(d.listener_running?"#4ade80":"#f87171")+'">'+(d.listener_running?"ON":"OFF")+'</div><div style="font-size:7px;color:#64748b">Listnr</div></div>';
-h+='</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">';
-h+='<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:5px;font-size:10px">';
+var upColor=d.active_upstreams>0?'#4ade80':'#f87171';
+var clColor=d.active_clients>0?'#4ade80':'#94a3b8';
+var h='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:5px">';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:4px;text-align:center"><div style="font-size:11px;font-weight:700;color:'+(d.status==="running"?"#4ade80":"#f87171")+'">'+esc(d.status)+'</div><div style="font-size:6px;color:#64748b">Stn</div></div>';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:4px;text-align:center"><div style="font-size:11px;font-weight:700;color:'+(d.autodj_running?"#4ade80":"#f87171")+'">'+(d.autodj_running?"Run":"Stop")+'</div><div style="font-size:6px;color:#64748b">AutoDJ</div></div>';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:4px;text-align:center"><div style="font-size:11px;font-weight:700;color:'+(d.source_connected?"#4ade80":"#f87171")+'">'+(d.source_connected?"OK":"OFF")+'</div><div style="font-size:6px;color:#64748b">Src</div></div>';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:4px;text-align:center"><div style="font-size:11px;font-weight:700;color:'+upColor+'">'+(d.active_upstreams||0)+'</div><div style="font-size:6px;color:#64748b">Upstream</div></div>';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:4px;text-align:center"><div style="font-size:11px;font-weight:700;color:'+clColor+'">'+(d.active_clients||0)+'</div><div style="font-size:6px;color:#64748b">Client</div></div>';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:4px;text-align:center"><div style="font-size:11px;font-weight:700;color:'+(d.proxy_reachable?"#4ade80":"#f87171")+'">'+(d.proxy_reachable?d.proxy_response_ms+"ms":"DOWN")+'</div><div style="font-size:6px;color:#64748b">Proxy</div></div>';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:4px;text-align:center"><div style="font-size:11px;font-weight:700;color:'+(d.listener_running?"#4ade80":"#f87171")+'">'+(d.listener_running?"ON":"OFF")+'</div><div style="font-size:6px;color:#64748b">Listnr</div></div>';
+h+='</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:3px">';
+h+='<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:5px;font-size:9px">';
 h+='<div><span style="color:#64748b">Song:</span> <span style="color:#facc15">'+esc(d.current_song||'—')+'</span></div>';
 h+='<div><span style="color:#64748b">Listeners:</span> <span style="color:#4ade80">'+(d.listeners||0)+'</span></div>';
-h+='<div><span style="color:#64748b">AutoDJ PID:</span> <span style="color:#94a3b8">'+(d.autodj_pid||'—')+'</span></div>';
-h+='<div><span style="color:#64748b">Listener PID:</span> <span style="color:#94a3b8">'+(d.listener_pid||'—')+'</span></div>';
-h+='</div><div style="background:rgba(0,0,0,.2);border-radius:4px;padding:5px;font-size:10px"><div style="color:#64748b;margin-bottom:2px">Events:</div>';
+h+='<div><span style="color:#64748b">Ports:</span> <span style="color:#94a3b8">DJ:'+(d.dj_port||'—')+' Src:'+(d.src_port||'—')+'</span></div>';
+h+='<div><span style="color:#64748b">Up/Cli:</span> <span style="color:#94a3b8">'+(d.active_upstreams||0)+'/'+(d.active_clients||0)+'</span></div>';
+h+='</div><div style="background:rgba(0,0,0,.2);border-radius:4px;padding:5px;font-size:9px"><div style="color:#64748b;margin-bottom:2px">Events:</div>';
 if(d.connections&&d.connections.length){var n=0;d.connections.forEach(function(c){if(n>=6)return;
 var ts='';if(c.connected){var d2=new Date(c.connected);var h2=d2.getHours()%12||12;var am=d2.getHours()<12?'AM':'PM';ts=(d2.getMonth()+1)+'/'+d2.getDate()+' '+h2+':'+String(d2.getMinutes()).padStart(2,'0')+' '+am;}
 var ago='';if(c.connected){var s=Math.floor((Date.now()-new Date(c.connected).getTime())/1000);if(s<120)ago=s+'s';else if(s<7200)ago=Math.floor(s/60)+'m';else ago=Math.floor(s/3600)+'h';}
