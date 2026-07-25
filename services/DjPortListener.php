@@ -197,8 +197,7 @@ class DjPortListener
                     @fwrite($conn['client'], "FAIL\r\n");
                     $this->closeConnection($idx, 'auth_failed');
                     // AutoDJ may have been killed by a previous connection; restart it
-                    $compositeId = 10000 + (int)$conn['station_id'];
-                    @file_get_contents("http://localhost/api/autodj/restart/{$compositeId}", false, stream_context_create(['http' => ['timeout' => 3]]));
+                    $this->triggerAutodjRestart((int)$conn['station_id']);
                     return;
                 }
 
@@ -375,11 +374,7 @@ class DjPortListener
                 // Log resume in song history
                 $this->pdo->prepare("INSERT INTO radio_song_history (stream_id, title, artist, played_at) VALUES (?,?,?,NOW())")
                     ->execute([$conn['station_id'], 'AutoDJ Resumed', "DJ {$conn['dj']->username} disconnected"]);
-                // Trigger AutoDJ restart via internal API (no auth required)
-                $compositeId = 10000 + (int)$conn['station_id'];
-                $restartUrl = "http://localhost/api/autodj/restart/{$compositeId}";
-                $restartResult = @file_get_contents($restartUrl, false, stream_context_create(['http' => ['timeout' => 5]]));
-                $this->log("AutoDJ restart via {$restartUrl}: " . ($restartResult !== false ? 'OK' : 'FAILED'));
+                $this->triggerAutodjRestart((int)$conn['station_id']);
             } catch (\Exception $e) {
                 $this->log("AutoDJ restart exception: " . $e->getMessage());
             }
@@ -388,6 +383,20 @@ class DjPortListener
         if (!empty($conn['client'])) { @stream_socket_shutdown($conn['client'], STREAM_SHUT_RDWR); @fclose($conn['client']); }
         if (!empty($conn['upstream'])) { @stream_socket_shutdown($conn['upstream'], STREAM_SHUT_RDWR); @fclose($conn['upstream']); }
         unset($this->connections[$idx]);
+    }
+
+    protected function triggerAutodjRestart($stationId)
+    {
+        $compositeId = 10000 + $stationId;
+        $sock = @fsockopen('127.0.0.1', 80, $e, $s, 3);
+        if ($sock) {
+            fwrite($sock, "GET /api/autodj/restart/{$compositeId} HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n");
+            $resp = @fread($sock, 1024);
+            $this->log("AutoDJ restart for #{$stationId}: " . (strpos($resp, '"success":true') !== false ? 'OK' : 'FAIL'));
+            fclose($sock);
+        } else {
+            $this->log("AutoDJ restart failed for #{$stationId}: $e $s");
+        }
     }
 
     protected function rescanPorts()
