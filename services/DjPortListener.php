@@ -186,6 +186,9 @@ class DjPortListener
                     $this->log("Auth FAILED: $djUser on station {$conn['station_id']}");
                     @fwrite($conn['client'], "FAIL\r\n");
                     $this->closeConnection($idx, 'auth_failed');
+                    // AutoDJ may have been killed by a previous connection; restart it
+                    $compositeId = 10000 + (int)$conn['station_id'];
+                    @file_get_contents("http://localhost/api/autodj/restart/{$compositeId}", false, stream_context_create(['http' => ['timeout' => 3]]));
                     return;
                 }
 
