@@ -154,14 +154,13 @@ class DjPortListener
                     }
                 }
             }
-            // Keepalive: send silent frame to proxied upstreams every 30s to prevent SHOUTcast AutoDumpSourceTime
-            static $lastKa = 0;
+            // Auto-disconnect idle DJs: if no data received for 45s, drop them and restore AutoDJ
             $now = time();
-            if ($now - $lastKa >= 30) {
-                $lastKa = $now;
-                foreach ($this->connections as $ki => $kc) {
-                    if (($kc['state'] ?? '') === 'proxying' && !empty($kc['upstream']) && $now - ($kc['last_data'] ?? 0) > 25) {
-                        @fwrite($kc['upstream'], "\xff\xfb\x00\x00");
+            foreach ($this->connections as $ki => $kc) {
+                if (($kc['state'] ?? '') === 'proxying' && !empty($kc['upstream']) && !empty($kc['dj'])) {
+                    if ($now - ($kc['last_data'] ?? $now) > 45) {
+                        $this->log("DJ {$kc['dj']->username} idle 45s, disconnecting");
+                        $this->closeConnection($ki, 'dj_idle_timeout');
                     }
                 }
             }
