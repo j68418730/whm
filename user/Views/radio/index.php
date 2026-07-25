@@ -133,6 +133,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <a href="/dj?u=<?=urlencode($dj->username)?>" target="_blank" style="color:#34d399;font-weight:600">📻 <?=htmlspecialchars($dj->name?:$dj->username)?>'s Page</a>
   <?php break; endforeach; endif; ?>
   <a href="/dj_panel.php" target="_blank" style="color:#facc15;font-weight:600">🎧 DJ Panel</a>
+  <?php if (($hosting->username ?? '') === 'testacct'): ?>
+  <a href="?station_id=<?=$stationId?>&tab=debug" style="color:#f97316;font-weight:700" class="<?=$tab==='debug'?'active':''?>">🔧 Debug</a>
+  <?php endif; ?>
 </div>
 <div class="tab <?=$tab==='overview'?'active':''?>">
   <div style="background:linear-gradient(135deg,rgba(0,140,255,.06),rgba(168,85,247,.03));border:1px solid rgba(0,191,255,.08);border-radius:12px;padding:16px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
@@ -804,6 +807,101 @@ function copyDjInfo(){
   <?php endif; ?>
   </div>
 </div>
+
+<?php if (($hosting->username ?? '') === 'testacct'): ?>
+<div class="tab <?=$tab==='debug'?'active':''?>">
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+<h3 style="margin:0">🔧 Stream Debug</h3>
+<div><span id="debug-timer" style="font-size:10px;color:#64748b">Auto-refresh in 5s</span></div>
+</div>
+<div id="debug-panel" style="font-size:12px;line-height:1.8">
+<div style="text-align:center;padding:20px;color:#64748b">Loading debug data...</div>
+</div>
+</div>
+</div>
+<script>
+(function(){
+var sid = <?=$stationId?>;
+var timer = 5;
+var interval;
+function loadDebug(){
+var x = new XMLHttpRequest();
+x.open('GET', '/api/stream-debug.php?station='+sid, true);
+x.onload = function(){
+if(x.status === 200){
+try{
+var d = JSON.parse(x.responseText);
+renderDebug(d);
+}catch(e){ document.getElementById('debug-panel').innerHTML = '<div style="color:#f87171">Parse error</div>'; }
+}else{
+document.getElementById('debug-panel').innerHTML = '<div style="color:#f87171">HTTP '+x.status+'</div>';
+}
+};
+x.onerror = function(){ document.getElementById('debug-panel').innerHTML = '<div style="color:#f87171">Connection error</div>'; };
+x.send();
+timer = 5;
+updateTimer();
+}
+function updateTimer(){
+var el = document.getElementById('debug-timer');
+if(el) el.textContent = 'Auto-refresh in '+timer+'s';
+}
+function renderDebug(d){
+var h = '';
+// Status row
+h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">';
+h += '<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:10px;text-align:center"><div style="font-size:16px;font-weight:700;color:'+(d.status==='running'?'#4ade80':'#f87171')+'">'+d.status+'</div><div style="font-size:9px;color:#64748b;margin-top:2px">Station</div></div>';
+h += '<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:10px;text-align:center"><div style="font-size:16px;font-weight:700;color:'+(d.autodj_running?'#4ade80':'#f87171')+'">'+(d.autodj_running?'Running':'Stopped')+'</div><div style="font-size:9px;color:#64748b;margin-top:2px">AutoDJ</div></div>';
+h += '<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:10px;text-align:center"><div style="font-size:16px;font-weight:700;color:'+(d.source_connected?'#4ade80':'#f87171')+'">'+(d.source_connected?'Connected':'Disconnected')+'</div><div style="font-size:9px;color:#64748b;margin-top:2px">Source</div></div>';
+h += '<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:10px;text-align:center"><div style="font-size:16px;font-weight:700;color:'+(d.proxy_reachable?'#4ade80':'#f87171')+'">'+(d.proxy_reachable?d.proxy_response_ms+'ms':'Unreachable')+'</div><div style="font-size:9px;color:#64748b;margin-top:2px">Proxy</div></div>';
+h += '</div>';
+// Details
+h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">';
+h += '<div style="background:rgba(0,0,0,.2);border-radius:8px;padding:10px;font-size:11px;font-family:monospace">';
+h += '<div><span style="color:#64748b">Engine:</span> <span style="color:#e0e0e0">'+d.engine+'</span></div>';
+h += '<div><span style="color:#64748b">Port:</span> <span style="color:#38bdf8">'+d.port+'</span></div>';
+h += '<div><span style="color:#64748b">Listeners:</span> <span style="color:#4ade80">'+d.listeners+'</span></div>';
+h += '<div><span style="color:#64748b">Current Song:</span> <span style="color:#facc15">'+escapeHtml(d.current_song||'—')+'</span></div>';
+h += '<div><span style="color:#64748b">AutoDJ PID:</span> <span style="color:#94a3b8">'+(d.autodj_pid||'—')+'</span></div>';
+h += '<div><span style="color:#64748b">Proxy Bytes:</span> <span style="color:#94a3b8">'+(d.proxy_bytes||0)+' B</span></div>';
+h += '</div>';
+h += '<div style="background:rgba(0,0,0,.2);border-radius:8px;padding:10px;font-size:11px;font-family:monospace">';
+h += '<div style="color:#64748b;margin-bottom:4px">Recent Connections:</div>';
+if(d.connections && d.connections.length){
+d.connections.forEach(function(c){
+var col = c.disconnected ? '#94a3b8' : '#4ade80';
+var lbl = c.disconnected ? 'DC' : 'LIVE';
+h += '<div style="font-size:10px;margin-bottom:2px"><span style="color:'+col+';font-weight:700">['+lbl+']</span> '+escapeHtml(c.dj)+' — '+(c.duration ? Math.floor(c.duration/60)+'m' : 'active')+(c.reason ? ' ('+c.reason+')' : '')+'</div>';
+});
+}else{
+h += '<div style="color:#64748b;font-size:10px">No connections</div>';
+}
+h += '<div style="color:#64748b;margin-top:6px;margin-bottom:4px">Recent Songs:</div>';
+if(d.recent_songs && d.recent_songs.length){
+d.recent_songs.forEach(function(s){
+h += '<div style="font-size:10px;color:#94a3b8">▸ '+escapeHtml(s.title||'?')+'</div>';
+});
+}else{
+h += '<div style="color:#64748b;font-size:10px">No songs</div>';
+}
+h += '</div>';
+h += '</div>';
+// Timestamp
+h += '<div style="font-size:9px;color:#64748b;text-align:center">Last checked: '+d.timestamp+'</div>';
+document.getElementById('debug-panel').innerHTML = h;
+}
+function escapeHtml(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+loadDebug();
+interval = setInterval(function(){
+timer--;
+updateTimer();
+if(timer <= 0){ loadDebug(); }
+}, 1000);
+})();
+</script>
+<?php endif; ?>
+
 <?php elseif (empty($stations)): ?>
 <div class="card"><div class="empty-state"><div style="font-size:40px;margin-bottom:10px">&#127926;</div><div style="font-size:14px;color:#c0c0c0;margin-bottom:6px">No radio stations found</div><div style="font-size:11px;color:#64748b;margin-bottom:14px">Create your first station</div><a href="/user/radio/setup" class="btn btn-primary">Create Station</a></div></div>
 <?php else: ?>

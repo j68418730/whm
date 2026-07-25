@@ -155,8 +155,9 @@ class RadioController extends Controller
         }
 
         $user = $this->auth->user();
+        $hosting = $this->getHosting();
         return $this->view('user.radio.index', [
-            'user' => $user, 'station' => $station, 'stations' => $stations,
+            'hosting' => $hosting, 'user' => $user, 'station' => $station, 'stations' => $stations,
             'djs' => $djs, 'requests' => $requests, 'schedule' => $schedule,
             'playlists' => $playlists, 'songs' => $songs, 'settings' => $settings,
             'mounts' => $mounts, 'branding' => $branding, 'backups' => $backups,
