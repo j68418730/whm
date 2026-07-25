@@ -112,17 +112,18 @@ class ShoutcastV1Source
         }
         $fp = fopen($path, 'rb');
         if (!$fp) return;
-        $bufSize = 65536;
-        // Slightly faster than real-time to maintain buffer (0.9x delay = 1.1x speed)
+        $bufSize = 16384;
         $bytesPerSec = ($this->bitrate * 1000) / 8;
-        $delayPerChunk = ($bufSize / $bytesPerSec) * 900000;
+        $delayPerChunk = ($bufSize / $bytesPerSec) * 850000;
+        stream_set_blocking($sock, false);
         while ($this->running && !feof($fp)) {
             $data = fread($fp, $bufSize);
             if ($data === false || $data === '') break;
             $written = @fwrite($sock, $data);
-            if ($written === false || $written === 0) { $this->log("Write failed"); break; }
-            usleep($delayPerChunk);
+            if ($written === false) { $this->log("Write failed"); break; }
+            if ($written > 0) { usleep($delayPerChunk); }
         }
+        stream_set_blocking($sock, true);
         fclose($fp);
     }
 
