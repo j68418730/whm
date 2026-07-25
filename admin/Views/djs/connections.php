@@ -66,8 +66,9 @@ h+='<div><span style="color:#64748b">AutoDJ PID:</span> <span style="color:#94a3
 h+='<div><span style="color:#64748b">Listener PID:</span> <span style="color:#94a3b8">'+(d.listener_pid||'—')+'</span></div>';
 h+='</div><div style="background:rgba(0,0,0,.2);border-radius:4px;padding:5px;font-size:10px"><div style="color:#64748b;margin-bottom:2px">Events:</div>';
 if(d.connections&&d.connections.length){var n=0;d.connections.forEach(function(c){if(n>=6)return;
-var ago='';if(c.connected){var s=Math.floor((Date.now()-new Date(c.connected).getTime())/1000);if(s<120)ago=s+'s ago';else if(s<7200)ago=Math.floor(s/60)+'m ago';else ago=Math.floor(s/3600)+'h ago';}
-h+='<div>'+(c.disconnected?"[DC]":"[LIVE]")+' '+esc(c.dj)+(c.duration?" "+Math.floor(c.duration/60)+"m":"")+(ago?" "+ago:"")+(c.reason?" ("+c.reason+")":"")+'</div>';n++;});
+var ts='';if(c.connected){var d2=new Date(c.connected);var h2=d2.getHours()%12||12;var am=d2.getHours()<12?'AM':'PM';ts=(d2.getMonth()+1)+'/'+d2.getDate()+' '+h2+':'+String(d2.getMinutes()).padStart(2,'0')+' '+am;}
+var ago='';if(c.connected){var s=Math.floor((Date.now()-new Date(c.connected).getTime())/1000);if(s<120)ago=s+'s';else if(s<7200)ago=Math.floor(s/60)+'m';else ago=Math.floor(s/3600)+'h';}
+h+='<div><span style="color:#64748b">'+ts+'</span> '+(c.disconnected?"[DC]":"[LIVE]")+' '+esc(c.dj)+(c.duration?" "+Math.floor(c.duration/60)+"m":"")+(ago?" <span style=\"color:#64748b\">("+ago+" ago)</span>":"")+(c.reason?" <span style=\"color:#f87171\">"+c.reason+"</span>":"")+'</div>';n++;});
 }else{h+='<div style="color:#64748b">None</div>';}
 h+='</div></div><div style="font-size:8px;color:#64748b;margin-top:3px">'+(d.timestamp||'')+' <span style="color:'+(chk?"#4ade80":"#f87171")+'">'+(chk?"● Good":"● Issues")+'</span>';
 if(d.last_log){h+=' | '+esc(d.last_log.split("\n")[0]);}
