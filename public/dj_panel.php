@@ -719,8 +719,8 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 
 <!-- Stream Player -->
 <?php
-$compId = 10000 + (int)($station->id ?? 0);
-$streamUrl = "/radio/stream-proxy.php?stream={$compId}";
+$stationPort = $station->port ?? 11000;
+$streamUrl = "/radio/direct-stream/{$station->port}";
 $playerId = "player-" . ($station->id ?? 0);
 ?>
 <div style="background:linear-gradient(135deg,rgba(15,23,42,.6),rgba(30,41,59,.4));border:1px solid rgba(56,189,248,.12);border-radius:20px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden">
