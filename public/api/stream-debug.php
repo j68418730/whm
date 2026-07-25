@@ -12,7 +12,11 @@ try {
     $station = $st->fetch(PDO::FETCH_OBJ);
     if (!$station) { echo json_encode(['error'=>'station not found']); exit; }
 
-    // AutoDJ check
+    $sPort = (int)$station->port;
+    $djPort = (int)$station->dj_port;
+    $srcPort = $sPort + 1;
+
+    // AutoDJ check via PID file
     $autodjPid = 0;
     $autodjRunning = false;
     $pidFile = '/home/testacct/radio/autodj/autodj.pid';
@@ -35,16 +39,43 @@ try {
     $hist->execute([$stationId]);
     $songs = $hist->fetchAll(PDO::FETCH_OBJ);
 
-    // SHOUTcast source check
+    // === Real-time connection checks ===
+
+    // 1. Source port (11001) — does SHOUTcast have a source connected?
     $sourceConnected = false;
-    $sourceSock = @fsockopen('127.0.0.1', $station->port + 1, $errno, $errstr, 2);
+    $sourceSock = @fsockopen('127.0.0.1', $srcPort, $errno, $errstr, 1);
     if ($sourceSock) { $sourceConnected = true; fclose($sourceSock); }
 
-    // Stream proxy test
+    // 2. Listener port (11000) — is the SHOUTcast server running and serving?
+    $listenerOk = false;
+    $lSock = @fsockopen('127.0.0.1', $sPort, $errno, $errstr, 1);
+    if ($lSock) {
+        stream_set_timeout($lSock, 2);
+        fwrite($lSock, "GET / HTTP/1.0\r\nHost: localhost\r\nIcy-MetaData:0\r\n\r\n");
+        $resp = @fgets($lSock, 256);
+        $listenerOk = $resp !== false && (str_contains($resp, 'ICY') || str_contains($resp, 'HTTP'));
+        fclose($lSock);
+    }
+
+    // 3. DJ port (10000) — any active TCP connections to the DJ port?
+    $activeClientConns = 0;
+    $clientConns = @shell_exec("ss -tn state established sport = :{$djPort} 2>/dev/null | tail -n +2 | wc -l");
+    if ($clientConns !== null) {
+        $activeClientConns = (int)trim($clientConns);
+    }
+
+    // 4. Active upstream connections (from DjPortListener to source port)
+    $activeUpstreamConns = 0;
+    $upstreamConns = @shell_exec("ss -tn state established dport = :{$srcPort} 2>/dev/null | tail -n +2 | wc -l");
+    if ($upstreamConns !== null) {
+        $activeUpstreamConns = (int)trim($upstreamConns);
+    }
+
+    // 5. Stream proxy test
     $proxyOk = false;
     $proxyTime = 0;
     $proxySize = 0;
-    $proxySock = @fsockopen('127.0.0.1', (int)$station->port, $errno, $errstr, 2);
+    $proxySock = @fsockopen('127.0.0.1', $sPort, $errno, $errstr, 2);
     if ($proxySock) {
         stream_set_timeout($proxySock, 3);
         fwrite($proxySock, "GET / HTTP/1.0\r\nHost: localhost\r\nIcy-MetaData:0\r\n\r\n");
@@ -64,7 +95,7 @@ try {
         fclose($proxySock);
     }
 
-    // DjPortListener process status
+    // DjPortListener process
     $listenerPid = 0;
     $listenerRunning = false;
     $lpFile = '/tmp/ph-dj-listener.pid';
@@ -79,16 +110,11 @@ try {
             }
         }
     } else {
-        // Fallback: find by process name
         $output = @shell_exec("pgrep -f 'DjPortListener.php' 2>/dev/null");
-        if ($output) {
-            $pids = explode("\n", trim($output));
-            $listenerPid = (int)($pids[0] ?? 0);
-            $listenerRunning = $listenerPid > 0;
-        }
+        if ($output) { $pids = explode("\n", trim($output)); $listenerPid = (int)($pids[0] ?? 0); $listenerRunning = $listenerPid > 0; }
     }
 
-    // Last listener log entries
+    // Last log
     $lastLog = '';
     $logFile = '/var/log/ph-dj-listener.log';
     if (file_exists($logFile)) {
@@ -98,7 +124,9 @@ try {
     echo json_encode([
         'station' => $station->name ?? "Station #$stationId",
         'status' => $station->status ?? 'unknown',
-        'port' => (int)$station->port,
+        'port' => $sPort,
+        'dj_port' => $djPort,
+        'src_port' => $srcPort,
         'engine' => $station->engine ?? 'icecast',
         'listeners' => (int)($station->listener_count ?? 0),
         'current_song' => $station->current_song ?? '',
@@ -108,6 +136,9 @@ try {
         'autodj_running' => $autodjRunning,
         'autodj_pid' => $autodjPid,
         'source_connected' => $sourceConnected,
+        'listener_responding' => $listenerOk,
+        'active_clients' => $activeClientConns,
+        'active_upstreams' => $activeUpstreamConns,
         'proxy_reachable' => $proxyOk,
         'proxy_response_ms' => $proxyTime,
         'proxy_bytes' => $proxySize,
