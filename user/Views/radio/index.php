@@ -175,7 +175,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 var ovTimer = 5;
 function esc(t){var d=document.createElement("div");d.textContent=t||'';return d.innerHTML;}
 function loadOvDebug(){
-fetch('/api/stream-debug.php?station=<?=$stationId?>').then(function(r){
+fetch('/api/stream-debug.php?station=<?=$station->streaming_id ?? $stationId?>').then(function(r){
 if(!r.ok){ document.getElementById("ov-debug-panel").innerHTML='<div style="color:#f87171">HTTP '+r.status+'</div>'; return; }
 r.json().then(function(d){
 var h='';
