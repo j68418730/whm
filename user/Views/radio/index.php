@@ -172,14 +172,15 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </div>
 </div>
 <script>
-var ovTimer = 5;
+(function(){
+var ovTimer=5,ovRunning=true;
 function esc(t){var d=document.createElement("div");d.textContent=t||'';return d.innerHTML;}
-function loadOvDebug(){
+function ovUpdate(){
+if(!ovRunning)return;
 fetch('/api/stream-debug.php?station=<?=$station->streaming_id ?? $stationId?>').then(function(r){
-if(!r.ok){ document.getElementById("ov-debug-panel").innerHTML='<div style="color:#f87171">HTTP '+r.status+'</div>'; return; }
+if(!r.ok){document.getElementById("ov-debug-panel").innerHTML='<div style="color:#f87171">HTTP '+r.status+'</div>';sch();return;}
 r.json().then(function(d){
-var h='';
-h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:6px">';
+var h='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:6px">';
 h+='<div style="background:rgba(0,0,0,.3);border-radius:5px;padding:6px;text-align:center"><div style="font-size:12px;font-weight:700;color:'+(d.status==="running"?"#4ade80":"#f87171")+'">'+esc(d.status)+'</div><div style="font-size:7px;color:#64748b">Station</div></div>';
 h+='<div style="background:rgba(0,0,0,.3);border-radius:5px;padding:6px;text-align:center"><div style="font-size:12px;font-weight:700;color:'+(d.autodj_running?"#4ade80":"#f87171")+'">'+(d.autodj_running?"Running":"Stopped")+'</div><div style="font-size:7px;color:#64748b">AutoDJ</div></div>';
 h+='<div style="background:rgba(0,0,0,.3);border-radius:5px;padding:6px;text-align:center"><div style="font-size:12px;font-weight:700;color:'+(d.source_connected?"#4ade80":"#f87171")+'">'+(d.source_connected?"OK":"OFF")+'</div><div style="font-size:7px;color:#64748b">Source</div></div>';
@@ -192,19 +193,17 @@ h+='<div><span style="color:#64748b">PID:</span> <span style="color:#94a3b8">'+(
 h+='<div><span style="color:#64748b">Source:</span> <span style="color:'+(d.source_connected?"#4ade80":"#f87171")+'">'+(d.source_connected?"Connected":"Disconnected")+'</span></div></div>';
 h+='<div style="background:rgba(0,0,0,.2);border-radius:5px;padding:6px;font-size:10px"><div style="color:#64748b;margin-bottom:2px">Connections:</div>';
 if(d.connections&&d.connections.length){d.connections.forEach(function(c){
-h+='<div>'+(c.disconnected?"[DC]":"[LIVE]")+' '+esc(c.dj)+(c.duration?" "+Math.floor(c.duration/60)+"m":"")+(c.reason?" ("+c.reason+")":"")+'</div>';
-});}else{h+='<div style="color:#64748b">None</div>';}
-h+='</div></div>';
-h+='<div style="font-size:8px;color:#64748b;margin-top:4px">'+(d.timestamp||'')+' <span style="color:'+(d.autodj_running&&d.source_connected&&d.proxy_reachable?"#4ade80":"#f87171")+'">'+(d.autodj_running&&d.source_connected&&d.proxy_reachable?"● All Good":"● Issues Detected")+'</span></div>';
+h+='<div>'+(c.disconnected?"[DC]":"[LIVE]")+' '+esc(c.dj)+(c.duration?" "+Math.floor(c.duration/60)+"m":"")+(c.reason?" ("+c.reason+")":"")+'</div>';});
+}else{h+='<div style="color:#64748b">None</div>';}
+h+='</div></div><div style="font-size:8px;color:#64748b;margin-top:4px">'+(d.timestamp||'')+' <span style="color:'+(d.autodj_running&&d.source_connected&&d.proxy_reachable?"#4ade80":"#f87171")+'">'+(d.autodj_running&&d.source_connected&&d.proxy_reachable?"● All Good":"● Issues Detected")+'</span></div>';
 document.getElementById("ov-debug-panel").innerHTML=h;
-}).catch(function(e){ document.getElementById("ov-debug-panel").innerHTML='<div style="color:#f87171">Parse error</div>'; });
-}).catch(function(e){ document.getElementById("ov-debug-panel").innerHTML='<div style="color:#f87171">Fetch error</div>'; });
-ovTimer=5;
-var tel=document.getElementById("ov-debug-timer");
-if(tel)tel.textContent=ovTimer+"s";
+sch();
+}).catch(function(e){document.getElementById("ov-debug-panel").innerHTML='<div style="color:#f87171">Parse error</div>';sch();});
+}).catch(function(e){document.getElementById("ov-debug-panel").innerHTML='<div style="color:#f87171">Fetch error</div>';sch();});
 }
-loadOvDebug();
-setInterval(function(){ovTimer--;var tel=document.getElementById("ov-debug-timer");if(tel)tel.textContent=ovTimer+"s";if(ovTimer<=0){loadOvDebug();}},1000);
+function sch(){if(!ovRunning)return;ovTimer=5;var tel=document.getElementById("ov-debug-timer");if(tel)tel.textContent='5s';setTimeout(function(){if(!ovRunning)return;ovTimer--;var tel=document.getElementById("ov-debug-timer");if(tel)tel.textContent=ovTimer+'s';if(ovTimer<=0)ovUpdate();else sch();},1000);}
+try{ovUpdate();}catch(e){document.getElementById("ov-debug-panel").innerHTML='<div style="color:#f87171">JS Error</div>';}
+})();
 </script>
 <?php endif; ?>
 
