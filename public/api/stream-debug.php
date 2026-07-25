@@ -68,10 +68,23 @@ try {
     $listenerPid = 0;
     $listenerRunning = false;
     $lpFile = '/tmp/ph-dj-listener.pid';
-    if (file_exists($lpFile)) {
-        $listenerPid = (int)trim(@file_get_contents($lpFile));
-        if (function_exists('posix_kill')) {
-            $listenerRunning = $listenerPid > 0 && @posix_kill($listenerPid, 0);
+    if (file_exists($lpFile) && is_readable($lpFile)) {
+        $raw = @file_get_contents($lpFile);
+        if ($raw !== false) {
+            $listenerPid = (int)trim($raw);
+            if (function_exists('posix_kill')) {
+                $listenerRunning = $listenerPid > 0 && @posix_kill($listenerPid, 0);
+            } else {
+                $listenerRunning = $listenerPid > 0;
+            }
+        }
+    } else {
+        // Fallback: find by process name
+        $output = @shell_exec("pgrep -f 'DjPortListener.php' 2>/dev/null");
+        if ($output) {
+            $pids = explode("\n", trim($output));
+            $listenerPid = (int)($pids[0] ?? 0);
+            $listenerRunning = $listenerPid > 0;
         }
     }
 
