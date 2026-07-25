@@ -377,8 +377,12 @@ class DjPortListener
                     ->execute([$conn['station_id'], 'AutoDJ Resumed', "DJ {$conn['dj']->username} disconnected"]);
                 // Trigger AutoDJ restart via internal API (no auth required)
                 $compositeId = 10000 + (int)$conn['station_id'];
-                @file_get_contents("http://localhost/api/autodj/restart/{$compositeId}", false, stream_context_create(['http' => ['timeout' => 3]]));
-            } catch (\Exception $e) {}
+                $restartUrl = "http://localhost/api/autodj/restart/{$compositeId}";
+                $restartResult = @file_get_contents($restartUrl, false, stream_context_create(['http' => ['timeout' => 5]]));
+                $this->log("AutoDJ restart via {$restartUrl}: " . ($restartResult !== false ? 'OK' : 'FAILED'));
+            } catch (\Exception $e) {
+                $this->log("AutoDJ restart exception: " . $e->getMessage());
+            }
         }
 
         if (!empty($conn['client'])) { @stream_socket_shutdown($conn['client'], STREAM_SHUT_RDWR); @fclose($conn['client']); }
