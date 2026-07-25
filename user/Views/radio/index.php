@@ -173,55 +173,38 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </div>
 <script>
 var ovTimer = 5;
+function esc(t){var d=document.createElement("div");d.textContent=t||'';return d.innerHTML;}
 function loadOvDebug(){
-var x = new XMLHttpRequest();
-x.open('GET', '/api/stream-debug.php?station=<?=$stationId?>', true);
-x.onload = function(){
-if(x.status === 200){
-try{
-var d = JSON.parse(x.responseText);
-var h = '';
-h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:6px">';
-h += '<div style="background:rgba(0,0,0,.3);border-radius:5px;padding:6px;text-align:center"><div style="font-size:12px;font-weight:700;color:'+(d.status==="running"?"#4ade80":"#f87171")+'">'+d.status+'</div><div style="font-size:7px;color:#64748b">Station</div></div>';
-h += '<div style="background:rgba(0,0,0,.3);border-radius:5px;padding:6px;text-align:center"><div style="font-size:12px;font-weight:700;color:'+(d.autodj_running?"#4ade80":"#f87171")+'">'+(d.autodj_running?"Running":"Stopped")+'</div><div style="font-size:7px;color:#64748b">AutoDJ</div></div>';
-h += '<div style="background:rgba(0,0,0,.3);border-radius:5px;padding:6px;text-align:center"><div style="font-size:12px;font-weight:700;color:'+(d.source_connected?"#4ade80":"#f87171")+'">'+(d.source_connected?"OK":"OFF")+'</div><div style="font-size:7px;color:#64748b">Source</div></div>';
-h += '<div style="background:rgba(0,0,0,.3);border-radius:5px;padding:6px;text-align:center"><div style="font-size:12px;font-weight:700;color:'+(d.proxy_reachable?"#4ade80":"#f87171")+'">'+(d.proxy_reachable?d.proxy_response_ms+"ms":"DOWN")+'</div><div style="font-size:7px;color:#64748b">Proxy</div></div>';
-h += '</div>';
-h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">';
-h += '<div style="background:rgba(0,0,0,.2);border-radius:5px;padding:6px;font-size:10px">';
-h += '<div><span style="color:#64748b">Song:</span> <span style="color:#facc15">'+escapeHtml(d.current_song||"—")+'</span></div>';
-h += '<div><span style="color:#64748b">Listeners:</span> <span style="color:#4ade80">'+d.listeners+'</span></div>';
-h += '<div><span style="color:#64748b">PID:</span> <span style="color:#94a3b8">'+(d.autodj_pid||"—")+'</span></div>';
-h += '<div><span style="color:#64748b">Source:</span> <span style="color:'+(d.source_connected?"#4ade80":"#f87171")+'">'+(d.source_connected?"Connected":"Disconnected")+'</span></div>';
-h += '</div>';
-h += '<div style="background:rgba(0,0,0,.2);border-radius:5px;padding:6px;font-size:10px">';
-h += '<div style="color:#64748b;margin-bottom:2px">Connections:</div>';
-if(d.connections && d.connections.length){
-d.connections.forEach(function(c){
-var col = c.disconnected ? "#94a3b8" : "#4ade80";
-var lbl = c.disconnected ? "DC" : "LIVE";
-h += '<div>['+lbl+'] '+escapeHtml(c.dj)+(c.duration?" "+Math.floor(c.duration/60)+"m":"")+(c.reason?" ("+c.reason+")":"")+'</div>';
-});
-}else{ h += '<div style="color:#64748b">None</div>'; }
-h += '</div></div>';
-h += '<div style="font-size:8px;color:#64748b;margin-top:4px">'+d.timestamp+' <span style="color:'+(d.autodj_running&&d.source_connected&&d.proxy_reachable?"#4ade80":"#f87171")+'">'+(d.autodj_running&&d.source_connected&&d.proxy_reachable?"● All Good":"● Issues Detected")+'</span></div>';
-document.getElementById("ov-debug-panel").innerHTML = h;
-}catch(e){ document.getElementById("ov-debug-panel").innerHTML = '<div style="color:#f87171">Parse error</div>'; }
-}else{ document.getElementById("ov-debug-panel").innerHTML = '<div style="color:#f87171">HTTP '+x.status+'</div>'; }
-};
-x.send();
-ovTimer = 5;
-var tel = document.getElementById("ov-debug-timer");
-if(tel) tel.textContent = ovTimer+"s";
+fetch('/api/stream-debug.php?station=<?=$stationId?>').then(function(r){
+if(!r.ok){ document.getElementById("ov-debug-panel").innerHTML='<div style="color:#f87171">HTTP '+r.status+'</div>'; return; }
+r.json().then(function(d){
+var h='';
+h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:6px">';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:5px;padding:6px;text-align:center"><div style="font-size:12px;font-weight:700;color:'+(d.status==="running"?"#4ade80":"#f87171")+'">'+esc(d.status)+'</div><div style="font-size:7px;color:#64748b">Station</div></div>';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:5px;padding:6px;text-align:center"><div style="font-size:12px;font-weight:700;color:'+(d.autodj_running?"#4ade80":"#f87171")+'">'+(d.autodj_running?"Running":"Stopped")+'</div><div style="font-size:7px;color:#64748b">AutoDJ</div></div>';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:5px;padding:6px;text-align:center"><div style="font-size:12px;font-weight:700;color:'+(d.source_connected?"#4ade80":"#f87171")+'">'+(d.source_connected?"OK":"OFF")+'</div><div style="font-size:7px;color:#64748b">Source</div></div>';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:5px;padding:6px;text-align:center"><div style="font-size:12px;font-weight:700;color:'+(d.proxy_reachable?"#4ade80":"#f87171")+'">'+(d.proxy_reachable?d.proxy_response_ms+"ms":"DOWN")+'</div><div style="font-size:7px;color:#64748b">Proxy</div></div>';
+h+='</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">';
+h+='<div style="background:rgba(0,0,0,.2);border-radius:5px;padding:6px;font-size:10px">';
+h+='<div><span style="color:#64748b">Song:</span> <span style="color:#facc15">'+esc(d.current_song||'—')+'</span></div>';
+h+='<div><span style="color:#64748b">Listeners:</span> <span style="color:#4ade80">'+(d.listeners||0)+'</span></div>';
+h+='<div><span style="color:#64748b">PID:</span> <span style="color:#94a3b8">'+(d.autodj_pid||'—')+'</span></div>';
+h+='<div><span style="color:#64748b">Source:</span> <span style="color:'+(d.source_connected?"#4ade80":"#f87171")+'">'+(d.source_connected?"Connected":"Disconnected")+'</span></div></div>';
+h+='<div style="background:rgba(0,0,0,.2);border-radius:5px;padding:6px;font-size:10px"><div style="color:#64748b;margin-bottom:2px">Connections:</div>';
+if(d.connections&&d.connections.length){d.connections.forEach(function(c){
+h+='<div>'+(c.disconnected?"[DC]":"[LIVE]")+' '+esc(c.dj)+(c.duration?" "+Math.floor(c.duration/60)+"m":"")+(c.reason?" ("+c.reason+")":"")+'</div>';
+});}else{h+='<div style="color:#64748b">None</div>';}
+h+='</div></div>';
+h+='<div style="font-size:8px;color:#64748b;margin-top:4px">'+(d.timestamp||'')+' <span style="color:'+(d.autodj_running&&d.source_connected&&d.proxy_reachable?"#4ade80":"#f87171")+'">'+(d.autodj_running&&d.source_connected&&d.proxy_reachable?"● All Good":"● Issues Detected")+'</span></div>';
+document.getElementById("ov-debug-panel").innerHTML=h;
+}).catch(function(e){ document.getElementById("ov-debug-panel").innerHTML='<div style="color:#f87171">Parse error</div>'; });
+}).catch(function(e){ document.getElementById("ov-debug-panel").innerHTML='<div style="color:#f87171">Fetch error</div>'; });
+ovTimer=5;
+var tel=document.getElementById("ov-debug-timer");
+if(tel)tel.textContent=ovTimer+"s";
 }
-function escapeHtml(t){var d=document.createElement("div");d.textContent=t;return d.innerHTML;}
 loadOvDebug();
-setInterval(function(){
-ovTimer--;
-var tel = document.getElementById("ov-debug-timer");
-if(tel) tel.textContent = ovTimer+"s";
-if(ovTimer <= 0){ loadOvDebug(); }
-}, 1000);
+setInterval(function(){ovTimer--;var tel=document.getElementById("ov-debug-timer");if(tel)tel.textContent=ovTimer+"s";if(ovTimer<=0){loadOvDebug();}},1000);
 </script>
 <?php endif; ?>
 
