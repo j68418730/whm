@@ -717,6 +717,54 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
   </div>
 </div>
 
+<!-- Stream Player -->
+<?php
+$compId = 10000 + (int)($station->id ?? 0);
+$streamUrl = "/radio/stream-proxy.php?stream={$compId}";
+$playerId = "player-" . ($station->id ?? 0);
+?>
+<div style="background:linear-gradient(135deg,rgba(15,23,42,.6),rgba(30,41,59,.4));border:1px solid rgba(56,189,248,.12);border-radius:20px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden">
+<div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(56,189,248,.08),transparent 70%);pointer-events:none"></div>
+<div style="position:absolute;bottom:-40px;left:-40px;width:150px;height:150px;background:radial-gradient(circle,rgba(168,85,247,.06),transparent 70%);pointer-events:none"></div>
+<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;position:relative">
+<div style="width:80px;height:80px;border-radius:16px;background:linear-gradient(135deg,#008cff,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:36px;flex-shrink:0;box-shadow:0 8px 32px rgba(0,140,255,.25);position:relative;overflow:hidden">
+<div id="<?=$playerId?>-eq" style="position:absolute;bottom:4px;left:4px;right:4px;display:flex;gap:2px;justify-content:center;align-items:flex-end;height:16px">
+<span style="width:3px;background:#fff;border-radius:2px;height:40%;animation:eq 0.8s ease-in-out infinite alternate;animation-delay:0s"></span>
+<span style="width:3px;background:#fff;border-radius:2px;height:70%;animation:eq 1.0s ease-in-out infinite alternate;animation-delay:0.2s"></span>
+<span style="width:3px;background:#fff;border-radius:2px;height:50%;animation:eq 0.6s ease-in-out infinite alternate;animation-delay:0.4s"></span>
+<span style="width:3px;background:#fff;border-radius:2px;height:90%;animation:eq 1.2s ease-in-out infinite alternate;animation-delay:0.1s"></span>
+<span style="width:3px;background:#fff;border-radius:2px;height:60%;animation:eq 0.7s ease-in-out infinite alternate;animation-delay:0.3s"></span>
+</div>
+</div>
+<div style="flex:1;min-width:150px">
+<div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;font-weight:600">Now Playing</div>
+<div id="<?=$playerId?>-song" style="font-size:16px;font-weight:700;color:#e0e0e0;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?php echo htmlspecialchars($station->current_song ?? 'Station offline'); ?></div>
+<div id="<?=$playerId?>-artist" style="font-size:12px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?php echo htmlspecialchars($station->current_artist ?? ''); ?></div>
+</div>
+<div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+<div style="text-align:center">
+<div style="font-size:20px;font-weight:800;color:#38bdf8"><?php echo (int)($station->listener_count ?? 0); ?></div>
+<div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;font-weight:600">Listeners</div>
+</div>
+<button id="<?=$playerId?>-btn" class="btn" style="width:44px;height:44px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(135deg,#008cff,#38bdf8);color:#fff;box-shadow:0 4px 16px rgba(0,140,255,.3);border:none;cursor:pointer;transition:all .2s" onclick="togglePlayer('<?=$playerId?>','<?=$streamUrl?>')">▶</button>
+</div>
+</div>
+<div style="margin-top:12px;display:flex;align-items:center;gap:10px;position:relative">
+<span style="font-size:10px;color:#64748b;width:30px;text-align:right" id="<?=$playerId?>-time">0:00</span>
+<div style="flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;cursor:pointer" id="<?=$playerId?>-progress-bg" onclick="seekPlayer(event,'<?=$playerId?>')">
+<div id="<?=$playerId?>-progress" style="width:0%;height:100%;background:linear-gradient(90deg,#008cff,#7c3aed);border-radius:4px;transition:width .3s"></div>
+</div>
+<span style="font-size:10px;color:#64748b;width:30px" id="<?=$playerId?>-duration">0:00</span>
+<input type="range" id="<?=$playerId?>-volume" min="0" max="1" step="0.05" value="0.7" style="width:60px;height:4px;appearance:none;background:rgba(255,255,255,.12);border-radius:4px;outline:none;cursor:pointer" oninput="setVolume('<?=$playerId?>',this.value)">
+</div>
+<audio id="<?=$playerId?>-audio" style="display:none" preload="none" ontimeupdate="updatePlayer('<?=$playerId?>')" onended="playerEnded('<?=$playerId?>')" onerror="playerError('<?=$playerId?>')"></audio>
+</div>
+
+<style>
+@keyframes eq{0%{height:20%}100%{height:90%}}
+#<?=$playerId?>-volume::-webkit-slider-thumb{appearance:none;width:12px;height:12px;border-radius:50%;background:#38bdf8;cursor:pointer}
+</style>
+
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
 
 <!-- Broadcaster Info -->
@@ -1228,6 +1276,54 @@ function sw(e,id){
 // Restore tab from URL
 var t = new URLSearchParams(window.location.search).get('tab');
 if (t) { var el = document.querySelector('.dj-tab[onclick*="'+t+'"]'); if(el) el.click(); }
+// Stream Player
+var players = {};
+function togglePlayer(id, url){
+  var a = document.getElementById(id+'-audio');
+  var b = document.getElementById(id+'-btn');
+  if(a.paused){
+    if(!a.src) a.src = url;
+    a.play().then(function(){b.textContent='⏸';b.style.background='linear-gradient(135deg,#7c3aed,#6366f1)';}).catch(function(){b.textContent='▶';});
+  }else{
+    a.pause();
+    b.textContent='▶';
+    b.style.background='linear-gradient(135deg,#008cff,#38bdf8)';
+  }
+}
+function updatePlayer(id){
+  var a = document.getElementById(id+'-audio');
+  if(!a || !a.duration) return;
+  var pct = (a.currentTime / a.duration) * 100;
+  document.getElementById(id+'-progress').style.width = pct + '%';
+  document.getElementById(id+'-time').textContent = fmt(a.currentTime);
+  document.getElementById(id+'-duration').textContent = fmt(a.duration);
+}
+function seekPlayer(e, id){
+  var bg = document.getElementById(id+'-progress-bg');
+  var a = document.getElementById(id+'-audio');
+  if(!a || !a.duration) return;
+  var rect = bg.getBoundingClientRect();
+  var pct = (e.clientX - rect.left) / rect.width;
+  a.currentTime = pct * a.duration;
+}
+function setVolume(id, v){
+  var a = document.getElementById(id+'-audio');
+  if(a) a.volume = parseFloat(v);
+}
+function playerEnded(id){
+  document.getElementById(id+'-btn').textContent='▶';
+  document.getElementById(id+'-btn').style.background='linear-gradient(135deg,#008cff,#38bdf8)';
+  document.getElementById(id+'-progress').style.width='0%';
+}
+function playerError(id){
+  document.getElementById(id+'-btn').textContent='↻';
+}
+function fmt(s){
+  if(!s || isNaN(s)) return '0:00';
+  var m = Math.floor(s/60);
+  var sc = Math.floor(s % 60);
+  return m + ':' + (sc<10?'0':'') + sc;
+}
 </script>
 </body></html>
 
