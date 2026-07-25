@@ -154,6 +154,17 @@ class DjPortListener
                     }
                 }
             }
+            // Keepalive: send silent frame to proxied upstreams every 30s to prevent SHOUTcast AutoDumpSourceTime
+            static $lastKa = 0;
+            $now = time();
+            if ($now - $lastKa >= 30) {
+                $lastKa = $now;
+                foreach ($this->connections as $ki => $kc) {
+                    if (($kc['state'] ?? '') === 'proxying' && !empty($kc['upstream']) && $now - ($kc['last_data'] ?? 0) > 25) {
+                        @fwrite($kc['upstream'], "\xff\xfb\x00\x00");
+                    }
+                }
+            }
         }
     }
 
@@ -324,6 +335,7 @@ class DjPortListener
             }
         } elseif ($conn['state'] === 'proxying' && !empty($conn['upstream'])) {
             @fwrite($conn['upstream'], $data);
+            $conn['last_data'] = time();
         }
     }
 
