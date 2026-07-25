@@ -67,7 +67,7 @@ try {
     // DjPortListener process status
     $listenerPid = 0;
     $listenerRunning = false;
-    $lpFile = '/var/www/radiohosting/services/dj_port_listener.pid';
+    $lpFile = '/tmp/ph-dj-listener.pid';
     if (file_exists($lpFile)) {
         $listenerPid = (int)trim(@file_get_contents($lpFile));
         if (function_exists('posix_kill')) {
