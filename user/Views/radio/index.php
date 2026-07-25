@@ -172,52 +172,48 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </div>
 </div>
 <script>
-(function(){
-var ot=5,run=true;
-function esc(t){var d=document.createElement("div");d.textContent=t||'';return d.innerHTML;}
-function ovUp(){
-if(!run)return;
-var t=Date.now();
-fetch('/api/stream-debug.php?station=<?=$station->streaming_id ?? $stationId?>').then(function(r){
-if(!r.ok){document.getElementById("ov-debug-panel").innerHTML='<div style="color:#f87171">HTTP '+r.status+'</div>';nx();return;}
-r.json().then(function(d){
+setInterval(function(){
+var el=document.getElementById('ov-debug-panel');
+var tm=document.getElementById('ov-debug-timer');
+if(!el)return;
+el.innerHTML='<div style="color:#64748b;font-size:10px">⏳</div>';
+var x=new XMLHttpRequest();
+x.open('GET','/api/stream-debug.php?station=<?=$station->streaming_id ?? $stationId?>',true);
+x.onload=function(){
+if(x.status!==200){el.innerHTML='<div style="color:#f87171">HTTP '+x.status+'</div>';return;}
+try{
+var d=JSON.parse(x.responseText);
 var chk=d.autodj_running&&d.source_connected&&d.proxy_reachable;
-var upColor=d.active_upstreams>0?'#4ade80':'#f87171';
-var clColor=d.active_clients>0?'#4ade80':'#94a3b8';
+var uc=d.active_upstreams>0?'#4ade80':'#f87171';
+var cc=d.active_clients>0?'#4ade80':'#94a3b8';
 var h='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+(d.status==="running"?"#4ade80":"#f87171")+'">'+esc(d.status)+'</div><div style="font-size:6px;color:#64748b">Stn</div></div>';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+(d.autodj_running?"#4ade80":"#f87171")+'">'+(d.autodj_running?"Run":"Stop")+'</div><div style="font-size:6px;color:#64748b">AutoDJ</div></div>';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+(d.source_connected?"#4ade80":"#f87171")+'">'+(d.source_connected?"OK":"OFF")+'</div><div style="font-size:6px;color:#64748b">Src</div></div>';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+upColor+'">'+(d.active_upstreams||0)+'</div><div style="font-size:6px;color:#64748b">Upstream</div></div>';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+clColor+'">'+(d.active_clients||0)+'</div><div style="font-size:6px;color:#64748b">Client</div></div>';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+(d.proxy_reachable?"#4ade80":"#f87171")+'">'+(d.proxy_reachable?d.proxy_response_ms+"ms":"DOWN")+'</div><div style="font-size:6px;color:#64748b">Proxy</div></div>';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+(d.listener_running?"#4ade80":"#f87171")+'">'+(d.listener_running?"ON":"OFF")+'</div><div style="font-size:6px;color:#64748b">Listnr</div></div>';
-h+='</div>';
-h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px">';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+(d.status==='running'?'#4ade80':'#f87171')+'">'+(d.status||'?')+'</div><div style="font-size:6px;color:#64748b">Stn</div></div>';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+(d.autodj_running?'#4ade80':'#f87171')+'">'+(d.autodj_running?'Run':'Stop')+'</div><div style="font-size:6px;color:#64748b">AutoDJ</div></div>';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+(d.source_connected?'#4ade80':'#f87171')+'">'+(d.source_connected?'OK':'OFF')+'</div><div style="font-size:6px;color:#64748b">Src</div></div>';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+uc+'">'+(d.active_upstreams||0)+'</div><div style="font-size:6px;color:#64748b">Upstream</div></div>';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+cc+'">'+(d.active_clients||0)+'</div><div style="font-size:6px;color:#64748b">Client</div></div>';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+(d.proxy_reachable?'#4ade80':'#f87171')+'">'+(d.proxy_reachable?d.proxy_response_ms+'ms':'DOWN')+'</div><div style="font-size:6px;color:#64748b">Proxy</div></div>';
+h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+(d.listener_running?'#4ade80':'#f87171')+'">'+(d.listener_running?'ON':'OFF')+'</div><div style="font-size:6px;color:#64748b">Listnr</div></div>';
+h+='</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:3px">';
 h+='<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:5px;font-size:9px">';
-h+='<div><span style="color:#64748b">Song:</span> <span style="color:#facc15">'+esc(d.current_song||'—')+'</span></div>';
+h+='<div><span style="color:#64748b">Song:</span> <span style="color:#facc15">'+(d.current_song||'—')+'</span></div>';
 h+='<div><span style="color:#64748b">Listeners:</span> <span style="color:#4ade80">'+(d.listeners||0)+'</span></div>';
 h+='<div><span style="color:#64748b">Ports:</span> <span style="color:#94a3b8">DJ:'+(d.dj_port||'—')+' Src:'+(d.src_port||'—')+'</span></div>';
-h+='<div><span style="color:#64748b">AutoDJ PID:</span> <span style="color:#94a3b8">'+(d.autodj_pid||'—')+'</span></div>';
-h+='</div>';
-h+='<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:5px;font-size:9px"><div style="color:#64748b;margin-bottom:2px">Recent Events:</div>';
-if(d.connections&&d.connections.length){var shown=0;d.connections.forEach(function(c){
-if(shown>=5)return;
-var ts='';if(c.connected){var d2=new Date(c.connected);var h2=d2.getHours()%12||12;var am=d2.getHours()<12?'AM':'PM';ts=(d2.getMonth()+1)+'/'+d2.getDate()+' '+h2+':'+String(d2.getMinutes()).padStart(2,'0')+' '+am;}
-var ago='';if(c.connected){var sec=Math.floor((Date.now()-new Date(c.connected).getTime())/1000);if(sec<120)ago=sec+'s';else if(sec<7200)ago=Math.floor(sec/60)+'m';else ago=Math.floor(sec/3600)+'h';}
-h+='<div><span style="color:#64748b;font-size:8px">'+ts+'</span> '+(c.disconnected?"[DC]":"[LIVE]")+' '+esc(c.dj)+(c.duration?" "+Math.floor(c.duration/60)+"m":"")+(ago?" <span style=\"color:#64748b\">('+ago+" ago)</span>":"")+(c.reason?" <span style=\"color:#f87171\">"+c.reason+"</span>":"")+'</div>';shown++;
-});}else{h+='<div style="color:#64748b">None</div>';}
-h+='</div></div>';
-h+='<div style="font-size:7px;color:#64748b;margin-top:3px">'+(d.timestamp||'')+' | '+(Date.now()-t)+'ms <span style="color:'+(chk?"#4ade80":"#f87171")+'">'+(chk?"● All Good":"● Issues")+'</span>';
-if(d.last_log){h+=' | <span style="color:#94a3b8">'+esc(d.last_log.split("\n")[0])+'</span>';}
-h+='</div>';
-document.getElementById("ov-debug-panel").innerHTML=h;nx();
-}).catch(function(e){document.getElementById("ov-debug-panel").innerHTML='<div style="color:#f87171">Parse</div>';nx();});
-}).catch(function(e){document.getElementById("ov-debug-panel").innerHTML='<div style="color:#f87171">Fetch</div>';nx();});
-}
-function nx(){if(!run)return;ot=5;var el=document.getElementById("ov-debug-timer");if(el)el.textContent='5s';setTimeout(function(){if(!run)return;ot--;var el=document.getElementById("ov-debug-timer");if(el)el.textContent=ot+'s';if(ot<=0)ovUp();else nx();},1000);}
-try{ovUp();}catch(e){document.getElementById("ov-debug-panel").innerHTML='<div style="color:#f87171">JS</div>';}
-})();
+h+='<div><span style="color:#64748b">PID:</span> <span style="color:#94a3b8">'+(d.autodj_pid||'—')+'</span></div></div>';
+h+='<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:5px;font-size:9px"><div style="color:#64748b;margin-bottom:2px">Events:</div>';
+if(d.connections&&d.connections.length){var n=0;d.connections.forEach(function(c){if(n>=5)return;
+var ts='';if(c.connected){var d2=new Date(c.connected);var h2=d2.getHours()%12||12;var a2=d2.getHours()<12?'AM':'PM';ts=(d2.getMonth()+1)+'/'+d2.getDate()+' '+h2+':'+(d2.getMinutes()<10?'0':'')+d2.getMinutes()+' '+a2;}
+var ag='';if(c.connected){var s=Math.floor((Date.now()-new Date(c.connected))/1000);ag=s<120?s+'s':(s<7200?Math.floor(s/60)+'m':Math.floor(s/3600)+'h');}
+h+='<div><span style="color:#64748b;font-size:8px">'+ts+'</span> '+(c.disconnected?'[DC]':'[LIVE]')+' '+(c.dj||'?')+(c.duration?' '+Math.floor(c.duration/60)+'m':'')+(ag?' <span style="color:#64748b">('+ag+' ago)</span>':'')+(c.reason?' <span style="color:#f87171">'+c.reason+'</span>':'')+'</div>';n++;});
+}else{h+='<div style="color:#64748b">None</div>';}
+h+='</div></div><div style="font-size:7px;color:#64748b;margin-top:3px">'+(d.timestamp||'')+' | '+(d.listeners===0?'<span style="color:#f87171">● 0 listeners</span>':'<span style="color:#4ade80">● OK</span>')+'</div>';
+el.innerHTML=h;
+}catch(e){el.innerHTML='<div style="color:#f87171">Parse</div>';}
+};
+x.onerror=function(){el.innerHTML='<div style="color:#f87171">Net err</div>';};
+x.send();
+},5000);
+</script>
 </script>
 <?php endif; ?>
 
