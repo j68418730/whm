@@ -245,10 +245,10 @@ class UserController extends Controller
         $hosting = $this->hostingUser;
         $pdo = $this->db->pdo();
         $tenant = null;
-        if ($hosting) {
+        if ($hosting && $pdo) {
             $st = $pdo->prepare("SELECT * FROM chatbox_tenants WHERE hosting_user_id = ?");
             $st->execute([$hosting->id]);
-            $tenant = $st->fetch(PDO::FETCH_OBJ);
+            $tenant = $st->fetch(\PDO::FETCH_OBJ);
         }
         if ($_POST && isset($_POST['action'])) {
             if ($_POST['action'] === 'create' && $hosting) {
@@ -275,7 +275,7 @@ class UserController extends Controller
         if ($tenant) {
             $rs = $pdo->prepare("SELECT * FROM chatbox_rooms WHERE tenant_id = ?");
             $rs->execute([$tenant->id]);
-            $roomsList = $rs->fetchAll(PDO::FETCH_OBJ);
+            $roomsList = $rs->fetchAll(\PDO::FETCH_OBJ);
         }
         $user = $this->auth->user();
         return $this->view('user.chat.index', [
