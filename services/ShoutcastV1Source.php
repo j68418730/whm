@@ -41,7 +41,7 @@ class ShoutcastV1Source
 
         while ($this->running) {
             $files = $this->getPlaylistFiles();
-            if (empty($files)) { $this->log("No files, waiting..."); sleep(10); continue; }
+            if (empty($files)) { $this->log("No files, waiting..."); sleep(3); continue; }
 
             // Play files in order (no shuffle for sequential playback)
             foreach ($files as $file) {
@@ -52,7 +52,7 @@ class ShoutcastV1Source
             if (!$sock) {
                 $this->log("Socket lost, reconnecting...");
                 $sock = $this->connect();
-                if (!$sock) { sleep(10); }
+                if (!$sock) { sleep(3); }
             }
         }
         if ($sock) fclose($sock);
@@ -62,18 +62,15 @@ class ShoutcastV1Source
 
     protected function connect()
     {
-        $sock = @fsockopen($this->host, $this->port, $errno, $errstr, 10);
-        if (!$sock) { $this->log("Connection failed: $errstr"); sleep(5); return null; }
-        stream_set_timeout($sock, 15);
-        // Wait for server banner if any
-        usleep(500000);
+        $sock = @fsockopen($this->host, $this->port, $errno, $errstr, 5);
+        if (!$sock) { $this->log("Connection failed: $errstr"); return null; }
+        stream_set_timeout($sock, 3);
         fwrite($sock, $this->password . "\r\n");
-        $resp = fread($sock, 1024);
-        $this->log("Auth: [" . trim(preg_replace('/[\x00-\x1f]/', ' ', $resp)) . "]");
-        if (strpos($resp, 'OK') === false && strpos($resp, 'OK2') === false) {
-            $this->log("Auth rejected, retrying in 5s");
+        $resp = @fgets($sock, 128);
+        $this->log("Auth: [" . trim(preg_replace('/[\x00-\x1f]/', ' ', $resp ?: '')) . "]");
+        if (strpos($resp ?: '', 'OK') === false && strpos($resp ?: '', 'OK2') === false) {
+            $this->log("Auth rejected, retrying");
             fclose($sock);
-            sleep(5);
             return null;
         }
         $headers = "icy-name: {$this->name}\r\nicy-br: {$this->bitrate}\r\nicy-pub: 1\r\n";
