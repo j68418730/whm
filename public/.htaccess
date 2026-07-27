@@ -1,5 +1,8 @@
 RewriteEngine On
 
+# Direct chat room URLs — /chat/{slug} -> /chat/index.php?slug={slug}
+RewriteRule ^chat/([a-z0-9-]+)$ chat/index.php?slug=$1 [L,QSA]
+
 # Handle front controller — route everything except existing files to index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^ index.php [L]
