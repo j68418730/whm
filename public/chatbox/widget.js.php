@@ -91,24 +91,24 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
     '#chatbox-empty .ic{font-size:32px}'+
     (customCss ? customCss : '');
 
-    var style = document.createElement('style');
-    style.textContent = css;
-    document.head.appendChild(style);
+    function initWidget() {
+        var style = document.createElement('style');
+        style.textContent = css;
+        document.head.appendChild(style);
 
-    // HTML
-    var html = '<div id="chatbox-widget">'+
-        '<button id="chatbox-toggle" onclick="toggleChatbox()">💬</button>'+
-        '<div id="chatbox-panel" class="closed">'+
-        '<div id="chatbox-hdr"><span class="title">'+widgetTitle+'</span><button class="close" onclick="toggleChatbox()">✕</button></div>'+
-        '<div id="chatbox-rooms"></div>'+
-        '<div id="chatbox-msgs"><div id="chatbox-empty"><div class="ic">💬</div><div>Loading...</div></div></div>'+
-        '<div id="chatbox-inp" style="display:none"><div class="row"><textarea id="chatbox-input" placeholder="Type a message..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendChatboxMsg()}"></textarea><button class="sb" onclick="sendChatboxMsg()">➤</button></div></div>'+
-        '<div id="chatbox-login" style="display:none"></div>'+
-        '</div></div>';
+        var html = '<div id="chatbox-widget">'+
+            '<button id="chatbox-toggle" onclick="toggleChatbox()">💬</button>'+
+            '<div id="chatbox-panel" class="closed">'+
+            '<div id="chatbox-hdr"><span class="title">'+widgetTitle+'</span><button class="close" onclick="toggleChatbox()">✕</button></div>'+
+            '<div id="chatbox-rooms"></div>'+
+            '<div id="chatbox-msgs"><div id="chatbox-empty"><div class="ic">💬</div><div>Loading...</div></div></div>'+
+            '<div id="chatbox-inp" style="display:none"><div class="row"><textarea id="chatbox-input" placeholder="Type a message..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendChatboxMsg()}"></textarea><button class="sb" onclick="sendChatboxMsg()">➤</button></div></div>'+
+            '<div id="chatbox-login" style="display:none"></div>'+
+            '</div></div>';
 
-    var div = document.createElement('div');
-    div.innerHTML = html;
-    document.body.appendChild(div);
+        var div = document.createElement('div');
+        div.innerHTML = html;
+        document.body.appendChild(div);
 
     // Make functions global
     window.toggleChatbox = function() {
@@ -262,11 +262,9 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
 
     function escHtml(t) { var d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
 
-    // Check if session exists
-    fetch(apiBase + '?action=guest_check&tenant_id=' + tenantId).then(function(r){ return r.json(); }).then(function(d){
-        if (d.logged_in) { currentUser = {username: d.username}; onLoggedIn(); }
-        else if (guestEnabled) { showGuestLogin(); }
-        else if (regEnabled) { showRegisterLogin(); }
-        else { showGuestLogin(); }
-    });
+    } // end initWidget
+
+    // Start when DOM is ready
+    if (document.body) { initWidget(); }
+    else { document.addEventListener('DOMContentLoaded', initWidget); }
 })();
