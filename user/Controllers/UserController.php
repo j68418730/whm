@@ -283,6 +283,12 @@ class UserController extends Controller
             'roomsList' => $roomsList, 'title' => 'Live Chat'
         ]);
     }
+    public function chatbox() {
+        $u = $this->loadUser();
+        return $this->view('user.chatbox.index', [
+            'user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Messages'
+        ]);
+    }
     public function admins() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/admins.php'; exit; }
     public function djManager() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/dj-manager.php'; exit; }
     public function phpSwitcher() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/php-switcher.php'; exit; }
