@@ -240,7 +240,50 @@ class UserController extends Controller
     public function dismissAlert($id) { $u = $this->loadUser(); if ($this->hostingUser) { try { $a = $this->db->table('user_alerts')->where('id', $id)->where('hosting_user_id', $this->hostingUser->id)->first(); if ($a && $a->can_delete) { $this->db->table('user_alerts')->where('id', $id)->update(['is_read' => 1]); echo 'OK'; } else { echo 'LOCKED'; } } catch (\Exception $e) {} } exit; }
     public function fetchAlerts() { $u = $this->loadUser(); header('Content-Type: application/json'); $alerts = []; if ($this->hostingUser) { try { $alerts = $this->db->table('user_alerts')->where('hosting_user_id', $this->hostingUser->id)->where('is_read', 0)->orderBy('created_at', 'DESC')->limit(20)->get() ?: []; } catch (\Exception $e) {} } echo json_encode($alerts); exit; }
     public function logout() { session_destroy(); header('Location: /'); exit; }
-    public function chat() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/chat.php'; exit; }
+    public function chat() {
+        $u = $this->loadUser();
+        $hosting = $this->hostingUser;
+        $pdo = $this->db->pdo(); $tenant = null; $roomsList = [];
+        if ($hosting && $pdo) {
+            $st = $pdo->prepare("SELECT * FROM chatbox_tenants WHERE hosting_user_id = ?");
+            $st->execute([$hosting->id]); $tenant = $st->fetch(\PDO::FETCH_OBJ);
+            if ($_POST && isset($_POST['action'])) {
+                if ($_POST['action'] === 'create' && $hosting && !$tenant) {
+                    $pdo->prepare("INSERT IGNORE INTO chatbox_tenants (hosting_user_id, name, widget_title) VALUES (?,?,?)")->execute([$hosting->id, $hosting->username."'s Chat", $hosting->username.' Chat']);
+                    $tid=$pdo->lastInsertId();
+                    $pdo->prepare("INSERT IGNORE INTO chatbox_rooms (tenant_id, name, type) VALUES (?,'General','public'),(?,'Support','public')")->execute([$tid,$tid]);
+                    $this->response->redirect('/user/chat'); exit;
+                }
+                if ($tenant) {
+                    if ($_POST['action'] === 'create_room') {
+                        $slug=strtolower(preg_replace('/[^a-z0-9-]/','',str_replace(' ','-',$_POST['name'])));
+                        $pdo->prepare("INSERT INTO chatbox_rooms (tenant_id,name,type,password,guest_enabled,registration_enabled,voice_enabled,description,color,icon,slug) VALUES (?,?,?,?,?,?,?,?,?,?,?)")->execute([$tenant->id,$_POST['name'],$_POST['type'],$_POST['type']==='password'?password_hash($_POST['password'],PASSWORD_DEFAULT):null,(int)($_POST['guest']??0),(int)($_POST['reg']??0),(int)($_POST['voice']??0),$_POST['description']??'',$_POST['color']??'#008cff',$_POST['icon']??'',$slug]);
+                        $this->response->redirect('/user/chat'); exit;
+                    }
+                    if ($_POST['action'] === 'update_room') {
+                        $slug=strtolower(preg_replace('/[^a-z0-9-]/','',str_replace(' ','-',$_POST['name'])));
+                        $pdo->prepare("UPDATE chatbox_rooms SET name=?,type=?,password=?,guest_enabled=?,registration_enabled=?,voice_enabled=?,description=?,color=?,icon=?,slug=? WHERE id=? AND tenant_id=?")->execute([$_POST['name'],$_POST['type'],$_POST['type']==='password'?password_hash($_POST['password'],PASSWORD_DEFAULT):null,(int)($_POST['guest']??0),(int)($_POST['reg']??0),(int)($_POST['voice']??0),$_POST['description']??'',$_POST['color']??'#008cff',$_POST['icon']??'',$slug,(int)$_POST['room_id'],$tenant->id]);
+                        $this->response->redirect('/user/chat'); exit;
+                    }
+                    if ($_POST['action'] === 'delete_room') { $pdo->prepare("DELETE FROM chatbox_rooms WHERE id=? AND tenant_id=?")->execute([(int)$_POST['room_id'],$tenant->id]); $this->response->redirect('/user/chat'); exit; }
+                    if ($_POST['action'] === 'save_widget') {
+                        $pdo->prepare("UPDATE chatbox_tenants SET widget_title=?,widget_color=?,widget_bg=?,widget_text_color=?,widget_border_color=?,widget_glow_color=?,widget_avatar_shape=?,font_family=?,theme=?,custom_css=?,guest_enabled=?,registration_enabled=?,voice_enabled=?,player_html=? WHERE id=?")->execute([$_POST['title'],$_POST['color'],$_POST['bg'],$_POST['text_color'],$_POST['border_color'],$_POST['glow_color'],$_POST['avatar_shape'],$_POST['font'],$_POST['theme'],$_POST['custom_css'],(int)($_POST['guest_all']??0),(int)($_POST['reg_all']??0),(int)($_POST['voice_all']??0),$_POST['player_html'],$tenant->id]);
+                        $this->response->redirect('/user/chat'); exit;
+                    }
+                }
+            }
+            // Reload tenant after possible creation
+            $st->execute([$hosting->id]); $tenant = $st->fetch(\PDO::FETCH_OBJ);
+            if ($tenant) {
+                try { $pdo->exec("ALTER TABLE chatbox_rooms ADD COLUMN IF NOT EXISTS slug varchar(100) DEFAULT NULL"); } catch(\Exception $e) {}
+                $rs = $pdo->prepare("SELECT * FROM chatbox_rooms WHERE tenant_id=? ORDER BY id");
+                $rs->execute([$tenant->id]); $roomsList = $rs->fetchAll(\PDO::FETCH_OBJ);
+                foreach ($roomsList as $r) { if (empty($r->slug)) { $slug=strtolower(preg_replace('/[^a-z0-9-]/','',str_replace(' ','-',$r->name))); if(!$slug)$slug='room-'.$r->id; $pdo->prepare("UPDATE chatbox_rooms SET slug=? WHERE id=?")->execute([$slug, $r->id]); $r->slug=$slug; } }
+            }
+        }
+        $themes = ['default'=>'Default Dark','blue'=>'Blue','black'=>'Black','white'=>'White','gray'=>'Gray','neon'=>'Neon','gaming'=>'Gaming','hacker'=>'Hacker','matrix'=>'Matrix','discord'=>'Discord','twitch'=>'Twitch','retro'=>'Retro','purple'=>'Purple','red'=>'Red','gold'=>'Gold'];
+        return $this->view('user.chat.index', ['user'=>$u, 'hosting'=>$hosting, 'tenant'=>$tenant, 'roomsList'=>$roomsList, 'themes'=>$themes, 'title'=>'My Chat Rooms']);
+    }
     public function admins() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/admins.php'; exit; }
     public function djManager() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/dj-manager.php'; exit; }
     public function phpSwitcher() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/php-switcher.php'; exit; }
