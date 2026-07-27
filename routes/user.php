@@ -80,6 +80,7 @@ $router->post('/user/tickets/reply/{id}', 'User\Controllers\TicketsController@re
 $router->get('/user/tickets/close/{id}', 'User\Controllers\TicketsController@close');
 $router->get('/user/chat', 'User\Controllers\UserController@chat');
 $router->post('/user/chat', 'User\Controllers\UserController@chat');
+$router->get('/user/chatbox', 'User\Controllers\UserController@chatbox');
 $router->get('/user/stats', 'User\Controllers\UserController@stats');
 $router->get('/user/admins', 'User\Controllers\UserController@admins');
 $router->post('/user/admins', 'User\Controllers\UserController@admins');
