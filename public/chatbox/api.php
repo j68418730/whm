@@ -134,4 +134,68 @@ if ($action === 'stats' && isset($_SESSION['chatbox_admin'])) {
     exit;
 }
 
+// === GET MESSAGES (polling) ===
+if ($action === 'get_messages') {
+    $roomId = (int)($_GET['room_id'] ?? 0);
+    $tenantId = (int)($_GET['tenant_id'] ?? 0);
+    $since = (int)($_GET['since'] ?? 0);
+    if (!$roomId && !$tenantId) { echo json_encode(['error'=>'Missing room or tenant']); exit; }
+    $sql = "SELECT m.* FROM chatbox_messages m WHERE";
+    $params = [];
+    if ($roomId) { $sql .= " m.room_id = ?"; $params[] = $roomId; }
+    else { $sql .= " m.tenant_id = ?"; $params[] = $tenantId; }
+    if ($since > 0) { $sql .= " AND m.id > ?"; $params[] = $since; }
+    $sql .= " ORDER BY m.id ASC LIMIT 100";
+    $q = $pdo->prepare($sql);
+    $q->execute($params);
+    echo json_encode($q->fetchAll(PDO::FETCH_OBJ));
+    exit;
+}
+
+// === SEND MESSAGE (guest or registered) ===
+if ($action === 'send_message') {
+    $roomId = (int)($_POST['room_id'] ?? 0);
+    $tenantId = (int)($_POST['tenant_id'] ?? 0);
+    $username = trim($_POST['username'] ?? 'Guest');
+    $message = trim($_POST['message'] ?? '');
+    $userId = (int)($_POST['user_id'] ?? 0);
+    if ((!$roomId && !$tenantId) || !$message) { echo json_encode(['error'=>'Missing fields']); exit; }
+    if (strlen($message) > 2000) { echo json_encode(['error'=>'Message too long']); exit; }
+    // Rate limit
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    $rate = $pdo->prepare("SELECT COUNT(*) FROM chatbox_messages WHERE (user_id=? OR username=?) AND created_at > UNIX_TIMESTAMP()*1000-2000");
+    $rate->execute([$userId ?: 0, $ip ?: $username]);
+    if ($rate->fetchColumn() > 3) { echo json_encode(['error'=>'Slow down']); exit; }
+    $now = round(microtime(true)*1000);
+    $q = $pdo->prepare("INSERT INTO chatbox_messages (room_id, tenant_id, user_id, username, message, message_type, created_at) VALUES (?,?,?,?,?,?,?)");
+    $q->execute([$roomId ?: null, $tenantId ?: null, $userId, $username, $message, 'text', $now]);
+    echo json_encode(['success'=>true, 'id'=>$pdo->lastInsertId(), 'username'=>$username, 'message'=>$message, 'created_at'=>$now]);
+    exit;
+}
+
+// === DELETE MESSAGE (admin/mod) ===
+if ($action === 'delete_message' && isset($_SESSION['chatbox_admin'])) {
+    $msgId = (int)($_POST['message_id'] ?? 0);
+    $pdo->prepare("UPDATE chatbox_messages SET message='[deleted]', message_type='system' WHERE id=?")->execute([$msgId]);
+    echo json_encode(['success'=>true]); exit;
+}
+
+// === GUEST LOGIN (sets session for guest) ===
+if ($action === 'guest_login') {
+    $tenantId = (int)($_POST['tenant_id'] ?? 0);
+    $username = trim($_POST['username'] ?? '');
+    if (!$tenantId || !$username || strlen($username) < 1 || strlen($username) > 30) { echo json_encode(['error'=>'Invalid username']); exit; }
+    $_SESSION['chatbox_guest_' . $tenantId] = ['username' => $username, 'time' => time()];
+    echo json_encode(['success'=>true, 'username'=>$username]);
+    exit;
+}
+
+// === GUEST CHECK ===
+if ($action === 'guest_check') {
+    $tenantId = (int)($_GET['tenant_id'] ?? 0);
+    $guest = $_SESSION['chatbox_guest_' . $tenantId] ?? null;
+    echo json_encode(['logged_in' => !!$guest, 'username' => $guest['username'] ?? null]);
+    exit;
+}
+
 echo json_encode(['success' => false, 'error' => 'Unknown action']);
