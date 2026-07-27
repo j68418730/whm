@@ -58,7 +58,8 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
     var css = '#chatbox-widget{position:fixed;bottom:20px;right:20px;z-index:999999;font-family:'+fontFamily+';direction:ltr}'+
     '#chatbox-toggle{width:56px;height:56px;border-radius:50%;background:'+accentColor+';color:#fff;border:none;font-size:26px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;transition:.2s;margin-left:auto}'+
     '#chatbox-toggle:hover{transform:scale(1.05)}'+
-    '#chatbox-panel{position:fixed;bottom:80px;right:20px;width:360px;height:500px;background:'+bgColor+';border:1px solid '+(accentColor)+'33;border-radius:16px;overflow:hidden;display:none;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.4)}'+
+    '#chatbox-panel{position:fixed;bottom:80px;right:20px;width:360px;height:500px;background:'+bgColor+';border:1px solid '+(accentColor)+'33;border-radius:16px;overflow:hidden;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.4)}'+
+    '#chatbox-panel.closed{display:none}'+
     '#chatbox-panel.open{display:flex}'+
     '#chatbox-hdr{padding:12px 16px;border-bottom:1px solid '+(accentColor)+'33;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}'+
     '#chatbox-hdr .title{font-weight:700;font-size:13px;color:'+textColor+'}'+
@@ -97,7 +98,7 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
     // HTML
     var html = '<div id="chatbox-widget">'+
         '<button id="chatbox-toggle" onclick="toggleChatbox()">💬</button>'+
-        '<div id="chatbox-panel">'+
+        '<div id="chatbox-panel" class="closed">'+
         '<div id="chatbox-hdr"><span class="title">'+widgetTitle+'</span><button class="close" onclick="toggleChatbox()">✕</button></div>'+
         '<div id="chatbox-rooms"></div>'+
         '<div id="chatbox-msgs"><div id="chatbox-empty"><div class="ic">💬</div><div>Loading...</div></div></div>'+
@@ -112,7 +113,8 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
     // Make functions global
     window.toggleChatbox = function() {
         var p = document.getElementById('chatbox-panel');
-        var isOpen = p.classList.toggle('open');
+        p.classList.toggle('closed');
+        var isOpen = p.classList.contains('open');
         if (isOpen) {
             if (!currentUser && guestEnabled) showGuestLogin();
             else if (!currentUser && !guestEnabled) showRegisterLogin();
