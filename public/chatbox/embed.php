@@ -9,11 +9,12 @@ if (!$tenantId) { echo 'Invalid tenant'; exit; }
 <style>body{margin:0;padding:0;background:transparent;overflow:hidden}#chatbox-widget #chatbox-toggle{display:none!important}#chatbox-panel.closed{display:flex!important}#chatbox-panel{position:static!important;width:100%!important;height:100vh!important;border-radius:0!important}</style>
 </head><body>
 <script>
-// Auto-open in iframe mode
-setTimeout(function() {
+// Auto-open in iframe mode — retry until widget loads
+(function tryOpen(){
     var panel = document.getElementById('chatbox-panel');
-    if (panel) panel.classList.add('open');
-}, 500);
+    if (panel) { panel.classList.remove('closed'); panel.classList.add('open'); }
+    else { setTimeout(tryOpen, 300); }
+})();
 </script>
 </body></html>
 
