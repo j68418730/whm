@@ -1,419 +1,337 @@
 <style>
+:root{--c-bg:#080f1c;--c-card:rgba(15,23,42,.5);--c-border:rgba(56,189,248,.08);--c-text:#e2e8f0;--c-t2:#94a3b8;--c-t3:#64748b;--c-blue:#008cff;--c-b2:rgba(0,140,255,.12);--c-own:rgba(0,140,255,.1);--c-red:#f87171;--c-green:#4ade80;--c-input:rgba(0,0,0,.35)}
 *{box-sizing:border-box}
-:root{--bg:#080f1c;--bg2:#0f172a;--card:rgba(15,23,42,.5);--brd:rgba(56,189,248,.06);--txt:#e2e8f0;--t2:#94a3b8;--t3:#64748b;--bl:#008cff;--bl2:rgba(0,140,255,.1);--gr:#4ade80;--rd:#f87171;--inp:rgba(0,0,0,.35)}
-body{margin:0;font-family:Inter,sans-serif;background:var(--bg);color:var(--txt);height:100vh;overflow:hidden}
-.chat{display:grid;grid-template-columns:240px 1fr 200px;height:100vh;gap:0}
-/* Categories sidebar */
-.cat-side{background:var(--bg2);border-right:1px solid var(--brd);overflow-y:auto;display:flex;flex-direction:column}
-.cat-side .hdr{padding:14px 16px;font-size:13px;font-weight:700;border-bottom:1px solid var(--brd);display:flex;justify-content:space-between;align-items:center}
-.cat-side .hdr button{background:var(--bl2);color:var(--bl);border:none;border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer;font-weight:600}
-.cat-group{margin-bottom:2px}
-.cat-header{padding:10px 16px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t3);cursor:pointer;display:flex;align-items:center;gap:4px;user-select:none}
-.cat-header:hover{color:var(--t2)}
-.room-item{padding:6px 16px 6px 24px;cursor:pointer;border-radius:4px;margin:1px 6px;font-size:12px;color:var(--t2);display:flex;align-items:center;gap:8px;transition:.1s}
-.room-item:hover{background:var(--bl2);color:var(--txt)}
-.room-item.active{background:var(--bl2);color:var(--bl)}
-.room-item .hash{font-size:14px;font-weight:700;width:16px;text-align:center;flex-shrink:0}
-.room-item .lock{font-size:10px;color:var(--t3)}
-.room-item .voice-icon{margin-left:auto;font-size:10px;color:var(--t3)}
-/* Main chat area */
-.main-area{display:flex;flex-direction:column;overflow:hidden}
-.chat-hdr{padding:10px 18px;border-bottom:1px solid var(--brd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;background:var(--bg)}
-.chat-hdr .nm{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
-.chat-hdr .nm .hash{color:var(--t3);font-size:16px}
-.chat-hdr .nm .lock-icon{font-size:11px;color:var(--t3)}
-.chat-hdr .desc{font-size:10px;color:var(--t3);margin-left:4px}
-.chat-hdr .actions{display:flex;gap:4px}
-.chat-hdr .actions button{background:none;border:none;color:var(--t3);cursor:pointer;padding:4px 8px;border-radius:6px;font-size:11px}
-.chat-hdr .actions button:hover{background:var(--bl2);color:var(--txt)}
-.msgs{flex:1;overflow-y:auto;padding:12px 18px;display:flex;flex-direction:column;gap:4px}
-.msg{max-width:80%;padding:8px 12px;border-radius:10px;font-size:13px;line-height:1.5;word-wrap:break-word}
-.msg.own{background:rgba(0,140,255,.08);align-self:flex-end;border-bottom-right-radius:4px}
-.msg.ot{background:var(--card);align-self:flex-start;border-bottom-left-radius:4px}
-.msg.sys{align-self:center;background:none;color:var(--t3);font-size:10px;font-style:italic;max-width:100%;text-align:center}
-.msg .sd{font-size:10px;font-weight:600;color:var(--bl);margin-bottom:2px;cursor:pointer}
-.msg .sd:hover{text-decoration:underline}
-.msg .tm{font-size:9px;color:var(--t3);margin-top:2px;text-align:right}
-.msg .role-badge{display:inline-block;font-size:8px;padding:1px 5px;border-radius:3px;margin-left:4px;font-weight:600}
-.role-badge.o{background:rgba(249,115,22,.15);color:#f97316}
-.role-badge.a{background:rgba(56,189,248,.15);color:#38bdf8}
-.role-badge.m{background:rgba(168,85,247,.15);color:#a855f7}
-.role-badge.v{background:rgba(234,179,8,.15);color:#eab308}
-.inp-area{padding:10px 18px;border-top:1px solid var(--brd);flex-shrink:0}
-.inp-row{display:flex;gap:8px;align-items:flex-end}
-.inp-row textarea{flex:1;padding:8px 14px;border-radius:10px;border:1px solid var(--brd);background:var(--inp);color:var(--txt);font-size:13px;outline:none;resize:none;min-height:38px;max-height:120px;font-family:inherit}
-.inp-row textarea:focus{border-color:var(--bl)}
-.inp-row .sb{width:36px;height:36px;border-radius:50%;background:var(--bl);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-/* Members sidebar */
-.member-side{background:var(--bg2);border-left:1px solid var(--brd);overflow-y:auto;padding:12px}
-.member-side .hdr{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t3);margin-bottom:8px}
-.member-item{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;font-size:11px;color:var(--t2);margin-bottom:2px}
-.member-item:hover{background:var(--bl2)}
-.member-item .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.member-item .role-badge{font-size:8px;padding:1px 5px;border-radius:3px}
-/* Empty state */
-.empty-chat{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--t3);gap:8px}
-.empty-chat .ic{font-size:48px;opacity:.3}
-/* Room create modal */
-.modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center}
-.modal.open{display:flex}
-.modal-inner{background:#0f172a;border:1px solid var(--brd);border-radius:16px;padding:24px;width:90%;max-width:420px;max-height:80vh;overflow-y:auto}
-.modal-inner h3{margin:0 0 14px;font-size:15px;color:var(--txt)}
-.modal-inner .fld{margin-bottom:10px}
-.modal-inner .fld label{font-size:10px;color:var(--t3);display:block;margin-bottom:3px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
-.modal-inner .fld input,.modal-inner .fld textarea,.modal-inner .fld select{width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--brd);background:var(--inp);color:var(--txt);font-size:12px;outline:none;font-family:inherit}
-.modal-inner .fld input:focus,.modal-inner .fld select:focus,.modal-inner .fld textarea:focus{border-color:var(--bl)}
-.modal-inner .fld textarea{min-height:50px;resize:vertical}
-.modal-inner .fld input[type=color]{height:38px;padding:2px;cursor:pointer}
-.modal-inner .btn-p{width:100%;padding:9px;border-radius:8px;border:none;font-weight:600;font-size:12px;cursor:pointer;background:var(--bl);color:#fff;margin-top:6px}
-.modal-inner .btn-d{width:100%;padding:8px;border-radius:6px;border:1px solid var(--brd);background:none;color:var(--t3);cursor:pointer;font-size:11px;margin-top:4px}
-/* DMs */
-.dm-list{margin-top:8px;border-top:1px solid var(--brd);padding-top:4px}
-.dm-item{padding:5px 16px 5px 24px;cursor:pointer;border-radius:4px;margin:1px 6px;font-size:11px;color:var(--t2);display:flex;align-items:center;gap:8px;transition:.1s}
-.dm-item:hover{background:var(--bl2);color:var(--txt)}
-.dm-item.active{background:var(--bl2);color:var(--bl)}
-.dm-item .unread{background:var(--bl);color:#fff;border-radius:10px;padding:1px 6px;font-size:8px;font-weight:700;margin-left:auto}
-/* DM view */
-.dm-hdr{padding:10px 18px;border-bottom:1px solid var(--brd);font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--bg)}
-@media(max-width:768px){.chat{grid-template-columns:1fr}.member-side{display:none}.cat-side{display:none}.cat-side.show{display:flex;position:fixed;inset:0;z-index:100;background:var(--bg2)}}
+.chat-layout{display:grid;grid-template-columns:280px 1fr;gap:0;height:calc(100vh - 180px);min-height:500px;border:1px solid var(--c-border);border-radius:12px;overflow:hidden;background:var(--c-bg)}
+.sidebar{display:flex;flex-direction:column;border-right:1px solid var(--c-border);background:rgba(0,0,0,.15)}
+.sidebar-tabs{display:flex;border-bottom:1px solid var(--c-border);flex-shrink:0}
+.sidebar-tab{padding:10px 14px;cursor:pointer;font-size:11px;font-weight:600;color:var(--c-t3);border-bottom:2px solid transparent;transition:.1s;flex:1;text-align:center}
+.sidebar-tab:hover{color:var(--c-t2);background:var(--c-b2)}
+.sidebar-tab.active{color:var(--c-blue);border-bottom-color:var(--c-blue)}
+.sidebar-content{flex:1;overflow-y:auto;padding:0}
+.sidebar-item{padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--c-border);display:flex;align-items:center;gap:10px;transition:background .1s}
+.sidebar-item:hover{background:var(--c-b2)}
+.sidebar-item.active{background:var(--c-b2);border-left:3px solid var(--c-blue)}
+.sidebar-item .av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;flex-shrink:0}
+.sidebar-item .info{flex:1;min-width:0}
+.sidebar-item .info .nm{font-size:12px;font-weight:600;color:var(--c-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-item .info .pr{font-size:10px;color:var(--c-t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.sidebar-item .bdg{background:var(--c-blue);color:#fff;border-radius:10px;padding:1px 6px;font-size:9px;font-weight:700;min-width:18px;text-align:center}
+.main-panel{display:flex;flex-direction:column}
+.main-hdr{padding:10px 16px;border-bottom:1px solid var(--c-border);display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.1);flex-shrink:0}
+.main-hdr .nm{font-size:14px;font-weight:700;color:var(--c-text);display:flex;align-items:center;gap:6px}
+.main-hdr .nm .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.main-hdr .actions{display:flex;gap:4px}
+.main-hdr .actions button{background:none;border:none;color:var(--c-t3);cursor:pointer;padding:4px 8px;border-radius:6px;font-size:11px;transition:.1s}
+.main-hdr .actions button:hover{background:var(--c-b2);color:var(--c-text)}
+.msgs{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:5px}
+.msg{max-width:78%;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.5;word-wrap:break-word;position:relative}
+.msg.own{background:var(--c-own);align-self:flex-end;border-bottom-right-radius:4px}
+.msg.ot{background:var(--c-card);align-self:flex-start;border-bottom-left-radius:4px}
+.msg.sys{align-self:center;background:none;color:var(--c-t3);font-size:10px;font-style:italic;max-width:100%;text-align:center}
+.msg .sd{font-size:10px;font-weight:600;color:var(--c-blue);margin-bottom:2px}
+.msg .tm{font-size:9px;color:var(--c-t3);margin-top:2px;text-align:right}
+.msg .ed{font-size:9px;color:var(--c-t3);font-style:italic}
+.msg .rx{display:flex;gap:3px;margin-top:3px;flex-wrap:wrap}
+.msg .rx span{background:var(--c-card);border:1px solid var(--c-border);border-radius:8px;padding:1px 5px;font-size:10px;cursor:pointer;transition:.1s}
+.msg .rx span:hover{background:var(--c-b2)}
+.msg .ab{display:none;position:absolute;top:-20px;right:0;background:var(--c-card);border:1px solid var(--c-border);border-radius:6px;padding:2px;gap:2px;z-index:5}
+.msg:hover .ab{display:flex}
+.msg .ab button{background:none;border:none;color:var(--c-t3);cursor:pointer;padding:2px 5px;font-size:10px;border-radius:4px}
+.msg .ab button:hover{background:var(--c-b2);color:var(--c-text)}
+.inp{padding:10px 16px;border-top:1px solid var(--c-border);background:rgba(0,0,0,.1);flex-shrink:0}
+.inp-r{display:flex;gap:8px;align-items:flex-end}
+.inp-r textarea{flex:1;padding:8px 12px;border-radius:10px;border:1px solid var(--c-border);background:var(--c-input);color:var(--c-text);font-size:13px;outline:none;resize:none;min-height:36px;max-height:120px;font-family:inherit}
+.inp-r textarea:focus{border-color:var(--c-blue)}
+.inp-r .sb{width:36px;height:36px;border-radius:50%;background:var(--c-blue);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.inp-r .sb:disabled{opacity:.4;cursor:not-allowed}
+.empty-msg{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--c-t3);gap:6px}
+.empty-msg .ic{font-size:40px;opacity:.3}
+.loading{text-align:center;padding:20px;color:var(--c-t3);font-size:12px}
+
+/* Room create/edit sidebar panel */
+.room-side{position:fixed;top:0;right:-360px;width:340px;height:100%;background:#0f172a;border-left:1px solid var(--c-border);z-index:200;transition:right .25s;overflow-y:auto;padding:20px}
+.room-side.open{right:0}
+.room-side h3{margin:0 0 14px;font-size:15px;color:var(--c-text);display:flex;align-items:center;gap:8px}
+.room-side .fld{margin-bottom:10px}
+.room-side .fld label{font-size:10px;color:var(--c-t3);display:block;margin-bottom:3px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.room-side .fld input,.room-side .fld textarea,.room-side .fld select{width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--c-border);background:var(--c-input);color:var(--c-text);font-size:12px;outline:none;font-family:inherit}
+.room-side .fld input:focus,.room-side .fld textarea:focus{border-color:var(--c-blue)}
+.room-side .fld textarea{min-height:60px;resize:vertical}
+.room-side .fld input[type=color]{height:40px;padding:2px;cursor:pointer}
+.room-side .btn{width:100%;padding:9px;border-radius:8px;border:none;font-weight:600;font-size:12px;cursor:pointer;margin-top:6px}
+.room-side .btn-p{background:var(--c-blue);color:#fff}
+.room-side .btn-d{background:var(--c-b2);color:var(--c-text)}
+.room-side .close-btn{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--c-t3);cursor:pointer;font-size:18px}
+@media(max-width:700px){.chat-layout{grid-template-columns:1fr;height:auto;min-height:auto}.sidebar{display:none}.sidebar.show{display:flex;position:fixed;inset:0;z-index:100;border:none}}
 </style>
 
-<div class="chat" id="chatApp">
-  <!-- Categories sidebar -->
-  <div class="cat-side" id="catSide">
-    <div class="hdr">Planet Hosts <button onclick="openCreateModal()">+</button></div>
-    <div id="catList"></div>
+<div class="chat-layout" id="chatApp">
+  <div class="sidebar" id="chatSide">
+    <div class="sidebar-tabs">
+      <div class="sidebar-tab active" onclick="switchTab(this,'conv')">Chats</div>
+      <div class="sidebar-tab" onclick="switchTab(this,'rooms')">Rooms</div>
+    </div>
+    <div style="padding:8px;border-bottom:1px solid var(--c-border);flex-shrink:0">
+      <input id="searchBox" placeholder="Search users or rooms..." style="width:100%;padding:6px 10px;border-radius:8px;border:1px solid var(--c-border);background:var(--c-input);color:var(--c-text);font-size:11px;outline:none;box-sizing:border-box" oninput="doSearch(this.value)">
+    </div>
+    <div class="sidebar-content" id="sidebarContent"></div>
   </div>
-  
-  <!-- Main area -->
-  <div class="main-area" id="mainArea">
-    <div class="empty-chat" id="emptyState">
-      <div class="ic">💬</div>
-      <div style="font-size:14px;color:var(--t2)">Select a room</div>
-      <div style="font-size:11px">Choose a channel from the sidebar</div>
+  <div class="main-panel" id="mainPanel">
+    <div class="main-hdr">
+      <div class="nm" id="chatTitle"><span class="dot" style="background:var(--c-t3)"></span> Select a chat</div>
+      <div class="actions">
+        <button id="roomEditBtn" style="display:none" onclick="openRoomSettings()">⚙️</button>
+        <button onclick="document.getElementById('chatSide').classList.toggle('show')">☰</button>
+      </div>
+    </div>
+    <div class="msgs" id="msgArea">
+      <div class="empty-msg"><div class="ic">💬</div><div class="nm" style="font-size:14px;color:var(--c-t2)">No conversation selected</div><div style="font-size:11px">Pick a chat or room from the sidebar</div></div>
+    </div>
+    <div class="inp" id="inputArea" style="display:none">
+      <div class="inp-r"><textarea id="msgInput" placeholder="Type a message..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea><button class="sb" id="sendBtn" onclick="sendMsg()">➤</button></div>
     </div>
   </div>
-  
-  <!-- Members sidebar -->
-  <div class="member-side" id="memberSide">
-    <div class="hdr" id="memberHdr">Members</div>
-    <div id="memberList"></div>
-  </div>
 </div>
 
-<!-- Create room modal -->
-<div class="modal" id="createModal">
-  <div class="modal-inner">
+<!-- Room settings panel -->
+<div class="room-side" id="roomSide">
+  <button class="close-btn" onclick="closeRoomSettings()">✕</button>
+  <div id="roomSideContent">
     <h3>✏️ Create Room</h3>
-    <div class="fld"><label>Name</label><input id="rName" placeholder="e.g. general-chat"></div>
+    <div class="fld"><label>Room Name</label><input id="rName" placeholder="e.g. General Chat"></div>
     <div class="fld"><label>Description</label><textarea id="rDesc" placeholder="What's this room about?"></textarea></div>
-    <div class="fld"><label>Category</label><select id="rCat"></select></div>
-    <div class="fld"><label>Visibility</label><select id="rVis"><option value="public">Public</option><option value="private">Private</option><option value="password">Password</option></select></div>
-    <div class="fld" id="pwField" style="display:none"><label>Password</label><input id="rPass" type="password"></div>
-    <div class="fld"><label>Icon (emoji)</label><input id="rIcon" maxlength="2" placeholder="🔊"></div>
     <div class="fld"><label>Color</label><input id="rColor" type="color" value="#008cff"></div>
-    <div class="fld" style="display:flex;gap:12px"><label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" id="rVoice"> Voice</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" id="rVideo"> Video</label></div>
-    <button class="btn-p" onclick="createRoom()">Create Room</button>
-    <button class="btn-d" onclick="closeCreateModal()">Cancel</button>
-  </div>
-</div>
-
-<!-- Join password modal -->
-<div class="modal" id="pwModal">
-  <div class="modal-inner">
-    <h3>🔒 Password Required</h3>
-    <div class="fld"><label>Enter room password</label><input id="joinPass" type="password" onkeydown="if(event.key==='Enter')joinRoom(pwRoomId)"></div>
-    <button class="btn-p" onclick="joinRoom(pwRoomId)">Join</button>
-    <button class="btn-d" onclick="closePwModal()">Cancel</button>
+    <div class="fld"><label>Icon (emoji)</label><input id="rIcon" placeholder="e.g. 🎮" maxlength="2"></div>
+    <button class="btn btn-p" onclick="createRoom()">Create Room</button>
   </div>
 </div>
 
 <script>
-var uid=<?=($user->id??0)?>, curRoom=0, curDm=0, cats=[], rooms=[], dms=[];
-var poll=null, pwRoomId=0;
+var curConv=0,poll=null,items=[],searchMode=false;
+var usrId=<?=($user->id??0)?>;
 
-// Init
-function init(){
+function switchTab(el,tab){
+document.querySelectorAll('.sidebar-tab').forEach(function(t){t.classList.remove('active')});
+el.classList.add('active');
+searchMode=false;
+document.getElementById('searchBox').value='';
+if(tab==='rooms')loadRooms();else loadConvs();
+}
+
+function loadConvs(){
 var x=new XMLHttpRequest();
-x.open('GET','/api/chatbox.php?action=index',true);
-x.onload=function(){if(x.status!==200)return;try{var d=JSON.parse(x.responseText);cats=d.categories;rooms=d.rooms;dms=d.dms;render();}catch(e){}};
+x.open('GET','/api/chatbox.php?action=conversations',true);
+x.onload=function(){if(x.status!==200)return;try{renderList(JSON.parse(x.responseText));}catch(e){}};
 x.send();
 }
 
-function render(){
-var el=document.getElementById('catList');
-var h='';
-// DMs section
-h+='<div class="cat-header" style="margin-top:4px">📩 Direct Messages</div>';
-if(dms&&dms.length){dms.forEach(function(dm){
-var act=curDm===dm.id&&!curRoom?'active':'';
-var un=dm.unread>0?'<span class="unread">'+(dm.unread>9?'9+':dm.unread)+'</span>':'';
-h+='<div class="dm-item '+act+'" onclick="selectDm('+dm.id+')">👤 <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">User #'+dm.id+'</span>'+un+'</div>';
-});}
-h+='<div class="dm-item" onclick="openDmSearch()" style="color:var(--bl)">➕ New DM</div>';
+function loadRooms(){
+var x=new XMLHttpRequest();
+x.open('GET','/api/chatbox.php?action=rooms',true);
+x.onload=function(){if(x.status!==200)return;try{renderRooms(JSON.parse(x.responseText));}catch(e){}};
+x.send();
+}
 
-// Categories with rooms
-cats.forEach(function(cat){
-var catRooms=rooms.filter(function(r){return r.category_id===cat.id;});
-if(!catRooms.length)return;
-h+='<div class="cat-header" onclick="toggleCat(this)">▾ '+esc(cat.name)+'</div>';
-h+='<div class="cat-rooms">';
-catRooms.forEach(function(r){
-var act=curRoom===r.id?'active':'';
-var vis=r.visibility==='password'?'<span class="lock">🔒</span>':(r.visibility==='private'?'<span class="lock">🔐</span>':'<span class="hash">#</span>');
-var vc=r.voice_enabled?'<span class="voice-icon">🔊</span>':'';
-h+='<div class="room-item '+act+'" onclick="selectRoom('+r.id+')">'+vis+'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.name)+'</span>'+vc+'</div>';
+function renderList(convs){
+items=convs;searchMode=false;
+var el=document.getElementById('sidebarContent');
+if(!convs||!convs.length){el.innerHTML='<div class="empty-msg" style="padding:30px"><div class="ic" style="font-size:32px">💬</div><div style="font-size:12px;color:var(--c-t2)">No conversations</div><div style="font-size:10px;color:var(--c-t3);cursor:pointer" onclick="openNewChat()">Start a new chat</div></div>';return;}
+var h='<div style="padding:6px 10px;font-size:10px;color:var(--c-t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Direct Messages</div>';
+convs.forEach(function(c){
+if(c.type==='group'||c.type==='announcement')return;
+var act=c.id===curConv?'active':'';
+var nm=c.name||'User';
+var last=(c.last_message||'').substring(0,35);
+var t='';if(c.last_time){var d=new Date(c.last_time);t=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+var un=c.unread>0?'<span class="bdg">'+(c.unread>99?'99+':c.unread)+'</span>':'';
+h+='<div class="sidebar-item '+act+'" onclick="selectConv('+c.id+')"><div class="av" style="background:linear-gradient(135deg,var(--c-blue),#7c3aed)">👤</div><div class="info"><div class="nm">'+esc(nm)+'</div><div class="pr">'+esc(last)+'</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:9px;color:var(--c-t3)">'+t+'</div>'+un+'</div></div>';
 });
-h+='</div>';
+h+='<div style="padding:6px 10px;margin-top:8px;font-size:10px;color:var(--c-t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Rooms</div>';
+convs.forEach(function(c){
+if(c.type!=='group'&&c.type!=='announcement')return;
+var act=c.id===curConv?'active':'';
+var nm=c.name||'Room';
+var last=(c.last_message||'').substring(0,35);
+var mem=c.member_count||0;
+var hc=c.color||'#008cff';
+h+='<div class="sidebar-item '+act+'" onclick="selectConv('+c.id+')"><div class="av" style="background:'+hc+'">#'+(c.icon||nm[0]||'R')+'</div><div class="info"><div class="nm">'+esc(nm)+'</div><div class="pr">'+esc(last)+'</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:9px;color:var(--c-t3)">'+mem+' members</div></div></div>';
 });
+h+='<div class="sidebar-item" style="color:var(--c-blue);font-size:12px" onclick="openRoomSettings()">➕ Create Room</div>';
 el.innerHTML=h;
 }
 
-function toggleCat(el){
-var next=el.nextElementSibling;
-next.style.display=next.style.display==='none'?'':'none';
-el.textContent=el.textContent.startsWith('▸')?'▾ '+el.textContent.substring(2):'▸ '+el.textContent.substring(2);
+function renderRooms(rooms){
+items=rooms;searchMode=true;
+var el=document.getElementById('sidebarContent');
+if(!rooms||!rooms.length){el.innerHTML='<div class="empty-msg" style="padding:30px"><div class="ic" style="font-size:32px">🏠</div><div style="font-size:12px;color:var(--c-t2)">No rooms yet</div><div style="font-size:10px;color:var(--c-blue);cursor:pointer" onclick="openRoomSettings()">Create the first room</div></div>';return;}
+var h='';
+rooms.forEach(function(r){
+var act=r.id===curConv?'active':'';
+var nm=r.name||'Room';
+var desc=(r.description||'').substring(0,40);
+var hc=r.color||'#008cff';
+var mem=r.member_count||0;
+h+='<div class="sidebar-item '+act+'" onclick="selectConv('+r.id+')"><div class="av" style="background:'+hc+'">#'+(r.icon||nm[0]||'R')+'</div><div class="info"><div class="nm">'+esc(nm)+'</div><div class="pr">'+esc(desc)+'</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:9px;color:var(--c-t3)">'+mem+' members</div></div></div>';
+});
+h+='<div class="sidebar-item" style="color:var(--c-blue);font-size:12px" onclick="openRoomSettings()">➕ Create Room</div>';
+el.innerHTML=h;
 }
 
-// Select room
-function selectRoom(id){
-curRoom=id;curDm=0;
-render();
-document.getElementById('emptyState').style.display='none';
-document.getElementById('mainArea').innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Loading...</div>';
-var room=rooms.find(function(r){return r.id===id;});
-if(room&&room.visibility!=='public'&&!room.my_role){
-if(room.visibility==='password'){pwRoomId=id;document.getElementById('pwModal').classList.add('open');return;}
-}
-// Join if not member
-if(room&&!room.my_role){
-var fd=new FormData();fd.append('action','join_room');fd.append('room_id',id);
-var x=new XMLHttpRequest();x.open('POST','/api/chatbox.php',true);
-x.onload=function(){loadRoom(id);};x.send(fd);
-}else{loadRoom(id);}
-}
-
-function loadRoom(id){
+function selectConv(id){
+curConv=id;
+document.getElementById('mainPanel').innerHTML='<div class="loading">Loading messages...</div>';
+loadConvMessages(id);
 var x=new XMLHttpRequest();
-x.open('GET','/api/chatbox.php?action=messages&room_id='+id,true);
-x.onload=function(){if(x.status!==200)return;try{renderRoom(id,JSON.parse(x.responseText));}catch(e){}};
+x.open('GET','/api/chatbox.php?action=conversations',true);
+x.onload=function(){if(x.status!==200)return;try{renderList(JSON.parse(x.responseText));}catch(e){}};
 x.send();
-loadMembers(id);
 }
 
-function renderRoom(id,msgs){
-var room=rooms.find(function(r){return r.id===id;});
-var el=document.getElementById('mainArea');
-var nm=room?room.name||'Room':'Room';
-var desc=room?room.description||'':'';
-var isOwner=room?room.owner_id===uid:false;
-var col=room?room.color||'#008cff':'#64748b';
-var vis=room&&room.visibility!=='public'?'<span class="lock-icon">'+(room.visibility==='password'?'🔒':'🔐')+'</span>':'<span class="hash">#</span>';
-var actions='<div class="actions">';
-actions+='<button onclick="document.getElementById(\'catSide\').classList.toggle(\'show\')">☰</button>';
-if(isOwner)actions+='<button onclick="openEditModal('+id+')">⚙️</button>';
-actions+='</div>';
-var h='<div class="chat-hdr"><div class="nm">'+vis+' '+esc(nm)+' <span class="desc">'+esc(desc)+'</span></div>'+actions+'</div><div class="msgs" id="msgArea">';
-if(!msgs||!msgs.length){h+='<div class="empty-chat" style="height:100%"><div class="ic">💬</div><div style="font-size:13px;color:var(--t2)">No messages yet</div><div style="font-size:10px">Be the first to say something</div></div>';
+function loadConvMessages(convId){
+var x=new XMLHttpRequest();
+x.open('GET','/api/chatbox.php?action=messages&conversation_id='+convId,true);
+x.onload=function(){
+if(x.status!==200){document.getElementById('mainPanel').innerHTML='<div class="empty-msg"><div class="ic" style="font-size:32px">⚠️</div><div style="font-size:13px;color:var(--c-t2)">Error</div></div>';return;}
+try{var msgs=JSON.parse(x.responseText);renderConv(convId,msgs);}catch(e){}
+};
+x.send();
+}
+
+function renderConv(convId,msgs){
+var el=document.getElementById('mainPanel');
+var conv=items.find(function(c){return c.id===convId;});
+var nm=conv?conv.name||'Chat':'Chat';
+var col=conv?conv.color||'#008cff':'#64748b';
+var isOwner=conv?conv.created_by==usrId:false;
+var editBtn=isOwner?'<button onclick="openRoomSettings()">⚙️</button>':'<button onclick="joinOrLeaveRoom('+convId+')">'+(conv&&conv.type!=='direct'?'🚪':'')+'</button>';
+var h='<div class="main-hdr"><div class="nm"><span class="dot" style="background:'+col+'"></span>'+esc(nm)+'</div><div class="actions">'+editBtn+'<button onclick="document.getElementById(\'chatSide\').classList.toggle(\'show\')">☰</button></div></div><div class="msgs" id="msgArea">';
+if(!msgs||!msgs.length){h+='<div class="empty-msg" style="padding:30px"><div class="ic">💬</div><div style="font-size:13px;color:var(--c-t2)">No messages yet</div><div style="font-size:10px;color:var(--c-t3)">Send the first message</div></div>';
 }else{msgs.forEach(function(m){
-if(m.is_deleted){h+='<div class="msg sys">[deleted]</div>';return;}
-var own=m.user_id===uid?'own':'ot';
-var sd=own?'':'<div class="sd" onclick="openUserProfile('+m.user_id+')">'+esc(m.username)+'</div>';
+if(m.message_type==='system'){h+='<div class="msg sys">'+esc(m.message)+'</div>';return;}
+var own=m.user_id==usrId?'own':'ot';
+var sd=own?'':'<div class="sd">'+esc(m.username)+'</div>';
 var t='';if(m.created_at){var d=new Date(m.created_at);t=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
-h+='<div class="msg '+own+'">'+sd+'<div>'+esc(m.message)+'</div><div class="tm">'+t+'</div></div>';
+var rx='';if(m.reactions&&m.reactions!='[]'){try{var rr=JSON.parse(m.reactions);if(rr&&rr.length){rx='<div class="rx">';rr.forEach(function(rc){rx+='<span onclick="toggleRx('+m.id+',\''+rc.emoji+'\')">'+rc.emoji+'</span>';});rx+='</div>';}}catch(e){}}
+var ab='<div class="ab">';if(own)ab+='<button onclick="editMsg('+m.id+')">✏️</button><button onclick="delMsg('+m.id+')">🗑️</button>';ab+='<button onclick="toggleRx('+m.id+',\'👍\')">👍</button><button onclick="toggleRx('+m.id+',\'❤️\')">❤️</button><button onclick="toggleRx('+m.id+',\'😂\')">😂</button></div>';
+h+='<div class="msg '+own+'">'+ab+sd+'<div>'+esc(m.message)+(m.edited_at?' <span class="ed">(edited)</span>':'')+'</div>'+rx+'<div class="tm">'+t+'</div></div>';
 });}
-h+='</div><div class="inp-area"><div class="inp-row"><textarea id="msgInput" placeholder="Message #'+esc(nm)+'" rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea><button class="sb" onclick="sendMsg()">➤</button></div></div>';
+h+='</div><div class="inp"><div class="inp-r"><textarea id="msgInput" placeholder="Type a message..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendMsg2()}"></textarea><button class="sb" id="sendBtn2" onclick="sendMsg2()">➤</button></div></div>';
 el.innerHTML=h;
 el.querySelector('.msgs').scrollTop=el.querySelector('.msgs').scrollHeight;
-startPollRoom(id);
+startPoll(convId);
 }
 
-// Send room message
-function sendMsg(){
-var inp=document.getElementById('msgInput');var msg=inp.value.trim();if(!msg||!curRoom)return;
-var fd=new FormData();fd.append('action','send');fd.append('room_id',curRoom);fd.append('message',msg);
-var x=new XMLHttpRequest();x.open('POST','/api/chatbox.php',true);
-x.onload=function(){inp.value='';inp.style.height='auto';loadRoom(curRoom);};
-x.send();
-}
-
-// Poll room messages
-function startPollRoom(id){
+// Polling
+function startPoll(convId){
 if(poll)clearInterval(poll);
-poll=setInterval(function(){if(!curRoom||curRoom!==id){clearInterval(poll);return;}
-var x=new XMLHttpRequest();x.open('GET','/api/chatbox.php?action=messages&room_id='+id+'&limit=5',true);
-x.onload=function(){if(x.status!==200)return;try{var msgs=JSON.parse(x.responseText);if(msgs&&msgs.length)appendMsgs(msgs);}catch(e){}};x.send();
+poll=setInterval(function(){if(!curConv||curConv!==convId){clearInterval(poll);return;}
+var x=new XMLHttpRequest();x.open('GET','/api/chatbox.php?action=messages&conversation_id='+convId+'&limit=10',true);
+x.onload=function(){if(x.status!==200)return;try{var msgs=JSON.parse(x.responseText);if(msgs&&msgs.length)appendNewMsgs(msgs);}catch(e){}};x.send();
 },3000);
 }
 
-function appendMsgs(msgs){
+function appendNewMsgs(msgs){
 var area=document.getElementById('msgArea');if(!area)return;
-var last=area.lastElementChild;var lastId=0;if(last&&last.dataset)lastId=parseInt(last.dataset.id)||0;
-var newOnes=msgs.filter(function(m){return m.id>lastId&&!m.is_deleted;});
+var existing=area.querySelectorAll('.msg:not(.sys)');if(!existing.length){renderConv(curConv,msgs);return;}
+var lastId=0;if(existing.length){var l=existing[existing.length-1];if(l.dataset&&l.dataset.msgId)lastId=parseInt(l.dataset.msgId);}
+var newOnes=msgs.filter(function(m){return m.id>lastId;});
 if(!newOnes.length)return;
-newOnes.forEach(function(m){
-var own=m.user_id===uid?'own':'ot';var sd=own?'':'<div class="sd" onclick="openUserProfile('+m.user_id+')">'+esc(m.username)+'</div>';
+newOnes.forEach(function(m){if(m.message_type==='system'){area.innerHTML+='<div class="msg sys">'+esc(m.message)+'</div>';return;}
+var own=m.user_id==usrId?'own':'ot';var sd=own?'':'<div class="sd">'+esc(m.username)+'</div>';
 var t='';if(m.created_at){var d=new Date(m.created_at);t=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
-area.innerHTML+='<div class="msg '+own+'" data-id="'+m.id+'">'+sd+'<div>'+esc(m.message)+'</div><div class="tm">'+t+'</div></div>';
-});
+area.innerHTML+='<div class="msg '+own+'" data-msg-id="'+m.id+'">'+sd+'<div>'+esc(m.message)+'</div><div class="tm">'+t+'</div></div>';});
 area.scrollTop=area.scrollHeight;
 }
 
-// Load members
-function loadMembers(id){
-var x=new XMLHttpRequest();
-x.open('GET','/api/chatbox.php?action=members&room_id='+id,true);
-x.onload=function(){if(x.status!==200)return;try{renderMembers(JSON.parse(x.responseText));}catch(e){}};
-x.send();
-}
-
-function renderMembers(list){
-var el=document.getElementById('memberList');
-document.getElementById('memberHdr').textContent='Members ('+(list.length||0)+')';
-var h='';
-var roles={owner:{lbl:'Owner',cls:'o'},admin:{lbl:'Admin',cls:'a'},moderator:{lbl:'Mod',cls:'m'},vip:{lbl:'VIP',cls:'v'},member:{lbl:'',cls:''}};
-list.forEach(function(m){
-var r=roles[m.role]||{lbl:m.role,cls:''};
-var badge=r.lbl?'<span class="role-badge '+r.cls+'">'+r.lbl+'</span>':'';
-h+='<div class="member-item"><span class="dot" style="background:var(--gr)"></span>'+esc(m.username)+' '+badge+'</div>';
-});
-el.innerHTML=h;
-}
-
-// Join password room
-function joinRoom(id){
-var pw=document.getElementById('joinPass').value;
-var fd=new FormData();fd.append('action','join_room');fd.append('room_id',id);fd.append('password',pw);
+// Send
+function sendMsg2(){
+var inp=document.getElementById('msgInput');var msg=inp.value.trim();if(!msg||!curConv)return;
+document.getElementById('sendBtn2').disabled=true;
+var fd=new FormData();fd.append('action','send');fd.append('conversation_id',curConv);fd.append('message',msg);
 var x=new XMLHttpRequest();x.open('POST','/api/chatbox.php',true);
-x.onload=function(){closePwModal();document.getElementById('joinPass').value='';init();selectRoom(id);};
+x.onload=function(){inp.value='';inp.style.height='auto';document.getElementById('sendBtn2').disabled=false;loadConvMessages(curConv);};
 x.send();
 }
-function closePwModal(){document.getElementById('pwModal').classList.remove('open');}
 
-// Create room
-function openCreateModal(){
-var sel=document.getElementById('rCat');sel.innerHTML='';
-cats.forEach(function(c){sel.innerHTML+='<option value="'+c.id+'">'+esc(c.name)+'</option>';});
-document.getElementById('createModal').classList.add('open');
+function sendMsg(){sendMsg2();}
+
+// Reactions
+function toggleRx(msgId,emoji){
+var fd=new FormData();fd.append('action','react');fd.append('message_id',msgId);fd.append('emoji',emoji);
+var x=new XMLHttpRequest();x.open('POST','/api/chatbox.php',true);
+x.onload=function(){if(curConv)loadConvMessages(curConv);};x.send();
 }
-function closeCreateModal(){document.getElementById('createModal').classList.remove('open');}
-document.getElementById('rVis').addEventListener('change',function(){document.getElementById('pwField').style.display=this.value==='password'?'':'none';});
 
+// Edit/Delete
+function editMsg(msgId){var m=prompt('Edit:');if(!m||!m.trim())return;
+var fd=new FormData();fd.append('action','edit');fd.append('message_id',msgId);fd.append('message',m.trim());
+var x=new XMLHttpRequest();x.open('POST','/api/chatbox.php',true);
+x.onload=function(){if(curConv)loadConvMessages(curConv);};x.send();}
+function delMsg(msgId){if(!confirm('Delete?'))return;
+var fd=new FormData();fd.append('action','delete');fd.append('message_id',msgId);
+var x=new XMLHttpRequest();x.open('POST','/api/chatbox.php',true);
+x.onload=function(){if(curConv)loadConvMessages(curConv);};x.send();}
+
+// Room create/edit
+var editingRoomId=0;
+function openRoomSettings(){
+var side=document.getElementById('roomSide');
+var content=document.getElementById('roomSideContent');
+var conv=items.find(function(c){return c.id===curConv&&(c.type==='group'||c.type==='announcement');});
+if(conv&&conv.created_by==usrId){
+editingRoomId=conv.id;
+content.innerHTML='<h3>⚙️ Room Settings</h3><div class="fld"><label>Name</label><input id="rName" value="'+esc(conv.name||'')+'"></div><div class="fld"><label>Description</label><textarea id="rDesc">'+esc(conv.description||'')+'</textarea></div><div class="fld"><label>Color</label><input id="rColor" type="color" value="'+(conv.color||'#008cff')+'"></div><div class="fld"><label>Icon</label><input id="rIcon" value="'+(conv.icon||'')+'" maxlength="2"></div><button class="btn btn-p" onclick="saveRoom()">💾 Save</button><button class="btn btn-d" style="margin-top:6px;color:var(--c-red)" onclick="deleteRoom()">🗑️ Delete Room</button><button class="btn btn-d" onclick="closeRoomSettings()">Cancel</button>';
+}else{
+editingRoomId=0;
+content.innerHTML='<h3>✏️ Create Room</h3><div class="fld"><label>Room Name</label><input id="rName" placeholder="e.g. General Chat"></div><div class="fld"><label>Description</label><textarea id="rDesc" placeholder="What\'s this room about?"></textarea></div><div class="fld"><label>Color</label><input id="rColor" type="color" value="#008cff"></div><div class="fld"><label>Icon (emoji)</label><input id="rIcon" placeholder="e.g. 🎮" maxlength="2"></div><button class="btn btn-p" onclick="createRoom()">Create Room</button>';
+}
+side.classList.add('open');
+}
+function closeRoomSettings(){document.getElementById('roomSide').classList.remove('open');}
 function createRoom(){
-var fd=new FormData();fd.append('action','create_room');
-fd.append('name',document.getElementById('rName').value);
-fd.append('description',document.getElementById('rDesc').value);
-fd.append('category_id',document.getElementById('rCat').value);
-fd.append('visibility',document.getElementById('rVis').value);
-fd.append('password',document.getElementById('rPass').value);
+var fd=new FormData();fd.append('action','create_room');fd.append('name',document.getElementById('rName').value);
+fd.append('description',document.getElementById('rDesc').value);fd.append('color',document.getElementById('rColor').value);
 fd.append('icon',document.getElementById('rIcon').value);
-fd.append('color',document.getElementById('rColor').value);
-fd.append('voice_enabled',document.getElementById('rVoice').checked?1:0);
-fd.append('video_enabled',document.getElementById('rVideo').checked?1:0);
 var x=new XMLHttpRequest();x.open('POST','/api/chatbox.php',true);
-x.onload=function(){closeCreateModal();init();};x.send();
-}
-
-// Edit room
-var editRoomId=0;
-function openEditModal(id){
-editRoomId=id;
-var room=rooms.find(function(r){return r.id===id;});
-if(!room)return;
-document.getElementById('rName').value=room.name||'';
-document.getElementById('rDesc').value=room.description||'';
-document.getElementById('rVis').value=room.visibility||'public';
-document.getElementById('pwField').style.display=room.visibility==='password'?'':'none';
-document.getElementById('rPass').value='';
-document.getElementById('rIcon').value=room.icon||'';
-document.getElementById('rColor').value=room.color||'#008cff';
-document.getElementById('rVoice').checked=room.voice_enabled?true:false;
-document.getElementById('rVideo').checked=room.video_enabled?true:false;
-var sel=document.getElementById('rCat');sel.innerHTML='';
-cats.forEach(function(c){sel.innerHTML+='<option value="'+c.id+'"'+(c.id===room.category_id?' selected':'')+'>'+esc(c.name)+'</option>';});
-var btn=document.querySelector('#createModal .btn-p');
-btn.textContent='💾 Save';
-btn.onclick=saveRoom;
-document.getElementById('createModal').classList.add('open');
+x.onload=function(){closeRoomSettings();loadRooms();if(document.querySelector('.sidebar-tab.active'))switchTab(document.querySelector('.sidebar-tab.active'),'rooms');};
+x.send();
 }
 function saveRoom(){
-var fd=new FormData();fd.append('action','update_room');fd.append('room_id',editRoomId);
-fd.append('name',document.getElementById('rName').value);
-fd.append('description',document.getElementById('rDesc').value);
-fd.append('visibility',document.getElementById('rVis').value);
-fd.append('password',document.getElementById('rPass').value);
-fd.append('icon',document.getElementById('rIcon').value);
-fd.append('color',document.getElementById('rColor').value);
-fd.append('voice_enabled',document.getElementById('rVoice').checked?1:0);
-fd.append('video_enabled',document.getElementById('rVideo').checked?1:0);
+var fd=new FormData();fd.append('action','update_room');fd.append('room_id',editingRoomId);
+fd.append('name',document.getElementById('rName').value);fd.append('description',document.getElementById('rDesc').value);
+fd.append('color',document.getElementById('rColor').value);fd.append('icon',document.getElementById('rIcon').value);
 var x=new XMLHttpRequest();x.open('POST','/api/chatbox.php',true);
-x.onload=function(){closeCreateModal();init();if(curRoom)selectRoom(curRoom);};
+x.onload=function(){closeRoomSettings();if(curConv)selectConv(curConv);};
+x.send();
+}
+function deleteRoom(){if(!confirm('Delete room and all messages?'))return;
+var fd=new FormData();fd.append('action','delete_room');fd.append('room_id',editingRoomId);
+var x=new XMLHttpRequest();x.open('POST','/api/chatbox.php',true);
+x.onload=function(){closeRoomSettings();curConv=0;loadRooms();if(document.querySelector('.sidebar-tab.active'))switchTab(document.querySelector('.sidebar-tab.active'),'rooms');};
 x.send();
 }
 
-// DM selection
-function selectDm(id){curDm=id;curRoom=0;render();
-document.getElementById('emptyState').style.display='none';
-var x=new XMLHttpRequest();x.open('GET','/api/chatbox.php?action=dm_messages&conversation_id='+id,true);
-x.onload=function(){if(x.status!==200)return;try{renderDm(id,JSON.parse(x.responseText));}catch(e){}};x.send();
-}
-
-function renderDm(id,msgs){
-var el=document.getElementById('mainArea');
-var h='<div class="dm-hdr">💬 Direct Message</div><div class="msgs" id="msgArea">';
-if(!msgs||!msgs.length){h+='<div class="empty-chat" style="height:100%"><div class="ic">💬</div><div style="font-size:13px;color:var(--t2)">No messages yet</div></div>';
-}else{msgs.forEach(function(m){
-var own=m.user_id===uid?'own':'ot';var sd=own?'':'<div class="sd">'+esc(m.username)+'</div>';
-var t='';if(m.created_at){var d=new Date(m.created_at);t=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
-h+='<div class="msg '+own+'">'+sd+'<div>'+esc(m.message)+'</div><div class="tm">'+t+'</div></div>';
-});}
-h+='</div><div class="inp-area"><div class="inp-row"><textarea id="msgInput" placeholder="Type a message..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendDm()}"></textarea><button class="sb" onclick="sendDm()">➤</button></div></div>';
-el.innerHTML=h;el.querySelector('.msgs').scrollTop=el.querySelector('.msgs').scrollHeight;
-startPollDm(id);
-}
-
-function sendDm(){
-var inp=document.getElementById('msgInput');var msg=inp.value.trim();if(!msg||!curDm)return;
-var fd=new FormData();fd.append('action','send_dm');fd.append('conversation_id',curDm);fd.append('message',msg);
-var x=new XMLHttpRequest();x.open('POST','/api/chatbox.php',true);
-x.onload=function(){inp.value='';renderDm(curDm,[]);init();};x.send();
-}
-
-function startPollDm(id){
-if(poll)clearInterval(poll);
-poll=setInterval(function(){if(!curDm||curDm!==id){clearInterval(poll);return;}
-var x=new XMLHttpRequest();x.open('GET','/api/chatbox.php?action=dm_messages&conversation_id='+id+'&limit=5',true);
-x.onload=function(){if(x.status!==200)return;try{var msgs=JSON.parse(x.responseText);if(msgs&&msgs.length)appendDmMsgs(msgs);}catch(e){}};x.send();
-},3000);
-}
-
-function appendDmMsgs(msgs){
-var area=document.getElementById('msgArea');if(!area)return;
-var last=area.lastElementChild;var lastId=0;if(last&&last.dataset)lastId=parseInt(last.dataset.id)||0;
-msgs.filter(function(m){return m.id>lastId;}).forEach(function(m){
-var own=m.user_id===uid?'own':'ot';var sd=own?'':'<div class="sd">'+esc(m.username)+'</div>';
-var t='';if(m.created_at){var d=new Date(m.created_at);t=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
-area.innerHTML+='<div class="msg '+own+'" data-id="'+m.id+'">'+sd+'<div>'+esc(m.message)+'</div><div class="tm">'+t+'</div></div>';
-});
-area.scrollTop=area.scrollHeight;
-}
-
-// Open DM search
-function openDmSearch(){
-var user=prompt('Enter username to message:');
-if(!user||user.length<2)return;
-var x=new XMLHttpRequest();x.open('GET','/api/chatbox.php?action=search_users&q='+encodeURIComponent(user),true);
+// Search
+function doSearch(q){
+if(q.length<2){document.querySelector('.sidebar-tab.active').click();return;}
+var el=document.getElementById('sidebarContent');
+var x=new XMLHttpRequest();x.open('GET','/api/chatbox.php?action=search_users&q='+encodeURIComponent(q),true);
 x.onload=function(){if(x.status!==200)return;try{var users=JSON.parse(x.responseText);
-if(!users||!users.length){alert('User not found');return;}
-createDm(users[0].id);}catch(e){}};x.send();
+if(!users||!users.length){el.innerHTML='<div class="empty-msg" style="padding:20px;font-size:12px">No users found</div>';return;}
+var h='<div style="padding:6px 10px;font-size:10px;color:var(--c-t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Users</div>';
+users.forEach(function(u){h+='<div class="sidebar-item" onclick="startDM('+u.id+')"><div class="av" style="background:linear-gradient(135deg,var(--c-blue),#7c3aed)">👤</div><div class="info"><div class="nm">'+esc(u.username)+'</div><div class="pr">'+esc(u.email)+'</div></div></div>';});
+el.innerHTML=h;}catch(e){}};x.send();
 }
 
-function createDm(otherId){
-var fd=new FormData();fd.append('action','create_dm');fd.append('user_id',otherId);
+function startDM(otherId){
+var fd=new FormData();fd.append('action','create_conversation');fd.append('type','direct');fd.append('member_ids[]',otherId);
 var x=new XMLHttpRequest();x.open('POST','/api/chatbox.php',true);
-x.onload=function(){if(x.status===200){init();try{var r=JSON.parse(x.responseText);if(r.id)selectDm(r.id);}catch(e){}}};x.send();
+x.onload=function(){if(x.status===200){try{var r=JSON.parse(x.responseText);if(r.id)selectConv(r.id);}catch(e){}}searchMode=false;document.getElementById('searchBox').value='';};
+x.send();
 }
+
+function openNewChat(){openRoomSettings();}
 
 function esc(t){var d=document.createElement('div');d.textContent=t||'';return d.innerHTML;}
-init();
+loadConvs();
 </script>
