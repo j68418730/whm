@@ -5,13 +5,12 @@
 .section-card .icon{font-size:32px;margin-bottom:8px}
 .section-card .name{font-size:14px;font-weight:600}
 .section-card .desc{font-size:11px;color:#64748b;margin-top:2px}
+.section-card .badge{display:inline-block;background:rgba(0,191,255,.15);color:#38bdf8;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:4px;font-weight:600}
 </style>
-<h2>Live Chat</h2>
-<p style="color:#64748b;margin-bottom:20px">Manage your live chat system and get the embed code for your website.</p>
+<h2>Messaging</h2>
+<p style="color:#64748b;margin-bottom:20px">Send messages, manage your chat widget, and configure chat settings.</p>
 <div class="section-grid">
-<a href="/user/chat" class="section-card"><span class="icon">💬</span><div class="name">Dashboard</div><div class="desc">Chat overview & settings</div></a>
-<a href="/chatbox/admin.php?action=operators" target="_blank" class="section-card"><span class="icon">👥</span><div class="name">Operators</div><div class="desc">Manage chat operators</div></a>
-<a href="/chatbox/admin.php?action=departments" target="_blank" class="section-card"><span class="icon">🏢</span><div class="name">Departments</div><div class="desc">Chat departments</div></a>
-<a href="/chatbox/admin.php?action=history" target="_blank" class="section-card"><span class="icon">📋</span><div class="name">History</div><div class="desc">Chat transcripts</div></a>
-<a href="/chatbox/admin.php?action=widget" target="_blank" class="section-card"><span class="icon">🔌</span><div class="name">Widget</div><div class="desc">Embed code & settings</div></a>
+<a href="/user/chatbox" class="section-card" style="border-color:rgba(0,140,255,.2);background:rgba(0,140,255,.05)"><span class="icon">💬</span><div class="name">Messages <span class="badge">New</span></div><div class="desc">Chat with other users in real-time</div></a>
+<a href="/user/chat" class="section-card"><span class="icon">⚙️</span><div class="name">Widget Settings</div><div class="desc">Embed codes, rooms, and widget customization</div></a>
+<a href="/chatbox/admin.php" target="_blank" class="section-card"><span class="icon">🎛️</span><div class="name">Admin Panel</div><div class="desc">Manage users, rooms, and moderation</div></a>
 </div>
