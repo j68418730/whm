@@ -36,10 +36,23 @@ if ($_POST && isset($_POST['action'])) {
     }
 }
 
+// Ensure slug column exists
+try { $pdo->exec("ALTER TABLE chatbox_rooms ADD COLUMN IF NOT EXISTS slug varchar(100) DEFAULT NULL"); } catch (\Exception $e) {}
+
 // Load rooms
 $roomsQ = $pdo->prepare("SELECT * FROM chatbox_rooms WHERE tenant_id = ? ORDER BY id");
 $roomsQ->execute([$tenant->id]);
 $rooms = $roomsQ->fetchAll(PDO::FETCH_OBJ);
+
+// Auto-generate slugs for rooms without one
+foreach ($rooms as $r) {
+    if (empty($r->slug)) {
+        $slug = strtolower(preg_replace('/[^a-z0-9-]/', '', str_replace(' ', '-', $r->name)));
+        if (empty($slug)) $slug = 'room-' . $r->id;
+        $pdo->prepare("UPDATE chatbox_rooms SET slug=? WHERE id=?")->execute([$slug, $r->id]);
+        $r->slug = $slug;
+    }
+}
 
 $themes = ['default'=>'Default Dark','blue'=>'Blue','black'=>'Black','white'=>'White','gray'=>'Gray','neon'=>'Neon','gaming'=>'Gaming','hacker'=>'Hacker','matrix'=>'Matrix','discord'=>'Discord','twitch'=>'Twitch','retro'=>'Retro','purple'=>'Purple','red'=>'Red','gold'=>'Gold'];
 $server = $_SERVER['HTTP_HOST'] ?? 'planet-hosts.com';
@@ -116,6 +129,11 @@ $typeLabel = $r->type === 'public' ? 'Public' : ($r->type === 'password' ? '🔒
 <span><?=$r->registration_enabled?'📝 Registration':'🔒 No signup'?></span>
 <span><?=$r->voice_enabled?'🔊 Voice':'🔇 No voice'?></span>
 </div>
+<div style="font-size:10px;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+<span style="color:var(--text3)">🔗</span>
+<code id="slug-<?=$r->id?>" style="font-size:10px;color:var(--accent);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px">/chat/<?=htmlspecialchars($r->slug ?? 'room-'.$r->id)?></code>
+<button class="btn-edit" style="font-size:8px;padding:2px 6px" onclick="copySlug(<?=$r->id?>)">Copy</button>
+</div>
 <div class="actions">
 <button class="btn-edit" onclick="openEdit(<?=$r->id?>,'<?=htmlspecialchars($r->name, ENT_QUOTES)?>','<?=htmlspecialchars($r->description, ENT_QUOTES)?>','<?=$r->type?>','<?=$r->color?>','<?=htmlspecialchars($r->icon??'', ENT_QUOTES)?>',<?=$r->guest_enabled?1:0?>,<?=$r->registration_enabled?1:0?>,<?=$r->voice_enabled?1:0?>)">✏️ Edit</button>
 <form method="POST" style="display:inline" onsubmit="return confirm('Delete this room?')"><input type="hidden" name="action" value="delete_room"><input type="hidden" name="room_id" value="<?=$r->id?>"><button class="btn-del">🗑️ Delete</button></form>
@@ -177,7 +195,8 @@ $typeLabel = $r->type === 'public' ? 'Public' : ($r->type === 'password' ? '🔒
 <input type="hidden" name="action" id="formAction" value="create_room">
 <input type="hidden" name="room_id" id="formRoomId" value="">
 <div class="form-grid">
-<div class="fld"><label>Room Name</label><input name="name" id="fName" required></div>
+<div class="fld"><label>Room Name</label><input name="name" id="fName" required oninput="autoSlug()"></div>
+<div class="fld"><label>Direct URL</label><input name="slug" id="fSlug" placeholder="my-room" style="font-family:monospace;font-size:11px"><div style="font-size:9px;color:var(--text3);margin-top:2px">planet-hosts.com/chat/<strong id="slugPreview" style="color:var(--accent)">my-room</strong></div></div>
 <div class="fld"><label>Type</label><select name="type" id="fType" onchange="togglePw()"><option value="public">Public</option><option value="private">Private</option><option value="password">Password</option></select></div>
 <div class="fld" id="pwField" style="display:none"><label>Password</label><input name="password" id="fPass" type="password"></div>
 <div class="fld"><label>Color</label><input name="color" id="fColor" type="color" value="#008cff"></div>
@@ -198,6 +217,18 @@ $typeLabel = $r->type === 'public' ? 'Public' : ($r->type === 'password' ? '🔒
 </div>
 
 <script>
+function autoSlug(){
+var name=document.getElementById('fName').value;
+var slug=name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+document.getElementById('fSlug').value=slug;
+document.getElementById('slugPreview').textContent=slug||'my-room';
+}
+function copySlug(id){
+var slug=document.getElementById('slug-'+id).textContent.trim();
+navigator.clipboard.writeText('https://planet-hosts.com'+slug).then(function(){
+var btn=event.target;btn.textContent='✅';setTimeout(function(){btn.textContent='Copy';},2000);
+});
+}
 function switchTab(el,tab){
 document.querySelectorAll('.tab-btn').forEach(function(t){t.style.background='none';t.style.color='var(--text3)';});
 el.style.background='var(--accent2)';el.style.color='var(--accent)';
