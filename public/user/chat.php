@@ -131,7 +131,7 @@ $typeLabel = $r->type === 'public' ? 'Public' : ($r->type === 'password' ? '🔒
 </div>
 <div style="font-size:10px;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;gap:6px">
 <span style="color:var(--text3)">🔗</span>
-<code id="slug-<?=$r->id?>" style="font-size:10px;color:var(--accent);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px">/chat/<?=htmlspecialchars($r->slug ?? 'room-'.$r->id)?></code>
+<a href="/chat/<?=htmlspecialchars($r->slug ?? 'room-'.$r->id)?>" target="_blank" id="slug-<?=$r->id?>" style="font-size:10px;color:var(--accent);background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px;text-decoration:none">/chat/<?=htmlspecialchars($r->slug ?? 'room-'.$r->id)?></a>
 <button class="btn-edit" style="font-size:8px;padding:2px 6px" onclick="copySlug(<?=$r->id?>)">Copy</button>
 </div>
 <div class="actions">
