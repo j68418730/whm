@@ -240,49 +240,7 @@ class UserController extends Controller
     public function dismissAlert($id) { $u = $this->loadUser(); if ($this->hostingUser) { try { $a = $this->db->table('user_alerts')->where('id', $id)->where('hosting_user_id', $this->hostingUser->id)->first(); if ($a && $a->can_delete) { $this->db->table('user_alerts')->where('id', $id)->update(['is_read' => 1]); echo 'OK'; } else { echo 'LOCKED'; } } catch (\Exception $e) {} } exit; }
     public function fetchAlerts() { $u = $this->loadUser(); header('Content-Type: application/json'); $alerts = []; if ($this->hostingUser) { try { $alerts = $this->db->table('user_alerts')->where('hosting_user_id', $this->hostingUser->id)->where('is_read', 0)->orderBy('created_at', 'DESC')->limit(20)->get() ?: []; } catch (\Exception $e) {} } echo json_encode($alerts); exit; }
     public function logout() { session_destroy(); header('Location: /'); exit; }
-    public function chat() {
-        $u = $this->loadUser();
-        $hosting = $this->hostingUser;
-        $pdo = $this->db->pdo();
-        $tenant = null;
-        if ($hosting) {
-            $st = $pdo->prepare("SELECT * FROM chatbox_tenants WHERE hosting_user_id = ?");
-            $st->execute([$hosting->id]);
-            $tenant = $st->fetch(PDO::FETCH_OBJ);
-        }
-        if ($_POST && isset($_POST['action'])) {
-            if ($_POST['action'] === 'create' && $hosting) {
-                $pdo->prepare("INSERT IGNORE INTO chatbox_tenants (hosting_user_id, name, widget_title) VALUES (?, ?, ?)")->execute([$hosting->id, $hosting->username . "'s Chat", $hosting->username . ' Chat']);
-                $tid = $pdo->lastInsertId();
-                $pdo->prepare("INSERT IGNORE INTO chatbox_rooms (tenant_id, name, type) VALUES (?, 'General', 'public'), (?, 'Support', 'public')")->execute([$tid, $tid]);
-                $this->response->redirect('/user/chat'); exit;
-            }
-            if ($_POST['action'] === 'save_settings' && $tenant) {
-                $pdo->prepare("UPDATE chatbox_tenants SET widget_title=?, widget_color=?, widget_bg=?, widget_text_color=?, widget_border_color=?, widget_glow_color=?, widget_avatar_shape=?, font_family=?, theme=?, custom_css=?, guest_enabled=?, registration_enabled=?, voice_enabled=?, player_html=? WHERE id=?")
-                    ->execute([$_POST['title'], $_POST['color'], $_POST['bg'], $_POST['text_color'], $_POST['border_color'], $_POST['glow_color'], $_POST['avatar_shape'], $_POST['font'], $_POST['theme'], $_POST['custom_css'], (int)$_POST['guest'], (int)$_POST['reg'], (int)$_POST['voice'], $_POST['player_html'], $tenant->id]);
-                $this->response->redirect('/user/chat'); exit;
-            }
-            if ($_POST['action'] === 'add_room' && $tenant) {
-                $pdo->prepare("INSERT INTO chatbox_rooms (tenant_id, name, type, password) VALUES (?, ?, ?, ?)")->execute([$tenant->id, $_POST['name'], $_POST['type'], $_POST['type'] === 'password' ? password_hash($_POST['password'], PASSWORD_DEFAULT) : null]);
-                $this->response->redirect('/user/chat'); exit;
-            }
-            if ($_POST['action'] === 'delete_room' && $tenant) {
-                $pdo->prepare("DELETE FROM chatbox_rooms WHERE id=? AND tenant_id=?")->execute([(int)$_POST['room_id'], $tenant->id]);
-                $this->response->redirect('/user/chat'); exit;
-            }
-        }
-        $roomsList = [];
-        if ($tenant) {
-            $rs = $pdo->prepare("SELECT * FROM chatbox_rooms WHERE tenant_id = ?");
-            $rs->execute([$tenant->id]);
-            $roomsList = $rs->fetchAll(PDO::FETCH_OBJ);
-        }
-        $user = $this->auth->user();
-        return $this->view('user.chat.index', [
-            'user' => $user, 'hosting' => $hosting, 'tenant' => $tenant,
-            'roomsList' => $roomsList, 'title' => 'Live Chat'
-        ]);
-    }
+    public function chat() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/chat.php'; exit; }
     public function admins() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/admins.php'; exit; }
     public function djManager() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/dj-manager.php'; exit; }
     public function phpSwitcher() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/php-switcher.php'; exit; }
