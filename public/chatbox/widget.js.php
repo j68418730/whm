@@ -101,7 +101,7 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
             '<div id="chatbox-panel" class="closed">'+
             '<div id="chatbox-hdr"><span class="title">'+widgetTitle+'</span><button class="close" onclick="toggleChatbox()">✕</button></div>'+
             '<div id="chatbox-rooms"></div>'+
-            '<div id="chatbox-msgs"><div id="chatbox-empty"><div class="ic">💬</div><div>Loading...</div></div></div>'+
+            '<div id="chatbox-msgs"></div>'+
             '<div id="chatbox-inp" style="display:none"><div class="row"><textarea id="chatbox-input" placeholder="Type a message..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendChatboxMsg()}"></textarea><button class="sb" onclick="sendChatboxMsg()">➤</button></div></div>'+
             '<div id="chatbox-login" style="display:none"></div>'+
             '</div></div>';
@@ -165,12 +165,16 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
         var url = apiBase + '?action=get_messages&room_id=' + currentRoomId + '&tenant_id=' + tenantId;
         if (lastMsgId > 0) url += '&since=' + lastMsgId;
         fetch(url).then(function(r){ return r.json(); }).then(function(msgs){
-            if (!msgs || msgs.length === 0) return;
             var el = document.getElementById('chatbox-msgs');
-            var empty = document.getElementById('chatbox-empty');
-            if (empty) empty.style.display = 'none';
+            if (!msgs) return;
             var isFirst = lastMsgId === 0;
-            if (isFirst) el.innerHTML = '';
+            if (isFirst) {
+                if (msgs.length === 0) {
+                    el.innerHTML = '<div style="text-align:center;padding:30px;color:'+textColor+'66;font-size:12px">No messages yet. Be the first to say something!</div>';
+                    return;
+                }
+                el.innerHTML = '';
+            }
             msgs.forEach(function(m){
                 if (m.message_type === 'system') { el.innerHTML += '<div class="msg sys">'+escHtml(m.message)+'</div>'; return; }
                 var t = '';
@@ -178,8 +182,7 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
                 el.innerHTML += '<div class="msg"><div class="u">'+escHtml(m.username)+'<span class="t">'+t+'</span></div><div>'+escHtml(m.message)+'</div></div>';
                 if (m.id > lastMsgId) lastMsgId = m.id;
             });
-            if (isFirst) el.scrollTop = el.scrollHeight;
-            else el.scrollTop = el.scrollHeight;
+            el.scrollTop = el.scrollHeight;
         }).catch(function(){});
     }
 
