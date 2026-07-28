@@ -262,6 +262,13 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
 
     function escHtml(t) { var d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
 
+        // Check if session exists
+        fetch(apiBase + '?action=guest_check&tenant_id=' + tenantId).then(function(r){ return r.json(); }).then(function(d){
+            if (d.logged_in) { currentUser = {username: d.username}; onLoggedIn(); }
+            else if (guestEnabled) { showGuestLogin(); }
+            else if (regEnabled) { showRegisterLogin(); }
+            else { showGuestLogin(); }
+        });
     } // end initWidget
 
     // Start when DOM is ready
