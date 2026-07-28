@@ -1,5 +1,4 @@
 <?php
-$server = $_SERVER['HTTP_HOST'] ?? 'planet-hosts.com';
 ?>
 <style>
 :root{--bg-card:rgba(8,16,28,.6);--border:rgba(255,255,255,.04);--border2:rgba(0,191,255,.08);--text:#e0e0e0;--text2:#94a3b8;--text3:#64748b;--accent:#0A84FF;--accent2:rgba(0,140,255,.12);--danger:rgba(248,113,113,.12);--danger-text:#f87171}
@@ -126,10 +125,10 @@ $typeLabel = $r->type === 'public' ? 'Public' : ($r->type === 'password' ? '🔒
 <div class="card"><h3>📎 Embed Codes</h3>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
 <div><div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:600">JavaScript Widget</div>
-<div class="embed-code">&lt;script src="//<?=$server?>/chatbox/widget.js.php?tenant_id=<?=$tenant->id?>"&gt;&lt;/script&gt;</div>
+<div class="embed-code">&lt;script src="/chatbox/widget.js.php?tenant_id=<?=$tenant->id?>"&gt;&lt;/script&gt;</div>
 <button class="save-btn" style="padding:4px 14px;font-size:10px" onclick="copy(this,'js')">📋 Copy</button></div>
 <div><div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:600">iFrame Embed</div>
-<div class="embed-code">&lt;iframe src="//<?=$server?>/chatbox/embed.php?tenant_id=<?=$tenant->id?>" width="360" height="500"&gt;&lt;/iframe&gt;</div>
+<div class="embed-code">&lt;iframe src="/chatbox/embed.php?tenant_id=<?=$tenant->id?>" width="360" height="500"&gt;&lt;/iframe&gt;</div>
 <button class="save-btn" style="padding:4px 14px;font-size:10px" onclick="copy(this,'iframe')">📋 Copy</button></div>
 </div></div>
 </div>
