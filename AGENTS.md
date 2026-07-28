@@ -50,6 +50,7 @@ To reinstall: `sudo tar xzf sc_serv2_linux_x64-latest.tar.gz -C /usr/local/shout
 - DnsManager syncZoneToBind writes Bind9 zone files
 
 ### Needs Work
+- **Chat System (paused)**: widget embed still blank (DOM timing), moderation UI, message history limits, Cbox parity features (emoji/GIF picker, SSO, webhooks), room permissions system, product-based auto-join rooms, file uploads, voice/video
 - Admin global playlists upload still has issues (empty $_FILES)
 - AutoDJ wizard: media upload, engine detection, finish button
 - DNS glue records for ns1/ns2.planet-hosts.com (subdomain resolution)
