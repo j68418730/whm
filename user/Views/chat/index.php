@@ -125,10 +125,10 @@ $typeLabel = $r->type === 'public' ? 'Public' : ($r->type === 'password' ? '🔒
 <div class="card"><h3>📎 Embed Codes</h3>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
 <div><div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:600">JavaScript Widget</div>
-<div class="embed-code">&lt;script src="/chatbox/widget.js.php?tenant_id=<?=$tenant->id?>"&gt;&lt;/script&gt;</div>
+<div class="embed-code">&lt;script src="https://planet-hosts.com/chatbox/widget.js.php?tenant_id=<?=$tenant->id?>"&gt;&lt;/script&gt;</div>
 <button class="save-btn" style="padding:4px 14px;font-size:10px" onclick="copy(this,'js')">📋 Copy</button></div>
 <div><div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:600">iFrame Embed</div>
-<div class="embed-code">&lt;iframe src="/chatbox/embed.php?tenant_id=<?=$tenant->id?>" width="360" height="500"&gt;&lt;/iframe&gt;</div>
+<div class="embed-code">&lt;iframe src="https://planet-hosts.com/chatbox/embed.php?tenant_id=<?=$tenant->id?>" width="360" height="500"&gt;&lt;/iframe&gt;</div>
 <button class="save-btn" style="padding:4px 14px;font-size:10px" onclick="copy(this,'iframe')">📋 Copy</button></div>
 </div></div>
 </div>
@@ -171,5 +171,5 @@ function openCreate(){document.getElementById('modalTitle').textContent='✏️ 
 function openEdit(id,name,desc,type,color,icon,guest,reg,voice){document.getElementById('modalTitle').textContent='⚙️ Edit Room';document.getElementById('formAction').value='update_room';document.getElementById('formRoomId').value=id;document.getElementById('fName').value=name;document.getElementById('fDesc').value=desc;document.getElementById('fType').value=type;document.getElementById('fPass').value='';document.getElementById('fColor').value=color||'#008cff';document.getElementById('fIcon').value=icon||'';document.getElementById('fGuest').checked=guest==1;document.getElementById('fReg').checked=reg==1;document.getElementById('fVoice').checked=voice==1;togglePw();document.getElementById('roomModal').classList.add('open');}
 function togglePw(){document.getElementById('pwField').style.display=document.getElementById('fType').value==='password'?'':'none';}
 function closeModal(){document.getElementById('roomModal').classList.remove('open');}
-function copy(btn,mode){var codes={js:'<script src="/chatbox/widget.js.php?tenant_id=<?=$tenant->id??0?>"><\/script>',iframe:'<iframe src="/chatbox/embed.php?tenant_id=<?=$tenant->id??0?>" width="360" height="500"></iframe>'};navigator.clipboard.writeText(codes[mode]||'').then(function(){btn.textContent='✅ Copied!';setTimeout(function(){btn.textContent='📋 Copy';},2000);});}
+function copy(btn,mode){var codes={js:'<script src="https://planet-hosts.com/chatbox/widget.js.php?tenant_id=<?=$tenant->id??0?>"><\/script>',iframe:'<iframe src="https://planet-hosts.com/chatbox/embed.php?tenant_id=<?=$tenant->id??0?>" width="360" height="500"></iframe>'};navigator.clipboard.writeText(codes[mode]||'').then(function(){btn.textContent='✅ Copied!';setTimeout(function(){btn.textContent='📋 Copy';},2000);});}
 </script>

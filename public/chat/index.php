@@ -62,7 +62,7 @@ body{font-family:Inter,sans-serif;background:<?=$accent?>08;color:#e2e8f0;min-he
 <a class="btn" href="/chatbox/embed.php?tenant_id=<?=$tenantId?>" target="_blank">Open Chat</a>
 <a class="btn-embed" href="javascript:void(0)" onclick="showEmbed()">📋 Get Embed Code</a>
 <div id="embedBox" style="display:none">
-<div class="embed-code">&lt;script src="/chatbox/widget.js.php?tenant_id=<?=$tenantId?>"&gt;&lt;/script&gt;</div>
+<div class="embed-code">&lt;script src="https://planet-hosts.com/chatbox/widget.js.php?tenant_id=<?=$tenantId?>"&gt;&lt;/script&gt;</div>
 <button class="btn-embed" onclick="copyEmbed()">📋 Copy Widget Code</button>
 </div>
 </div>
@@ -71,7 +71,7 @@ body{font-family:Inter,sans-serif;background:<?=$accent?>08;color:#e2e8f0;min-he
 <script>
 function showEmbed(){document.getElementById('embedBox').style.display='block';}
 function copyEmbed(){
-navigator.clipboard.writeText('<script src="/chatbox/widget.js.php?tenant_id=<?=$tenantId?>"><\/script>');
+navigator.clipboard.writeText('<script src="https://planet-hosts.com/chatbox/widget.js.php?tenant_id=<?=$tenantId?>"><\/script>');
 event.target.textContent='✅ Copied!';
 setTimeout(function(){event.target.textContent='📋 Copy Widget Code';},2000);
 }
