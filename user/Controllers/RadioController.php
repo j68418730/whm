@@ -724,9 +724,43 @@ class RadioController extends Controller
         header('Location: /user/radio?tab=autodj&station_id=' . $station->id); exit;
     }
 
-    public function toggleRequests($id)
+    public function resetPassword($id)
     {
         if (!$this->auth->check()) exit;
+        $station = $this->getStation($id);
+        if (!$station) { header('Location: /user/radio'); exit; }
+        $type = $_GET['type'] ?? 'source';
+        $newPass = substr(bin2hex(random_bytes(6)), 0, 12);
+        $realId = $station->streaming_id ?? $station->id;
+        try {
+            $ss = $this->db->table('streaming_stations')->where('id', $realId)->first();
+            if ($ss) {
+                $upd = [];
+                if ($type === 'admin') {
+                    $upd['admin_password'] = password_hash($newPass, PASSWORD_DEFAULT);
+                    $upd['admin_plain_password'] = $newPass;
+                } else {
+                    $upd['password'] = password_hash($newPass, PASSWORD_DEFAULT);
+                    $upd['plain_password'] = $newPass;
+                }
+                $this->db->table('streaming_stations')->where('id', $realId)->update($upd);
+            }
+            try {
+                $rs = $this->db->table('radio_stations')->where('id', $station->id)->first();
+                if ($rs) {
+                    $rupd = ($type === 'admin') ? ['admin_password' => $newPass] : ['password' => $newPass];
+                    $this->db->table('radio_stations')->where('id', $station->id)->update($rupd);
+                }
+            } catch (\Exception $e) {}
+            $_SESSION['success'] = ucfirst($type) . ' password reset: <code>' . htmlspecialchars($newPass) . '</code>';
+        } catch (\Exception $e) {
+            $_SESSION['error'] = 'Password reset failed.';
+        }
+        header('Location: /user/radio?tab=overview&station_id=' . $station->id); exit;
+    }
+
+    public function toggleRequests($id)
+    {        if (!$this->auth->check()) exit;
         $station = $this->getStation($id);
         if ($station) {
             $new = $station->requests_enabled ? 0 : 1;
