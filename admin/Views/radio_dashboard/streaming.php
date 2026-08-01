@@ -72,19 +72,23 @@ Status: <strong style="color:<?php echo $e['installed'] ? '#4ade80' : '#f87171';
 </div>
 
 <!-- Create Station -->
-<div class="card" style="margin-bottom:16px;max-width:600px">
+<div class="card" style="margin-bottom:16px">
 <form method="POST" action="/admin/api/streaming/stations/create" id="createStationForm">
-<h3 style="color:var(--accent);margin-bottom:12px">Create Station</h3>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-<div class="form-group"><label>Engine</label>
-<select name="engine">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.06)">
+<div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,rgba(0,140,255,.2),rgba(168,85,247,.15));display:flex;align-items:center;justify-content:center;font-size:18px">📡</div>
+<div><h3 style="color:var(--accent);margin:0;font-size:15px">Create New Station</h3><div style="font-size:11px;color:#64748b">Add a new streaming station for a customer</div></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
+<div class="form-group"><label>Streaming Engine</label>
+<select name="engine" id="selEngine" onchange="engineHint()">
 <option value="shoutcast">SHOUTcast v2</option>
 <option value="shoutcast1">SHOUTcast v1</option>
 <option value="icecast">Icecast</option>
-</select></div>
+</select>
+<div id="engineHint" style="font-size:10px;color:#64748b;margin-top:3px"></div></div>
 <div class="form-group"><label>Station Name</label>
-<input name="name" placeholder="My Radio Station" required></div>
-<div class="form-group"><label>User</label>
+<input name="name" placeholder="e.g. Cool Radio" required></div>
+<div class="form-group"><label>Customer Account</label>
 <select name="user_id" required>
 <option value="">Select user...</option>
 <?php foreach ($users as $u): ?>
@@ -108,7 +112,7 @@ Status: <strong style="color:<?php echo $e['installed'] ? '#4ade80' : '#f87171';
 <option value="320">320 kbps</option>
 </select></div>
 <div class="form-group"><label>Max Listeners</label>
-<input name="max_listeners" type="number" value="100"></div>
+<input name="max_listeners" type="number" value="100" min="1"></div>
 <div class="form-group"><label>Format</label>
 <select name="format">
 <option value="mp3" selected>MP3</option>
@@ -116,15 +120,28 @@ Status: <strong style="color:<?php echo $e['installed'] ? '#4ade80' : '#f87171';
 <option value="ogg">OGG</option>
 </select></div>
 </div>
-<div class="form-group" style="margin-top:8px">
-<label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;flex-wrap:wrap">
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#c0c0c0">
 <input type="checkbox" name="public_server" value="1">
-<span>Public server (list on SHOUTcast directory)</span>
+<span>🌍 Public server (list on SHOUTcast directory)</span>
 </label>
+<button type="submit" class="btn primary" style="padding:10px 24px;font-weight:600"><span id="createBtnIcon">➕</span> Create Station</button>
 </div>
-<button type="submit" class="btn primary">Create Station</button>
 </form>
 </div>
+
+<script>
+function engineHint() {
+    var e = document.getElementById('selEngine').value;
+    var hints = {
+        'shoutcast': 'SHOUTcast DNAS v2 — modern streaming, good for MP3/AAC',
+        'shoutcast1': 'SHOUTcast DNAS v1 — classic lightweight streaming',
+        'icecast': 'Icecast 2 — open source, multi-format, mounts'
+    };
+    document.getElementById('engineHint').textContent = hints[e] || '';
+}
+engineHint();
+</script>
 
 <script>
 document.getElementById('createStationForm').addEventListener('submit', function(e) {
