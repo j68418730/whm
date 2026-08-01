@@ -550,75 +550,22 @@ class PlanetStudioController extends Controller
         $hosting = $this->db->table('hosting_users')->where('id', $station->user_id)->first();
         $username = $hosting ? $hosting->username : 'unknown';
         try {
-            // Use the same approach as RadioController::startAutodj
-            $musicDir = "/home/{$username}/radio/musicdatabase";
-            $autodjDir = "/home/{$username}/radio/autodj";
-            $logPath = $autodjDir . '/autodj.log';
-            $pidFile = $autodjDir . '/autodj.pid';
-            @mkdir($autodjDir, 0755, true);
-
-            // Kill existing
-            exec("/usr/bin/pkill -f \"runner_{$realId}\" 2>/dev/null");
-            sleep(1);
-
-            // Generate M3U playlist
-            $files = [];
-            if (is_dir($musicDir)) {
-                $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($musicDir));
-                foreach ($it as $f) {
-                    if ($f->isFile() && in_array(strtolower($f->getExtension()), ['mp3','wav','flac','ogg','aac','m4a'])) {
-                        $files[] = $f->getPathname();
-                    }
-                }
-            }
-            if (empty($files)) return $this->json(['success' => false, 'message' => 'No music files found']);
-
-            $plPath = $autodjDir . '/playlist.m3u';
-            file_put_contents($plPath, "#EXTM3U\n");
-            foreach ($files as $f) { file_put_contents($plPath, $f . "\n", FILE_APPEND); }
-
-            $engine = strtolower($station->engine ?? 'icecast');
-            $sPort = (int)$station->port;
-
-            if ($engine === 'shoutcast1') {
-                // Use ShoutcastV1Source (pure PHP socket, no exec issues)
-                $pass = $station->plain_password ?: ($station->password ?? '');
-                $runnerScript = $autodjDir . '/runner_' . $realId . '.php';
-                $runner = '<?php
-require_once "/var/www/radiohosting/services/ShoutcastV1Source.php";
-$s = new ShoutcastV1Source("127.0.0.1", ' . ($sPort + 1) . ', "' . addslashes($pass) . '", ' . ((int)$station->bitrate ?: 128) . ', "' . addslashes($station->name ?? 'Radio') . '", ' . ($realId + 10000) . ');
-$s->setPidFile("' . $pidFile . '");
-$s->setLogFile("' . $logPath . '");
-$s->setPlaylistFile("' . $plPath . '");
-$s->run();
-';
-                file_put_contents($runnerScript, $runner);
-                exec("nohup php " . escapeshellarg($runnerScript) . " > " . escapeshellarg($logPath) . " 2>&1 & echo $!", $out);
-            } else {
-                // Use ffmpeg for Icecast/SHOUTcast v2
-                $pass = $station->plain_password ?: ($station->password ?? '');
-                $mount = $station->mount_point ?? '/stream';
-                if ($engine === 'shoutcast' || $engine === 'shoutcast2') {
-                    $url = "http://source:{$pass}@127.0.0.1:{$sPort}/stream";
-                } else {
-                    $url = "http://source:{$pass}@127.0.0.1:{$sPort}{$mount}";
-                }
-                $concatPath = $autodjDir . '/concat.txt';
-                $concat = "ffconcat version 1.0\n";
-                foreach ($files as $f) { $concat .= "file " . escapeshellarg($f) . "\nduration 3600\n"; }
-                file_put_contents($concatPath, $concat);
-                exec("nohup ffmpeg -re -stream_loop -1 -f concat -safe 0 -i " . escapeshellarg($concatPath) . " -c:a libmp3lame -b:a " . ((int)$station->bitrate ?: 128) . "k -f mp3 " . escapeshellarg($url) . " > " . escapeshellarg($logPath) . " 2>&1 & echo $!", $out);
-            }
-
-            $pid = (int)($out[0] ?? 0);
-            if ($pid > 0) { file_put_contents($pidFile, $pid); }
-            sleep(1);
-            $running = $pid > 0 && @\posix_kill($pid, 0);
+            // Load playlist ids from the station's AutoDJ config
+            $cfg = $this->db->table('radio_autodj_config')->where('station_id', $compositeId)->first();
+            $playlistIds = ($cfg && !empty($cfg->playlist_ids)) ? json_decode($cfg->playlist_ids, true) ?: [] : [];
+            // Engine-aware player handles v1 / v2 / Icecast correctly
+            $player = new \Services\RadioAutoDJPlayer($station, $username, $playlistIds);
+            $player->stop();
+            usleep(500000);
+            $ok = $player->start();
+            $pid = 0;
+            $pidFile = "/home/{$username}/radio/autodj/autodj.pid";
+            if (file_exists($pidFile)) $pid = (int)trim(file_get_contents($pidFile));
+            $this->db->table('streaming_stations')->where('id', $realId)->update(['autodj_enabled' => $ok ? 1 : 0]);
             return $this->json([
-                'success' => $running,
-                'message' => $running ? 'AutoDJ restarted' : 'Failed to restart AutoDJ',
-                'files' => count($files),
-                'engine' => $engine,
+                'success' => $ok,
+                'message' => $ok ? 'AutoDJ restarted' : 'Failed to restart AutoDJ',
+                'engine' => $station->engine,
                 'pid' => $pid,
             ]);
         } catch (\Exception $e) {
