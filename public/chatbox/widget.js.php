@@ -197,9 +197,21 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
     }
     window.switchRoom = function(id) {
         currentRoomId = id; lastMsgId = 0;
+        profileCache = {};
         renderRooms();
         document.getElementById('chatbox-msgs').innerHTML = '<div id="chatbox-empty"><div class="ic">💬</div><div>Loading...</div></div>';
         fetchMessages();
+        // Load this room's profile for current user
+        if (currentUser && currentUser.userId) {
+            fetch(apiBase + '?action=get_profile&user_id=' + currentUser.userId + '&room_id=' + currentRoomId).then(function(r){ return r.json(); }).then(function(p){
+                if (p && !p.error) myProfile = { display_name:p.display_name||'', avatar:p.avatar||'', font_style:p.font_style||'Inter', font_color:p.font_color||'#ffffff', font_size:p.font_size||13 };
+            }).catch(function(){});
+        } else {
+            fetch(apiBase + '?action=get_guest_profile&tenant_id=' + tenantId + '&room_id=' + currentRoomId).then(function(r){ return r.json(); }).then(function(p){
+                if (p) myProfile = { display_name:p.display_name||'', avatar:p.avatar||'', font_style:p.font_style||'Inter', font_color:p.font_color||'#ffffff', font_size:p.font_size||13 };
+            }).catch(function(){});
+        }
+        joinOnline();
     };
 
     function fetchMessages() {
@@ -354,14 +366,14 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
     window.openSettings = function() {
         var panel = document.getElementById('chatbox-settings');
         if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
-        // Load current profile
+        // Load current profile (per room)
         if (currentUser && currentUser.userId) {
-            fetch(apiBase + '?action=get_profile&user_id=' + currentUser.userId + '&tenant_id=' + tenantId).then(function(r){ return r.json(); }).then(function(p){
+            fetch(apiBase + '?action=get_profile&user_id=' + currentUser.userId + '&room_id=' + currentRoomId).then(function(r){ return r.json(); }).then(function(p){
                 if (p && !p.error) { myProfile = { display_name:p.display_name||'', avatar:p.avatar||'', font_style:p.font_style||'Inter', font_color:p.font_color||'#ffffff', font_size:p.font_size||13 }; buildSettingsPanel(); }
                 else buildSettingsPanel();
             }).catch(function(){ buildSettingsPanel(); });
         } else {
-            fetch(apiBase + '?action=get_guest_profile&tenant_id=' + tenantId).then(function(r){ return r.json(); }).then(function(p){
+            fetch(apiBase + '?action=get_guest_profile&tenant_id=' + tenantId + '&room_id=' + currentRoomId).then(function(r){ return r.json(); }).then(function(p){
                 if (p) { myProfile = { display_name:p.display_name||'', avatar:p.avatar||'', font_style:p.font_style||'Inter', font_color:p.font_color||'#ffffff', font_size:p.font_size||13 }; }
                 buildSettingsPanel();
             }).catch(function(){ buildSettingsPanel(); });
@@ -405,11 +417,13 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
         if (currentUser && currentUser.userId) {
             fd.append('action', 'save_profile');
             fd.append('user_id', currentUser.userId);
-            fd.append('tenant_id', tenantId);
+            fd.append('username', currentUser.username);
         } else {
             fd.append('action', 'save_guest_profile');
             fd.append('tenant_id', tenantId);
+            fd.append('username', currentUser ? currentUser.username : 'Guest');
         }
+        fd.append('room_id', currentRoomId);
         fd.append('display_name', myProfile.display_name);
         fd.append('avatar', myProfile.avatar);
         fd.append('font_style', myProfile.font_style);
@@ -655,7 +669,7 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
         fresh.forEach(function(uname){
             var fd = new FormData();
             fd.append('action', 'get_profile_by_username');
-            fd.append('tenant_id', tenantId);
+            fd.append('room_id', currentRoomId);
             fd.append('username', uname);
             fetch(apiBase, {method:'POST', body: fd}).then(function(r){ return r.json(); }).then(function(p){
                 if (p && !p.error) profileCache[uname] = { display_name:p.display_name||'', avatar:p.avatar||'', font_style:p.font_style||'', font_color:p.font_color||'', font_size:p.font_size||13 };
