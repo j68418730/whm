@@ -52,19 +52,15 @@ class RadioAutoDJPlayer
             file_put_contents($scriptPath, $runner);
             exec("nohup php {$scriptPath} > {$logPath} 2>&1 & echo $!", $out);
         } elseif ($engine === 'shoutcast' || $engine === 'shoutcast2') {
-            // SHOUTcast v2: HTTP SOURCE protocol via ShoutcastSource
-            $playlistPath = $this->generateM3u($files);
-            $scriptPath = $this->autodjDir . '/runner_' . $streamId . '.php';
-            $safeName = addcslashes($name, "'\\");
-            $runner = "<?php\n"
-                . "require_once '/var/www/radiohosting/services/ShoutcastSource.php';\n"
-                . "\$s = new ShoutcastSource('localhost', {$port}, '" . addslashes($password) . "', {$bitrate}, '{$safeName}', {$streamId});\n"
-                . "\$s->setPidFile('{$pidFile}');\n"
-                . "\$s->setLogFile('{$logPath}');\n"
-                . "\$s->setPlaylistFile('{$playlistPath}');\n"
-                . "\$s->run();\n";
-            file_put_contents($scriptPath, $runner);
-            exec("nohup php {$scriptPath} > {$logPath} 2>&1 & echo $!", $out);
+            // SHOUTcast v2: ffmpeg HTTP PUT to /stream with -vn (strip album art video)
+            $playlistPath = $this->generateConcat($files);
+            $url = "http://source:{$password}@localhost:{$port}/stream";
+            $cmd = "nohup ffmpeg -re -stream_loop -1 -f concat -safe 0 -i " . escapeshellarg($playlistPath)
+                . " -vn -c:a libmp3lame -b:a {$bitrate}k -f mp3 " . escapeshellarg($url)
+                . " > {$logPath} 2>&1 & echo $!";
+            error_log('AUTODJ: running ffmpeg v2 cmd=' . $cmd);
+            exec($cmd, $out, $code);
+            error_log('AUTODJ: ffmpeg v2 exit=' . $code . ' out=' . json_encode($out));
         } else {
             // Icecast: ffmpeg HTTP PUT to mount
             $playlistPath = $this->generateConcat($files);
