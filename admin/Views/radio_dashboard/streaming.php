@@ -72,60 +72,78 @@ Status: <strong style="color:<?php echo $e['installed'] ? '#4ade80' : '#f87171';
 </div>
 
 <!-- Create Station -->
-<div class="card" style="margin-bottom:16px">
-<form method="POST" action="/admin/api/streaming/stations/create" id="createStationForm">
-<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.06)">
-<div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,rgba(0,140,255,.2),rgba(168,85,247,.15));display:flex;align-items:center;justify-content:center;font-size:18px">📡</div>
-<div><h3 style="color:var(--accent);margin:0;font-size:15px">Create New Station</h3><div style="font-size:11px;color:#64748b">Add a new streaming station for a customer</div></div>
+<div class="card" style="margin-bottom:16px;padding:0;overflow:hidden">
+<div style="padding:18px 20px;background:linear-gradient(135deg,rgba(0,140,255,.08),rgba(168,85,247,.05));border-bottom:1px solid rgba(0,191,255,.1)">
+<div style="font-size:15px;font-weight:700;color:#e0e0e0;display:flex;align-items:center;gap:10px">📡 Create New Station</div>
+<div style="font-size:11px;color:#64748b;margin-top:2px">Configure a new streaming station for a customer</div>
 </div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
-<div class="form-group"><label>Streaming Engine</label>
-<select name="engine" id="selEngine" onchange="engineHint()">
+<form method="POST" action="/admin/api/streaming/stations/create" id="createStationForm">
+<div style="padding:20px">
+<div style="display:grid;grid-template-columns:repeat(12,1fr);gap:14px">
+<div style="grid-column:span 6">
+<label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Station Name</label>
+<input name="name" placeholder="e.g. Cool Radio" required style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.35);color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box">
+</div>
+<div style="grid-column:span 6">
+<label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Streaming Engine</label>
+<select name="engine" id="selEngine" onchange="engineHint()" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.35);color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box">
 <option value="shoutcast">SHOUTcast v2</option>
 <option value="shoutcast1">SHOUTcast v1</option>
 <option value="icecast">Icecast</option>
 </select>
-<div id="engineHint" style="font-size:10px;color:#64748b;margin-top:3px"></div></div>
-<div class="form-group"><label>Station Name</label>
-<input name="name" placeholder="e.g. Cool Radio" required></div>
-<div class="form-group"><label>Customer Account</label>
-<select name="user_id" required>
+</div>
+<div style="grid-column:span 12" id="engineHintRow" style="display:none">
+<div style="font-size:11px;color:#38bdf8;background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.15);border-radius:6px;padding:6px 10px" id="engineHint"></div>
+</div>
+<div style="grid-column:span 12">
+<label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Customer Account</label>
+<select name="user_id" required style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.35);color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box">
 <option value="">Select user...</option>
 <?php foreach ($users as $u): ?>
-<option value="<?php echo $u->id; ?>"><?php echo htmlspecialchars($u->username); ?> (<?php echo htmlspecialchars($u->email); ?>)</option>
+<option value="<?php echo $u->id; ?>"><?php echo htmlspecialchars($u->username); ?> — <?php echo htmlspecialchars($u->email); ?></option>
 <?php endforeach; ?>
-</select></div>
-<div class="form-group"><label>Package</label>
-<select name="package_id">
+</select>
+</div>
+<div style="grid-column:span 12">
+<label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Package</label>
+<select name="package_id" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.35);color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box">
 <option value="">Select package...</option>
 <?php foreach ($packages as $p): ?>
-<option value="<?php echo $p->id; ?>"><?php echo htmlspecialchars($p->name); ?> ($<?php echo $p->monthly_price; ?>/mo)</option>
+<option value="<?php echo $p->id; ?>"><?php echo htmlspecialchars($p->name); ?> — $<?php echo $p->monthly_price; ?>/mo</option>
 <?php endforeach; ?>
-</select></div>
-<div class="form-group"><label>Bitrate</label>
-<select name="bitrate">
+</select>
+</div>
+<div style="grid-column:span 4">
+<label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Bitrate</label>
+<select name="bitrate" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.35);color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box">
 <option value="64">64 kbps</option>
 <option value="96">96 kbps</option>
 <option value="128" selected>128 kbps</option>
 <option value="192">192 kbps</option>
 <option value="256">256 kbps</option>
 <option value="320">320 kbps</option>
-</select></div>
-<div class="form-group"><label>Max Listeners</label>
-<input name="max_listeners" type="number" value="100" min="1"></div>
-<div class="form-group"><label>Format</label>
-<select name="format">
+</select>
+</div>
+<div style="grid-column:span 4">
+<label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Max Listeners</label>
+<input name="max_listeners" type="number" value="100" min="1" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.35);color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box">
+</div>
+<div style="grid-column:span 4">
+<label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.3px">Format</label>
+<select name="format" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.35);color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box">
 <option value="mp3" selected>MP3</option>
 <option value="aac">AAC</option>
 <option value="ogg">OGG</option>
-</select></div>
+</select>
 </div>
-<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;flex-wrap:wrap">
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.06);flex-wrap:wrap">
 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#c0c0c0">
 <input type="checkbox" name="public_server" value="1">
 <span>🌍 Public server (list on SHOUTcast directory)</span>
 </label>
-<button type="submit" class="btn primary" style="padding:10px 24px;font-weight:600"><span id="createBtnIcon">➕</span> Create Station</button>
+<button type="submit" class="btn primary" style="padding:10px 26px;font-weight:600;background:linear-gradient(135deg,#008cff,#38bdf8);color:#fff;border:none;border-radius:8px;cursor:pointer">➕ Create Station</button>
+</div>
 </div>
 </form>
 </div>
@@ -134,10 +152,11 @@ Status: <strong style="color:<?php echo $e['installed'] ? '#4ade80' : '#f87171';
 function engineHint() {
     var e = document.getElementById('selEngine').value;
     var hints = {
-        'shoutcast': 'SHOUTcast DNAS v2 — modern streaming, good for MP3/AAC',
+        'shoutcast': 'SHOUTcast DNAS v2 — modern streaming, great for MP3/AAC',
         'shoutcast1': 'SHOUTcast DNAS v1 — classic lightweight streaming',
-        'icecast': 'Icecast 2 — open source, multi-format, mounts'
+        'icecast': 'Icecast 2 — open source, multi-format, custom mounts'
     };
+    document.getElementById('engineHintRow').style.display = 'block';
     document.getElementById('engineHint').textContent = hints[e] || '';
 }
 engineHint();
@@ -147,62 +166,22 @@ engineHint();
 document.getElementById('createStationForm').addEventListener('submit', function(e) {
     e.preventDefault();
     var form = this;
+    var btn = form.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = '⏳ Creating...';
     var data = new FormData(form);
     fetch('/admin/api/streaming/stations/create', {method:'POST', body:data})
     .then(function(r){return r.json()})
     .then(function(d){
         if (d.success) {
-            alert('Station created! Port: ' + d.station.port + ', Password: ' + d.station.password);
+            alert('✅ Station created!\nPort: ' + d.station.port + '\nPassword: ' + d.station.password);
+            form.reset();
             location.reload();
         } else {
             alert('Error: ' + (d.error || 'Unknown'));
         }
-    }).catch(function(){alert('Request failed');});
+        btn.disabled = false;
+        btn.textContent = '➕ Create Station';
+    }).catch(function(){alert('Request failed'); btn.disabled = false; btn.textContent = '➕ Create Station';});
 });
-</script>
-
-<!-- Stations Table -->
-<div class="card">
-<h3 style="color:var(--accent);margin-bottom:12px">Stations</h3>
-<?php if (!empty($stations)): ?>
-<table>
-<thead><tr><th>ID</th><th>Name</th><th>Engine</th><th>Port</th><th>User</th><th>Bitrate</th><th>Listeners</th><th>Status</th><th>Actions</th></tr></thead>
-<tbody>
-<?php foreach ($stations as $s): ?>
-<tr>
-<td><?php echo $s->id; ?></td>
-<td><?php echo htmlspecialchars($s->name); ?></td>
-<td><?php echo htmlspecialchars($s->engine); ?></td>
-<td><?php echo $s->port; ?></td>
-<td><?php echo $s->user_id; ?></td>
-<td><?php echo $s->bitrate; ?>k</td>
-<td><?php echo $s->listener_count; ?></td>
-<td><span class="status-badge status-<?php echo $s->status === 'running' ? 'active' : ($s->status === 'error' ? 'terminated' : 'pending'); ?>"><?php echo $s->status; ?></span></td>
-<td>
-<button class="btn btn-sm secondary" onclick="stationAction(<?php echo $s->id; ?>, 'start')">Start</button>
-<button class="btn btn-sm secondary" onclick="stationAction(<?php echo $s->id; ?>, 'stop')">Stop</button>
-<button class="btn btn-sm secondary" onclick="stationAction(<?php echo $s->id; ?>, 'restart')">Restart</button>
-<button class="btn btn-sm" style="background:rgba(248,113,113,.12);color:#f87171" onclick="if(confirm('Delete station?'))stationAction(<?php echo $s->id; ?>, 'delete')">Delete</button>
-</td>
-</tr>
-<?php endforeach; ?>
-</tbody>
-</table>
-<?php else: ?>
-<p style="color:#64748b">No stations yet. Create one above.</p>
-<?php endif; ?>
-</div>
-
-<script>
-function stationAction(id, action) {
-    var f = new FormData();
-    f.append('id', id);
-    f.append('action', action);
-    fetch('/admin/api/streaming/stations/action', {method:'POST', body:f})
-    .then(function(r){return r.json()})
-    .then(function(d){
-        if (d.success) location.reload();
-        else alert('Error: ' + (d.error || 'Failed'));
-    }).catch(function(){alert('Request failed');});
-}
 </script>
