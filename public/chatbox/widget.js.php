@@ -11,6 +11,20 @@ if (!$tenant) { echo 'console.error("Chatbox: Tenant not found");'; exit; }
 $rooms = $pdo->prepare("SELECT * FROM chatbox_rooms WHERE tenant_id = ? AND is_active = 1 ORDER BY sort_order");
 $rooms->execute([$tenantId]);
 $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
+
+// Room pre-select via ?room={slug or id}
+$preselect = trim($_GET['room'] ?? '');
+if ($preselect !== '') {
+    $target = null;
+    foreach ($roomsList as $r) {
+        if ($r->slug === $preselect || (string)$r->id === $preselect) { $target = $r; break; }
+    }
+    if ($target) {
+        // Reorder so the requested room is first (default selected)
+        $roomsList = array_values(array_filter($roomsList, function($r) use ($target) { return $r->id != $target->id; }));
+        array_unshift($roomsList, $target);
+    }
+}
 ?>
 (function() {
     var tenantId = <?php echo $tenantId; ?>;
