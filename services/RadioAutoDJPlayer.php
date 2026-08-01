@@ -69,7 +69,8 @@ class RadioAutoDJPlayer
         } else {
             // Icecast: ffmpeg HTTP PUT to mount
             $playlistPath = $this->generateConcat($files);
-            $url = "http://source:{$password}@127.0.0.1:{$port}{$mount}";
+            // icecast:// protocol makes ffmpeg use PUT (http:// sends POST which icecast rejects)
+            $url = "icecast://source:{$password}@127.0.0.1:{$port}{$mount}";
             $cmd = "nohup ffmpeg -re -stream_loop -1 -f concat -safe 0 -i " . escapeshellarg($playlistPath)
                 . " -vn -c:a libmp3lame -b:a {$bitrate}k -f mp3 " . escapeshellarg($url)
                 . " > {$logPath} 2>&1 & echo $!";
