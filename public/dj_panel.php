@@ -59,22 +59,34 @@ if ($_POST && $action === 'login') {
     $password = $_POST['password'] ?? '';
     $stmt = $pdo->prepare("SELECT d.*, ss.port, ss.status as stream_status, ss.autodj_enabled as autodj_active,
         (SELECT COUNT(*) FROM radio_listener_analytics WHERE stream_id = d.stream_id AND date = CURDATE()) as today_listeners
-        FROM radio_djs d JOIN streaming_stations ss ON d.stream_id = ss.id WHERE d.username = ? AND d.status = 'active'");
+        FROM radio_djs d JOIN streaming_stations ss ON d.stream_id = ss.id WHERE d.username = ?");
     $stmt->execute([$username]);
     $dj = $stmt->fetch(PDO::FETCH_OBJ);
+    $djStatus = strtolower($dj->status ?? '');
+    // Blocked: suspended / banned / inactive — no login at all
+    if ($dj && in_array($djStatus, ['suspended', 'banned', 'inactive'])) {
+        $error = 'This DJ account is ' . $djStatus . '. Contact the station owner for access.';
+        $dj = null;
+    }
     if ($dj && password_verify($password, $dj->password)) {
         // Store plain password in DB and session (for display in SAM credentials)
         $pdo->prepare("UPDATE radio_djs SET plain_password=?, last_active=NOW() WHERE id=?")->execute([$password, $dj->id]);
+        $onLeave = strtolower($dj->status ?? '') === 'on_leave';
         $_SESSION['dj_user'] = [
             'id' => $dj->id, 'stream_id' => $dj->stream_id, 'username' => $dj->username,
             'name' => $dj->name ?: $dj->username, 'stream_name' => 'Stream',
             'port' => $dj->port, 'stream_status' => $dj->stream_status,
             'plain_password' => $password,
+            'on_leave' => $onLeave,
+            'status' => $dj->status ?? 'active',
         ];
-    header('Location: /dj_panel.php?action=dashboard');
+        if ($onLeave) {
+            $success = 'You are signed in but currently on leave — streaming is disabled.';
+        }
+    header('Location: /dj_panel.php?action=dashboard' . ($onLeave ? '&notice=on_leave' : ''));
     exit;
 }
-    $error = 'Invalid DJ name or password, or account inactive.';
+    if (!isset($error) || !$error) $error = 'Invalid DJ name or password, or account inactive.';
 }
 
 // ─── SAVE PROFILE DATA ───
@@ -110,6 +122,11 @@ if ($action === 'logout') {
 }
 
 if ($action === 'takeover' && $_POST && isset($_SESSION['dj_user'])) {
+    if (!empty($_SESSION['dj_user']['on_leave'])) {
+        $error = 'You are on leave and cannot take over the stream.';
+        header('Location: /dj_panel.php?action=dashboard');
+        exit;
+    }
     $sid = $_SESSION['dj_user']['stream_id'] ?? 0;
     $djUsername = $_SESSION['dj_user']['username'] ?? '';
     if ($sid > 0) {
@@ -139,6 +156,11 @@ if ($action === 'takeover' && $_POST && isset($_SESSION['dj_user'])) {
 
 // ─── KICK STREAM ───
 if ($action === 'kick' && $_POST && isset($_SESSION['dj_user'])) {
+    if (!empty($_SESSION['dj_user']['on_leave'])) {
+        $error = 'You are on leave and cannot kick sources.';
+        header('Location: /dj_panel.php?action=dashboard');
+        exit;
+    }
     $ksid = (int)($_POST['stream_id'] ?? 0);
     $djUser = $_SESSION['dj_user']['username'] ?? 'unknown';
     if ($ksid > 0) {
@@ -563,6 +585,9 @@ if (!empty($allStations) && count($allStations) > 1): ?>
 
 <?php if ($success): ?><div class="alert"><?php echo htmlspecialchars($success); ?></div><?php endif; ?>
 <?php if ($error): ?><div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
+<?php if (!empty($_SESSION['dj_user']['on_leave'])): ?>
+<div class="alert" style="background:rgba(250,204,21,.1);border:1px solid rgba(250,204,21,.2);color:#facc15">🌴 You are currently <strong>On Leave</strong>. You can log in and manage your profile, but streaming / DJ takeover is disabled. Contact the station owner to reactivate.</div>
+<?php endif; ?>
 
 <div class="dj-tabs">
     <div class="dj-tab act" onclick="sw(event,'overview')">Overview</div>
@@ -677,8 +702,12 @@ if (!empty($allStations) && count($allStations) > 1): ?>
             
             // Copy All and Kick buttons
             echo "<div style=\"display:flex;gap:6px;margin-top:10px\">\n";
-            echo "<button class=\"btn btn-primary btn-sm\" onclick=\"ca2({$stationId},'{$djHost}','{$sPort}','{$djUserE}','" . htmlspecialchars($pw) . "')\">📋 Copy All</button>\n";
-            echo "<button class=\"btn btn-danger btn-sm\" onclick=\"window.location.href='/dj_panel.php?action=takeover'\">🎤 Stop AutoDJ</button>\n";
+            if (!empty($_SESSION['dj_user']['on_leave'])) {
+                echo "<div style=\"font-size:12px;color:#facc15;background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.2);border-radius:8px;padding:10px;width:100%\">🌴 On Leave — streaming &amp; DJ controls are disabled. You can still manage your profile.</div>\n";
+            } else {
+                echo "<button class=\"btn btn-primary btn-sm\" onclick=\"ca2({$stationId},'{$djHost}','{$sPort}','{$djUserE}','" . htmlspecialchars($pw) . "')\">📋 Copy All</button>\n";
+                echo "<button class=\"btn btn-danger btn-sm\" onclick=\"window.location.href='/dj_panel.php?action=takeover'\">🎤 Stop AutoDJ</button>\n";
+            }
             echo "</div>\n";
             echo "</div>\n";
             echo "</div>\n";
@@ -814,8 +843,12 @@ echo htmlspecialchars($samPass);
 <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0"><span style="color:#64748b">Format:</span><span style="color:#94a3b8">MP3 · <?php echo $station->bitrate ?? 128; ?> kbps</span></div>
 </div>
 <div style="display:flex;gap:6px;margin-top:10px">
+<?php if (!empty($_SESSION['dj_user']['on_leave'])): ?>
+<div style="font-size:12px;color:#facc15;background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.2);border-radius:8px;padding:10px;width:100%">🌴 On Leave — streaming &amp; DJ controls are disabled. You can still manage your profile.</div>
+<?php else: ?>
 <button class="btn btn-primary btn-sm" onclick="ca()">📋 Copy All</button>
 <button class="btn btn-danger btn-sm" onclick="window.location.href='/dj_panel.php?action=takeover'">🎤 Stop AutoDJ</button>
+<?php endif; ?>
 </div>
 </div>
 
@@ -890,10 +923,14 @@ echo htmlspecialchars($samPass);
 <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">
 <div><div style="font-weight:600;font-size:13px;color:#e0e0e0"><?php echo htmlspecialchars($st->name ?? "Stream #{$st->id}"); ?></div>
 <div style="font-size:11px;color:#64748b"><?php echo $stLabel; ?> · Port <?php echo $st->port; ?> · <span style="color:<?php echo $st->status === 'running' ? '#4ade80' : '#f87171'; ?>"><?php echo $st->status; ?></span></div></div>
+<?php if (!empty($_SESSION['dj_user']['on_leave'])): ?>
+<span style="font-size:10px;color:#facc15">🔒 On leave</span>
+<?php else: ?>
 <form method="POST" action="/dj_panel.php?action=kick" onsubmit="return confirm('Kick source on <?php echo htmlspecialchars($st->name ?? 'this stream'); ?>?');">
 <input type="hidden" name="stream_id" value="<?php echo $st->id; ?>">
 <button class="btn btn-danger btn-sm">Kick</button>
 </form>
+<?php endif; ?>
 </div>
 <?php endforeach; ?>
 <?php endif; ?>
