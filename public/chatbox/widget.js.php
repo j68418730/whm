@@ -128,7 +128,8 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
         var html = '<div id="chatbox-widget">'+
             '<button id="chatbox-toggle" onclick="toggleChatbox()">💬</button>'+
             '<div id="chatbox-panel" class="closed">'+
-            '<div id="chatbox-hdr"><span class="title">'+widgetTitle+'</span><button class="close" onclick="toggleChatbox()">✕</button></div>'+
+            '<div id="chatbox-hdr"><span class="title">'+widgetTitle+'</span><div style="display:flex;gap:4px;align-items:center"><button class="close" onclick="openSettings()" title="Settings">⚙️</button><button class="close" onclick="toggleChatbox()">✕</button></div></div>'+
+            '<div id="chatbox-settings" style="display:none;position:absolute;top:40px;right:8px;background:'+bgColor+';border:1px solid '+(accentColor)+'33;border-radius:12px;padding:14px;width:230px;z-index:20;box-shadow:0 8px 30px rgba(0,0,0,.5)"></div>'+
             '<div id="chatbox-body">'+
             '<div id="chatbox-main">'+
             '<div id="chatbox-rooms"></div>'+
@@ -218,11 +219,14 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
                 if (m.message_type === 'system') { el.innerHTML += '<div class="msg sys">'+escHtml(m.message)+'</div>'; return; }
                 var t = '';
                 if (m.created_at) { var d = new Date(m.created_at); t = d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
-                el.innerHTML += '<div class="msg" data-id="'+m.id+'"><div class="u" style="cursor:pointer" onclick="userMenu(\''+escAttr(m.username)+'\')">'+escHtml(m.username)+'<span class="t">'+t+'</span></div><div>'+escHtml(m.message)+'</div><div class="rx" id="rx-'+m.id+'"></div><span class="rx-add" onclick="addReaction('+m.id+')" style="font-size:11px;cursor:pointer;color:'+accentColor+'" title="React">😊</span></div>';
+                var p = getUserProfile(m.username);
+                var av = p.avatar ? '<img src="'+p.avatar+'" style="width:16px;height:16px;border-radius:50%;vertical-align:middle;margin-right:4px">' : '';
+                el.innerHTML += '<div class="msg" data-id="'+m.id+'" style="'+profileStyle(p)+'"><div class="u" style="cursor:pointer" onclick="userMenu(\''+escAttr(m.username)+'\')">'+av+escHtml(p.display_name || m.username)+'<span class="t">'+t+'</span></div><div>'+escHtml(m.message)+'</div><div class="rx" id="rx-'+m.id+'"></div><span class="rx-add" onclick="addReaction('+m.id+')" style="font-size:11px;cursor:pointer;color:'+accentColor+'" title="React">😊</span></div>';
                 if (m.id > lastMsgId) lastMsgId = m.id;
             });
             loadReactions(msgs);
             el.scrollTop = el.scrollHeight;
+            cacheProfiles(msgs.map(function(m){ return m.username; }));
         }).catch(function(){});
     }
 
@@ -302,6 +306,86 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
         renderRooms();
         startPolling();
         joinOnline();
+    }
+
+    // === SETTINGS / PROFILE ===
+    var myProfile = { display_name:'', avatar:'', font_style:'Inter', font_color:'#ffffff', font_size:13 };
+    var fontStyles = ['Inter','Arial','Helvetica','Verdana','Georgia','Times New Roman','Courier New','Comic Sans MS','Tahoma','Trebuchet MS','Poppins','Roboto','Open Sans','Montserrat','Lato','Playfair Display','Monospace'];
+    window.openSettings = function() {
+        var panel = document.getElementById('chatbox-settings');
+        if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
+        // Load current profile
+        if (currentUser && currentUser.userId) {
+            fetch(apiBase + '?action=get_profile&user_id=' + currentUser.userId + '&tenant_id=' + tenantId).then(function(r){ return r.json(); }).then(function(p){
+                if (p && !p.error) { myProfile = { display_name:p.display_name||'', avatar:p.avatar||'', font_style:p.font_style||'Inter', font_color:p.font_color||'#ffffff', font_size:p.font_size||13 }; buildSettingsPanel(); }
+                else buildSettingsPanel();
+            }).catch(function(){ buildSettingsPanel(); });
+        } else {
+            fetch(apiBase + '?action=get_guest_profile&tenant_id=' + tenantId).then(function(r){ return r.json(); }).then(function(p){
+                if (p) { myProfile = { display_name:p.display_name||'', avatar:p.avatar||'', font_style:p.font_style||'Inter', font_color:p.font_color||'#ffffff', font_size:p.font_size||13 }; }
+                buildSettingsPanel();
+            }).catch(function(){ buildSettingsPanel(); });
+        }
+    };
+    function buildSettingsPanel() {
+        var panel = document.getElementById('chatbox-settings');
+        var fs = '';
+        fontStyles.forEach(function(f){ fs += '<option value="'+f+'"'+(myProfile.font_style===f?' selected':'')+'>'+f+'</option>'; });
+        panel.innerHTML = '<div style="font-size:13px;font-weight:700;color:'+textColor+';margin-bottom:10px">My Profile</div>'+
+            '<div class="pf-row" style="margin-bottom:8px"><label style="font-size:10px;color:'+textColor+'88;display:block;margin-bottom:2px">Display Name</label><input id="pf-name" value="'+escAttr(myProfile.display_name)+'" placeholder="Your name" style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid '+(accentColor)+'44;background:rgba(0,0,0,.2);color:'+textColor+';font-size:12px;outline:none;box-sizing:border-box"></div>'+
+            '<div class="pf-row" style="margin-bottom:8px"><label style="font-size:10px;color:'+textColor+'88;display:block;margin-bottom:2px">Avatar</label><div style="display:flex;gap:6px;align-items:center"><input id="pf-avatar" value="'+escAttr(myProfile.avatar)+'" placeholder="Image URL" style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid '+(accentColor)+'44;background:rgba(0,0,0,.2);color:'+textColor+';font-size:11px;outline:none;min-width:0">'+
+            '<label style="cursor:pointer;background:'+(accentColor)+'22;color:'+accentColor+';padding:5px 8px;border-radius:6px;font-size:10px;white-space:nowrap">Upload<input type="file" id="pf-avatar-file" accept="image/*" style="display:none" onchange="uploadAvatar()"></label></div></div>'+
+            '<div class="pf-row" style="margin-bottom:8px"><label style="font-size:10px;color:'+textColor+'88;display:block;margin-bottom:2px">Font Style</label><select id="pf-font" style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid '+(accentColor)+'44;background:rgba(0,0,0,.2);color:'+textColor+';font-size:12px;outline:none">'+fs+'</select></div>'+
+            '<div class="pf-row" style="margin-bottom:8px"><label style="font-size:10px;color:'+textColor+'88;display:block;margin-bottom:2px">Font Color</label><input id="pf-color" type="color" value="'+myProfile.font_color+'" style="width:100%;height:32px;border-radius:6px;border:1px solid '+(accentColor)+'44;background:rgba(0,0,0,.2);cursor:pointer;padding:2px"></div>'+
+            '<div class="pf-row" style="margin-bottom:10px"><label style="font-size:10px;color:'+textColor+'88;display:block;margin-bottom:2px">Font Size: <span id="pf-size-lbl">'+myProfile.font_size+'px</span></label><input id="pf-size" type="range" min="11" max="20" value="'+myProfile.font_size+'" oninput="document.getElementById(\'pf-size-lbl\').textContent=this.value+\'px\'" style="width:100%"></div>'+
+            '<button class="btn" onclick="saveProfile()" style="width:100%;padding:8px;border-radius:8px;background:'+accentColor+';color:#fff;border:none;font-weight:600;cursor:pointer;font-size:12px">💾 Save Profile</button>';
+        panel.style.display = 'block';
+    }
+    window.uploadAvatar = function() {
+        var file = document.getElementById('pf-avatar-file').files[0];
+        if (!file) return;
+        var fd = new FormData();
+        fd.append('action', 'upload_avatar');
+        fd.append('tenant_id', tenantId);
+        fd.append('avatar', file);
+        fetch(apiBase, {method:'POST', body: fd}).then(function(r){ return r.json(); }).then(function(d){
+            if (d.success) { document.getElementById('pf-avatar').value = d.url; myProfile.avatar = d.url; }
+            else alert(d.error || 'Upload failed');
+        });
+    };
+    window.saveProfile = function() {
+        myProfile = {
+            display_name: document.getElementById('pf-name').value.trim(),
+            avatar: document.getElementById('pf-avatar').value.trim(),
+            font_style: document.getElementById('pf-font').value,
+            font_color: document.getElementById('pf-color').value,
+            font_size: parseInt(document.getElementById('pf-size').value) || 13,
+        };
+        var fd = new FormData();
+        if (currentUser && currentUser.userId) {
+            fd.append('action', 'save_profile');
+            fd.append('user_id', currentUser.userId);
+            fd.append('tenant_id', tenantId);
+        } else {
+            fd.append('action', 'save_guest_profile');
+            fd.append('tenant_id', tenantId);
+        }
+        fd.append('display_name', myProfile.display_name);
+        fd.append('avatar', myProfile.avatar);
+        fd.append('font_style', myProfile.font_style);
+        fd.append('font_color', myProfile.font_color);
+        fd.append('font_size', myProfile.font_size);
+        fetch(apiBase, {method:'POST', body: fd}).then(function(r){ return r.json(); }).then(function(){
+            document.getElementById('chatbox-settings').style.display = 'none';
+            renderOnline();
+        });
+    };
+    function profileStyle(u) {
+        var s = '';
+        if (u && u.font_color) s += 'color:' + u.font_color + ';';
+        if (u && u.font_style) s += 'font-family:' + u.font_style + ';';
+        if (u && u.font_size) s += 'font-size:' + u.font_size + 'px;';
+        return s;
     }
 
     // === EMOJI PICKER ===
@@ -517,6 +601,27 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
         pcMap = {};
         signalPost('leave', {});
     };
+
+    // === USER PROFILE CACHE ===
+    var profileCache = {};
+    function getUserProfile(username) {
+        // Current user's profile
+        if (currentUser && username === currentUser.username) return myProfile;
+        return profileCache[username] || { display_name:'', avatar:'', font_style:'', font_color:'', font_size:13 };
+    }
+    function cacheProfiles(usernames) {
+        var fresh = usernames.filter(function(u){ return u && !profileCache[u] && !(currentUser && u === currentUser.username); });
+        if (!fresh.length) return;
+        fresh.forEach(function(uname){
+            var fd = new FormData();
+            fd.append('action', 'get_profile_by_username');
+            fd.append('tenant_id', tenantId);
+            fd.append('username', uname);
+            fetch(apiBase, {method:'POST', body: fd}).then(function(r){ return r.json(); }).then(function(p){
+                if (p && !p.error) profileCache[uname] = { display_name:p.display_name||'', avatar:p.avatar||'', font_style:p.font_style||'', font_color:p.font_color||'', font_size:p.font_size||13 };
+            }).catch(function(){});
+        });
+    }
 
     // === RESIZABLE ONLINE SIDEBAR ===
     var resizeHandle = document.getElementById('chatbox-resize');

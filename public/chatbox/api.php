@@ -190,6 +190,79 @@ if ($action === 'guest_login') {
     exit;
 }
 
+// === SAVE PROFILE (registered user) ===
+if ($action === 'save_profile') {
+    $userId = (int)($_POST['user_id'] ?? 0);
+    $tenantId = (int)($_POST['tenant_id'] ?? 0);
+    if (!$userId || !$tenantId) { echo json_encode(['error'=>'Missing user']); exit; }
+    $fields = [];
+    $params = [];
+    foreach (['display_name','avatar','font_style','font_color','font_size'] as $f) {
+        if (isset($_POST[$f])) { $fields[] = "$f=?"; $params[] = $_POST[$f]; }
+    }
+    if (!empty($fields)) {
+        $params[] = $userId; $params[] = $tenantId;
+        $pdo->prepare("UPDATE chatbox_users SET " . implode(',', $fields) . " WHERE id=? AND tenant_id=?")->execute($params);
+    }
+    echo json_encode(['success'=>true]); exit;
+}
+
+// === GET PROFILE BY USERNAME ===
+if ($action === 'get_profile_by_username') {
+    $tenantId = (int)($_POST['tenant_id'] ?? 0);
+    $username = trim($_POST['username'] ?? '');
+    $q = $pdo->prepare("SELECT id, username, display_name, avatar, font_style, font_color, font_size, role FROM chatbox_users WHERE username=? AND tenant_id=?");
+    $q->execute([$username, $tenantId]);
+    $p = $q->fetch(PDO::FETCH_OBJ);
+    echo json_encode($p ?: ['error'=>'Not found']); exit;
+}
+
+// === GET PROFILE (registered user) ===
+if ($action === 'get_profile') {
+    $userId = (int)($_GET['user_id'] ?? 0);
+    $tenantId = (int)($_GET['tenant_id'] ?? 0);
+    $q = $pdo->prepare("SELECT id, username, display_name, avatar, font_style, font_color, font_size, role FROM chatbox_users WHERE id=? AND tenant_id=?");
+    $q->execute([$userId, $tenantId]);
+    $p = $q->fetch(PDO::FETCH_OBJ);
+    echo json_encode($p ?: ['error'=>'Not found']); exit;
+}
+
+// === SAVE GUEST PROFILE (session-based) ===
+if ($action === 'save_guest_profile') {
+    $tenantId = (int)($_POST['tenant_id'] ?? 0);
+    $profile = [
+        'display_name' => trim($_POST['display_name'] ?? ''),
+        'avatar' => trim($_POST['avatar'] ?? ''),
+        'font_style' => trim($_POST['font_style'] ?? 'Inter'),
+        'font_color' => trim($_POST['font_color'] ?? '#ffffff'),
+        'font_size' => (int)($_POST['font_size'] ?? 13),
+    ];
+    $_SESSION['chatbox_guest_profile_' . $tenantId] = $profile;
+    echo json_encode(['success'=>true, 'profile'=>$profile]); exit;
+}
+
+// === GET GUEST PROFILE ===
+if ($action === 'get_guest_profile') {
+    $tenantId = (int)($_GET['tenant_id'] ?? 0);
+    $p = $_SESSION['chatbox_guest_profile_' . $tenantId] ?? null;
+    echo json_encode($p ?: ['display_name'=>'','avatar'=>'','font_style'=>'Inter','font_color'=>'#ffffff','font_size'=>13]); exit;
+}
+
+// === UPLOAD AVATAR ===
+if ($action === 'upload_avatar') {
+    $tenantId = (int)($_POST['tenant_id'] ?? 0);
+    if (!isset($_FILES['avatar']) || $_FILES['avatar']['error'] !== UPLOAD_ERR_OK) { echo json_encode(['error'=>'Upload failed']); exit; }
+    $ext = strtolower(pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION));
+    if (!in_array($ext, ['png','jpg','jpeg','gif','webp'])) { echo json_encode(['error'=>'Invalid format']); exit; }
+    $dir = 'storage/chatbox/avatars/' . $tenantId;
+    if (!is_dir($dir)) @mkdir($dir, 0777, true);
+    $url = '/' . $dir . '/' . time() . '_' . preg_replace('/[^a-z0-9]/i', '', basename($_FILES['avatar']['name'])) . '.' . $ext;
+    if (move_uploaded_file($_FILES['avatar']['tmp_name'], $url)) {
+        echo json_encode(['success'=>true, 'url'=>$url]);
+    } else { echo json_encode(['error'=>'Could not save file']); }
+    exit;
+}
+
 // === GUEST CHECK ===
 if ($action === 'guest_check') {
     $tenantId = (int)($_GET['tenant_id'] ?? 0);
