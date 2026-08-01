@@ -71,6 +71,9 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
     '#chatbox-rooms .rm.act{background:'+(accentColor)+'33;color:'+textColor+';border-color:'+accentColor+'}'+
     '#chatbox-body{display:flex;flex:1;overflow:hidden}'+
     '#chatbox-main{display:flex;flex-direction:column;flex:1;min-width:0}'+
+    '#chatbox-resize{width:4px;flex-shrink:0;cursor:col-resize;background:transparent;transition:background .15s}'+
+    '#chatbox-resize:hover{background:'+(accentColor)+'33}'+
+    '#chatbox-resize.active{background:'+(accentColor)+'55}'+
     '#chatbox-online{width:110px;flex-shrink:0;border-left:1px solid '+(accentColor)+'22;overflow-y:auto;padding-bottom:8px}'+
     '#chatbox-online .ou{display:flex;align-items:center;gap:4px;padding:5px 8px;font-size:10px;color:'+textColor+'bb;cursor:pointer;border-radius:4px;margin:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'+
     '#chatbox-online .ou:hover{background:'+(accentColor)+'22}'+
@@ -79,8 +82,7 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
     '#chatbox-camview{display:none;flex-shrink:0;padding:4px 8px;border-bottom:1px solid '+(accentColor)+'22}'+
     '#chatbox-camview.open{display:flex;gap:4px;overflow-x:auto}'+
     '#chatbox-camview video{width:80px;height:60px;border-radius:6px;object-fit:cover;background:#000;flex-shrink:0}'+
-    '#chatbox-vc{display:none;padding:6px 10px;border-top:1px solid '+(accentColor)+'22;align-items:center;flex-shrink:0}'+
-    '#chatbox-vc.open{display:flex}'+
+    '#chatbox-vc{display:flex;padding:6px 10px;border-top:1px solid '+(accentColor)+'22;align-items:center;flex-shrink:0}'+
     '#chatbox-vc .sb{width:28px;height:28px;border-radius:50%;background:none;border:1px solid '+(accentColor)+'44;color:'+textColor+';cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}'+
     '#chatbox-vc .sb.active{background:'+accentColor+'55;border-color:'+accentColor+'}'+
     '#chatbox-ctxmenu{position:fixed;z-index:1000;background:'+bgColor+';border:1px solid '+(accentColor)+'44;border-radius:8px;padding:4px;min-width:140px;box-shadow:0 4px 20px rgba(0,0,0,.5)}'+
@@ -128,10 +130,11 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
             '<div id="chatbox-rooms"></div>'+
             '<div id="chatbox-camview"></div>'+
             '<div id="chatbox-msgs"></div>'+
-            '<div id="chatbox-vc" style="display:none"><button class="sb" id="talkBtn" onmousedown="talkStart()" onmouseup="talkStop()" onmouseleave="talkStop()" title="Push to talk">🎤</button><button class="sb" id="muteBtn" onclick="toggleMute()" title="Mute">🔇</button><div id="vc-meter" style="flex:1;height:6px;background:'+bgColor+';border-radius:3px;overflow:hidden;margin:0 8px"><div id="vc-meter-fill" style="height:100%;width:0%;background:'+accentColor+';transition:width .1s"></div></div></div>'+
+            '<div id="chatbox-vc"><button class="sb" id="talkBtn" onmousedown="talkStart()" onmouseup="talkStop()" onmouseleave="talkStop()" title="Push to talk" style="'+(voiceEnabled?'':'display:none')+'">🎤</button><button class="sb" id="muteBtn" onclick="toggleMute()" title="Mute">🔇</button><div id="vc-meter" style="flex:1;height:6px;background:'+bgColor+';border-radius:3px;overflow:hidden;margin:0 8px"><div id="vc-meter-fill" style="height:100%;width:0%;background:'+accentColor+';transition:width .1s"></div></div></div>'+
             '<div id="chatbox-inp" style="display:none"><div class="row"><button class="sb" style="background:none;border:1px solid '+(accentColor)+'44;font-size:16px" onclick="toggleEmojiPicker()">😊</button>'+(voiceEnabled?'<button class="sb" style="background:none;border:1px solid '+(accentColor)+'44;font-size:16px" id="voiceBtn" onclick="toggleVoice()">🎤</button>':'')+'<button class="sb" style="background:none;border:1px solid '+(accentColor)+'44;font-size:16px" onclick="toggleCam()">📹</button><textarea id="chatbox-input" placeholder="Type a message..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendChatboxMsg()}"></textarea><button class="sb" onclick="sendChatboxMsg()">➤</button></div>'+
             '<div id="emoji-picker" style="display:none;position:absolute;bottom:52px;right:12px;background:'+bgColor+';border:1px solid '+(accentColor)+'33;border-radius:10px;padding:8px;width:220px;max-height:200px;overflow-y:auto;z-index:10;box-shadow:0 4px 20px rgba(0,0,0,.4)"></div></div>'+
             '</div>'+
+            '<div id="chatbox-resize" title="Drag to resize"></div>'+
             '<div id="chatbox-online"><div style="padding:8px 10px;font-size:10px;color:'+textColor+'88;font-weight:600;text-transform:uppercase;letter-spacing:.5px">In Chat</div><div id="chatbox-online-list"></div></div>'+
             '</div>'+
             '<div id="chatbox-video" style="display:none;position:relative;flex-shrink:0;padding:4px 8px"><video id="local-video" autoplay muted style="width:100%;height:120px;border-radius:8px;object-fit:cover;background:#000"></video><button onclick="stopCam()" style="position:absolute;top:8px;right:12px;background:'+accentColor+';border:none;color:#fff;border-radius:4px;cursor:pointer;font-size:10px;padding:3px 8px">✕</button></div>'+
@@ -385,7 +388,6 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
             signalPost('leave', {});
             btn.style.background = 'none';
             btn.style.border = '1px solid ' + accentColor + '44';
-            vcRow.classList.remove('open');
             if (audioCtx) { audioCtx.close(); audioCtx = null; analyser = null; }
             return;
         }
@@ -394,7 +396,6 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
             voiceOn = true;
             btn.style.background = accentColor + '33';
             btn.style.border = '1px solid ' + accentColor;
-            vcRow.classList.add('open');
             startMeter();
             // Announce join
             signalPost('join', {});
@@ -513,6 +514,31 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
         signalPost('leave', {});
     };
 
+    // === RESIZABLE ONLINE SIDEBAR ===
+    var resizeHandle = document.getElementById('chatbox-resize');
+    if (resizeHandle) {
+        resizeHandle.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            resizeHandle.classList.add('active');
+            var panel = document.getElementById('chatbox-online');
+            var startX = e.clientX;
+            var startW = panel.offsetWidth;
+            function onMove(ev) {
+                var newW = startW - (ev.clientX - startX);
+                if (newW < 60) newW = 60;
+                if (newW > 280) newW = 280;
+                panel.style.width = newW + 'px';
+            }
+            function onUp() {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                resizeHandle.classList.remove('active');
+            }
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
+    }
+
     // === ONLINE USERS ===
     var onlineUsers = [];
     function joinOnline() {
@@ -622,13 +648,14 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
         if (localStream) localStream.getAudioTracks().forEach(function(t){ t.enabled = !isMuted; });
     };
     window.talkStart = function() {
-        if (!voiceOn || !localStream) return;
+        if (!voiceOn) { if (window.toggleVoice) { toggleVoice(); return; } }
+        if (!localStream) return;
         if (!isMuted) localStream.getAudioTracks().forEach(function(t){ t.enabled = true; });
         var btn = document.getElementById('talkBtn');
         btn.classList.add('active');
     };
     window.talkStop = function() {
-        if (!voiceOn || !localStream) return;
+        if (!localStream) return;
         if (!isMuted) localStream.getAudioTracks().forEach(function(t){ t.enabled = false; });
         var btn = document.getElementById('talkBtn');
         btn.classList.remove('active');
