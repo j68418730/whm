@@ -82,9 +82,13 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
     '#chatbox-camview{display:none;flex-shrink:0;padding:4px 8px;border-bottom:1px solid '+(accentColor)+'22}'+
     '#chatbox-camview.open{display:flex;gap:4px;overflow-x:auto}'+
     '#chatbox-camview video{width:80px;height:60px;border-radius:6px;object-fit:cover;background:#000;flex-shrink:0}'+
-    '#chatbox-vc{display:flex;padding:6px 10px;border-top:1px solid '+(accentColor)+'22;align-items:center;flex-shrink:0}'+
-    '#chatbox-vc .sb{width:28px;height:28px;border-radius:50%;background:none;border:1px solid '+(accentColor)+'44;color:'+textColor+';cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}'+
+    '#chatbox-vc{display:flex;justify-content:center;gap:8px;padding:8px 10px;border-top:1px solid '+(accentColor)+'22;align-items:center;flex-shrink:0}'+
+    '#chatbox-vc .sb{width:30px;height:30px;border-radius:50%;background:none;border:1px solid '+(accentColor)+'44;color:'+textColor+';cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;transition:.15s}'+
     '#chatbox-vc .sb.active{background:'+accentColor+'55;border-color:'+accentColor+'}'+
+    '#chatbox-vc .sb:hover{background:'+(accentColor)+'22}'+
+    '#chatbox-vc #vc-meter{width:120px;height:22px;background:'+bgColor+';border:1px solid '+(accentColor)+'33;border-radius:11px;overflow:hidden;position:relative}'+
+    '#chatbox-vc #vc-meter::after{content:"MIC";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:7px;color:'+textColor+'66;letter-spacing:1px}'+
+    '#chatbox-vc #vc-meter-fill{height:100%;width:0%;background:linear-gradient(90deg,'+accentColor+'88,'+accentColor+');border-radius:11px;transition:width .1s}'+
     '#chatbox-ctxmenu{position:fixed;z-index:1000;background:'+bgColor+';border:1px solid '+(accentColor)+'44;border-radius:8px;padding:4px;min-width:140px;box-shadow:0 4px 20px rgba(0,0,0,.5)}'+
     '#chatbox-ctxmenu .ctx-item{padding:6px 10px;font-size:11px;cursor:pointer;border-radius:4px;color:'+textColor+'cc;display:flex;align-items:center;gap:6px}'+
     '#chatbox-ctxmenu .ctx-item:hover{background:'+(accentColor)+'22}'+
@@ -130,7 +134,7 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
             '<div id="chatbox-rooms"></div>'+
             '<div id="chatbox-camview"></div>'+
             '<div id="chatbox-msgs"></div>'+
-            '<div id="chatbox-vc"><button class="sb" id="talkBtn" onmousedown="talkStart()" onmouseup="talkStop()" onmouseleave="talkStop()" title="Push to talk" style="'+(voiceEnabled?'':'display:none')+'">🎤</button><button class="sb" id="muteBtn" onclick="toggleMute()" title="Mute">🔇</button><div id="vc-meter" style="flex:1;height:6px;background:'+bgColor+';border-radius:3px;overflow:hidden;margin:0 8px"><div id="vc-meter-fill" style="height:100%;width:0%;background:'+accentColor+';transition:width .1s"></div></div></div>'+
+            '<div id="chatbox-vc"><button class="sb" id="talkBtn" onmousedown="talkStart()" onmouseup="talkStop()" onmouseleave="talkStop()" title="Push to talk" style="'+(voiceEnabled?'':'display:none')+'">🎤</button><button class="sb" id="muteBtn" onclick="toggleMute()" title="Mute">🔇</button><div id="vc-meter"><div id="vc-meter-fill"></div></div></div>'+
             '<div id="chatbox-inp" style="display:none"><div class="row"><button class="sb" style="background:none;border:1px solid '+(accentColor)+'44;font-size:16px" onclick="toggleEmojiPicker()">😊</button>'+(voiceEnabled?'<button class="sb" style="background:none;border:1px solid '+(accentColor)+'44;font-size:16px" id="voiceBtn" onclick="toggleVoice()">🎤</button>':'')+'<button class="sb" style="background:none;border:1px solid '+(accentColor)+'44;font-size:16px" onclick="toggleCam()">📹</button><textarea id="chatbox-input" placeholder="Type a message..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendChatboxMsg()}"></textarea><button class="sb" onclick="sendChatboxMsg()">➤</button></div>'+
             '<div id="emoji-picker" style="display:none;position:absolute;bottom:52px;right:12px;background:'+bgColor+';border:1px solid '+(accentColor)+'33;border-radius:10px;padding:8px;width:220px;max-height:200px;overflow-y:auto;z-index:10;box-shadow:0 4px 20px rgba(0,0,0,.4)"></div></div>'+
             '</div>'+
