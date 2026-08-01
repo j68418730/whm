@@ -572,4 +572,165 @@ class PlanetStudioController extends Controller
             return $this->json(['success' => false, 'message' => $e->getMessage()]);
         }
     }
+
+    // POST /api/nowplaying — desktop app now-playing updates
+    public function nowPlaying()
+    {
+        $dj = $this->authDj();
+        if (!$dj) return $this->json(['error' => 'Unauthorized'], 401);
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $stationId = (int)($input['stationId'] ?? 0);
+        $title = (string)($input['title'] ?? '');
+        $artist = (string)($input['artist'] ?? '');
+        $album = (string)($input['album'] ?? '');
+        if (!$stationId) return $this->json(['error' => 'stationId required'], 400);
+        $currentSong = trim("$artist - $title", ' -');
+        try {
+            $this->db->table('streaming_stations')->where('id', $stationId)->update(['current_song' => $currentSong]);
+            return $this->json(['success' => true, 'currentSong' => $currentSong]);
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // POST /api/playlists/sync — desktop app playlist sync (track ids only)
+    public function syncPlaylist()
+    {
+        $dj = $this->authDj();
+        if (!$dj) return $this->json(['error' => 'Unauthorized'], 401);
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $stationId = (int)($input['stationId'] ?? 0);
+        $playlistId = (int)($input['playlistId'] ?? 0);
+        $trackIds = $input['trackIds'] ?? [];
+        if (!$stationId || !$playlistId) return $this->json(['error' => 'stationId and playlistId required'], 400);
+        try {
+            // Clear existing items and re-insert the synced track ids.
+            $this->db->table('radio_playlist_items')->where('playlist_id', $playlistId)->delete();
+            $pos = 1;
+            foreach ($trackIds as $trackId) {
+                $this->db->table('radio_playlist_items')->insert([
+                    'playlist_id' => $playlistId,
+                    'title' => (string)$trackId,
+                    'position' => $pos++,
+                ]);
+            }
+            return $this->json(['success' => true, 'count' => count($trackIds)]);
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // POST /api/djs/create — desktop app DJ account creation
+    public function createDj()
+    {
+        $dj = $this->authDj();
+        if (!$dj) return $this->json(['error' => 'Unauthorized'], 401);
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $stationId = (int)($input['stationId'] ?? 0);
+        $username = trim((string)($input['username'] ?? ''));
+        $role = (string)($input['role'] ?? '');
+        if (!$stationId || !$username) return $this->json(['error' => 'stationId and username required'], 400);
+        $exists = $this->db->table('dj_accounts')->where('username', $username)->first();
+        if ($exists) return $this->json(['error' => 'Username already exists'], 409);
+        try {
+            $id = $this->db->table('dj_accounts')->insertGetId([
+                'username' => $username,
+                'role' => $role,
+                'status' => 'active',
+                'password_hash' => password_hash(bin2hex(random_bytes(8)), PASSWORD_DEFAULT),
+            ]);
+            return $this->json(['success' => true, 'id' => $id, 'username' => $username]);
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // POST /api/djs/update — desktop app DJ account update
+    public function updateDj()
+    {
+        $dj = $this->authDj();
+        if (!$dj) return $this->json(['error' => 'Unauthorized'], 401);
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $stationId = (int)($input['stationId'] ?? 0);
+        $id = (int)($input['id'] ?? 0);
+        $username = trim((string)($input['username'] ?? ''));
+        $role = (string)($input['role'] ?? '');
+        if (!$stationId || !$id) return $this->json(['error' => 'stationId and id required'], 400);
+        try {
+            $this->db->table('dj_accounts')->where('id', $id)->update([
+                'username' => $username,
+                'role' => $role,
+            ]);
+            return $this->json(['success' => true, 'id' => $id]);
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // POST /api/djs/delete — desktop app DJ account deletion
+    public function deleteDj()
+    {
+        $dj = $this->authDj();
+        if (!$dj) return $this->json(['error' => 'Unauthorized'], 401);
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $stationId = (int)($input['stationId'] ?? 0);
+        $djId = (int)($input['djId'] ?? 0);
+        if (!$stationId || !$djId) return $this->json(['error' => 'stationId and djId required'], 400);
+        try {
+            $this->db->table('dj_accounts')->where('id', $djId)->delete();
+            return $this->json(['success' => true]);
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // GET /api/station/{stationId}/status — desktop app station health check
+    public function stationStatus($stationId)
+    {
+        $dj = $this->authDj();
+        if (!$dj) return $this->json(['error' => 'Unauthorized'], 401);
+        $realId = (int)$stationId > 10000 ? (int)$stationId % 10000 : (int)$stationId;
+        $station = $this->db->table('streaming_stations')->where('id', $realId)->first();
+        if (!$station) return $this->json(['error' => 'Station not found'], 404);
+        $online = ((int)$station->is_online === 1) || ((int)$station->listener_count > 0);
+        return $this->json([
+            'status' => $online ? 'online' : 'offline',
+            'listeners' => (int)$station->listener_count,
+            'song' => $station->current_song ?? '',
+        ]);
+    }
+
+    // GET /api/requests/{requestId}/accept — desktop app accept (route param)
+    public function acceptRequest($requestId)
+    {
+        $dj = $this->authDj();
+        if (!$dj) return $this->json(['error' => 'Unauthorized'], 401);
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $stationId = (int)($input['stationId'] ?? $this->request->get('stationId', 0));
+        $id = (int)$requestId;
+        if (!$stationId || !$id) return $this->json(['error' => 'stationId and requestId required'], 400);
+        try {
+            $this->db->table('radio_requests')->where('id', $id)->where('stream_id', $stationId)->update(['status' => 'played']);
+            return $this->json(['success' => true]);
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // GET /api/requests/{requestId}/reject — desktop app reject (route param)
+    public function rejectRequest($requestId)
+    {
+        $dj = $this->authDj();
+        if (!$dj) return $this->json(['error' => 'Unauthorized'], 401);
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $stationId = (int)($input['stationId'] ?? $this->request->get('stationId', 0));
+        $id = (int)$requestId;
+        if (!$stationId || !$id) return $this->json(['error' => 'stationId and requestId required'], 400);
+        try {
+            $this->db->table('radio_requests')->where('id', $id)->where('stream_id', $stationId)->update(['status' => 'removed']);
+            return $this->json(['success' => true]);
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
+        }
+    }
 }

@@ -411,6 +411,15 @@ $router->post('/api/stations/{stationId}/upload', 'Admin\Controllers\Api\PlanetS
 $router->post('/api/dj/queue', 'Admin\Controllers\Api\PlanetStudioController@updateQueue');
 $router->get('/api/dj/queue/{stationId}', 'Admin\Controllers\Api\PlanetStudioController@getQueue');
 $router->get('/api/autodj/restart/{compositeId}', 'Admin\Controllers\Api\PlanetStudioController@restartAutodj');
+// Desktop app (Stage 7) API
+$router->post('/api/nowplaying', 'Admin\Controllers\Api\PlanetStudioController@nowPlaying');
+$router->post('/api/playlists/sync', 'Admin\Controllers\Api\PlanetStudioController@syncPlaylist');
+$router->post('/api/djs/create', 'Admin\Controllers\Api\PlanetStudioController@createDj');
+$router->post('/api/djs/update', 'Admin\Controllers\Api\PlanetStudioController@updateDj');
+$router->post('/api/djs/delete', 'Admin\Controllers\Api\PlanetStudioController@deleteDj');
+$router->get('/api/station/{stationId}/status', 'Admin\Controllers\Api\PlanetStudioController@stationStatus');
+$router->post('/api/requests/{requestId}/accept', 'Admin\Controllers\Api\PlanetStudioController@acceptRequest');
+$router->post('/api/requests/{requestId}/reject', 'Admin\Controllers\Api\PlanetStudioController@rejectRequest');
 
 $router->get('/api/packages', 'Admin\Controllers\PackageController@apiList');
 $router->get('/api/icon', 'Admin\Controllers\IconController@generate');
