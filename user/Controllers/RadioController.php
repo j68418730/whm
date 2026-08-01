@@ -744,61 +744,14 @@ class RadioController extends Controller
         if ($stream) {
             $hosting = $this->db->table('hosting_users')->where('id', $stream->user_id)->first();
             $username = $hosting ? $hosting->username : 'unknown';
-            $musicDir = "/home/{$username}/radio/musicdatabase";
-            $autodjDir = "/home/{$username}/radio/autodj";
-            $logPath = $autodjDir . '/autodj.log';
-            $pidFile = $autodjDir . '/autodj.pid';
-            @mkdir($autodjDir, 0755, true);
-            // Kill any existing runner for this stream
-            exec("/usr/bin/pkill -f \"runner_{$realId}\" 2>/dev/null");
-            sleep(1);
-            
-            // Build concat playlist from all files in the selected playlist directories
+            // Load playlist ids from the station's AutoDJ config
             $cfg = $this->db->table('radio_autodj_config')->where('station_id', $id)->first();
             $playlistIds = ($cfg && !empty($cfg->playlist_ids)) ? json_decode($cfg->playlist_ids, true) ?: [] : [];
-            $concatFile = $autodjDir . '/concat.txt';
-            $files = [];
-            foreach ($playlistIds as $plId) {
-                $dir = $musicDir . '/playlist_' . (int)$plId;
-                if (!is_dir($dir)) continue;
-                foreach (glob($dir . '/*.{mp3,mp2,ogg,oga,wav,flac,aac,m4a,wma}', GLOB_BRACE) as $f) $files[] = $f;
-            }
-            if (!empty($files)) {
-                $concat = "ffconcat version 1.0\n";
-                foreach ($files as $f) $concat .= "file '" . str_replace("'", "'\\''", $f) . "'\n";
-                file_put_contents($concatFile, $concat);
-                
-                $port = 11001; // SHOUTcast v1 source port (PortBase+1)
-                $password = $stream->plain_password ?: 'planethosts';
-                $bitrate = (int)($stream->bitrate ?? 128);
-                // Generate M3U playlist file
-                $m3uFile = $autodjDir . '/playlist.m3u';
-                $m3u = "#EXTM3U\n";
-                foreach ($files as $f) {
-                    $name = basename($f);
-                    $title = pathinfo($name, PATHINFO_FILENAME);
-                    $artist = ''; $parts = explode(' - ', $title, 2);
-                    if (count($parts) === 2) { $artist = trim($parts[0]); $title = trim($parts[1]); }
-                    $m3u .= "#EXTINF:-1,{$artist} - {$title}\n{$f}\n";
-                }
-                file_put_contents($m3uFile, $m3u);
-                // Create runner script using ShoutcastV1Source (raw TCP, no exec/popen needed)
-                $runnerScript = $autodjDir . '/runner_' . $realId . '.php';
-                $runner = "<?php\n"
-                    . "require_once '/var/www/radiohosting/services/ShoutcastV1Source.php';\n"
-                    . "\$s = new ShoutcastV1Source('localhost', {$port}, '" . addslashes($password) . "', {$bitrate}, '" . addslashes($stream->name ?? 'Radio') . "', {$realId});\n"
-                    . "\$s->setPidFile('{$pidFile}');\n"
-                    . "\$s->setLogFile('{$logPath}');\n"
-                    . "\$s->setPlaylistFile('{$m3uFile}');\n"
-                    . "\$s->run();\n";
-                file_put_contents($runnerScript, $runner);
-                $cmd = "nohup php {$runnerScript} > {$logPath} 2>&1 & echo \$!";
-                exec($cmd, $out, $code);
-                $pid = (int)($out[0] ?? 0);
-                $ok = $pid > 0;
-                if ($ok) file_put_contents($pidFile, $pid);
-                error_log('AUTODJ: v1 source start pid=' . $pid . ' exit=' . $code . ' files=' . count($files));
-            }
+            // Engine-aware player handles v1 / v2 / Icecast correctly
+            $player = new \Services\RadioAutoDJPlayer($stream, $username, $playlistIds);
+            $player->stop();
+            usleep(500000);
+            $ok = $player->start();
             $this->db->table('streaming_stations')->where('id', $realId)->update(['autodj_enabled' => $ok ? 1 : 0]);
             try {
                 $cfg2 = $this->db->table('radio_autodj_config')->where('station_id', $id)->first();
@@ -851,7 +804,9 @@ class RadioController extends Controller
         if ($stream) {
             $hosting = $this->db->table('hosting_users')->where('id', $stream->user_id)->first();
             $username = $hosting ? $hosting->username : 'unknown';
-            $player = new \Services\RadioAutoDJPlayer($stream, $username);
+            $cfg = $this->db->table('radio_autodj_config')->where('station_id', $id)->first();
+            $playlistIds = ($cfg && !empty($cfg->playlist_ids)) ? json_decode($cfg->playlist_ids, true) ?: [] : [];
+            $player = new \Services\RadioAutoDJPlayer($stream, $username, $playlistIds);
             $player->stop();
             usleep(500000);
             $ok = $player->start();
@@ -1142,6 +1097,22 @@ class RadioController extends Controller
                     }
                 }
             }
+            // Validate playlist has audio files (step 6+)
+            if ($step >= 6 && !empty($data['playlist_ids'])) {
+                $musicDir = "/home/" . ($station->username ?? 'testacct') . "/radio/musicdatabase";
+                $hasAudio = false;
+                foreach ((array)$data['playlist_ids'] as $plId) {
+                    $dir = $musicDir . '/playlist_' . (int)$plId;
+                    if (is_dir($dir)) {
+                        $found = glob($dir . '/*.{mp3,mp2,ogg,oga,wav,flac,aac,m4a,wma,opus}', GLOB_BRACE);
+                        if (!empty($found)) { $hasAudio = true; break; }
+                    }
+                }
+                if (!$hasAudio) {
+                    $_SESSION['error'] = 'No audio files found in the selected playlist. Please create a playlist and upload audio files to it first.';
+                    header('Location: /user/radio?tab=playlists&station_id=' . $sid); exit;
+                }
+            }
             $data['wizard_completed'] = ($step >= 12) ? 1 : 0;
             try {
                 $existing = $this->db->table('radio_autodj_config')->where('station_id', $sid)->first();
@@ -1164,9 +1135,22 @@ class RadioController extends Controller
             } catch (\Exception $e) { $_SESSION['error'] = 'Save failed.'; }
             header('Location: /user/radio/autodj/setup?step=' . ($step + 1) . '&station_id=' . $sid); exit;
         }
+        $playlists = $this->db->table('radio_playlists')->where('stream_id', $station->streaming_id ?? $station->id)->get() ?: [];
+        // Count audio files per playlist directory
+        $musicDir = "/home/" . ($station->username ?? 'testacct') . "/radio/musicdatabase";
+        $songCounts = [];
+        foreach ($playlists as $pl) {
+            $dir = $musicDir . '/playlist_' . $pl->id;
+            $count = 0;
+            if (is_dir($dir)) {
+                $found = glob($dir . '/*.{mp3,mp2,ogg,oga,wav,flac,aac,m4a,wma,opus}', GLOB_BRACE);
+                $count = count($found ?: []);
+            }
+            $songCounts[$pl->id] = $count;
+        }
         return $this->view('user.radio.autodj_setup', [
             'station' => $station, 'config' => $cfg, 'step' => $step, 'title' => 'AutoDJ Setup Wizard',
-            'playlists' => $this->db->table('radio_playlists')->where('stream_id', $station->streaming_id ?? $station->id)->get() ?: [],
+            'playlists' => $playlists, 'songCounts' => $songCounts,
         ]);
     }
 
