@@ -40,6 +40,37 @@ Status: <strong style="color:<?php echo $e['installed'] ? '#4ade80' : '#f87171';
 </div>
 </div>
 
+<!-- Package Versions -->
+<div class="card" style="margin-bottom:16px">
+<h3 style="color:var(--accent);margin-bottom:12px">🛠️ Streaming Package Versions</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
+<?php foreach ($serverVersions as $key => $sv): ?>
+<div style="background:rgba(8,16,28,.6);border:1px solid rgba(0,191,255,.08);border-radius:10px;padding:16px;border-top:3px solid <?php echo $sv['up_to_date'] ? '#4ade80' : '#facc15'; ?>">
+<div style="font-size:16px;font-weight:600;margin-bottom:6px">
+<?php echo htmlspecialchars($sv['name']); ?>
+<span style="font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px;background:<?php echo $sv['up_to_date'] ? 'rgba(74,222,128,.15)' : 'rgba(250,204,21,.15)'; ?>;color:<?php echo $sv['up_to_date'] ? '#4ade80' : '#eab308'; ?>">
+<?php echo $sv['up_to_date'] ? '✓ Up to date' : '⚠ Update available'; ?>
+</span>
+</div>
+<div style="font-size:12px;color:#64748b;line-height:1.8">
+<div>Installed: <strong style="color:#e0e0e0"><?php echo htmlspecialchars($sv['version']); ?></strong></div>
+<div>Latest: <strong style="color:#e0e0e0"><?php echo htmlspecialchars($sv['latest']); ?></strong></div>
+<?php if (!$sv['up_to_date']): ?>
+<div style="margin-top:8px;padding:8px;background:rgba(250,204,21,.06);border:1px solid rgba(250,204,21,.2);border-radius:6px;font-size:11px;color:#eab308">
+🔔 New version <?php echo htmlspecialchars($sv['latest']); ?> is available.
+<?php if ($sv['update_file']): ?><br>Update downloaded: <code style="color:#94a3b8"><?php echo htmlspecialchars($sv['update_file']); ?></code>
+<form method="POST" action="/admin/api/streaming/update-package" style="display:inline;margin-top:6px">
+<input type="hidden" name="package" value="<?php echo $key; ?>">
+<button type="submit" class="btn btn-sm primary" onclick="return confirm('Install <?php echo htmlspecialchars($sv['latest']); ?> update? Server will restart.')" style="margin-top:6px">🚀 Install Update</button>
+</form><?php endif; ?>
+</div>
+<?php endif; ?>
+</div>
+</div>
+<?php endforeach; ?>
+</div>
+</div>
+
 <!-- Create Station -->
 <div class="card" style="margin-bottom:16px;max-width:600px">
 <form method="POST" action="/admin/api/streaming/stations/create" id="createStationForm">

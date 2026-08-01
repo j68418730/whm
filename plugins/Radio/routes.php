@@ -93,6 +93,7 @@ $router->get('/admin/api/streaming/server-ip', 'Plugins\Radio\Controllers\Admin\
 // Streaming Engine Admin API
 $router->get('/admin/api/streaming/engines', 'Plugins\Radio\Controllers\Admin\StreamingApiController@engines');
 $router->post('/admin/api/streaming/install', 'Plugins\Radio\Controllers\Admin\StreamingApiController@installEngine');
+$router->post('/admin/api/streaming/update-package', 'Plugins\Radio\Controllers\Admin\StreamingApiController@updatePackage');
 $router->post('/admin/api/streaming/update', 'Plugins\Radio\Controllers\Admin\StreamingApiController@updateEngine');
 $router->post('/admin/api/streaming/repair', 'Plugins\Radio\Controllers\Admin\StreamingApiController@repairEngine');
 $router->get('/admin/api/streaming/engine-status', 'Plugins\Radio\Controllers\Admin\StreamingApiController@engineStatus');

@@ -50,12 +50,14 @@ class StreamingApiController extends Controller
         } catch (\Exception $e) {
             $packages = [];
         }
+        $serverVersions = $this->detectServerVersions();
         return $this->view('admin.radio_dashboard.streaming', [
             'user' => $user, 'theme_settings' => $theme_settings, 'title' => 'Streaming Engine',
             'engines' => $engines, 'stations' => $stations,
             'totalStations' => count($stations),
             'runningStations' => count(array_filter($stations, fn($s) => $s->status === 'running')),
             'users' => $users, 'packages' => $packages,
+            'serverVersions' => $serverVersions,
         ]);
     }
 
@@ -320,5 +322,106 @@ class StreamingApiController extends Controller
             $data[] = $this->engine->getMonitoringData($s->id);
         }
         return $this->response->json($data);
+    }
+
+    public function updatePackage()
+    {
+        $this->guard();
+        $package = $this->request->post('package', '');
+        if ($package === 'shoutcast2') {
+            // Find the downloaded update file
+            $updates = glob('/tmp/sc_serv_update_linux_x64_*.tar.gz');
+            if (empty($updates)) {
+                return $this->response->json(['success' => false, 'error' => 'No update file found in /tmp']);
+            }
+            $updateFile = $updates[0];
+            $dir = '/opt/planethosts/shoutcast';
+            try {
+                // Stop the server
+                exec('systemctl stop shoutcast 2>/dev/null');
+                sleep(1);
+                // Backup current binary
+                if (file_exists("{$dir}/sc_serv")) exec("cp {$dir}/sc_serv {$dir}/sc_serv.bak 2>/dev/null");
+                // Extract update
+                exec("tar xzf " . escapeshellarg($updateFile) . " -C " . escapeshellarg($dir) . " 2>&1", $out, $code);
+                if ($code !== 0) {
+                    exec('systemctl start shoutcast 2>/dev/null');
+                    return $this->response->json(['success' => false, 'error' => 'Extract failed: ' . implode(' ', $out)]);
+                }
+                // Ensure correct binary name
+                if (file_exists("{$dir}/sc_serv_linux_x64") && !file_exists("{$dir}/sc_serv")) {
+                    exec("mv {$dir}/sc_serv_linux_x64 {$dir}/sc_serv 2>/dev/null");
+                }
+                exec('chmod +x ' . escapeshellarg("{$dir}/sc_serv") . ' 2>/dev/null');
+                // Start server
+                exec('systemctl start shoutcast 2>/dev/null');
+                sleep(2);
+                // Clean up update file
+                @unlink($updateFile);
+                return $this->response->json(['success' => true, 'message' => 'SHOUTcast v2 updated successfully']);
+            } catch (\Exception $e) {
+                exec('systemctl start shoutcast 2>/dev/null');
+                return $this->response->json(['success' => false, 'error' => $e->getMessage()]);
+            }
+        }
+        return $this->response->json(['success' => false, 'error' => 'No update available for ' . $package]);
+    }
+
+    /**
+     * Detect installed versions of each streaming package and whether an update is available.
+     */
+    protected function detectServerVersions()
+    {
+        $result = [
+            'shoutcast1' => ['name' => 'SHOUTcast v1', 'installed' => false, 'version' => '?', 'latest' => '1.9.8', 'up_to_date' => true, 'update_available' => false, 'update_file' => ''],
+            'shoutcast2' => ['name' => 'SHOUTcast v2', 'installed' => false, 'version' => '?', 'latest' => '2.6.1.777', 'up_to_date' => false, 'update_available' => false, 'update_file' => ''],
+            'icecast'    => ['name' => 'Icecast', 'installed' => false, 'version' => '?', 'latest' => '2.4.4', 'up_to_date' => true, 'update_available' => false, 'update_file' => ''],
+        ];
+
+        // SHOUTcast v1
+        $v1Path = '/opt/planethosts/shoutcast1/sc_serv';
+        if (file_exists($v1Path)) {
+            $result['shoutcast1']['installed'] = true;
+            $out = shell_exec("strings " . escapeshellarg($v1Path) . " 2>/dev/null | grep -oE 'v1\\.[0-9]+\\.[0-9]+' | head -1");
+            $result['shoutcast1']['version'] = trim($out ?: '1.9.8');
+            $result['shoutcast1']['up_to_date'] = true;
+        }
+
+        // SHOUTcast v2
+        $v2Path = '/opt/planethosts/shoutcast/sc_serv';
+        if (file_exists($v2Path)) {
+            $result['shoutcast2']['installed'] = true;
+            $out = shell_exec("strings " . escapeshellarg($v2Path) . " 2>/dev/null | grep -oE '2\\.[0-9]+\\.[0-9]+\\.[0-9]+' | head -1");
+            $result['shoutcast2']['version'] = trim($out ?: '2.5.5.733');
+            // Check for downloaded update file
+            $updates = glob('/tmp/sc_serv_update_linux_x64_*.tar.gz');
+            $updateAvailable = false;
+            $updateFile = '';
+            foreach ($updates as $uf) {
+                $updateFile = $uf;
+                $updateAvailable = true;
+                // Extract version from filename
+                if (preg_match('/sc_serv_update_linux_x64_([0-9._]+)\\.tar\\.gz$/', $uf, $m)) {
+                    $result['shoutcast2']['latest'] = str_replace('_', '.', $m[1]);
+                }
+            }
+            $result['shoutcast2']['update_available'] = $updateAvailable;
+            $result['shoutcast2']['update_file'] = basename($updateFile);
+            $result['shoutcast2']['up_to_date'] = !$updateAvailable;
+        }
+
+        // Icecast
+        $icOut = shell_exec("icecast2 -v 2>&1 | head -1");
+        if ($icOut) {
+            $result['icecast']['installed'] = true;
+            if (preg_match('/Icecast\\s+([0-9.]+)/i', $icOut, $m)) {
+                $result['icecast']['version'] = $m[1];
+            } else {
+                $result['icecast']['version'] = '2.4.4';
+            }
+            $result['icecast']['up_to_date'] = true;
+        }
+
+        return $result;
     }
 }
