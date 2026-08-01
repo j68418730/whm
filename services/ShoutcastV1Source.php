@@ -46,7 +46,8 @@ class ShoutcastV1Source
             // Play files in order (no shuffle for sequential playback)
             foreach ($files as $file) {
                 if (!$this->running) break;
-                $this->streamFile($file, $sock);
+                $ok = $this->streamFile($file, $sock);
+                if (!$ok) break;
             }
             // If we get here and socket died, try to reconnect
             if (!$sock) {
@@ -93,7 +94,7 @@ class ShoutcastV1Source
 
     protected function streamFile($path, &$sock)
     {
-        if (!file_exists($path)) return;
+        if (!file_exists($path)) return true;
         $name = basename($path);
         $this->log("Streaming: $name");
         // Update current song in DB
@@ -108,7 +109,7 @@ class ShoutcastV1Source
             } catch (\Exception $e) { $this->log("DB update failed: " . $e->getMessage()); }
         }
         $fp = fopen($path, 'rb');
-        if (!$fp) return;
+        if (!$fp) return true;
         $bufSize = 16384;
         $bytesPerSec = ($this->bitrate * 1000) / 8;
         $delayPerChunk = ($bufSize / $bytesPerSec) * 850000;
@@ -117,13 +118,16 @@ class ShoutcastV1Source
             $data = fread($fp, $bufSize);
             if ($data === false || $data === '') break;
             $written = @fwrite($sock, $data);
-            if ($written === false) {
-                $this->log("Write failed (connection closed)");
+            if ($written === false || $written === 0) {
+                $this->log("Write failed (connection closed), reconnecting...");
+                @fclose($sock);
+                $sock = null;
                 break;
             }
             if ($written > 0) { usleep($delayPerChunk); }
         }
         fclose($fp);
+        return $sock !== null;
     }
 
     public function stop() { $this->running = false; }
