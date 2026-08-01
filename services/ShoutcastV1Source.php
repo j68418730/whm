@@ -112,27 +112,17 @@ class ShoutcastV1Source
         $bufSize = 16384;
         $bytesPerSec = ($this->bitrate * 1000) / 8;
         $delayPerChunk = ($bufSize / $bytesPerSec) * 850000;
-        stream_set_blocking($sock, false);
+        stream_set_blocking($sock, true);
         while ($this->running && !feof($fp)) {
             $data = fread($fp, $bufSize);
             if ($data === false || $data === '') break;
-            // Non-blocking fwrite returns false on EAGAIN (would block) — retry, don't treat as fatal
-            $attempts = 0;
-            while ($this->running) {
-                $written = @fwrite($sock, $data);
-                if ($written === strlen($data)) break;
-                if ($written === false || $written === 0) {
-                    if (feof($sock)) { $this->log("Write failed (connection closed)"); break 2; }
-                    $attempts++;
-                    if ($attempts > 200) { $this->log("Write stalled, dropping file"); break 2; }
-                    usleep(20000);
-                    continue;
-                }
-                if ($written > 0) { $data = substr($data, $written); continue; }
+            $written = @fwrite($sock, $data);
+            if ($written === false) {
+                $this->log("Write failed (connection closed)");
+                break;
             }
-            usleep($delayPerChunk);
+            if ($written > 0) { usleep($delayPerChunk); }
         }
-        stream_set_blocking($sock, true);
         fclose($fp);
     }
 
