@@ -77,6 +77,10 @@ class RadioController extends Controller
     {
         $hosting = $this->getHosting();
         if (!$hosting) return null;
+        // Resolve id from request if not passed explicitly
+        if (!$id) {
+            $id = isset($_POST['station_id']) ? (int)$_POST['station_id'] : (isset($_GET['station_id']) ? (int)$_GET['station_id'] : 0);
+        }
         $stations = $this->getStations();
         if ($id) {
             foreach ($stations as $s) {
@@ -436,7 +440,7 @@ class RadioController extends Controller
     public function createPlaylist()
     {
         if (!$this->auth->check()) exit;
-        $station = $this->getStation();
+        $station = $this->getStation(isset($_POST['station_id']) ? (int)$_POST['station_id'] : null);
         if (!$station) exit;
         $name = trim($_POST['name'] ?? '');
         if ($name) {
