@@ -80,6 +80,11 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
     '#chatbox-inp textarea:focus{border-color:'+accentColor+'}'+
     '#chatbox-inp .sb{width:34px;height:34px;border-radius:50%;background:'+accentColor+';color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}'+
     '#chatbox-inp .sb:disabled{opacity:.4}'+
+    '#chatbox-msgs .rx{display:flex;gap:3px;margin-top:3px;flex-wrap:wrap}'+
+    '#chatbox-msgs .rx-add{display:inline-block;margin-top:2px;opacity:.6}'+
+    '#chatbox-msgs .msg:hover .rx-add{opacity:1}'+
+    '#chatbox-msgs .msg .rx span:hover{background:'+(accentColor)+'22}'+
+    '#emoji-picker span:hover{background:'+(accentColor)+'22}'+
     '#chatbox-login{padding:20px;text-align:center}'+
     '#chatbox-login input{width:100%;padding:8px 12px;border-radius:8px;border:1px solid '+(accentColor)+'33;background:rgba(0,0,0,.2);color:'+textColor+';font-size:12px;outline:none;box-sizing:border-box;margin-bottom:8px}'+
     '#chatbox-login input:focus{border-color:'+accentColor+'}'+
@@ -102,7 +107,9 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
             '<div id="chatbox-hdr"><span class="title">'+widgetTitle+'</span><button class="close" onclick="toggleChatbox()">✕</button></div>'+
             '<div id="chatbox-rooms"></div>'+
             '<div id="chatbox-msgs"></div>'+
-            '<div id="chatbox-inp" style="display:none"><div class="row"><textarea id="chatbox-input" placeholder="Type a message..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendChatboxMsg()}"></textarea><button class="sb" onclick="sendChatboxMsg()">➤</button></div></div>'+
+            '<div id="chatbox-video" style="display:none;position:relative;flex-shrink:0"><video id="local-video" autoplay muted style="width:100%;height:140px;border-radius:8px;object-fit:cover;background:#000"></video><button onclick="stopCam()" style="position:absolute;top:4px;right:4px;background:'+accentColor+';border:none;color:#fff;border-radius:4px;cursor:pointer;font-size:10px;padding:3px 8px">✕</button></div>'+
+            '<div id="chatbox-inp" style="display:none"><div class="row"><button class="sb" style="background:none;border:1px solid '+(accentColor)+'44;font-size:16px" onclick="toggleEmojiPicker()">😊</button>'+(voiceEnabled?'<button class="sb" style="background:none;border:1px solid '+(accentColor)+'44;font-size:16px" id="voiceBtn" onclick="toggleVoice()">🎤</button>':'')+'<button class="sb" style="background:none;border:1px solid '+(accentColor)+'44;font-size:16px" onclick="toggleCam()">📹</button><textarea id="chatbox-input" placeholder="Type a message..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendChatboxMsg()}"></textarea><button class="sb" onclick="sendChatboxMsg()">➤</button></div>'+
+            '<div id="emoji-picker" style="display:none;position:absolute;bottom:52px;right:12px;background:'+bgColor+';border:1px solid '+(accentColor)+'33;border-radius:10px;padding:8px;width:220px;max-height:200px;overflow-y:auto;z-index:10;box-shadow:0 4px 20px rgba(0,0,0,.4)"></div></div>'+
             '<div id="chatbox-login" style="display:none"></div>'+
             '</div></div>';
 
@@ -179,9 +186,10 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
                 if (m.message_type === 'system') { el.innerHTML += '<div class="msg sys">'+escHtml(m.message)+'</div>'; return; }
                 var t = '';
                 if (m.created_at) { var d = new Date(m.created_at); t = d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
-                el.innerHTML += '<div class="msg"><div class="u">'+escHtml(m.username)+'<span class="t">'+t+'</span></div><div>'+escHtml(m.message)+'</div></div>';
+                el.innerHTML += '<div class="msg" data-id="'+m.id+'"><div class="u">'+escHtml(m.username)+'<span class="t">'+t+'</span></div><div>'+escHtml(m.message)+'</div><div class="rx" id="rx-'+m.id+'"></div><span class="rx-add" onclick="addReaction('+m.id+')" style="font-size:11px;cursor:pointer;color:'+accentColor+'" title="React">😊</span></div>';
                 if (m.id > lastMsgId) lastMsgId = m.id;
             });
+            loadReactions(msgs);
             el.scrollTop = el.scrollHeight;
         }).catch(function(){});
     }
@@ -261,6 +269,203 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
         }
         renderRooms();
         startPolling();
+        joinOnline();
+    }
+
+    // === EMOJI PICKER ===
+    var emojis = ['😊','😂','❤️','👍','🔥','🎉','😍','😢','😎','🤔','👏','🙏','💯','✨','🎵','🎮','🍕','☕','⭐','🌟','💪','🤝','😴','🥳','😇','🤗','😅','🙈','💜','🦄'];
+    window.toggleEmojiPicker = function() {
+        var picker = document.getElementById('emoji-picker');
+        if (picker.style.display === 'block') { picker.style.display = 'none'; return; }
+        var h = '';
+        emojis.forEach(function(e){ h += '<span style="font-size:20px;cursor:pointer;display:inline-block;padding:3px;margin:2px;border-radius:4px" onmouseover="this.style.background='+(accentColor)+'33" onmouseout="this.style.background=\'transparent\'" onclick="insertEmoji(\''+e+'\')">'+e+'</span>'; });
+        picker.innerHTML = h;
+        picker.style.display = 'block';
+        // Load custom emojis
+        fetch(apiBase + '?action=get_emojis&tenant_id=' + tenantId).then(function(r){ return r.json(); }).then(function(list){
+            if (list && list.length) {
+                list.forEach(function(em){
+                    var img = document.createElement('img');
+                    img.src = em.url;
+                    img.style.width = '22px'; img.style.height = '22px';
+                    img.style.cursor = 'pointer'; img.style.margin = '2px';
+                    img.style.borderRadius = '4px';
+                    img.title = ':' + em.name + ':';
+                    img.onclick = function(){ insertEmoji(':' + em.name + ':'); };
+                    picker.appendChild(img);
+                });
+            }
+        });
+    };
+    window.insertEmoji = function(e) {
+        var inp = document.getElementById('chatbox-input');
+        inp.value += e;
+        inp.focus();
+        document.getElementById('emoji-picker').style.display = 'none';
+    };
+
+    // === REACTIONS ===
+    function loadReactions(msgs) {
+        var ids = msgs.map(function(m){ return m.id; }).join(',');
+        if (!ids) return;
+        fetch(apiBase + '?action=get_reactions&ids=' + encodeURIComponent(ids)).then(function(r){ return r.json(); }).then(function(reactions){
+            if (!reactions || !reactions.length) return;
+            reactions.forEach(function(rx){
+                var box = document.getElementById('rx-' + rx.message_id);
+                if (box) box.innerHTML += '<span style="background:'+bgColor+';border:1px solid '+(accentColor)+'33;border-radius:8px;padding:1px 5px;font-size:10px;cursor:pointer;margin-right:3px" onclick="reactToMsg('+rx.message_id+',\''+rx.emoji+'\')">'+rx.emoji+' '+rx.count+'</span>';
+            });
+        }).catch(function(){});
+    }
+    window.addReaction = function(msgId) {
+        var picker = document.getElementById('emoji-picker');
+        var h = '';
+        emojis.forEach(function(e){ h += '<span style="font-size:16px;cursor:pointer;display:inline-block;padding:2px;margin:2px;border-radius:4px" onclick="reactToMsg('+msgId+',\''+e+'\')">'+e+'</span>'; });
+        picker.innerHTML = h;
+        picker.style.display = 'block';
+    };
+    window.reactToMsg = function(msgId, emoji) {
+        var fd = new FormData();
+        fd.append('action', 'react');
+        fd.append('message_id', msgId);
+        fd.append('user_id', currentUser && currentUser.userId ? currentUser.userId : 0);
+        fd.append('username', currentUser ? currentUser.username : 'Guest');
+        fd.append('emoji', emoji);
+        fetch(apiBase, {method:'POST', body: fd}).then(function(){ document.getElementById('emoji-picker').style.display='none'; fetchMessages(); });
+    };
+
+    // === VOICE (WebRTC) ===
+    var voicePeers = {}, localStream = null, pcMap = {}, signalAfter = 0, voiceOn = false;
+    var stunConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+    function signalPost(type, payload) {
+        var fd = new FormData();
+        fd.append('action', 'signal');
+        fd.append('tenant_id', tenantId);
+        fd.append('room_id', currentRoomId);
+        fd.append('user_id', currentUser && currentUser.userId ? currentUser.userId : 0);
+        fd.append('username', currentUser ? currentUser.username : 'Guest');
+        fd.append('type', type);
+        fd.append('payload', JSON.stringify(payload));
+        fetch(apiBase, {method:'POST', body: fd});
+    }
+
+    window.toggleVoice = function() {
+        var btn = document.getElementById('voiceBtn');
+        if (voiceOn) {
+            voiceOn = false;
+            if (localStream) { localStream.getTracks().forEach(function(t){ t.stop(); }); localStream = null; }
+            Object.keys(pcMap).forEach(function(k){ if (pcMap[k]) pcMap[k].close(); });
+            pcMap = {};
+            signalPost('leave', {});
+            btn.style.background = 'none';
+            btn.style.border = '1px solid ' + accentColor + '44';
+            return;
+        }
+        navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream){
+            localStream = stream;
+            voiceOn = true;
+            btn.style.background = accentColor + '33';
+            btn.style.border = '1px solid ' + accentColor;
+            // Announce join
+            signalPost('join', {});
+            pollSignals();
+        }).catch(function(e){ alert('Voice error: ' + e.message); });
+    };
+
+    function pollSignals() {
+        if (!voiceOn) return;
+        fetch(apiBase + '?action=get_signals&room_id=' + currentRoomId + '&user_id=' + (currentUser && currentUser.userId ? currentUser.userId : 0) + '&after=' + signalAfter).then(function(r){ return r.json(); }).then(function(signals){
+            if (signals && signals.length) {
+                signals.forEach(function(s){
+                    signalAfter = Math.max(signalAfter, s.id);
+                    if (s.type === 'offer') handleOffer(s);
+                    else if (s.type === 'answer') handleAnswer(s);
+                    else if (s.type === 'ice') handleIce(s);
+                    else if (s.type === 'join') { if (!pcMap[s.user_id]) createPeer(s.user_id); }
+                    else if (s.type === 'leave') { if (pcMap[s.user_id]) { pcMap[s.user_id].close(); delete pcMap[s.user_id]; } }
+                });
+            }
+            setTimeout(pollSignals, 2000);
+        }).catch(function(){ setTimeout(pollSignals, 3000); });
+    }
+
+    function createPeer(remoteId) {
+        var pc = new RTCPeerConnection(stunConfig);
+        pcMap[remoteId] = pc;
+        if (localStream) localStream.getTracks().forEach(function(t){ pc.addTrack(t, localStream); });
+        pc.onicecandidate = function(e){ if (e.candidate) signalPost('ice', { to: remoteId, candidate: e.candidate }); };
+        pc.ontrack = function(e){ playRemoteAudio(remoteId, e.streams[0]); };
+        return pc;
+    }
+
+    function playRemoteAudio(remoteId, stream) {
+        var existing = document.getElementById('remote-audio-' + remoteId);
+        if (!existing) {
+            existing = document.createElement('audio');
+            existing.id = 'remote-audio-' + remoteId;
+            existing.autoplay = true;
+            document.body.appendChild(existing);
+        }
+        existing.srcObject = stream;
+    }
+
+    function handleOffer(s) {
+        var pc = pcMap[s.user_id] || createPeer(s.user_id);
+        var offer = JSON.parse(s.payload);
+        pc.setRemoteDescription(offer).then(function(){
+            return pc.createAnswer();
+        }).then(function(answer){
+            return pc.setLocalDescription(answer);
+        }).then(function(){
+            signalPost('answer', { to: s.user_id, answer: pc.localDescription });
+        });
+    }
+
+    function handleAnswer(s) {
+        var pc = pcMap[s.user_id];
+        if (!pc) return;
+        var answer = JSON.parse(s.payload);
+        pc.setRemoteDescription(answer);
+    }
+
+    function handleIce(s) {
+        var pc = pcMap[s.user_id];
+        if (!pc) return;
+        var ice = JSON.parse(s.payload);
+        pc.addIceCandidate(ice.candidate);
+    }
+
+    // === CAMERA (WebRTC) ===
+    var camOn = false;
+    window.toggleCam = function() {
+        var video = document.getElementById('local-video');
+        var container = document.getElementById('chatbox-video');
+        if (camOn) { stopCam(); return; }
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(function(stream){
+            localStream = stream;
+            camOn = true;
+            container.style.display = 'block';
+            video.srcObject = stream;
+            // Recreate peers to add video track
+            Object.keys(pcMap).forEach(function(k){ if (pcMap[k]) pcMap[k].close(); });
+            pcMap = {};
+            signalPost('join', {});
+        }).catch(function(e){ alert('Camera error: ' + e.message); });
+    };
+    window.stopCam = function() {
+        camOn = false;
+        if (localStream) { localStream.getTracks().forEach(function(t){ t.stop(); }); localStream = null; }
+        document.getElementById('chatbox-video').style.display = 'none';
+    };
+
+    // === ONLINE USERS ===
+    function joinOnline() {
+        var fd = new FormData();
+        fd.append('action', 'join_online');
+        fd.append('room_id', currentRoomId);
+        fd.append('user_id', currentUser && currentUser.userId ? currentUser.userId : 0);
+        fd.append('username', currentUser ? currentUser.username : 'Guest');
+        fetch(apiBase, {method:'POST', body: fd});
     }
 
     function escHtml(t) { var d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
