@@ -83,6 +83,7 @@ $typeLabel = $r->type === 'public' ? 'Public' : ($r->type === 'password' ? '🔒
 </div>
 <div class="actions">
 <button class="btn-edit" onclick="openEdit(<?=$r->id?>,'<?=htmlspecialchars($r->name, ENT_QUOTES)?>','<?=htmlspecialchars($r->description, ENT_QUOTES)?>','<?=$r->type?>','<?=$r->color?>','<?=htmlspecialchars($r->icon??'', ENT_QUOTES)?>',<?=$r->guest_enabled?1:0?>,<?=$r->registration_enabled?1:0?>,<?=$r->voice_enabled?1:0?>)">✏️ Edit</button>
+<button class="btn-edit" onclick="copyRoomCode(this,'<?=htmlspecialchars($r->slug ?? 'room-'.$r->id)?>')">🔗 Widget Code</button>
 <form method="POST" style="display:inline" onsubmit="return confirm('Delete this room?')"><input type="hidden" name="action" value="delete_room"><input type="hidden" name="room_id" value="<?=$r->id?>"><button class="btn-del">🗑️ Delete</button></form>
 </div>
 </div>
@@ -175,6 +176,12 @@ $typeLabel = $r->type === 'public' ? 'Public' : ($r->type === 'password' ? '🔒
 </div>
 
 <script>
+function copyRoomCode(btn,slug){
+var code='<script src="https://planet-hosts.com/chatbox/widget.js.php?tenant_id=<?=$tenant->id?>&amp;room='+slug+'"><\/script>';
+navigator.clipboard.writeText(code).then(function(){
+btn.textContent='✅ Copied!';setTimeout(function(){btn.textContent='🔗 Widget Code';},2000);
+});
+}
 function loadEmojis(){
 var x=new XMLHttpRequest();
 x.open('GET','/chatbox/api.php?action=get_emojis&tenant_id=<?=$tenant->id??0?>',true);
