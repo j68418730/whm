@@ -149,6 +149,7 @@ class RadioAutoDJPlayer
         $content = "ffconcat version 1.0\n";
         foreach ($files as $f) {
             $content .= "file " . escapeshellarg($f) . "\n";
+            $content .= "duration 3600\n";
         }
         file_put_contents($path, $content);
         return $path;
