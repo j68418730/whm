@@ -333,14 +333,14 @@ x.send();
       <td><?=htmlspecialchars($dj->username??'')?></td>
       <td><?=htmlspecialchars($dj->name??$dj->username??'')?></td>
       <td><?=htmlspecialchars($dj->role??'dj')?></td>
-      <td><span class="status-badge <?=$dj->status==='active'?'status-running':'status-stopped'?>"><?=$dj->status??'unknown'?></span></td>
+      <td><span class="status-badge <?=($dj->status??'active')==='active'?'status-running':(($dj->status??'')==='on_leave'?'status-starting':'status-stopped')?>"><?=htmlspecialchars($dj->status??'unknown')?></span></td>
       <td><?=htmlspecialchars($dj->last_active??'Never')?></td>
       <td class="actions">
         <a href="?station_id=<?=$stationId?>&tab=djs&edit_dj=<?=$dj->id?>" class="btn btn-sm btn-primary">Edit</a>
         <?php if ($stationDjPort): ?>
         <a href="#" class="btn btn-sm btn-secondary" onclick="showDjInfo(<?=$dj->id?>,'<?=$dj->username?>',<?=$stationDjPort?>);return false">Info</a>
         <?php endif; ?>
-        <a href="/user/radio/dj/toggle/<?=$dj->id?>" class="btn btn-sm btn-warning"><?=$dj->status==='active'?'Suspend':'Activate'?></a>
+        <a href="/user/radio/dj/toggle/<?=$dj->id?>" class="btn btn-sm btn-warning" title="Cycles: active → suspended → on leave"><?=($dj->status??'active')==='active'?'Suspend':(($dj->status??'')==='on_leave'?'Reactivate':'On Leave')?></a>
         <a href="/user/radio/dj/delete/<?=$dj->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a>
       </td>
     </tr>
@@ -454,8 +454,39 @@ function copyDjInfo(){
     <div class="form-row"><div class="form-group"><label>Display Name</label><input class="inp inp-sm" name="name" value="<?=htmlspecialchars($editDj->name??'')?>"></div><div class="form-group"><label>Email</label><input class="inp inp-sm" type="email" name="email" value="<?=htmlspecialchars($editDj->email??'')?>"></div></div>
     <div class="form-group"><label>Bio</label><textarea class="inp inp-sm" name="bio" rows="2"><?=htmlspecialchars($editDj->bio??'')?></textarea></div>
     <div class="form-group"><label>Role</label><div style="display:flex;gap:12px"><label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#c0c0c0"><input type="radio" name="role" value="dj" <?=($editDj->role??'dj')==='dj'?'checked':''?>> DJ</label><label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#c0c0c0"><input type="radio" name="role" value="mod" <?=($editDj->role??'')==='mod'?'checked':''?>> Mod</label></div></div>
-    <button class="btn btn-sm btn-primary">Save Changes</button>
-    <a href="?station_id=<?=$stationId?>&tab=djs" class="btn btn-sm btn-secondary">Cancel</a>
+    <div class="form-group"><label>Status</label>
+      <?php $djStatus = $editDj->status ?? 'active'; $statusMap = ['active'=>'Active — full access','on_leave'=>'On Leave — can log in, no stream access','suspended'=>'Suspended — no access','inactive'=>'Inactive — no access','banned'=>'Banned — no access']; ?>
+      <select class="inp inp-sm" name="status">
+        <?php foreach ($statusMap as $val => $label): ?>
+        <option value="<?=$val?>" <?=$djStatus===$val?'selected':''?>><?=$label?></option>
+        <?php endforeach; ?>
+      </select>
+      <div style="font-size:10px;color:#64748b;margin-top:4px">Suspended/Inactive/Banned: no login, no access. On Leave: can log in but cannot stream or take over.</div>
+    </div>
+
+    <!-- Assigned Stations -->
+    <div style="margin-top:8px;padding:14px;background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2);border-radius:8px">
+      <label style="display:block;margin-bottom:10px;font-size:13px;font-weight:600;color:var(--text-secondary)">Assigned Stations</label>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Stations this DJ can access on this account. Primary station is shown disabled.</p>
+      <?php $editAssigned = array_map('intval', $editDj->assigned_stream_ids ?? []); ?>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
+        <?php foreach (($stations ?? []) as $st):
+            $stReal = (int)($st->streaming_id ?? $st->id);
+            $stId = (int)$st->id;
+            $isPrimary = $stReal == (int)($station->streaming_id ?? $station->id);
+            $isAssigned = in_array($stReal, $editAssigned);
+            $checked = ($isPrimary || $isAssigned) ? 'checked' : '';
+            $disabled = $isPrimary ? 'disabled' : '';
+        ?>
+        <label style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.08);border-radius:6px;cursor:pointer;font-size:13px;color:#e0e0e0">
+          <input type="checkbox" name="station_ids[]" value="<?=$stId?>" <?=$checked?> <?=$disabled?> style="margin:0;transform:scale(1.1)">
+          <span><?=htmlspecialchars($st->name ?? "Stream #".$stId)?><?=$isPrimary?' (Primary)':''?></span>
+        </label>
+        <?php endforeach; ?>
+      </div>
+    </div>
+    <button class="btn btn-sm btn-primary" style="margin-top:14px">Save Changes</button>
+    <a href="?station_id=<?=$stationId?>&tab=djs" class="btn btn-sm btn-secondary" style="margin-top:14px">Cancel</a>
   </form>
   </div>
   </div>

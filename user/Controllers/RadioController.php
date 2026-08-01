@@ -114,6 +114,17 @@ class RadioController extends Controller
                 $stmt = $this->db->pdo()->prepare("SELECT DISTINCT d.* FROM radio_djs d LEFT JOIN radio_dj_streams rjds ON d.id = rjds.dj_id WHERE d.stream_id = ? OR rjds.stream_id = ? ORDER BY d.username");
                 $stmt->execute([$realStationId, $realStationId]);
                 $djs = $stmt->fetchAll() ?: [];
+                // Load each DJ's assigned station ids (primary + junction) for the edit modal
+                foreach ($djs as &$dj) {
+                    $dj->assigned_stream_ids = [];
+                    try {
+                        $p1 = $this->db->pdo()->prepare("SELECT stream_id FROM radio_dj_streams WHERE dj_id = ? AND is_active = 'yes'");
+                        $p1->execute([$dj->id]);
+                        foreach ($p1->fetchAll() as $r) $dj->assigned_stream_ids[] = (int)$r['stream_id'];
+                    } catch (\Exception $e) {}
+                    if (!in_array((int)$dj->stream_id, $dj->assigned_stream_ids)) $dj->assigned_stream_ids[] = (int)$dj->stream_id;
+                }
+                unset($dj);
             } catch (\Exception $e) {}
             try { $requests = $this->db->table('radio_requests')->where('stream_id', $realStationId)->orderBy('created_at', 'desc')->limit(50)->get() ?: []; } catch (\Exception $e) {}
             try { $schedule = $this->db->table('radio_schedule')->where('stream_id', $realStationId)->where('is_active', 1)->orderBy('day_of_week')->orderBy('start_time')->get() ?: []; } catch (\Exception $e) {}
@@ -354,6 +365,8 @@ class RadioController extends Controller
         if (isset($_POST['email'])) $update['email'] = trim($_POST['email']);
         if (isset($_POST['bio'])) $update['bio'] = trim($_POST['bio']);
         if (isset($_POST['role'])) $update['role'] = $_POST['role'];
+        $newStatus = $_POST['status'] ?? '';
+        if (in_array($newStatus, ['active','inactive','banned','suspended','on_leave'])) $update['status'] = $newStatus;
         if (!empty($update)) {
             try {
                 $this->db->table('radio_djs')->where('id', $id)->where('stream_id', $station->streaming_id ?? $station->id)->update($update);
@@ -372,6 +385,34 @@ class RadioController extends Controller
                 $_SESSION['success'] = 'DJ updated.';
             } catch (\Exception $e) { $_SESSION['error'] = 'Update failed.'; }
         }
+
+        // Sync station assignments (radio_dj_streams junction)
+        if (isset($_POST['station_ids'])) {
+            try {
+                $realIds = [];
+                foreach ((array)$_POST['station_ids'] as $sid) {
+                    $sid = (int)$sid;
+                    if ($sid > 10000) $sid -= 10000;
+                    if ($sid > 0) $realIds[] = $sid;
+                }
+                // Remove old junction rows for this DJ (but never the primary stream row — it's radio_djs.stream_id)
+                $this->db->table('radio_dj_streams')->where('dj_id', $id)->delete();
+                $userId = $this->auth->user()->id ?? 0;
+                foreach ($realIds as $rid) {
+                    if ($rid == ($station->streaming_id ?? $station->id)) continue; // primary is implicit
+                    try {
+                        $this->db->table('radio_dj_streams')->insert([
+                            'dj_id' => $id,
+                            'stream_id' => $rid,
+                            'assigned_by' => $userId,
+                            'assigned_at' => date('Y-m-d H:i:s'),
+                            'is_active' => 'yes',
+                        ]);
+                    } catch (\Exception $e) {}
+                }
+                $_SESSION['success'] = 'DJ updated (assignments saved).';
+            } catch (\Exception $e) { $_SESSION['error'] = 'Failed to save assignments.'; }
+        }
         header('Location: /user/radio?tab=djs&station_id=' . ($station->id ?? '')); exit;
     }
 
@@ -383,9 +424,11 @@ class RadioController extends Controller
             $rid = $station->streaming_id ?? $station->id;
             $dj = $this->db->table('radio_djs')->where('id', $id)->where('stream_id', $rid)->first();
             if ($dj) {
-                $new = $dj->status === 'active' ? 'suspended' : 'active';
+                // Cycle: active -> suspended -> on_leave -> active
+                $cycle = ['active' => 'suspended', 'suspended' => 'on_leave', 'on_leave' => 'active'];
+                $new = $cycle[$dj->status] ?? 'active';
                 $this->db->table('radio_djs')->where('id', $id)->update(['status' => $new]);
-                $_SESSION['success'] = "DJ {$new}.";
+                $_SESSION['success'] = "DJ set to {$new}.";
             }
         }
         header('Location: /user/radio?tab=djs&station_id=' . ($station->id ?? '')); exit;
