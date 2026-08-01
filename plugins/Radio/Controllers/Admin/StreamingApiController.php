@@ -391,8 +391,12 @@ class StreamingApiController extends Controller
         $v2Path = '/opt/planethosts/shoutcast/sc_serv';
         if (file_exists($v2Path)) {
             $result['shoutcast2']['installed'] = true;
-            $out = shell_exec("strings " . escapeshellarg($v2Path) . " 2>/dev/null | grep -oE '2\\.[0-9]+\\.[0-9]+\\.[0-9]+' | head -1");
-            $result['shoutcast2']['version'] = trim($out ?: '2.5.5.733');
+            // Fetch version from running server status endpoint
+            $result['shoutcast2']['version'] = '2.5.5.733';
+            $stats = @file_get_contents('http://127.0.0.1:8000/statistics?json=1', false, stream_context_create(['http' => ['timeout' => 2]]));
+            if ($stats && preg_match('/"version":"([^"]+)"/', $stats, $m)) {
+                $result['shoutcast2']['version'] = $m[1];
+            }
             // Check for downloaded update file
             $updates = glob('/tmp/sc_serv_update_linux_x64_*.tar.gz');
             $updateAvailable = false;
