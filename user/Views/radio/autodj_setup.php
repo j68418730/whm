@@ -150,15 +150,18 @@ textarea.inp{resize:vertical;min-height:60px}
 <?php elseif ($step === 6): ?>
 <div class="wizard-card">
 <h2>Playlist</h2>
-<div class="desc">Select existing playlists or create new ones for your station</div>
+<div class="desc">Select existing playlists or create new ones for your station. AutoDJ needs a playlist with audio files to play.</div>
 <?php if (!empty($playlists)): ?>
 <h4 style="font-size:13px;color:#94a3b8;margin:0 0 8px">Existing Playlists</h4>
 <div class="grid-2" style="margin-bottom:12px">
-<?php foreach ($playlists as $pl): ?>
+<?php foreach ($playlists as $pl): $cnt = $songCounts[$pl->id] ?? 0; ?>
 <label style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(0,0,0,.3);border-radius:8px;font-size:12px;color:#c0c0c0;cursor:pointer">
-<input type="checkbox" name="playlist_ids[]" value="<?=$pl->id?>"> <span><?=htmlspecialchars($pl->name)?></span></label>
+<input type="checkbox" name="playlist_ids[]" value="<?=$pl->id?>"> <span><?=htmlspecialchars($pl->name)?> <span style="font-size:10px;color:<?=$cnt>0?'#00C853':'#f87171'?>">(<?=$cnt?> songs)</span></span></label>
 <?php endforeach; ?>
 </div>
+<?php endif; ?>
+<?php if (!empty($songCounts) && max($songCounts) === 0): ?>
+<div style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#f87171">⚠️ No audio files found in your playlists. <a href="/user/radio?tab=playlists&station_id=<?=$station->id?>" style="color:#0A84FF">Upload media to your playlist</a> first, then continue.</div>
 <?php endif; ?>
 <h4 style="font-size:13px;color:#94a3b8;margin:0 0 8px">Quick Create</h4>
 <div class="grid-2">
