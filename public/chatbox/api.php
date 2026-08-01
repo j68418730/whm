@@ -263,6 +263,14 @@ if ($action === 'upload_avatar') {
     exit;
 }
 
+// === LOGOUT ===
+if ($action === 'logout') {
+    $tenantId = (int)($_POST['tenant_id'] ?? 0);
+    unset($_SESSION['chatbox_guest_' . $tenantId]);
+    unset($_SESSION['chatbox_guest_profile_' . $tenantId]);
+    echo json_encode(['success'=>true]); exit;
+}
+
 // === GUEST CHECK ===
 if ($action === 'guest_check') {
     $tenantId = (int)($_GET['tenant_id'] ?? 0);

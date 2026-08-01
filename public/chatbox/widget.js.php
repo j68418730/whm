@@ -128,7 +128,7 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
         var html = '<div id="chatbox-widget">'+
             '<button id="chatbox-toggle" onclick="toggleChatbox()">💬</button>'+
             '<div id="chatbox-panel" class="closed">'+
-            '<div id="chatbox-hdr"><span class="title">'+widgetTitle+'</span><div style="display:flex;gap:4px;align-items:center"><button class="close" onclick="openSettings()" title="Settings">⚙️</button><button class="close" onclick="toggleChatbox()">✕</button></div></div>'+
+            '<div id="chatbox-hdr"><span class="title">'+widgetTitle+'</span><div style="display:flex;gap:4px;align-items:center"><button class="close" onclick="openSettings()" title="Settings">⚙️</button><button class="close" onclick="logoutChat()" title="Close & Logout">✕</button></div></div>'+
             '<div id="chatbox-settings" style="display:none;position:absolute;top:40px;right:8px;background:'+bgColor+';border:1px solid '+(accentColor)+'33;border-radius:12px;padding:14px;width:230px;z-index:20;box-shadow:0 8px 30px rgba(0,0,0,.5)"></div>'+
             '<div id="chatbox-body">'+
             '<div id="chatbox-main">'+
@@ -307,6 +307,43 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
         startPolling();
         joinOnline();
     }
+
+    // === LOGOUT ===
+    window.logoutChat = function() {
+        // Clear server guest session
+        var fd = new FormData();
+        fd.append('action', 'logout');
+        fd.append('tenant_id', tenantId);
+        fetch(apiBase, {method:'POST', body: fd}).then(function(){
+            // Reset client state
+            currentUser = null;
+            stopPolling();
+            voiceOn = false;
+            camOn = false;
+            if (localStream) { localStream.getTracks().forEach(function(t){ t.stop(); }); localStream = null; }
+            Object.keys(pcMap).forEach(function(k){ if (pcMap[k]) pcMap[k].close(); });
+            pcMap = {};
+            document.getElementById('chatbox-inp').style.display = 'none';
+            document.getElementById('chatbox-video').style.display = 'none';
+            document.getElementById('chatbox-msgs').innerHTML = '';
+            document.getElementById('chatbox-online-list').innerHTML = '';
+            // Close panel and show login
+            var panel = document.getElementById('chatbox-panel');
+            panel.classList.remove('open');
+            panel.classList.add('closed');
+            if (guestEnabled) showGuestLogin();
+            else if (regEnabled) showRegisterLogin();
+            else showGuestLogin();
+        }).catch(function(){
+            currentUser = null;
+            var panel = document.getElementById('chatbox-panel');
+            panel.classList.remove('open');
+            panel.classList.add('closed');
+            if (guestEnabled) showGuestLogin();
+            else if (regEnabled) showRegisterLogin();
+            else showGuestLogin();
+        });
+    };
 
     // === SETTINGS / PROFILE ===
     var myProfile = { display_name:'', avatar:'', font_style:'Inter', font_color:'#ffffff', font_size:13 };
