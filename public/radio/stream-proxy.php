@@ -10,6 +10,18 @@ $stream = $s->fetch(PDO::FETCH_OBJ);
 if (!$stream) { http_response_code(404); exit; }
 
 $port = (int)($stream->port ?? 8000);
+$engine = strtolower($stream->engine ?? 'icecast');
+// Determine the correct request path for each server type
+if ($engine === 'shoutcast1') {
+    $reqPath = '/';
+} elseif ($engine === 'shoutcast' || $engine === 'shoutcast2') {
+    $reqPath = '/stream';
+} else {
+    // Icecast: use the mount point
+    $mount = $stream->mount_point ?? '/stream';
+    if (!str_starts_with($mount, '/')) $mount = '/' . $mount;
+    $reqPath = $mount;
+}
 while (ob_get_level()) ob_end_clean();
 
 header('Content-Type: audio/mpeg');
@@ -22,7 +34,7 @@ http_response_code(200);
 $sock = @fsockopen('localhost', $port, $errno, $errstr, 5);
 if (!$sock) { http_response_code(502); exit; }
 stream_set_timeout($sock, 10);
-fwrite($sock, "GET / HTTP/1.0\r\nHost: localhost\r\nIcy-MetaData:0\r\n\r\n");
+fwrite($sock, "GET {$reqPath} HTTP/1.0\r\nHost: localhost\r\nIcy-MetaData:0\r\n\r\n");
 
 // Read ICY headers: up to 4KB
 $skipped = 0;

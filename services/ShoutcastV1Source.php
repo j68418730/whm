@@ -117,7 +117,11 @@ class ShoutcastV1Source
             $data = fread($fp, $bufSize);
             if ($data === false || $data === '') break;
             $written = @fwrite($sock, $data);
-            if ($written === false) { $this->log("Write failed"); break; }
+            if ($written === false) {
+                $st = function_exists('socket_import_stream') ? (socket_last_error() ?? 0) : '?';
+                $this->log("Write failed (err=$st, feof=" . (feof($sock)?'y':'n') . ")");
+                break;
+            }
             if ($written > 0) { usleep($delayPerChunk); }
         }
         stream_set_blocking($sock, true);
