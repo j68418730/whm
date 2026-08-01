@@ -31,7 +31,8 @@ class AutodjController extends Controller
         )->fetchAll(\PDO::FETCH_OBJ);
         
         foreach ($stations as $s) {
-            $pidFile = '/home/testacct/radio/autodj/autodj.pid';
+            $pidFile = '/home/testacct/radio/autodj/autodj_' . $s->id . '.pid';
+            if (!file_exists($pidFile)) $pidFile = '/home/testacct/radio/autodj/autodj.pid';
             $s->autodj_running = file_exists($pidFile) && ($pid = (int)@file_get_contents($pidFile)) > 0 && @\posix_kill($pid, 0);
         }
         

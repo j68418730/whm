@@ -19,7 +19,8 @@ try {
     // AutoDJ check via PID file
     $autodjPid = 0;
     $autodjRunning = false;
-    $pidFile = '/home/testacct/radio/autodj/autodj.pid';
+    $pidFile = '/home/testacct/radio/autodj/autodj_' . $stationId . '.pid';
+    if (!file_exists($pidFile)) $pidFile = '/home/testacct/radio/autodj/autodj.pid';
     if (file_exists($pidFile)) {
         $autodjPid = (int)trim(@file_get_contents($pidFile));
         if (function_exists('posix_kill')) {
