@@ -69,6 +69,24 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
     '#chatbox-rooms .rm{background:none;border:1px solid '+(accentColor)+'44;border-radius:12px;padding:4px 12px;font-size:10px;cursor:pointer;color:'+textColor+'88;white-space:nowrap;transition:.1s}'+
     '#chatbox-rooms .rm:hover{background:'+(accentColor)+'22;color:'+textColor+'}'+
     '#chatbox-rooms .rm.act{background:'+(accentColor)+'33;color:'+textColor+';border-color:'+accentColor+'}'+
+    '#chatbox-body{display:flex;flex:1;overflow:hidden}'+
+    '#chatbox-main{display:flex;flex-direction:column;flex:1;min-width:0}'+
+    '#chatbox-online{width:110px;flex-shrink:0;border-left:1px solid '+(accentColor)+'22;overflow-y:auto;padding-bottom:8px}'+
+    '#chatbox-online .ou{display:flex;align-items:center;gap:4px;padding:5px 8px;font-size:10px;color:'+textColor+'bb;cursor:pointer;border-radius:4px;margin:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'+
+    '#chatbox-online .ou:hover{background:'+(accentColor)+'22}'+
+    '#chatbox-online .ou .cam-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}'+
+    '#chatbox-online .ou .role-badge{font-size:7px;padding:0 4px;border-radius:3px;font-weight:700}'+
+    '#chatbox-camview{display:none;flex-shrink:0;padding:4px 8px;border-bottom:1px solid '+(accentColor)+'22}'+
+    '#chatbox-camview.open{display:flex;gap:4px;overflow-x:auto}'+
+    '#chatbox-camview video{width:80px;height:60px;border-radius:6px;object-fit:cover;background:#000;flex-shrink:0}'+
+    '#chatbox-vc{display:none;padding:6px 10px;border-top:1px solid '+(accentColor)+'22;align-items:center;flex-shrink:0}'+
+    '#chatbox-vc.open{display:flex}'+
+    '#chatbox-vc .sb{width:28px;height:28px;border-radius:50%;background:none;border:1px solid '+(accentColor)+'44;color:'+textColor+';cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}'+
+    '#chatbox-vc .sb.active{background:'+accentColor+'55;border-color:'+accentColor+'}'+
+    '#chatbox-ctxmenu{position:fixed;z-index:1000;background:'+bgColor+';border:1px solid '+(accentColor)+'44;border-radius:8px;padding:4px;min-width:140px;box-shadow:0 4px 20px rgba(0,0,0,.5)}'+
+    '#chatbox-ctxmenu .ctx-item{padding:6px 10px;font-size:11px;cursor:pointer;border-radius:4px;color:'+textColor+'cc;display:flex;align-items:center;gap:6px}'+
+    '#chatbox-ctxmenu .ctx-item:hover{background:'+(accentColor)+'22}'+
+    '#chatbox-ctxmenu .ctx-item.danger{color:#f87171}'+
     '#chatbox-msgs{flex:1;overflow-y:auto;padding:8px 12px}'+
     '#chatbox-msgs .msg{padding:6px 10px;margin-bottom:4px;border-radius:8px;font-size:12px;line-height:1.5;color:'+textColor+'cc}'+
     '#chatbox-msgs .msg .u{font-weight:600;color:'+accentColor+';font-size:11px;margin-bottom:2px}'+
@@ -105,11 +123,18 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
             '<button id="chatbox-toggle" onclick="toggleChatbox()">💬</button>'+
             '<div id="chatbox-panel" class="closed">'+
             '<div id="chatbox-hdr"><span class="title">'+widgetTitle+'</span><button class="close" onclick="toggleChatbox()">✕</button></div>'+
+            '<div id="chatbox-body">'+
+            '<div id="chatbox-main">'+
             '<div id="chatbox-rooms"></div>'+
+            '<div id="chatbox-camview"></div>'+
             '<div id="chatbox-msgs"></div>'+
-            '<div id="chatbox-video" style="display:none;position:relative;flex-shrink:0"><video id="local-video" autoplay muted style="width:100%;height:140px;border-radius:8px;object-fit:cover;background:#000"></video><button onclick="stopCam()" style="position:absolute;top:4px;right:4px;background:'+accentColor+';border:none;color:#fff;border-radius:4px;cursor:pointer;font-size:10px;padding:3px 8px">✕</button></div>'+
+            '<div id="chatbox-vc" style="display:none"><button class="sb" id="talkBtn" onmousedown="talkStart()" onmouseup="talkStop()" onmouseleave="talkStop()" title="Push to talk">🎤</button><button class="sb" id="muteBtn" onclick="toggleMute()" title="Mute">🔇</button><div id="vc-meter" style="flex:1;height:6px;background:'+bgColor+';border-radius:3px;overflow:hidden;margin:0 8px"><div id="vc-meter-fill" style="height:100%;width:0%;background:'+accentColor+';transition:width .1s"></div></div></div>'+
             '<div id="chatbox-inp" style="display:none"><div class="row"><button class="sb" style="background:none;border:1px solid '+(accentColor)+'44;font-size:16px" onclick="toggleEmojiPicker()">😊</button>'+(voiceEnabled?'<button class="sb" style="background:none;border:1px solid '+(accentColor)+'44;font-size:16px" id="voiceBtn" onclick="toggleVoice()">🎤</button>':'')+'<button class="sb" style="background:none;border:1px solid '+(accentColor)+'44;font-size:16px" onclick="toggleCam()">📹</button><textarea id="chatbox-input" placeholder="Type a message..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendChatboxMsg()}"></textarea><button class="sb" onclick="sendChatboxMsg()">➤</button></div>'+
             '<div id="emoji-picker" style="display:none;position:absolute;bottom:52px;right:12px;background:'+bgColor+';border:1px solid '+(accentColor)+'33;border-radius:10px;padding:8px;width:220px;max-height:200px;overflow-y:auto;z-index:10;box-shadow:0 4px 20px rgba(0,0,0,.4)"></div></div>'+
+            '</div>'+
+            '<div id="chatbox-online"><div style="padding:8px 10px;font-size:10px;color:'+textColor+'88;font-weight:600;text-transform:uppercase;letter-spacing:.5px">In Chat</div><div id="chatbox-online-list"></div></div>'+
+            '</div>'+
+            '<div id="chatbox-video" style="display:none;position:relative;flex-shrink:0;padding:4px 8px"><video id="local-video" autoplay muted style="width:100%;height:120px;border-radius:8px;object-fit:cover;background:#000"></video><button onclick="stopCam()" style="position:absolute;top:8px;right:12px;background:'+accentColor+';border:none;color:#fff;border-radius:4px;cursor:pointer;font-size:10px;padding:3px 8px">✕</button></div>'+
             '<div id="chatbox-login" style="display:none"></div>'+
             '</div></div>';
 
@@ -186,7 +211,7 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
                 if (m.message_type === 'system') { el.innerHTML += '<div class="msg sys">'+escHtml(m.message)+'</div>'; return; }
                 var t = '';
                 if (m.created_at) { var d = new Date(m.created_at); t = d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
-                el.innerHTML += '<div class="msg" data-id="'+m.id+'"><div class="u">'+escHtml(m.username)+'<span class="t">'+t+'</span></div><div>'+escHtml(m.message)+'</div><div class="rx" id="rx-'+m.id+'"></div><span class="rx-add" onclick="addReaction('+m.id+')" style="font-size:11px;cursor:pointer;color:'+accentColor+'" title="React">😊</span></div>';
+                el.innerHTML += '<div class="msg" data-id="'+m.id+'"><div class="u" style="cursor:pointer" onclick="userMenu(\''+escAttr(m.username)+'\')">'+escHtml(m.username)+'<span class="t">'+t+'</span></div><div>'+escHtml(m.message)+'</div><div class="rx" id="rx-'+m.id+'"></div><span class="rx-add" onclick="addReaction('+m.id+')" style="font-size:11px;cursor:pointer;color:'+accentColor+'" title="React">😊</span></div>';
                 if (m.id > lastMsgId) lastMsgId = m.id;
             });
             loadReactions(msgs);
@@ -351,6 +376,7 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
 
     window.toggleVoice = function() {
         var btn = document.getElementById('voiceBtn');
+        var vcRow = document.getElementById('chatbox-vc');
         if (voiceOn) {
             voiceOn = false;
             if (localStream) { localStream.getTracks().forEach(function(t){ t.stop(); }); localStream = null; }
@@ -359,6 +385,8 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
             signalPost('leave', {});
             btn.style.background = 'none';
             btn.style.border = '1px solid ' + accentColor + '44';
+            vcRow.classList.remove('open');
+            if (audioCtx) { audioCtx.close(); audioCtx = null; analyser = null; }
             return;
         }
         navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream){
@@ -366,6 +394,8 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
             voiceOn = true;
             btn.style.background = accentColor + '33';
             btn.style.border = '1px solid ' + accentColor;
+            vcRow.classList.add('open');
+            startMeter();
             // Announce join
             signalPost('join', {});
             pollSignals();
@@ -407,6 +437,24 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
             document.body.appendChild(existing);
         }
         existing.srcObject = stream;
+        // If stream has video, show in cam view
+        var hasVideo = stream.getVideoTracks && stream.getVideoTracks().length > 0;
+        if (hasVideo) {
+            var camView = document.getElementById('chatbox-camview');
+            camView.classList.add('open');
+            var v = document.getElementById('remote-video-' + remoteId);
+            if (!v) {
+                v = document.createElement('video');
+                v.id = 'remote-video-' + remoteId;
+                v.autoplay = true;
+                v.playsinline = true;
+                v.style.width = '80px'; v.style.height = '60px';
+                camView.appendChild(v);
+            }
+            v.srcObject = stream;
+            camMap[remoteId] = true;
+            renderOnline();
+        }
     }
 
     function handleOffer(s) {
@@ -446,6 +494,8 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
             camOn = true;
             container.style.display = 'block';
             video.srcObject = stream;
+            if (currentUser) camMap[currentUser.username] = true;
+            renderOnline();
             // Recreate peers to add video track
             Object.keys(pcMap).forEach(function(k){ if (pcMap[k]) pcMap[k].close(); });
             pcMap = {};
@@ -456,9 +506,15 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
         camOn = false;
         if (localStream) { localStream.getTracks().forEach(function(t){ t.stop(); }); localStream = null; }
         document.getElementById('chatbox-video').style.display = 'none';
+        if (currentUser) delete camMap[currentUser.username];
+        renderOnline();
+        Object.keys(pcMap).forEach(function(k){ if (pcMap[k]) pcMap[k].close(); });
+        pcMap = {};
+        signalPost('leave', {});
     };
 
     // === ONLINE USERS ===
+    var onlineUsers = [];
     function joinOnline() {
         var fd = new FormData();
         fd.append('action', 'join_online');
@@ -466,6 +522,136 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
         fd.append('user_id', currentUser && currentUser.userId ? currentUser.userId : 0);
         fd.append('username', currentUser ? currentUser.username : 'Guest');
         fetch(apiBase, {method:'POST', body: fd});
+        pollOnline();
+    }
+    function pollOnline() {
+        fetch(apiBase + '?action=room_users&room_id=' + currentRoomId).then(function(r){ return r.json(); }).then(function(list){
+            if (list && list.length) {
+                onlineUsers = list;
+                renderOnline();
+            }
+            setTimeout(pollOnline, 5000);
+        }).catch(function(){ setTimeout(pollOnline, 8000); });
+    }
+    function renderOnline() {
+        var el = document.getElementById('chatbox-online-list');
+        var myName = currentUser ? currentUser.username : '';
+        var h = '';
+        var isStaff = currentUser && (currentUser.role === 'owner' || currentUser.role === 'admin' || currentUser.role === 'moderator');
+        onlineUsers.forEach(function(u){
+            var isMe = u.username === myName;
+            var onCam = camMap[u.username] || (isMe && camOn);
+            h += '<div class="ou" onclick="userMenu(\'' + escAttr(u.username) + '\')">' +
+                '<span class="cam-dot" style="background:' + (onCam ? '#4ade80' : (isMe ? '#38bdf8' : '#64748b')) + '" title="' + (onCam ? 'On cam' : '') + '"></span>' +
+                '<span style="flex:1;overflow:hidden;text-overflow:ellipsis">' + escHtml(u.username) + (isMe ? ' (you)' : '') + '</span>' +
+                '</div>';
+        });
+        el.innerHTML = h || '<div style="padding:8px;font-size:10px;color:'+textColor+'66">No one online</div>';
+    }
+
+    // === USER CONTEXT MENU ===
+    var camMap = {};
+    window.userMenu = function(username) {
+        closeCtxMenu();
+        var myName = currentUser ? currentUser.username : '';
+        var isMe = username === myName;
+        var myRole = currentUser ? (currentUser.role || 'guest') : 'guest';
+        var canMod = myRole === 'owner' || myRole === 'admin' || myRole === 'moderator';
+        var h = '<div id="chatbox-ctxmenu">';
+        h += '<div class="ctx-item" onclick="dmUser(\'' + escAttr(username) + '\')">💬 Message</div>';
+        if (onCam && !isMe) h += '<div class="ctx-item" onclick="watchCam(\'' + escAttr(username) + '\')">📹 Watch cam</div>';
+        if (!isMe && canMod) {
+            h += '<div class="ctx-item" onclick="modAction(\'kick\',\'' + escAttr(username) + '\')">👢 Kick</div>';
+            h += '<div class="ctx-item" onclick="modAction(\'ban\',\'' + escAttr(username) + '\')">🚫 Ban</div>';
+            h += '<div class="ctx-item danger" onclick="modAction(\'mute\',\'' + escAttr(username) + '\')">🔇 Mute</div>';
+        }
+        h += '</div>';
+        document.body.insertAdjacentHTML('beforeend', h);
+        var menu = document.getElementById('chatbox-ctxmenu');
+        menu.style.top = (event && event.pageY ? event.pageY : 100) + 'px';
+        menu.style.left = (event && event.pageX ? event.pageX : 100) + 'px';
+        setTimeout(function(){ document.addEventListener('click', closeCtxMenu, {once:true}); }, 50);
+    };
+    window.closeCtxMenu = function() { var m = document.getElementById('chatbox-ctxmenu'); if (m) m.remove(); };
+    window.dmUser = function(username) {
+        closeCtxMenu();
+        var msg = prompt('Message ' + username + ':');
+        if (!msg) return;
+        var fd = new FormData();
+        fd.append('action', 'send_message');
+        fd.append('room_id', currentRoomId);
+        fd.append('tenant_id', tenantId);
+        fd.append('username', currentUser ? currentUser.username : 'Guest');
+        fd.append('message', '[DM to ' + username + '] ' + msg);
+        fetch(apiBase, {method:'POST', body: fd});
+    };
+    window.watchCam = function(username) {
+        closeCtxMenu();
+        // Open a video element for this user's remote stream if it exists
+        var v = document.getElementById('remote-video-' + username.replace(/[^a-z0-9]/gi, ''));
+        if (v) {
+            document.getElementById('chatbox-camview').classList.add('open');
+            var clone = v.cloneNode();
+            clone.id = '';
+            clone.style.width = '160px'; clone.style.height = '120px';
+            document.getElementById('chatbox-camview').appendChild(clone);
+            clone.srcObject = v.srcObject;
+        } else { alert(username + ' is not sharing cam to you yet.'); }
+    };
+    window.modAction = function(action, username) {
+        closeCtxMenu();
+        if (!confirm(action + ' ' + username + '?')) return;
+        // Send as system message
+        var fd = new FormData();
+        fd.append('action', 'send_message');
+        fd.append('room_id', currentRoomId);
+        fd.append('tenant_id', tenantId);
+        fd.append('username', currentUser ? currentUser.username : 'Guest');
+        fd.append('message', '[' + action + '] ' + username + ' by ' + (currentUser ? currentUser.username : 'mod'));
+        fetch(apiBase, {method:'POST', body: fd});
+    };
+    function escAttr(s) { return (s || '').replace(/['"\\]/g, '\\$&'); }
+
+    // === TALK / MUTE / VC METER ===
+    var isMuted = false, audioCtx = null, analyser = null;
+    window.toggleMute = function() {
+        isMuted = !isMuted;
+        var btn = document.getElementById('muteBtn');
+        btn.textContent = isMuted ? '🔇' : '🔊';
+        btn.classList.toggle('active', isMuted);
+        if (localStream) localStream.getAudioTracks().forEach(function(t){ t.enabled = !isMuted; });
+    };
+    window.talkStart = function() {
+        if (!voiceOn || !localStream) return;
+        if (!isMuted) localStream.getAudioTracks().forEach(function(t){ t.enabled = true; });
+        var btn = document.getElementById('talkBtn');
+        btn.classList.add('active');
+    };
+    window.talkStop = function() {
+        if (!voiceOn || !localStream) return;
+        if (!isMuted) localStream.getAudioTracks().forEach(function(t){ t.enabled = false; });
+        var btn = document.getElementById('talkBtn');
+        btn.classList.remove('active');
+    };
+    function startMeter() {
+        if (!localStream || audioCtx) return;
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 256;
+            audioCtx.createMediaStreamSource(localStream).connect(analyser);
+            meterLoop();
+        } catch(e) {}
+    }
+    function meterLoop() {
+        if (!analyser) return;
+        var data = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(data);
+        var sum = 0; for (var i = 0; i < data.length; i++) sum += data[i];
+        var avg = sum / data.length;
+        var pct = Math.min(100, (avg / 128) * 100);
+        document.getElementById('vc-meter-fill').style.width = pct + '%';
+        requestAnimationFrame(meterLoop);
     }
 
     function escHtml(t) { var d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
