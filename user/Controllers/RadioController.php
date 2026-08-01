@@ -771,7 +771,7 @@ class RadioController extends Controller
             $hosting = $this->db->table('hosting_users')->where('id', $stream->user_id)->first();
             $username = $hosting ? $hosting->username : 'unknown';
             $autodjDir = "/home/{$username}/radio/autodj";
-            $pidFile = $autodjDir . '/autodj.pid';
+            $pidFile = $autodjDir . '/autodj_' . $realId . '.pid';
             // Kill all runner processes for this stream
             exec("/usr/bin/pkill -f \"runner_{$realId}\" 2>/dev/null");
             if (file_exists($pidFile)) {

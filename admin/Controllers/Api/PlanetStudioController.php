@@ -559,7 +559,7 @@ class PlanetStudioController extends Controller
             usleep(500000);
             $ok = $player->start();
             $pid = 0;
-            $pidFile = "/home/{$username}/radio/autodj/autodj.pid";
+            $pidFile = "/home/{$username}/radio/autodj/autodj_{$realId}.pid";
             if (file_exists($pidFile)) $pid = (int)trim(file_get_contents($pidFile));
             $this->db->table('streaming_stations')->where('id', $realId)->update(['autodj_enabled' => $ok ? 1 : 0]);
             return $this->json([

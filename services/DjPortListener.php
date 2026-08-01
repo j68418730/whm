@@ -206,25 +206,15 @@ class DjPortListener
 
                 // Kill any existing AutoDJ for this station before connecting to source port
                 try {
-                    // Find and kill the AutoDJ runner process
-                    $pidFile = "/home/" . ($dj->hosting_username ?? '') . "/radio/autodj/autodj.pid";
-                    if (!file_exists($pidFile)) {
-                        // Try alternative paths
-                        $pidFile = "/home/planethosts/radio/autodj/autodj.pid";
-                    }
+                    // Find and kill the AutoDJ runner process for this specific station
+                    $stationId = (int)$conn['station_id'];
+                    $pidFile = "/home/" . ($dj->hosting_username ?? '') . "/radio/autodj/autodj_{$stationId}.pid";
                     if (file_exists($pidFile)) {
                         $pid = (int)trim(@file_get_contents($pidFile));
                         if ($pid > 0) {
                             @\posix_kill($pid, 15);
                             usleep(300000);
                             @\posix_kill($pid, 9);
-                        }
-                    }
-                    // Kill via known PID locations
-                    foreach (['/home/testacct/radio/autodj/autodj.pid', '/home/planethosts/radio/autodj/autodj.pid'] as $pf) {
-                        if (file_exists($pf)) {
-                            $pid = (int)trim(@file_get_contents($pf));
-                            if ($pid > 0) { @\posix_kill($pid, 15); usleep(100000); @\posix_kill($pid, 9); }
                         }
                     }
                 } catch (\Exception $e) {}

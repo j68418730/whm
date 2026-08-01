@@ -33,8 +33,8 @@ class RadioAutoDJPlayer
         $mount = $this->stream->mount_point ?? '/stream';
         $name = $this->stream->name ?? 'Radio';
         $streamId = $this->stream->id ?? 0;
-        $logPath = $this->autodjDir . '/autodj.log';
-        $pidFile = $this->autodjDir . '/autodj.pid';
+        $logPath = $this->autodjDir . '/autodj_' . $streamId . '.log';
+        $pidFile = $this->autodjDir . '/autodj_' . $streamId . '.pid';
 
         if ($engine === 'shoutcast1') {
             // SHOUTcast v1: source port = listener port + 1, ShoutcastV1Source
@@ -87,7 +87,7 @@ class RadioAutoDJPlayer
     public function stop()
     {
         $streamId = $this->stream->id ?? 0;
-        $pidFile = $this->autodjDir . '/autodj.pid';
+        $pidFile = $this->autodjDir . '/autodj_' . $streamId . '.pid';
         if (file_exists($pidFile)) {
             $pid = (int)trim(file_get_contents($pidFile));
             if ($pid > 0) {
@@ -106,7 +106,7 @@ class RadioAutoDJPlayer
     public function isRunning()
     {
         $streamId = $this->stream->id ?? 0;
-        $pidFile = $this->autodjDir . '/autodj.pid';
+        $pidFile = $this->autodjDir . '/autodj_' . $streamId . '.pid';
         if (file_exists($pidFile)) {
             $pid = (int)trim(file_get_contents($pidFile));
             if ($pid > 0) {
