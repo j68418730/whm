@@ -190,46 +190,42 @@ if ($action === 'guest_login') {
     exit;
 }
 
-// === SAVE PROFILE (registered user) ===
+// === SAVE PROFILE (per room, registered user) ===
 if ($action === 'save_profile') {
     $userId = (int)($_POST['user_id'] ?? 0);
-    $tenantId = (int)($_POST['tenant_id'] ?? 0);
-    if (!$userId || !$tenantId) { echo json_encode(['error'=>'Missing user']); exit; }
-    $fields = [];
-    $params = [];
-    foreach (['display_name','avatar','font_style','font_color','font_size'] as $f) {
-        if (isset($_POST[$f])) { $fields[] = "$f=?"; $params[] = $_POST[$f]; }
-    }
-    if (!empty($fields)) {
-        $params[] = $userId; $params[] = $tenantId;
-        $pdo->prepare("UPDATE chatbox_users SET " . implode(',', $fields) . " WHERE id=? AND tenant_id=?")->execute($params);
-    }
+    $roomId = (int)($_POST['room_id'] ?? 0);
+    $username = trim($_POST['username'] ?? '');
+    if (!$roomId) { echo json_encode(['error'=>'Missing room']); exit; }
+    $q = $pdo->prepare("INSERT INTO chatbox_room_profiles (room_id,user_id,username,display_name,avatar,font_style,font_color,font_size,is_guest) VALUES (?,?,?,?,?,?,?,?,0) ON DUPLICATE KEY UPDATE username=VALUES(username),display_name=VALUES(display_name),avatar=VALUES(avatar),font_style=VALUES(font_style),font_color=VALUES(font_color),font_size=VALUES(font_size),is_guest=0");
+    $q->execute([$roomId,$userId,$username,$_POST['display_name']??' ',$_POST['avatar']??'',$_POST['font_style']??'Inter',$_POST['font_color']??'#ffffff',(int)($_POST['font_size']??13)]);
     echo json_encode(['success'=>true]); exit;
 }
 
-// === GET PROFILE BY USERNAME ===
+// === GET PROFILE BY USERNAME (per room) ===
 if ($action === 'get_profile_by_username') {
-    $tenantId = (int)($_POST['tenant_id'] ?? 0);
+    $roomId = (int)($_POST['room_id'] ?? 0);
     $username = trim($_POST['username'] ?? '');
-    $q = $pdo->prepare("SELECT id, username, display_name, avatar, font_style, font_color, font_size, role FROM chatbox_users WHERE username=? AND tenant_id=?");
-    $q->execute([$username, $tenantId]);
+    $q = $pdo->prepare("SELECT room_id, user_id, username, display_name, avatar, font_style, font_color, font_size, is_guest FROM chatbox_room_profiles WHERE username=? AND room_id=?");
+    $q->execute([$username, $roomId]);
     $p = $q->fetch(PDO::FETCH_OBJ);
     echo json_encode($p ?: ['error'=>'Not found']); exit;
 }
 
-// === GET PROFILE (registered user) ===
+// === GET PROFILE (per room, registered user) ===
 if ($action === 'get_profile') {
     $userId = (int)($_GET['user_id'] ?? 0);
-    $tenantId = (int)($_GET['tenant_id'] ?? 0);
-    $q = $pdo->prepare("SELECT id, username, display_name, avatar, font_style, font_color, font_size, role FROM chatbox_users WHERE id=? AND tenant_id=?");
-    $q->execute([$userId, $tenantId]);
+    $roomId = (int)($_GET['room_id'] ?? 0);
+    $q = $pdo->prepare("SELECT room_id, user_id, username, display_name, avatar, font_style, font_color, font_size, is_guest FROM chatbox_room_profiles WHERE user_id=? AND room_id=?");
+    $q->execute([$userId, $roomId]);
     $p = $q->fetch(PDO::FETCH_OBJ);
     echo json_encode($p ?: ['error'=>'Not found']); exit;
 }
 
-// === SAVE GUEST PROFILE (session-based) ===
+// === SAVE GUEST PROFILE (session-based, per room) ===
 if ($action === 'save_guest_profile') {
     $tenantId = (int)($_POST['tenant_id'] ?? 0);
+    $roomId = (int)($_POST['room_id'] ?? 0);
+    $username = trim($_POST['username'] ?? '');
     $profile = [
         'display_name' => trim($_POST['display_name'] ?? ''),
         'avatar' => trim($_POST['avatar'] ?? ''),
@@ -237,15 +233,28 @@ if ($action === 'save_guest_profile') {
         'font_color' => trim($_POST['font_color'] ?? '#ffffff'),
         'font_size' => (int)($_POST['font_size'] ?? 13),
     ];
-    $_SESSION['chatbox_guest_profile_' . $tenantId] = $profile;
+    $_SESSION['chatbox_guest_profile_' . $tenantId . '_' . $roomId] = $profile;
+    // Also store in DB for owner panel visibility
+    $userId = 0;
+    $q = $pdo->prepare("INSERT INTO chatbox_room_profiles (room_id,user_id,username,display_name,avatar,font_style,font_color,font_size,is_guest) VALUES (?,?,?,?,?,?,?,?,1) ON DUPLICATE KEY UPDATE username=VALUES(username),display_name=VALUES(display_name),avatar=VALUES(avatar),font_style=VALUES(font_style),font_color=VALUES(font_color),font_size=VALUES(font_size),is_guest=1");
+    $q->execute([$roomId,$userId,$username,$profile['display_name'],$profile['avatar'],$profile['font_style'],$profile['font_color'],$profile['font_size']]);
     echo json_encode(['success'=>true, 'profile'=>$profile]); exit;
 }
 
-// === GET GUEST PROFILE ===
+// === GET GUEST PROFILE (per room) ===
 if ($action === 'get_guest_profile') {
     $tenantId = (int)($_GET['tenant_id'] ?? 0);
-    $p = $_SESSION['chatbox_guest_profile_' . $tenantId] ?? null;
+    $roomId = (int)($_GET['room_id'] ?? 0);
+    $p = $_SESSION['chatbox_guest_profile_' . $tenantId . '_' . $roomId] ?? null;
     echo json_encode($p ?: ['display_name'=>'','avatar'=>'','font_style'=>'Inter','font_color'=>'#ffffff','font_size'=>13]); exit;
+}
+
+// === GET ROOM SETTINGS ===
+if ($action === 'get_room_settings') {
+    $roomId = (int)($_GET['room_id'] ?? 0);
+    $q = $pdo->prepare("SELECT * FROM chatbox_rooms WHERE id=?");
+    $q->execute([$roomId]);
+    echo json_encode($q->fetch(PDO::FETCH_OBJ) ?: ['error'=>'Room not found']); exit;
 }
 
 // === UPLOAD AVATAR ===
