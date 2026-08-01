@@ -131,6 +131,17 @@ $typeLabel = $r->type === 'public' ? 'Public' : ($r->type === 'password' ? '🔒
 <div class="embed-code">&lt;iframe src="https://planet-hosts.com/chatbox/embed.php?tenant_id=<?=$tenant->id?>" width="360" height="500"&gt;&lt;/iframe&gt;</div>
 <button class="save-btn" style="padding:4px 14px;font-size:10px" onclick="copy(this,'iframe')">📋 Copy</button></div>
 </div></div>
+
+<div class="card"><h3>😊 Custom Emojis</h3>
+<div id="emoji-manager">
+<div style="color:var(--text3);font-size:12px">Loading emojis...</div>
+</div>
+<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+<input id="emoji-name" placeholder="Emoji name (e.g. hype)" style="flex:1;min-width:120px;padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.35);color:var(--text);font-size:12px;outline:none">
+<input id="emoji-file" type="file" accept="image/png,image/gif,image/webp,image/svg+xml,image/jpeg" style="flex:1;min-width:150px;font-size:11px;color:var(--text3)">
+<button class="save-btn" onclick="uploadEmoji()">📤 Upload</button>
+</div>
+</div>
 </div>
 <?php endif; ?>
 
@@ -164,6 +175,35 @@ $typeLabel = $r->type === 'public' ? 'Public' : ($r->type === 'password' ? '🔒
 </div>
 
 <script>
+function loadEmojis(){
+var x=new XMLHttpRequest();
+x.open('GET','/chatbox/api.php?action=get_emojis&tenant_id=<?=$tenant->id??0?>',true);
+x.onload=function(){if(x.status!==200)return;try{var list=JSON.parse(x.responseText);
+var el=document.getElementById('emoji-manager');
+if(!list||!list.length){el.innerHTML='<div style="color:var(--text3);font-size:12px">No custom emojis yet. Upload one below.</div>';return;}
+var h='<div style="display:flex;flex-wrap:wrap;gap:8px">';
+list.forEach(function(e){h+='<div style="text-align:center;padding:8px;background:rgba(0,0,0,.2);border-radius:8px"><img src="'+e.url+'" style="width:36px;height:36px;border-radius:4px;object-fit:contain"><div style="font-size:9px;color:var(--text3);margin-top:3px">:'+e.name+':</div><button class="btn-del" style="font-size:8px;padding:2px 6px;margin-top:3px" onclick="deleteEmoji('+e.id+')">✕</button></div>';});
+h+='</div>';el.innerHTML=h;}catch(e){}};x.send();
+}
+function uploadEmoji(){
+var name=document.getElementById('emoji-name').value.trim();
+var file=document.getElementById('emoji-file').files[0];
+if(!name||!file){alert('Enter a name and choose a file');return;}
+var fd=new FormData();
+fd.append('action','save_emoji');
+fd.append('name',name);
+fd.append('emoji',file);
+var x=new XMLHttpRequest();x.open('POST','/chatbox/api.php',true);
+x.onload=function(){loadEmojis();document.getElementById('emoji-name').value='';document.getElementById('emoji-file').value='';};
+x.send(fd);
+}
+function deleteEmoji(id){
+if(!confirm('Delete this emoji?'))return;
+var fd=new FormData();fd.append('action','delete_emoji');fd.append('id',id);
+var x=new XMLHttpRequest();x.open('POST','/chatbox/api.php',true);
+x.onload=function(){loadEmojis();};x.send(fd);
+}
+loadEmojis();
 function autoSlug(){var n=document.getElementById('fName').value;var s=n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');document.getElementById('fSlug').value=s;document.getElementById('slugPreview').textContent=s||'my-room';}
 function copySlug(id,slug){navigator.clipboard.writeText('https://planet-hosts.com/chat/'+slug).then(function(){var b=event.target;b.textContent='✅';setTimeout(function(){b.textContent='Copy';},2000);});}
 function switchTab(el,tab){document.querySelectorAll('.tab-btn').forEach(function(t){t.style.background='none';t.style.color='var(--text3)';});el.style.background='var(--accent2)';el.style.color='var(--accent)';document.getElementById('tab-widget').style.display=tab==='widget'?'':'none';document.querySelector('.room-grid').style.display=tab==='widget'?'none':'';}
