@@ -82,7 +82,8 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
     '#chatbox-camview{display:none;flex-shrink:0;padding:4px 8px;border-bottom:1px solid '+(accentColor)+'22}'+
     '#chatbox-camview.open{display:flex;gap:4px;overflow-x:auto}'+
     '#chatbox-camview video{width:80px;height:60px;border-radius:6px;object-fit:cover;background:#000;flex-shrink:0}'+
-    '#chatbox-vc{display:flex;justify-content:center;gap:8px;padding:8px 10px;border-top:1px solid '+(accentColor)+'22;align-items:center;flex-shrink:0}'+
+    '#chatbox-vc{display:none;justify-content:center;gap:8px;padding:8px 10px;border-top:1px solid '+(accentColor)+'22;align-items:center;flex-shrink:0}'+
+    '#chatbox-vc.open{display:flex}'+
     '#chatbox-vc .sb{width:30px;height:30px;border-radius:50%;background:none;border:1px solid '+(accentColor)+'44;color:'+textColor+';cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;transition:.15s}'+
     '#chatbox-vc .sb.active{background:'+accentColor+'55;border-color:'+accentColor+'}'+
     '#chatbox-vc .sb:hover{background:'+(accentColor)+'22}'+
@@ -299,6 +300,7 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
     function onLoggedIn() {
         document.getElementById('chatbox-login').style.display = 'none';
         document.getElementById('chatbox-inp').style.display = 'block';
+        document.getElementById('chatbox-vc').classList.add('open');
         if (playerHtml) {
             var ph = document.getElementById('chatbox-hdr');
             ph.innerHTML += '<div style="margin-top:6px">'+playerHtml+'</div>';
@@ -325,6 +327,7 @@ $roomsList = $rooms->fetchAll(PDO::FETCH_OBJ);
             pcMap = {};
             document.getElementById('chatbox-inp').style.display = 'none';
             document.getElementById('chatbox-video').style.display = 'none';
+            document.getElementById('chatbox-vc').classList.remove('open');
             document.getElementById('chatbox-msgs').innerHTML = '';
             document.getElementById('chatbox-online-list').innerHTML = '';
             // Close panel and show login
