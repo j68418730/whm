@@ -257,6 +257,7 @@ x.send();
         <?php $_sp = $station->plain_password ?? $station->password ?? ''; ?>
         <input class="inp inp-sm" id="src-pass" value="<?=htmlspecialchars($_sp && !str_starts_with($_sp, '$2y$') ? $_sp : 'Set in Settings')?>" readonly style="flex:1;font-family:monospace;font-size:12px;color:#4ade80">
         <button class="btn btn-sm btn-sec" style="font-size:10px;padding:4px 8px" onclick="var p=document.getElementById('src-pass');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+        <a href="/user/radio/password/reset/<?=$stationId?>?type=source" class="btn btn-sm btn-warning" style="font-size:10px;padding:4px 8px" onclick="return confirm('Reset source password? A new password will be generated.')">Reset</a>
       </div>
     </div>
     <div>
@@ -265,6 +266,7 @@ x.send();
         <?php $_ap = $station->admin_plain_password ?? $station->admin_password ?? ''; ?>
         <input class="inp inp-sm" id="adm-pass" value="<?=htmlspecialchars($_ap && !str_starts_with($_ap, '$2y$') ? $_ap : 'Set in Settings')?>" readonly style="flex:1;font-family:monospace;font-size:12px;color:#facc15">
         <button class="btn btn-sm btn-sec" style="font-size:10px;padding:4px 8px" onclick="var p=document.getElementById('adm-pass');p.select();navigator.clipboard.writeText(p.value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+        <a href="/user/radio/password/reset/<?=$stationId?>?type=admin" class="btn btn-sm btn-warning" style="font-size:10px;padding:4px 8px" onclick="return confirm('Reset admin password? A new password will be generated.')">Reset</a>
       </div>
     </div>
     <div style="grid-column:1/-1;margin-top:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)">
@@ -319,7 +321,10 @@ x.send();
 </div>
 <div class="tab <?=$tab==='djs'?'active':''?>">
   <?php $stationDjPort = $station ? ($station->dj_port ?? $stationSettings->dj_port ?? null) : null; ?>
-  <div class="card"><div class="hdr"><h3>DJs<?php if ($stationDjPort): ?> <span style="font-size:11px;color:#64748b;font-weight:400">— Station DJ Port: <code style="color:#38bdf8">:<?=$stationDjPort?></code></span><?php endif; ?></h3></div>
+  <div class="card">
+    <div class="hdr"><h3>DJs<?php if ($stationDjPort): ?> <span style="font-size:11px;color:#64748b;font-weight:400">— Station DJ Port: <code style="color:#38bdf8">:<?=$stationDjPort?></code></span><?php endif; ?></h3>
+      <button class="btn btn-sm btn-primary" onclick="var f=document.getElementById('add-dj-form');f.style.display=f.style.display==='none'?'block':'none';this.textContent=this.textContent==='＋ Add DJ'?'✕ Close':'＋ Add DJ'">＋ Add DJ</button>
+    </div>
   <table><tr><th>Username</th><th>Name</th><th>Role</th><th>Status</th><th>Last Active</th><th>Actions</th></tr>
     <?php if (empty($djs)): ?><tr><td colspan="6" class="empty-state">No DJs yet</td></tr>
     <?php else: ?>
@@ -378,7 +383,7 @@ function copyDjInfo(){
 }
 </script>
   
-  <div class="card"><h3>Add DJ</h3>
+  <div class="card" id="add-dj-form" style="display:none"><h3>Add DJ</h3>
   <form method="post" action="/user/radio/dj/create">
     <input type="hidden" name="station_id" value="<?=$stationId?>">
     <div class="form-row"><div class="form-group"><label>Username</label><input class="inp inp-sm" name="username" required></div><div class="form-group"><label>Password</label><input class="inp inp-sm" type="password" name="password" required></div></div>
@@ -440,7 +445,9 @@ function copyDjInfo(){
   <?php endif; ?>
   <?php $editDjId = (int)($_GET['edit_dj']??0); $editDj = null; foreach($djs as $d){if($d->id==$editDjId){$editDj=$d;break;}} ?>
   <?php if ($editDj): ?>
-  <div class="card"><h3>Edit DJ: <?=htmlspecialchars($editDj->name?:$editDj->username)?></h3>
+  <div id="edit-dj-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:rgba(8,16,28,.97);border:1px solid rgba(56,189,248,.15);border-radius:14px;padding:22px;max-width:560px;width:92%;max-height:90vh;overflow-y:auto">
+  <div class="hdr"><h3>Edit DJ: <?=htmlspecialchars($editDj->name?:$editDj->username)?></h3><button class="btn btn-sm btn-secondary" onclick="document.getElementById('edit-dj-modal').style.display='none'">✕</button></div>
   <form method="post" action="/user/radio/dj/update/<?=$editDj->id?>">
     <input type="hidden" name="station_id" value="<?=$stationId?>">
     <div class="form-row"><div class="form-group"><label>Username</label><input class="inp inp-sm" name="username" value="<?=htmlspecialchars($editDj->username??'')?>"></div><div class="form-group"><label>New Password</label><input class="inp inp-sm" type="password" name="password" placeholder="Leave blank to keep current"></div></div>
@@ -449,7 +456,9 @@ function copyDjInfo(){
     <div class="form-group"><label>Role</label><div style="display:flex;gap:12px"><label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#c0c0c0"><input type="radio" name="role" value="dj" <?=($editDj->role??'dj')==='dj'?'checked':''?>> DJ</label><label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#c0c0c0"><input type="radio" name="role" value="mod" <?=($editDj->role??'')==='mod'?'checked':''?>> Mod</label></div></div>
     <button class="btn btn-sm btn-primary">Save Changes</button>
     <a href="?station_id=<?=$stationId?>&tab=djs" class="btn btn-sm btn-secondary">Cancel</a>
-  </form></div>
+  </form>
+  </div>
+  </div>
   <?php endif; ?>
 </div>
 <div class="tab <?=$tab==='requests'?'active':''?>">

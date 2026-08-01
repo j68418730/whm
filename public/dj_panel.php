@@ -574,14 +574,18 @@ if (!empty($allStations) && count($allStations) > 1): ?>
         // Get all streams for this user (owner mode) or DJ (non-owner)
         if ($isOwner) {
             $userId = $hostingId ?? 0;
+            $stationQuery = $pdo->prepare("SELECT id, name, engine, port, status FROM streaming_stations WHERE user_id=? ORDER BY name");
+            $stationQuery->execute([$userId]);
         } else {
-            // For DJ login: find the hosting user from the assigned station
-            $huDj = $pdo->prepare("SELECT user_id FROM streaming_stations WHERE id=?");
-            $huDj->execute([$_SESSION['dj_user']['stream_id'] ?? 0]);
-            $userId = $huDj->fetchColumn() ?: 0;
+            // DJ login: only streams assigned to this DJ (primary + radio_dj_streams junction)
+            $djId = (int)($_SESSION['dj_user']['id'] ?? 0);
+            $stationQuery = $pdo->prepare("SELECT DISTINCT ss.id, ss.name, ss.engine, ss.port, ss.status
+                FROM streaming_stations ss
+                LEFT JOIN radio_dj_streams rjds ON rjds.stream_id = ss.id
+                WHERE ss.id = (SELECT stream_id FROM radio_djs WHERE id = ?) OR rjds.dj_id = ?
+                ORDER BY ss.name");
+            $stationQuery->execute([$djId, $djId]);
         }
-        $stationQuery = $pdo->prepare("SELECT id, name, engine, port, status FROM streaming_stations WHERE user_id=? ORDER BY name");
-        $stationQuery->execute([$userId]);
         $userStations = $stationQuery->fetchAll(PDO::FETCH_OBJ);
         
         if (!empty($userStations)) {
@@ -611,9 +615,18 @@ if (!empty($allStations) && count($allStations) > 1): ?>
     if ($isOwner || $userId > 0) {
         if ($isOwner) {
             $userId = $hostingId ?? 0;
+            $stationQuery = $pdo->prepare("SELECT id, name, engine, port, status FROM streaming_stations WHERE user_id=? ORDER BY name");
+            $stationQuery->execute([$userId]);
+        } else {
+            // DJ login: only streams assigned to this DJ (primary + radio_dj_streams junction)
+            $djId = (int)($_SESSION['dj_user']['id'] ?? 0);
+            $stationQuery = $pdo->prepare("SELECT DISTINCT ss.id, ss.name, ss.engine, ss.port, ss.status
+                FROM streaming_stations ss
+                LEFT JOIN radio_dj_streams rjds ON rjds.stream_id = ss.id
+                WHERE ss.id = (SELECT stream_id FROM radio_djs WHERE id = ?) OR rjds.dj_id = ?
+                ORDER BY ss.name");
+            $stationQuery->execute([$djId, $djId]);
         }
-        $stationQuery = $pdo->prepare("SELECT id, name, engine, port, status FROM streaming_stations WHERE user_id=? ORDER BY name");
-        $stationQuery->execute([$userId]);
         $userStations = $stationQuery->fetchAll(PDO::FETCH_OBJ);
         
         foreach ($userStations as $station) {

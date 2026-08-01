@@ -180,6 +180,7 @@ $router->get('/user/radio/playlist/delete/{id}', 'User\Controllers\RadioControll
 $router->post('/user/radio/playlist/add-song', 'User\Controllers\RadioController@playlistAddSong');
 $router->get('/user/radio/playlist/remove-song/{id}', 'User\Controllers\RadioController@playlistRemoveSong');
 $router->post('/user/radio/settings/update', 'User\Controllers\RadioController@updateSettings');
+$router->get('/user/radio/password/reset/{id}', 'User\Controllers\RadioController@resetPassword');
 $router->post('/user/radio/autodj/update', 'User\Controllers\RadioController@updateAutodj');
 $router->post('/user/radio/branding/save', 'User\Controllers\RadioController@saveBranding');
 $router->get('/user/radio/requests/toggle/{id}', 'User\Controllers\RadioController@toggleRequests');
