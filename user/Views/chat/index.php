@@ -91,14 +91,8 @@ $typeLabel = $r->type === 'public' ? 'Public' : ($r->type === 'password' ? '🔒
 <button class="btn-add" onclick="openCreate()">➕ New Room</button>
 </div>
 
-<!-- Tabs -->
-<div style="display:flex;gap:4px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:4px">
-<div class="tab-btn active" style="padding:7px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;background:var(--accent2);color:var(--accent)" onclick="switchTab(this,'rooms')">🏠 Rooms</div>
-<div class="tab-btn" style="padding:7px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3)" onclick="switchTab(this,'widget')">⚙️ Widget</div>
-</div>
-
-<!-- Widget Settings tab -->
-<div id="tab-widget" style="display:none">
+<!-- Widget Settings -->
+<div style="margin-top:16px">
 <div class="card">
 <h3>⚙️ Widget Settings</h3>
 <form method="POST"><input type="hidden" name="action" value="save_widget">
@@ -213,7 +207,6 @@ x.onload=function(){loadEmojis();};x.send(fd);
 loadEmojis();
 function autoSlug(){var n=document.getElementById('fName').value;var s=n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');document.getElementById('fSlug').value=s;document.getElementById('slugPreview').textContent=s||'my-room';}
 function copySlug(id,slug){navigator.clipboard.writeText('https://planet-hosts.com/chat/'+slug).then(function(){var b=event.target;b.textContent='✅';setTimeout(function(){b.textContent='Copy';},2000);});}
-function switchTab(el,tab){document.querySelectorAll('.tab-btn').forEach(function(t){t.style.background='none';t.style.color='var(--text3)';});el.style.background='var(--accent2)';el.style.color='var(--accent)';document.getElementById('tab-widget').style.display=tab==='widget'?'':'none';document.querySelector('.room-grid').style.display=tab==='widget'?'none':'';}
 function openCreate(){document.getElementById('modalTitle').textContent='✏️ Create Room';document.getElementById('formAction').value='create_room';document.getElementById('formRoomId').value='';document.getElementById('fName').value='';document.getElementById('fDesc').value='';document.getElementById('fType').value='public';document.getElementById('fPass').value='';document.getElementById('fColor').value='#008cff';document.getElementById('fIcon').value='';document.getElementById('fGuest').checked=false;document.getElementById('fReg').checked=false;document.getElementById('fVoice').checked=false;togglePw();document.getElementById('roomModal').classList.add('open');}
 function openEdit(id,name,desc,type,color,icon,guest,reg,voice){document.getElementById('modalTitle').textContent='⚙️ Edit Room';document.getElementById('formAction').value='update_room';document.getElementById('formRoomId').value=id;document.getElementById('fName').value=name;document.getElementById('fDesc').value=desc;document.getElementById('fType').value=type;document.getElementById('fPass').value='';document.getElementById('fColor').value=color||'#008cff';document.getElementById('fIcon').value=icon||'';document.getElementById('fGuest').checked=guest==1;document.getElementById('fReg').checked=reg==1;document.getElementById('fVoice').checked=voice==1;togglePw();document.getElementById('roomModal').classList.add('open');}
 function togglePw(){document.getElementById('pwField').style.display=document.getElementById('fType').value==='password'?'':'none';}
