@@ -198,4 +198,130 @@ if ($action === 'guest_check') {
     exit;
 }
 
+// === REACT TO MESSAGE ===
+if ($action === 'react') {
+    $msgId = (int)($_POST['message_id'] ?? 0);
+    $userId = (int)($_POST['user_id'] ?? 0);
+    $emoji = trim($_POST['emoji'] ?? '');
+    if (!$msgId || !$emoji) { echo json_encode(['error'=>'Missing fields']); exit; }
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS chatbox_message_reactions (id int(11) NOT NULL AUTO_INCREMENT, message_id bigint(20) NOT NULL, user_id int(11) NOT NULL DEFAULT 0, username varchar(50) DEFAULT NULL, emoji varchar(20) NOT NULL, created_at timestamp NOT NULL DEFAULT current_timestamp(), PRIMARY KEY (id), UNIQUE KEY msg_user (message_id,user_id,emoji)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $q = $pdo->prepare("INSERT IGNORE INTO chatbox_message_reactions (message_id,user_id,username,emoji) VALUES (?,?,?,?)");
+        $q->execute([$msgId,$userId,$_POST['username']??'Guest',$emoji]);
+        echo json_encode(['success'=>true]);
+    } catch (Exception $e) { echo json_encode(['error'=>$e->getMessage()]); }
+    exit;
+}
+
+// === GET REACTIONS ===
+if ($action === 'get_reactions') {
+    $ids = $_GET['ids'] ?? '';
+    $ids = preg_replace('/[^0-9,]/', '', $ids);
+    if (!$ids) { echo json_encode([]); exit; }
+    $q = $pdo->query("SELECT message_id, emoji, COUNT(*) as count FROM chatbox_message_reactions WHERE message_id IN ($ids) GROUP BY message_id, emoji");
+    echo json_encode($q->fetchAll(PDO::FETCH_OBJ));
+    exit;
+}
+
+// === GET EMOJIS ===
+if ($action === 'get_emojis') {
+    $tenantId = (int)($_GET['tenant_id'] ?? 0);
+    $q = $pdo->prepare("SELECT * FROM chatbox_emojis WHERE tenant_id=? ORDER BY name");
+    $q->execute([$tenantId]);
+    echo json_encode($q->fetchAll(PDO::FETCH_OBJ));
+    exit;
+}
+
+// === SAVE EMOJI (admin) ===
+if ($action === 'save_emoji' && isset($_SESSION['chatbox_admin'])) {
+    $tenantId = (int)$_SESSION['chatbox_admin']['tenant_id'];
+    $name = trim($_POST['name'] ?? '');
+    $url = trim($_POST['url'] ?? '');
+    if (!$name || !$url) { echo json_encode(['error'=>'Name and URL required']); exit; }
+    $isUrl = str_starts_with($url, 'http');
+    $size = 0;
+    if (!$isUrl && isset($_FILES['emoji'])) {
+        $ext = strtolower(pathinfo($_FILES['emoji']['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ['png','gif','webp','svg','jpg'])) { echo json_encode(['error'=>'Invalid format']); exit; }
+        $dir = 'storage/chatbox/emojis/'.$tenantId;
+        if (!is_dir($dir)) @mkdir($dir, 0777, true);
+        $size = $_FILES['emoji']['size'];
+        $url = '/'.$dir.'/'.time().'_'.preg_replace('/[^a-z0-9-]/i','',$name).'.'.$ext;
+        move_uploaded_file($_FILES['emoji']['tmp_name'], $url);
+    }
+    $q = $pdo->prepare("INSERT INTO chatbox_emojis (tenant_id,name,url,is_url,file_size) VALUES (?,?,?,?,?)");
+    $q->execute([$tenantId,$name,$url,$isUrl?1:0,$size]);
+    echo json_encode(['success'=>true]);
+    exit;
+}
+
+// === DELETE EMOJI (admin) ===
+if ($action === 'delete_emoji' && isset($_SESSION['chatbox_admin'])) {
+    $tenantId = (int)$_SESSION['chatbox_admin']['tenant_id'];
+    $pdo->prepare("DELETE FROM chatbox_emojis WHERE id=? AND tenant_id=?")->execute([(int)($_POST['id']??0),$tenantId]);
+    echo json_encode(['success'=>true]);
+    exit;
+}
+
+// === WEBRTC SIGNALING ===
+if ($action === 'signal') {
+    $tenantId = (int)($_POST['tenant_id'] ?? 0);
+    $roomId = (int)($_POST['room_id'] ?? 0);
+    $userId = (int)($_POST['user_id'] ?? 0);
+    $username = trim($_POST['username'] ?? 'Guest');
+    $type = $_POST['type'] ?? ''; // offer / answer / ice / leave / join
+    $payload = $_POST['payload'] ?? '';
+    if (!$roomId || !$type) { echo json_encode(['error'=>'Missing fields']); exit; }
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS chatbox_signals (id int(11) NOT NULL AUTO_INCREMENT, room_id int(11) NOT NULL, user_id int(11) NOT NULL DEFAULT 0, username varchar(50) DEFAULT NULL, type varchar(10) NOT NULL, payload text, created_at timestamp NOT NULL DEFAULT current_timestamp(), PRIMARY KEY (id), KEY room_id (room_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        if ($type === 'leave') {
+            $pdo->prepare("DELETE FROM chatbox_signals WHERE room_id=? AND user_id=?")->execute([$roomId,$userId]);
+            echo json_encode(['success'=>true]); exit;
+        }
+        $q = $pdo->prepare("INSERT INTO chatbox_signals (room_id,user_id,username,type,payload) VALUES (?,?,?,?,?)");
+        $q->execute([$roomId,$userId,$username,$type,$payload]);
+        echo json_encode(['success'=>true]);
+    } catch (Exception $e) { echo json_encode(['error'=>$e->getMessage()]); }
+    exit;
+}
+
+// === GET SIGNALS (poll) ===
+if ($action === 'get_signals') {
+    $roomId = (int)($_GET['room_id'] ?? 0);
+    $userId = (int)($_GET['user_id'] ?? 0);
+    $after = (int)($_GET['after'] ?? 0);
+    if (!$roomId) { echo json_encode([]); exit; }
+    $sql = "SELECT * FROM chatbox_signals WHERE room_id=? AND user_id!=? AND id>? ORDER BY id LIMIT 50";
+    $q = $pdo->prepare($sql);
+    $q->execute([$roomId,$userId,$after]);
+    echo json_encode($q->fetchAll(PDO::FETCH_OBJ));
+    exit;
+}
+
+// === ONLINE USERS IN ROOM ===
+if ($action === 'room_users') {
+    $roomId = (int)($_GET['room_id'] ?? 0);
+    $tenantId = (int)($_GET['tenant_id'] ?? 0);
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS chatbox_online (id int(11) NOT NULL AUTO_INCREMENT, room_id int(11) NOT NULL, user_id int(11) NOT NULL DEFAULT 0, username varchar(50) DEFAULT NULL, joined_at timestamp NOT NULL DEFAULT current_timestamp(), PRIMARY KEY (id), UNIQUE KEY room_user (room_id,user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $q = $pdo->prepare("SELECT username FROM chatbox_online WHERE room_id=? ORDER BY joined_at");
+        $q->execute([$roomId]);
+        echo json_encode($q->fetchAll(PDO::FETCH_OBJ));
+    } catch (Exception $e) { echo json_encode([]); }
+    exit;
+}
+
+// === JOIN ONLINE ===
+if ($action === 'join_online') {
+    $roomId = (int)($_POST['room_id'] ?? 0);
+    $userId = (int)($_POST['user_id'] ?? 0);
+    $username = trim($_POST['username'] ?? 'Guest');
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS chatbox_online (id int(11) NOT NULL AUTO_INCREMENT, room_id int(11) NOT NULL, user_id int(11) NOT NULL DEFAULT 0, username varchar(50) DEFAULT NULL, joined_at timestamp NOT NULL DEFAULT current_timestamp(), PRIMARY KEY (id), UNIQUE KEY room_user (room_id,user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $pdo->prepare("INSERT IGNORE INTO chatbox_online (room_id,user_id,username) VALUES (?,?,?)")->execute([$roomId,$userId,$username]);
+        echo json_encode(['success'=>true]);
+    } catch (Exception $e) { echo json_encode(['error'=>$e->getMessage()]); }
+    exit;
+}
+
 echo json_encode(['success' => false, 'error' => 'Unknown action']);
