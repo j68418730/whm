@@ -27,52 +27,58 @@ class RadioAutoDJPlayer
         if (empty($files)) { error_log('AUTODJ: scanMusicFiles empty for dir=' . $this->musicDir . ' ids=' . json_encode($this->playlistIds)); return false; }
         error_log('AUTODJ: found ' . count($files) . ' files');
         $port = $this->stream->port ?? 8000;
-        $port = $this->stream->port ?? 8000;
         $engine = $this->stream->engine ?? 'icecast';
-        // SHOUTcast v1 uses port+1 for source connections
-        if ($engine === 'shoutcast1') $port++;
         $password = $this->stream->plain_password ?? ($this->stream->password ?? '');
         $bitrate = $this->stream->bitrate ?? 128;
         $mount = $this->stream->mount_point ?? '/stream';
         $name = $this->stream->name ?? 'Radio';
+        $streamId = $this->stream->id ?? 0;
+        $logPath = $this->autodjDir . '/autodj.log';
+        $pidFile = $this->autodjDir . '/autodj.pid';
 
-        if ($engine === 'shoutcast' || $engine === 'shoutcast2') {
-            // Use ShoutcastSource for SHOUTcast v2 (popen/exec needed for transcoding)
+        if ($engine === 'shoutcast1') {
+            // SHOUTcast v1: source port = listener port + 1, ShoutcastV1Source
+            $sPort = $port + 1;
             $playlistPath = $this->generateM3u($files);
-            $streamId = $this->stream->id ?? 0;
             $scriptPath = $this->autodjDir . '/runner_' . $streamId . '.php';
-            $logPath = $this->autodjDir . '/autodj.log';
-            $pidFile = $this->autodjDir . '/autodj.pid';
             $safeName = addcslashes($name, "'\\");
-            $runner = <<<PHP
-<?php
-require_once '/var/www/radiohosting/services/ShoutcastSource.php';
-\$s = new ShoutcastSource('localhost', {$port}, '{$password}', {$bitrate}, '{$safeName}', {$streamId});
-\$s->setPidFile('{$pidFile}');
-\$s->setLogFile('{$logPath}');
-\$s->setPlaylistFile('{$playlistPath}');
-\$s->run();
-PHP;
+            $runner = "<?php\n"
+                . "require_once '/var/www/radiohosting/services/ShoutcastV1Source.php';\n"
+                . "\$s = new ShoutcastV1Source('localhost', {$sPort}, '" . addslashes($password) . "', {$bitrate}, '{$safeName}', {$streamId});\n"
+                . "\$s->setPidFile('{$pidFile}');\n"
+                . "\$s->setLogFile('{$logPath}');\n"
+                . "\$s->setPlaylistFile('{$playlistPath}');\n"
+                . "\$s->run();\n";
             file_put_contents($scriptPath, $runner);
             exec("nohup php {$scriptPath} > {$logPath} 2>&1 & echo $!", $out);
-            $pid = (int)($out[0] ?? 0);
-            if ($pid > 0) file_put_contents($pidFile, $pid);
-            usleep(500000);
+        } elseif ($engine === 'shoutcast' || $engine === 'shoutcast2') {
+            // SHOUTcast v2: HTTP SOURCE protocol via ShoutcastSource
+            $playlistPath = $this->generateM3u($files);
+            $scriptPath = $this->autodjDir . '/runner_' . $streamId . '.php';
+            $safeName = addcslashes($name, "'\\");
+            $runner = "<?php\n"
+                . "require_once '/var/www/radiohosting/services/ShoutcastSource.php';\n"
+                . "\$s = new ShoutcastSource('localhost', {$port}, '" . addslashes($password) . "', {$bitrate}, '{$safeName}', {$streamId});\n"
+                . "\$s->setPidFile('{$pidFile}');\n"
+                . "\$s->setLogFile('{$logPath}');\n"
+                . "\$s->setPlaylistFile('{$playlistPath}');\n"
+                . "\$s->run();\n";
+            file_put_contents($scriptPath, $runner);
+            exec("nohup php {$scriptPath} > {$logPath} 2>&1 & echo $!", $out);
         } else {
+            // Icecast: ffmpeg HTTP PUT to mount
             $playlistPath = $this->generateConcat($files);
-            $logPath = $this->autodjDir . '/autodj.log';
-            $pidFile = $this->autodjDir . '/autodj.pid';
             $url = "http://source:{$password}@localhost:{$port}{$mount}";
             $cmd = "nohup ffmpeg -re -stream_loop -1 -f concat -safe 0 -i " . escapeshellarg($playlistPath)
-                . " -c:a libmp3lame -b:a {$bitrate}k -f mp3 " . escapeshellarg($url)
+                . " -vn -c:a libmp3lame -b:a {$bitrate}k -f mp3 " . escapeshellarg($url)
                 . " > {$logPath} 2>&1 & echo $!";
             error_log('AUTODJ: running ffmpeg cmd=' . $cmd);
             exec($cmd, $out, $code);
             error_log('AUTODJ: ffmpeg exit=' . $code . ' out=' . json_encode($out));
-            $pid = (int)($out[0] ?? 0);
-            if ($pid > 0) file_put_contents($pidFile, $pid);
-            usleep(500000);
         }
+        $pid = (int)($out[0] ?? 0);
+        if ($pid > 0) file_put_contents($pidFile, $pid);
+        usleep(500000);
         return $this->isRunning();
     }
 

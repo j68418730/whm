@@ -82,21 +82,27 @@ class ShoutcastSource
     {
         $sock = @fsockopen($this->host, $this->port, $errno, $errstr, 10);
         if (!$sock) { $this->log("Connection failed: $errstr"); return null; }
-        stream_set_timeout($sock, 5);
-        fwrite($sock, $this->password . "\r\n");
-        $resp = fread($sock, 1024);
-        $this->log("Auth response: " . trim($resp));
-        if (strpos($resp, 'OK2') === false && strpos($resp, 'OK') === false) {
+        stream_set_timeout($sock, 10);
+        // SHOUTcast v2 source protocol: HTTP SOURCE request with Basic auth
+        $auth = base64_encode("source:" . $this->password);
+        $req = "SOURCE /stream HTTP/1.0\r\n"
+            . "Host: {$this->host}:{$this->port}\r\n"
+            . "Authorization: Basic {$auth}\r\n"
+            . "Content-Type: audio/mpeg\r\n"
+            . "icy-name: {$this->name}\r\n"
+            . "icy-br: {$this->bitrate}\r\n"
+            . "icy-pub: 1\r\n"
+            . "User-Agent: PlanetHosts-AutoDJ/2.0\r\n"
+            . "\r\n";
+        fwrite($sock, $req);
+        $resp = fread($sock, 2048);
+        $this->log("Auth response: " . trim(preg_replace('/[\x00-\x1f]/', ' ', $resp)));
+        // SHOUTcast v2 returns "HTTP/1.0 200 OK" on successful source connect
+        if (strpos($resp, '200') === false && strpos($resp, 'OK') === false) {
             $this->log("Auth rejected");
             fclose($sock);
             return null;
         }
-        $headers = "icy-name: {$this->name}\r\n"
-            . "icy-br: {$this->bitrate}\r\n"
-            . "icy-pub: 1\r\n"
-            . "Content-Type: audio/mpeg\r\n"
-            . "\r\n";
-        fwrite($sock, $headers);
         return $sock;
     }
 
