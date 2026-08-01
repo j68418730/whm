@@ -54,7 +54,7 @@ class RadioAutoDJPlayer
         } elseif ($engine === 'shoutcast' || $engine === 'shoutcast2') {
             // SHOUTcast v2: ffmpeg HTTP PUT to /stream with -vn (strip album art video)
             $playlistPath = $this->generateConcat($files);
-            $url = "http://source:{$password}@localhost:{$port}/stream";
+            $url = "http://source:{$password}@127.0.0.1:{$port}/stream";
             $cmd = "nohup ffmpeg -re -stream_loop -1 -f concat -safe 0 -i " . escapeshellarg($playlistPath)
                 . " -vn -c:a libmp3lame -b:a {$bitrate}k -f mp3 " . escapeshellarg($url)
                 . " > {$logPath} 2>&1 & echo $!";
@@ -64,7 +64,7 @@ class RadioAutoDJPlayer
         } else {
             // Icecast: ffmpeg HTTP PUT to mount
             $playlistPath = $this->generateConcat($files);
-            $url = "http://source:{$password}@localhost:{$port}{$mount}";
+            $url = "http://source:{$password}@127.0.0.1:{$port}{$mount}";
             $cmd = "nohup ffmpeg -re -stream_loop -1 -f concat -safe 0 -i " . escapeshellarg($playlistPath)
                 . " -vn -c:a libmp3lame -b:a {$bitrate}k -f mp3 " . escapeshellarg($url)
                 . " > {$logPath} 2>&1 & echo $!";
