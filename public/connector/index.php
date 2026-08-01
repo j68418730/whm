@@ -46,12 +46,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && preg_match('#^/connector/station/(\
     exit;
 }
 
+// ─── PUBLIC PENDING REQUESTS (no API key needed) ───
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && preg_match('#^/connector/station/(\d+)/requests$#', $uriPath, $m)) {
+    $stationId = (int)$m[1];
+    $rq = $pdo->prepare("SELECT id, guest_name, artist, title, message, status, created_at FROM radio_requests WHERE stream_id = ? AND status = 'pending' ORDER BY created_at ASC");
+    $rq->execute([$stationId]);
+    $requests = $rq->fetchAll(PDO::FETCH_ASSOC);
+    echo json_encode(['success' => true, 'data' => $requests]);
+    exit;
+}
+
 // ─── API KEY AUTH FOR ALL OTHER ENDPOINTS ───
 $apiKey = $_SERVER['HTTP_X_API_KEY'] ?? '';
 $hash = hash('sha256', $apiKey);
-$stmt = $pdo->prepare("SELECT id, user_type, permissions FROM api_keys WHERE key_hash = ? AND is_active = 1");
-$stmt->execute([$hash]);
-$key = $stmt->fetch(PDO::FETCH_OBJ);
+try {
+    $stmt = $pdo->prepare("SELECT id, user_type, permissions FROM api_keys WHERE key_hash = ?");
+    $stmt->execute([$hash]);
+    $key = $stmt->fetch(PDO::FETCH_OBJ);
+} catch (\Exception $e) {
+    $key = null;
+}
 
 if (!$key) {
     http_response_code(401);

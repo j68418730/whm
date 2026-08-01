@@ -120,7 +120,7 @@ class RadioController extends Controller
                     try {
                         $p1 = $this->db->pdo()->prepare("SELECT stream_id FROM radio_dj_streams WHERE dj_id = ? AND is_active = 'yes'");
                         $p1->execute([$dj->id]);
-                        foreach ($p1->fetchAll() as $r) $dj->assigned_stream_ids[] = (int)$r['stream_id'];
+                        foreach ($p1->fetchAll() as $r) $dj->assigned_stream_ids[] = (int)$r->stream_id;
                     } catch (\Exception $e) {}
                     if (!in_array((int)$dj->stream_id, $dj->assigned_stream_ids)) $dj->assigned_stream_ids[] = (int)$dj->stream_id;
                 }

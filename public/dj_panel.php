@@ -653,6 +653,7 @@ if (!empty($allStations) && count($allStations) > 1): ?>
             $stationQuery->execute([$djId, $djId]);
         }
         $userStations = $stationQuery->fetchAll(PDO::FETCH_OBJ);
+        $djHost = 'planet-hosts.com';
         
         foreach ($userStations as $station) {
             $stationId = $station->id;
