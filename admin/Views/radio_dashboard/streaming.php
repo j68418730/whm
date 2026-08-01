@@ -18,28 +18,6 @@
 </div></div>
 </div>
 
-<!-- Engine Status -->
-<div class="card" style="margin-bottom:16px">
-<h3 style="color:var(--accent);margin-bottom:12px">Streaming Engines</h3>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px">
-<?php foreach ($engines as $key => $e): ?>
-<div style="background:rgba(8,16,28,.6);border:1px solid rgba(0,191,255,.08);border-radius:8px;padding:16px">
-<div style="font-size:18px;font-weight:600;margin-bottom:4px"><?php echo htmlspecialchars($e['name']); ?></div>
-<div style="font-size:12px;color:#64748b;margin-bottom:8px">
-Status: <strong style="color:<?php echo $e['installed'] ? '#4ade80' : '#f87171'; ?>"><?php echo $e['installed'] ? 'Installed' : 'Not installed'; ?></strong>
-<?php if ($e['installed']): ?> · v<?php echo htmlspecialchars($e['version']); ?><?php endif; ?>
-</div>
-<?php if (!$e['installed']): ?>
-<form method="POST" action="/admin/api/streaming/install" style="display:inline">
-<input type="hidden" name="engine" value="<?php echo $key; ?>">
-<button type="submit" class="btn btn-sm primary" onclick="return confirm('Install <?php echo $e['name']; ?>?')">Install</button>
-</form>
-<?php endif; ?>
-</div>
-<?php endforeach; ?>
-</div>
-</div>
-
 <!-- Package Versions -->
 <div class="card" style="margin-bottom:16px">
 <h3 style="color:var(--accent);margin-bottom:12px">🛠️ Streaming Package Versions</h3>
