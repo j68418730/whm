@@ -320,11 +320,11 @@ if ($action === 'get_api_config' && isset($_SESSION['dj_user'])) {
     header('Content-Type: application/json');
     try {
         $djId = $_SESSION['dj_user']['id'] ?? 0;
-        $streamId = $_SESSION['dj_user']['stream_id'] ?? 0;
+        $streamId = (int)($_GET['stream_id'] ?? $_SESSION['dj_user']['stream_id'] ?? 0);
         
-        // Get or create API config
-        $config = $pdo->prepare("SELECT * FROM dj_api_config WHERE dj_id = ?");
-        $config->execute([$djId]);
+        // Get or create API config scoped to (dj_id, stream_id) — each station has its own key/URL
+        $config = $pdo->prepare("SELECT * FROM dj_api_config WHERE dj_id = ? AND stream_id = ?");
+        $config->execute([$djId, $streamId]);
         $cfg = $config->fetch(PDO::FETCH_OBJ);
         
         if (!$cfg) {
@@ -332,11 +332,16 @@ if ($action === 'get_api_config' && isset($_SESSION['dj_user'])) {
             $reqUrl = "https://planet-hosts.com/connector/station/{$streamId}/requests";
             $pdo->prepare("INSERT INTO dj_api_config (dj_id, stream_id, dj_name, dj_display_name, api_key, request_api_url) VALUES (?,?,?,?,?,?)")
                 ->execute([$djId, $streamId, $_SESSION['dj_user']['name'] ?? '', $_SESSION['dj_user']['name'] ?? '', $apiKey, $reqUrl]);
-            $config->execute([$djId]);
+            $config->execute([$djId, $streamId]);
             $cfg = $config->fetch(PDO::FETCH_OBJ);
         }
         
-        echo json_encode(['success' => true, 'data' => $cfg]);
+        // Also return all station configs for this DJ
+        $allStmt = $pdo->prepare("SELECT * FROM dj_api_config WHERE dj_id = ? ORDER BY stream_id");
+        $allStmt->execute([$djId]);
+        $all = $allStmt->fetchAll(PDO::FETCH_OBJ);
+        
+        echo json_encode(['success' => true, 'data' => $cfg, 'configs' => $all, 'stationId' => $streamId]);
     } catch (\Exception $e) {
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -1289,18 +1294,30 @@ if (!empty($galleryData)): ?>
       var r=JSON.parse(x.responseText);
       if(r.success&&r.data){
         var d=r.data;
+        var configs=r.configs||[];
         var apiUrl = d.api_url || 'https://planet-hosts.com/api';
         var apiKey = d.api_key || '';
         var reqUrl = d.request_api_url || 'https://planet-hosts.com/connector/station/'+d.stream_id+'/requests';
-        var h='<div class="conn-box">';
+        var h='';
+        // Station picker when the DJ has configs for multiple stations
+        if(configs.length>1){
+          h+='<div style="margin-bottom:12px"><span class="conn-label">Station:</span> <select id="api-station-sel" onchange="loadApiConfig(this.value)" style="margin-left:6px;padding:4px 8px;border-radius:5px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px">';
+          configs.forEach(function(c){
+            var sid=c.stream_id;
+            h+='<option value="'+sid+'"'+(sid==d.stream_id?' selected':'')+'>Station #'+sid+'</option>';
+          });
+          h+='</select></div>';
+        }
+        h+='<div class="conn-box">';
         h+='<div class="conn-row"><span><span class="conn-label">API URL:</span> <span class="conn-value api" id="api-apiurl">'+escapeHtml(apiUrl)+'</span></span><button class="copy-btn" onclick="cf(\'api-apiurl\')">Copy</button></div>';
         h+='<div class="conn-row"><span><span class="conn-label">API Key:</span> <span class="conn-value pw" id="api-apikey">'+escapeHtml(apiKey)+'</span></span><button class="copy-btn" onclick="cf(\'api-apikey\')">Copy</button></div>';
         h+='<div class="conn-row"><span><span class="conn-label">Requests URL:</span> <span class="conn-value api" id="api-requrl">'+escapeHtml(reqUrl)+'</span></span><button class="copy-btn" onclick="cf(\'api-requrl\')">Copy</button></div>';
         h+='</div>';
         h+='<div style="margin-top:12px;padding:10px;background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.1);border-radius:8px;font-size:11px;color:#94a3b8;line-height:1.6">';
-        h+='In Planet Hosts Studio, go to <strong style="color:#e0e0e0">Edit Stream → DJ API &amp; Request Settings</strong> and enter the API URL and API Key above. The Request URL feeds song requests into your station.';
+        h+='Each station has its own API key and Request URL. In Planet Hosts Studio, enter these under <strong style="color:#e0e0e0">Edit Stream → DJ API &amp; Request Settings</strong> for the matching station.';
         h+='</div>';
         document.getElementById('dj-api-config').innerHTML = h;
+        window._apiConfigs = configs;
       } else {
         document.getElementById('dj-api-config').innerHTML='<div style="text-align:center;padding:20px;color:#64748b;font-size:13px">Could not load API config.</div>';
       }
@@ -1313,6 +1330,18 @@ if (!empty($galleryData)): ?>
   };
   x.send();
 })();
+function loadApiConfig(sid){
+  var configs = window._apiConfigs || [];
+  var c = null;
+  for(var i=0;i<configs.length;i++){ if(String(configs[i].stream_id)==String(sid)){ c=configs[i]; break; } }
+  if(!c) return;
+  var apiUrl = c.api_url || 'https://planet-hosts.com/api';
+  var apiKey = c.api_key || '';
+  var reqUrl = c.request_api_url || 'https://planet-hosts.com/connector/station/'+c.stream_id+'/requests';
+  document.getElementById('api-apiurl').textContent = apiUrl;
+  document.getElementById('api-apikey').textContent = apiKey;
+  document.getElementById('api-requrl').textContent = reqUrl;
+}
 function escapeHtml(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML;}
 </script>
 <script>

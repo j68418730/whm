@@ -67,6 +67,20 @@ try {
     $key = null;
 }
 
+// Fallback: a DJ's per-station API key (dj_api_config.api_key) — scoped to the station in the URL path
+if (!$key) {
+    if (preg_match('#^/connector/station/(\d+)#', $uriPath, $m)) {
+        $pathStationId = (int)$m[1];
+        try {
+            $djk = $pdo->prepare("SELECT c.*, rd.username AS dj_username FROM dj_api_config c JOIN radio_djs rd ON rd.id = c.dj_id WHERE c.api_key = ? AND c.stream_id = ? LIMIT 1");
+            $djk->execute([$apiKey, $pathStationId]);
+            $key = $djk->fetch(PDO::FETCH_OBJ);
+        } catch (\Exception $e) {
+            $key = null;
+        }
+    }
+}
+
 if (!$key) {
     http_response_code(401);
     echo json_encode(['success' => false, 'error' => 'Unauthorized']);
