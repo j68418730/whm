@@ -108,9 +108,17 @@ class StudioService
 
     public function getPlaylists($stationId)
     {
-        return $this->db->table('radio_playlists')
-            ->where('stream_id', $stationId)
-            ->get() ?: [];
+        $pdo = $this->db->pdo();
+        try {
+            $stmt = $pdo->prepare("SELECT p.* FROM radio_playlists p
+                JOIN streaming_stations ss ON ss.id = p.stream_id
+                WHERE (p.stream_id = ? OR (ss.user_id = (SELECT user_id FROM streaming_stations WHERE id = ?) AND p.account_shared = 1))
+                ORDER BY p.name");
+            $stmt->execute([$stationId, $stationId]);
+            return $stmt->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        } catch (\Exception $e) {
+            return $this->db->table('radio_playlists')->where('stream_id', $stationId)->get() ?: [];
+        }
     }
 
     public function getPlaylistItems($playlistId)

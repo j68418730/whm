@@ -539,14 +539,21 @@ function copyDjInfo(){
   </form></div>
 </div>
 <div class="tab <?=$tab==='playlists'?'active':''?>">
-  <div class="card"><div class="hdr"><h3>Playlists</h3></div>
+  <div class="card"><div class="hdr"><h3>Playlists</h3><span style="font-size:10px;color:#64748b">Shared across all stations on this account</span></div>
+  <?php
+  // Map playlist stream_id -> station name for shared badges
+  $plStationNames = [];
+  foreach (($stations ?? []) as $st) $plStationNames[(int)($st->streaming_id ?? $st->id)] = $st->name;
+  ?>
   <?php if (empty($playlists)): ?><div class="empty-state">No playlists yet.</div>
   <?php else: ?>
-  <table><tr><th>Name</th><th>Type</th><th>Actions</th></tr>
+  <table><tr><th>Name</th><th>Type</th><th>Station</th><th>Actions</th></tr>
     <?php foreach ($playlists as $p): ?>
+    <?php $pStream = (int)($p->stream_id ?? 0); $isCurrent = $pStream === (int)($station->streaming_id ?? $station->id); ?>
     <tr>
-      <td><a href="?station_id=<?=$stationId?>&tab=playlists&playlist_id=<?=$p->id?>" style="color:#0A84FF;text-decoration:none"><?=htmlspecialchars($p->name)?></a></td>
-      <td><?=htmlspecialchars($p->type??'default')?></td>
+      <td><a href="?station_id=<?=$stationId?>&tab=playlists&playlist_id=<?=$p->id?>" style="color:#0A84FF;text-decoration:none"><?=htmlspecialchars($p->name)?></a> <?php if (!$isCurrent): ?><span class="status-badge status-starting" style="font-size:8px">shared</span><?php endif; ?></td>
+      <td><?=htmlspecialchars($p->playlist_type??'default')?></td>
+      <td><?=htmlspecialchars($plStationNames[$pStream] ?? 'Stream #'.$pStream)?><?=$isCurrent?' <span style="color:#00C853">(this)</span>':''?></td>
       <td class="actions"><a href="?station_id=<?=$stationId?>&tab=playlists&playlist_id=<?=$p->id?>" class="btn btn-sm btn-primary">Manage</a><a href="/user/radio/playlist/delete/<?=$p->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a></td>
     </tr>
     <?php endforeach; ?>

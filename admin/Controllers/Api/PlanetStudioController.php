@@ -187,7 +187,14 @@ class PlanetStudioController extends Controller
         $stationId = (int)($this->request->get('stationId', $this->request->get('station_id', 0)));
         if (!$stationId) return $this->json(['error' => 'stationId required'], 400);
 
-        $rows = $this->db->table('radio_playlists')->where('stream_id', $stationId)->get() ?: [];
+        // Include account-shared playlists (all stations of the same hosting account)
+        $pdo = $this->db->pdo();
+        $stmt = $pdo->prepare("SELECT p.* FROM radio_playlists p
+            JOIN streaming_stations ss ON ss.id = p.stream_id
+            WHERE (p.stream_id = ? OR (ss.user_id = (SELECT user_id FROM streaming_stations WHERE id = ?) AND p.account_shared = 1))
+            ORDER BY p.name");
+        $stmt->execute([$stationId, $stationId]);
+        $rows = $stmt->fetchAll(\PDO::FETCH_OBJ) ?: [];
         $playlists = [];
         foreach ($rows as $p) {
             $items = $this->db->table('radio_playlist_items')->where('playlist_id', $p->id)->get() ?: [];
