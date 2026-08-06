@@ -2,12 +2,14 @@
 $tenantId = (int)($_GET['tenant_id'] ?? 0);
 if (!$tenantId) { echo 'Invalid tenant'; exit; }
 $room = trim($_GET['room'] ?? '');
+$token = trim($_GET['token'] ?? '');
 $roomParam = $room !== '' ? '&room=' . urlencode($room) : '';
+$tokenParam = $token !== '' ? '&token=' . urlencode($token) : '';
 ?>
 <!DOCTYPE html><html><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Chat</title>
-<script src="https://planet-hosts.com/chatbox/widget.js.php?tenant_id=<?php echo $tenantId . $roomParam; ?>"></script>
+<script src="https://planet-hosts.com/chatbox/widget.js.php?tenant_id=<?php echo $tenantId . $roomParam . $tokenParam; ?>"></script>
 <style>
 body{margin:0;padding:0;background:transparent;overflow:hidden;width:100%;height:100%}
 html,body{width:100%;height:100%}

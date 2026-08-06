@@ -127,6 +127,43 @@ $typeLabel = $r->type === 'public' ? 'Public' : ($r->type === 'password' ? '🔒
 <button class="save-btn" style="padding:4px 14px;font-size:10px" onclick="copy(this,'iframe')">📋 Copy</button></div>
 </div></div>
 
+<div class="card"><h3>🔑 Desktop / Embed Tokens</h3>
+<p style="font-size:11px;color:var(--text3);margin-bottom:10px">Create a token to auto-login the chat in the Planet Hosts Studio desktop app or an embedded page — no username/password or cookie session needed. Paste the token URL into the app's <strong>Chat URL</strong> setting.</p>
+<form method="post" style="display:flex;gap:6px;flex-wrap:wrap;align-items:end">
+<input type="hidden" name="action" value="create_token">
+<div style="flex:1;min-width:150px"><label style="font-size:10px;color:var(--text3)">Chat User</label>
+<select name="user_id" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.35);color:var(--text);font-size:12px">
+<?php foreach (($chatUsers ?? []) as $cu): ?>
+<option value="<?=$cu->id?>"><?=htmlspecialchars($cu->username . ($cu->display_name && $cu->display_name !== $cu->username ? ' (' . $cu->display_name . ')' : ''))?> (<?=$cu->role?>)</option>
+<?php endforeach; ?>
+</select></div>
+<div style="min-width:110px"><label style="font-size:10px;color:var(--text3)">Room (optional)</label>
+<select name="room_id" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.35);color:var(--text);font-size:12px">
+<option value="0">All / first room</option>
+<?php foreach (($roomsList ?? []) as $r): ?>
+<option value="<?=$r->id?>"><?=htmlspecialchars($r->name)?></option>
+<?php endforeach; ?>
+</select></div>
+<div style="min-width:100px"><label style="font-size:10px;color:var(--text3)">Expires</label>
+<select name="days" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.35);color:var(--text);font-size:12px">
+<option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option><option value="365">1 year</option><option value="3650">Never</option>
+</select></div>
+<button class="save-btn">🔑 Generate</button>
+</form>
+<?php if (!empty($tokens)): ?>
+<div style="margin-top:12px">
+<?php foreach ($tokens as $tok): $tokUrl = 'https://planet-hosts.com/chatbox/widget.js.php?tenant_id=' . $tenant->id . '&token=' . $tok->token; ?>
+<div style="display:flex;gap:6px;align-items:center;padding:8px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.05);border-radius:6px;margin-bottom:6px">
+<code style="flex:1;font-size:9px;color:#4ade80;word-break:break-all;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="<?=htmlspecialchars($tokUrl)?>"><?=htmlspecialchars($tokUrl)?></code>
+<span style="font-size:10px;color:var(--text3)"><?=htmlspecialchars($tok->username ?? '')?> · <?=htmlspecialchars(substr($tok->expires_at ?? '', 0, 10))?></span>
+<button class="btn-edit" style="font-size:9px;padding:2px 8px" onclick="navigator.clipboard.writeText('<?=htmlspecialchars($tokUrl)?>');this.textContent='✓';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+<form method="post" style="display:inline" onsubmit="return confirm('Revoke this token?')"><input type="hidden" name="action" value="revoke_token"><input type="hidden" name="token_id" value="<?=$tok->id?>"><button class="btn-edit" style="font-size:9px;padding:2px 8px;color:#f87171">✕</button></form>
+</div>
+<?php endforeach; ?>
+</div>
+<?php endif; ?>
+</div>
+
 <div class="card"><h3>😊 Custom Emojis</h3>
 <div id="emoji-manager">
 <div style="color:var(--text3);font-size:12px">Loading emojis...</div>

@@ -41,6 +41,7 @@ if ($preselect !== '') {
     var currentTheme = <?php echo json_encode($tenant->theme ?? 'default'); ?>;
     var customCss = <?php echo json_encode($tenant->custom_css ?? ''); ?>;
     var apiBase = 'https://planet-hosts.com/chatbox/api.php';
+    var tokenParam = <?php echo json_encode($_GET['token'] ?? ''); ?>;
     var currentUser = null;
     var currentRoomId = (rooms.length > 0) ? rooms[0].id : 0;
     var lastMsgId = 0;
@@ -188,6 +189,7 @@ if ($preselect !== '') {
         fd.append('tenant_id', tenantId);
         fd.append('username', currentUser ? currentUser.username : 'Guest');
         fd.append('user_id', currentUser ? (currentUser.userId || 0) : 0);
+        if (tokenParam) fd.append('token', tokenParam);
         fd.append('message', msg);
         fetch(apiBase, {method:'POST', body: fd})
         .then(function(r){ return r.json(); })
@@ -859,6 +861,24 @@ if ($preselect !== '') {
     }
 
     function escHtml(t) { var d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
+
+        // Token-based auto-login (desktop/embedded clients pass ?token=)
+        if (tokenParam) {
+            fetch(apiBase + '?action=token_validate&token=' + encodeURIComponent(tokenParam))
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+                if (d.success) {
+                    currentUser = {userId: d.userId, username: d.username, displayName: d.displayName, role: d.role};
+                    if (!currentRoomId && d.tenantId) { /* room resolved below */ }
+                    onLoggedIn();
+                    // Auto-open the panel for embedded/desktop
+                    var p = document.getElementById('chatbox-panel');
+                    if (p) { p.classList.remove('closed'); p.classList.add('open'); }
+                } else if (guestEnabled) { showGuestLogin(); }
+                else { showRegisterLogin(); }
+            });
+            return;
+        }
 
         // Check if session exists
         fetch(apiBase + '?action=guest_check&tenant_id=' + tenantId).then(function(r){ return r.json(); }).then(function(d){
