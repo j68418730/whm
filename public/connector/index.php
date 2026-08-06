@@ -49,7 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && preg_match('#^/connector/station/(\
 // ─── PUBLIC PENDING REQUESTS (no API key needed) ───
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && preg_match('#^/connector/station/(\d+)/requests$#', $uriPath, $m)) {
     $stationId = (int)$m[1];
-    $rq = $pdo->prepare("SELECT id, guest_name, artist, title, message, status, created_at FROM radio_requests WHERE stream_id = ? AND status = 'pending' ORDER BY created_at ASC");
+    $rq = $pdo->prepare("SELECT r.id, r.guest_name, r.artist, r.title, r.message, r.status, r.created_at, ss.name AS station_name, ss.engine AS station_engine
+        FROM radio_requests r JOIN streaming_stations ss ON ss.id = r.stream_id
+        WHERE r.stream_id = ? AND r.status = 'pending' ORDER BY r.created_at ASC");
     $rq->execute([$stationId]);
     $requests = $rq->fetchAll(PDO::FETCH_ASSOC);
     echo json_encode(['success' => true, 'data' => $requests]);

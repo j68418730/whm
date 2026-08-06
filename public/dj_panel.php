@@ -1078,9 +1078,17 @@ function toggleDate(el,date){
 
 <div class="dj-panel" id="pn-requests">
 <?php
-$reqs = $pdo->prepare("SELECT * FROM radio_requests WHERE stream_id = ? AND status = 'pending' ORDER BY created_at ASC");
-$reqs->execute([$_SESSION['dj_user']['stream_id']]);
-$requests = $reqs->fetchAll(PDO::FETCH_OBJ);
+// Show pending requests across ALL stations this DJ can access, with the station name
+$djIdReqs = $_SESSION['dj_user']['id'] ?? 0;
+$reqStmt = $pdo->prepare("SELECT r.*, ss.name AS station_name, ss.engine AS station_engine
+    FROM radio_requests r
+    JOIN streaming_stations ss ON ss.id = r.stream_id
+    WHERE r.status = 'pending'
+      AND (r.stream_id = (SELECT stream_id FROM radio_djs WHERE id = ?)
+           OR r.stream_id IN (SELECT stream_id FROM radio_dj_streams WHERE dj_id = ?))
+    ORDER BY r.created_at ASC");
+$reqStmt->execute([$djIdReqs, $djIdReqs]);
+$requests = $reqStmt->fetchAll(PDO::FETCH_OBJ);
 ?>
 <div class="dj-grid">
 <div class="card">
@@ -1093,6 +1101,7 @@ $requests = $reqs->fetchAll(PDO::FETCH_OBJ);
 <div>
 <div class="req-title"><?php echo htmlspecialchars($r->artist . ' - ' . $r->title); ?></div>
 <?php if ($r->guest_name): ?><div class="req-meta">Requested by: <?php echo htmlspecialchars($r->guest_name); ?></div><?php endif; ?>
+<?php if ($r->station_name): ?><div class="req-meta" style="color:#38bdf8">📡 Station: <?php echo htmlspecialchars($r->station_name); ?></div><?php endif; ?>
 <?php if ($r->message): ?><div class="req-msg">"<?php echo htmlspecialchars($r->message); ?>"</div><?php endif; ?>
 </div>
 <a href="/dj_panel.php?action=remove_request&req_id=<?php echo $r->id; ?>" class="btn btn-danger btn-xs">✕ Remove</a>

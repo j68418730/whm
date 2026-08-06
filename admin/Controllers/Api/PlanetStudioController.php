@@ -221,7 +221,12 @@ class PlanetStudioController extends Controller
         $stationId = (int)($this->request->get('stationId', $this->request->get('station_id', 0)));
         if (!$stationId) return $this->json(['error' => 'stationId required'], 400);
 
-        $rows = $this->db->table('radio_requests')->where('stream_id', $stationId)->orderBy('created_at', 'DESC')->get() ?: [];
+        $pdo = $this->db->pdo();
+        $stmt = $pdo->prepare("SELECT r.*, ss.name AS station_name, ss.engine AS station_engine
+            FROM radio_requests r LEFT JOIN streaming_stations ss ON ss.id = r.stream_id
+            WHERE r.stream_id = ? ORDER BY r.created_at DESC");
+        $stmt->execute([$stationId]);
+        $rows = $stmt->fetchAll(\PDO::FETCH_OBJ) ?: [];
         $requests = [];
         foreach ($rows as $r) {
             $status = 'Pending';
@@ -235,6 +240,8 @@ class PlanetStudioController extends Controller
                 'message' => $r->message ?? '',
                 'requestedBy' => $r->user_id ? 'User#' . $r->user_id : ($r->guest_name ?? 'Anonymous'),
                 'status' => $status,
+                'stationName' => $r->station_name ?? '',
+                'stationEngine' => $r->station_engine ?? '',
             ];
         }
         return $this->json(['requests' => $requests]);
