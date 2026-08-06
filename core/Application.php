@@ -184,6 +184,12 @@ class Application
 
     public function run()
     {
+        // Client Security Center middleware (application-level, no Linux firewall changes)
+        try {
+            if (class_exists('Core\SecurityMiddleware')) {
+                \Core\SecurityMiddleware::handle();
+            }
+        } catch (\Throwable $e) {}
         $this->get('router')->dispatch();
     }
 }

@@ -51,7 +51,13 @@ $router->post('/user/email/autoresponder', 'User\Controllers\EmailController@set
 $router->get('/user/email/autoresponder/disable/{id}', 'User\Controllers\EmailController@disableAutoresponder');
 $router->post('/user/email/spam', 'User\Controllers\EmailController@setSpam');
 $router->post('/user/email/password/{id}', 'User\Controllers\EmailController@changePassword');
-$router->get('/user/security', 'User\Controllers\SecurityController@index');
+$router->get('/user/security', 'User\Controllers\SecurityCenterController@index');
+$router->post('/user/security/rules/store', 'User\Controllers\SecurityCenterController@ruleStore');
+$router->get('/user/security/rules/delete/{id}', 'User\Controllers\SecurityCenterController@ruleDelete');
+$router->post('/user/security/login/save', 'User\Controllers\SecurityCenterController@loginSecuritySave');
+$router->get('/user/security/trusted/delete/{id}', 'User\Controllers\SecurityCenterController@trustedDelete');
+$router->get('/user/security/sessions/terminate/{id}', 'User\Controllers\SecurityCenterController@sessionTerminate');
+$router->get('/user/security/alerts/clear', 'User\Controllers\SecurityCenterController@alertsClear');
 $router->get('/user/ssl', 'User\Controllers\SecurityController@ssl');
 $router->post('/user/ssl/install', 'User\Controllers\SecurityController@sslInstall');
 $router->get('/user/ssl/delete/{id}', 'User\Controllers\SecurityController@sslDelete');
