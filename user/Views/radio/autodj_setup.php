@@ -89,16 +89,35 @@ textarea.inp{resize:vertical;min-height:60px}
 <div class="wizard-nav"><a href="/user/radio" class="btn btn-secondary">Cancel</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
 
 <?php elseif ($step === 3): ?>
-<?php $engine = $config->wizard_step >= 3 ? $config->streaming_engine : ($station->server_type === 'shoutcast' ? 'shoutcast2' : ($station->server_type === 'shoutcast1' ? 'shoutcast1' : 'icecast')); ?>
-<?php $labels = ['icecast' => 'Icecast', 'shoutcast' => 'SHOUTcast', 'shoutcast1' => 'SHOUTcast v1', 'shoutcast2' => 'SHOUTcast v2']; ?>
+<?php
+// Auto-detect engine: prefer the station's configured engine, fall back to config
+$detectedEngine = strtolower($station->server_type ?? '');
+if (!in_array($detectedEngine, ['icecast','shoutcast','shoutcast1','shoutcast2'])) $detectedEngine = strtolower($station->engine ?? '');
+if (!in_array($detectedEngine, ['icecast','shoutcast','shoutcast1','shoutcast2'])) $detectedEngine = 'icecast';
+$engine = $detectedEngine;
+$labels = ['icecast' => 'Icecast', 'shoutcast' => 'SHOUTcast', 'shoutcast1' => 'SHOUTcast v1', 'shoutcast2' => 'SHOUTcast v2'];
+$enginePort = (int)($station->port ?? 8000);
+$engineStatus = strtolower($station->status ?? '');
+$engineOnline = in_array($engineStatus, ['running', 'online', 'live']);
+?>
 <div class="wizard-card">
 <h2>Streaming Engine</h2>
-<div class="desc">Your station is configured to use <strong><?=$labels[$engine]??strtoupper($engine)?></strong></div>
+<div class="desc">We detected your station's streaming engine. Please verify it's correct before continuing.</div>
 <input type="hidden" name="streaming_engine" value="<?=$engine?>">
 <div class="feature-grid">
 <div class="feature-item"><div class="icon">&#128264;</div><div class="label"><?=$labels[$engine]??strtoupper($engine)?></div></div>
-<div class="feature-item"><div class="icon">&#127911;</div><div class="label">Port <?=$station->port?:'Auto'?></div></div>
+<div class="feature-item"><div class="icon">&#127911;</div><div class="label">Port <?=$enginePort?></div></div>
+<div class="feature-item"><div class="icon"><?=$engineOnline?'&#9989;':'&#10060;'?></div><div class="label" style="color:<?=$engineOnline?'#00C853':'#f87171'?>"><?=$engineOnline?'Engine Online':'Engine Offline'?></div></div>
 </div>
+<div class="form-group" style="margin-top:14px"><label>Engine (override)</label>
+<select class="inp" name="streaming_engine_override">
+<option value="">Use detected (<?=$labels[$engine]??strtoupper($engine)?>)</option>
+<option value="icecast">Icecast</option>
+<option value="shoutcast">SHOUTcast v2</option>
+<option value="shoutcast1">SHOUTcast v1</option>
+<option value="shoutcast2">SHOUTcast v2 (legacy)</option>
+</select>
+<div class="hint">Leave as "Use detected" unless your engine differs from what's shown above.</div></div>
 </div>
 <div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Continue &raquo;</button></div>
 
@@ -161,7 +180,7 @@ textarea.inp{resize:vertical;min-height:60px}
 </div>
 <?php endif; ?>
 <?php if (!empty($songCounts) && max($songCounts) === 0): ?>
-<div style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#f87171">⚠️ No audio files found in your playlists. <a href="/user/radio?tab=playlists&station_id=<?=$station->id?>" style="color:#0A84FF">Upload media to your playlist</a> first, then continue.</div>
+<div style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#f87171">⚠️ No audio files found in your playlists yet. Upload media below, then continue.</div>
 <?php endif; ?>
 <h4 style="font-size:13px;color:#94a3b8;margin:0 0 8px">Quick Create</h4>
 <div class="grid-2">
@@ -172,7 +191,28 @@ textarea.inp{resize:vertical;min-height:60px}
 </div>
 <div class="form-group" style="margin-top:12px"><label>Custom Playlist Name</label><input class="inp" name="custom_playlist" placeholder="Enter custom playlist name"></div>
 </div>
-<div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-primary">Save &amp; Continue &raquo;</button></div>
+
+<!-- Media upload: posts directly to the media upload endpoint with the selected target playlist -->
+<div class="wizard-card">
+<h2>Upload Media</h2>
+<div class="desc">Add audio files to your playlists. Choose a target playlist below, then pick files.</div>
+<div class="form-group"><label>Target Playlist</label>
+<select class="inp" id="wiz-target-playlist" name="wiz_target_playlist">
+<?php if (!empty($playlists)): ?>
+<?php foreach ($playlists as $pl): ?>
+<option value="<?=$pl->id?>"><?=htmlspecialchars($pl->name)?></option>
+<?php endforeach; ?>
+<?php endif; ?>
+</select>
+<div class="hint">If no playlists exist yet, create one above (Quick Create or Custom), save &amp; continue once to load it here, then upload.</div>
+</div>
+<div id="wiz-upload-zone" style="border:2px dashed rgba(0,140,255,.25);border-radius:10px;padding:30px;text-align:center;color:#64748b;font-size:12px;cursor:pointer;margin-bottom:10px">
+<input type="file" name="files[]" multiple accept=".mp3,.aac,.ogg,.flac,.wav,.m4a" style="display:block;margin:0 auto;font-size:11px" onchange="wizFileCount(this)">
+<div id="wiz-file-count" style="margin-top:8px">Click to browse (mp3, aac, ogg, flac, wav, m4a)</div>
+</div>
+<button type="button" class="btn btn-primary" onclick="wizUpload()">&#11014; Upload to Selected Playlist</button>
+<div id="wiz-upload-result" style="margin-top:8px;font-size:12px;color:#00C853"></div>
+</div>
 
 <?php elseif ($step === 7): ?>
 <div class="wizard-card">
@@ -274,4 +314,44 @@ textarea.inp{resize:vertical;min-height:60px}
 <div class="wizard-nav"><a href="/user/radio/autodj/setup?step=<?=$step-1?>&station_id=<?=$station->id?>" class="btn btn-secondary">&laquo; Back</a><button class="btn btn-success">Finish Setup &raquo;</button></div>
 <?php endif; ?>
 </form>
+<?php if ($step === 6): ?>
+<script>
+var wizFiles = [];
+function wizFileCount(input){
+  wizFiles = Array.from(input.files || []);
+  document.getElementById('wiz-file-count').textContent = wizFiles.length + ' file(s) selected';
+}
+function wizUpload(){
+  var sel = document.getElementById('wiz-target-playlist');
+  var plId = sel ? sel.value : 0;
+  var res = document.getElementById('wiz-upload-result');
+  if (!plId || plId == 0) { res.textContent = 'No playlist selected — create one above first, save & continue, then reload this step to upload.'; res.style.color = '#f87171'; return; }
+  if (!wizFiles.length) { res.textContent = 'No files selected.'; res.style.color = '#f87171'; return; }
+  res.textContent = 'Uploading...'; res.style.color = '#94a3b8';
+  var fd = new FormData();
+  fd.append('playlist_id', plId);
+  fd.append('station_id', '<?=$station->id?>');
+  wizFiles.forEach(function(f){ fd.append('files[]', f); });
+  var x = new XMLHttpRequest();
+  x.open('POST', '/user/radio/media/upload', true);
+  x.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+  x.onload = function(){
+    try {
+      var d = JSON.parse(x.responseText);
+      if (d && d.success) {
+        res.textContent = d.count + ' file(s) uploaded' + (d.duplicates ? ', ' + d.duplicates + ' duplicate(s) skipped' : '');
+        res.style.color = '#00C853';
+        wizFiles = [];
+        var fi = document.querySelector('#wiz-upload-zone input[type=file]'); if (fi) fi.value = '';
+      } else {
+        res.textContent = 'Upload failed: ' + (d.error || x.responseText);
+        res.style.color = '#f87171';
+      }
+    } catch(e){ res.textContent = 'Upload error: ' + x.responseText; res.style.color = '#f87171'; }
+  };
+  x.onerror = function(){ res.textContent = 'Network error during upload.'; res.style.color = '#f87171'; };
+  x.send(fd);
+}
+</script>
+<?php endif; ?>
 </div>

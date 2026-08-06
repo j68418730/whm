@@ -1141,6 +1141,10 @@ class RadioController extends Controller
                 'request_delay','max_requests_per_listener','metadata_update',
             ];
             $data = ['station_id' => $sid, 'wizard_step' => $step];
+            // Step 3: engine override replaces detected engine
+            if ($step === 3 && !empty($_POST['streaming_engine_override'])) {
+                $_POST['streaming_engine'] = $_POST['streaming_engine_override'];
+            }
             foreach ($allowed as $f) {
                 if (isset($_POST[$f])) {
                     $data[$f] = is_numeric($_POST[$f]) ? (int)$_POST[$f] : $_POST[$f];
@@ -1154,6 +1158,11 @@ class RadioController extends Controller
                         try { $this->db->table('radio_autodj_playlists')->insertGetId(['autodj_config_id' => 0, 'playlist_id' => $plId]); } catch (\Exception $e) {}
                     }
                 }
+            }
+            // Persist selected playlist ids into the config so RadioAutoDJPlayer can use them
+            if ($step >= 6 && isset($_POST['playlist_ids'])) {
+                $plIds = array_values(array_filter(array_map('intval', (array)$_POST['playlist_ids'])));
+                if ($plIds) $data['playlist_ids'] = json_encode($plIds);
             }
             if ($step >= 6) {
                 $presets = $_POST['preset_playlists'] ?? [];
@@ -1205,6 +1214,27 @@ class RadioController extends Controller
                     try { $this->db->table('streaming_stations')->where('id', $sid % 10000)->update([
                         'autodj_enabled' => (int)($_POST['autodj_enabled'] ?? 0),
                     ]); } catch (\Exception $e) {}
+                    // Actually start AutoDJ if the user chose to enable it
+                    if (!empty($_POST['autodj_enabled'])) {
+                        try {
+                            $ss = $this->db->table('streaming_stations')->where('id', $sid % 10000)->first();
+                            if ($ss) {
+                                $hosting = $this->db->table('hosting_users')->where('id', $ss->user_id)->first();
+                                $username = $hosting ? $hosting->username : 'testacct';
+                                $cfgRow = $this->db->table('radio_autodj_config')->where('station_id', $sid)->first();
+                                $playlistIds = ($cfgRow && !empty($cfgRow->playlist_ids)) ? (json_decode($cfgRow->playlist_ids, true) ?: []) : [];
+                                $player = new \Services\RadioAutoDJPlayer($ss, $username, $playlistIds);
+                                $started = $player->start();
+                                $this->db->table('streaming_stations')->where('id', $sid % 10000)->update(['autodj_enabled' => $started ? 1 : 0]);
+                                if ($started) $_SESSION['success'] = 'AutoDJ Setup Complete! AutoDJ is now running.';
+                                else $_SESSION['success'] = 'Setup complete, but AutoDJ failed to start (check media and engine).';
+                                header('Location: /user/radio?tab=autodj&station_id=' . $sid); exit;
+                            }
+                        } catch (\Exception $e) {
+                            $_SESSION['success'] = 'Setup complete, but AutoDJ start failed: ' . $e->getMessage();
+                            header('Location: /user/radio?tab=autodj&station_id=' . $sid); exit;
+                        }
+                    }
                     $_SESSION['success'] = 'AutoDJ Setup Complete!';
                     header('Location: /user/radio?tab=autodj&station_id=' . $sid); exit;
                 }
