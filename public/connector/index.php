@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../security_guard.php';
+// Service inferred per endpoint below (radio/requests/api)
+security_guard_run(preg_match('#/requests$#', $_SERVER['REQUEST_URI'] ?? '') ? 'requests' : 'radio');
 /**
  * Planet Hosts Connector API — used by Desktop Connector
  * API key auth, file upload, station status

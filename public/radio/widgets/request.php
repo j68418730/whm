@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../../security_guard.php';
+security_guard_run('radio');
 require_once __DIR__ . '/../radio_helper.php';
 header('Content-Type: text/html; charset=utf-8');
 $streamId = (int)($_GET['stream'] ?? 0);
