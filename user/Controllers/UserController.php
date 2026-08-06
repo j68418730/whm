@@ -179,14 +179,30 @@ class UserController extends Controller
         $password = $_POST['password'] ?? '';
         $user = $this->db->table('hosting_users')->where('username', $username)->first();
         if (!$user) $user = $this->db->table('hosting_users')->where('email', $username)->first();
+
+        // Client Security Center: record attempt + lockout check
+        $sec = new \Services\SecurityService($this->db);
+        $customerId = (int)($user->id ?? 0);
+        $maxAttempts = (int)($sec->getSetting($customerId, 'max_login_attempts', 5) ?: 5);
+        $lockoutMin  = (int)($sec->getSetting($customerId, 'lockout_minutes', 15) ?: 15);
+        if ($customerId > 0 && $sec->recentFailedAttempts($customerId, $username, $lockoutMin) >= $maxAttempts) {
+            $sec->log($customerId, 'login_locked', $username, 'login', 'blocked', 'system', "Locked after {$maxAttempts} failed attempts");
+            $sec->alert($customerId, 'failed_login', "Account temporarily locked after {$maxAttempts} failed login attempts.");
+            header('Location: /?login=locked');
+            exit;
+        }
+
         if ($user && password_verify($password, $user->password_hash)) {
+            if ($customerId > 0) $sec->recordLoginAttempt($customerId, $username, true);
             $_SESSION['user'] = (object)[
                 'id' => $user->id, 'email' => $user->email,
                 'name' => $user->username, 'is_admin' => false,
             ];
             $_SESSION['is_admin'] = false;
+            try { $sec->touchSession($customerId, session_id()); } catch (\Exception $e) {}
             header('Location: /user');
         } else {
+            if ($customerId > 0) $sec->recordLoginAttempt($customerId, $username, false);
             header('Location: /?login=error');
         }
         exit;
