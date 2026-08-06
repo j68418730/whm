@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../../security_guard.php';
+security_guard_run('radio');
 require_once __DIR__ . '/../radio_helper.php';
 $streamId = (int)($_GET['stream'] ?? 0);
 $layout = $_GET['layout'] ?? 'js';

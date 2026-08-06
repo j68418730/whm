@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../security_guard.php';
+security_guard_run('chat');
 $tenantId = (int)($_GET['tenant_id'] ?? 0);
 if (!$tenantId) { echo 'Invalid tenant'; exit; }
 $room = trim($_GET['room'] ?? '');

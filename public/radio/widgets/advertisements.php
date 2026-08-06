@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../../security_guard.php';
+security_guard_run('radio');
 header('Content-Type: text/html; charset=utf-8');
 ?>
 <div style="background:rgba(250,204,21,.06);border:1px solid rgba(250,204,21,.15);border-radius:8px;padding:16px;text-align:center;font-family:Inter,sans-serif">
