@@ -169,7 +169,14 @@ if ($preselect !== '') {
     // Make functions global
     window.toggleChatbox = function() {
         var p = document.getElementById('chatbox-panel');
-        p.classList.toggle('closed');
+        var wasClosed = p.classList.contains('closed');
+        if (wasClosed) {
+            p.classList.remove('closed');
+            p.classList.add('open');
+        } else {
+            p.classList.remove('open');
+            p.classList.add('closed');
+        }
         var isOpen = p.classList.contains('open');
         if (isOpen) {
             if (!currentUser && guestEnabled) showGuestLogin();
