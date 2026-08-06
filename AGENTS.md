@@ -48,17 +48,15 @@ To reinstall: `sudo tar xzf sc_serv2_linux_x64-latest.tar.gz -C /usr/local/shout
 - FTP account creation with reserved name/duplicate/directory traversal checks
 - ToDo list admin page
 - DnsManager syncZoneToBind writes Bind9 zone files
+- Global playlist upload FIXED (root cause was broken 99-radio-uploads.ini; verified curl upload works on 2087 + 443)
+- AutoDJ wizard: engine auto-detect + override (step 3), inline media upload (step 6), finish starts AutoDJ player
+- Game DB tables: game_types aligned with controller, game_settings added, 6 games + pricing + packages seeded
+- DNS glue records CONFIRMED at .com TLD (ns1/ns2 → 15.204.114.226 in ADDITIONAL section)
+- Added chatbox/api/dj/autodj A records to Bind9 zone db.planet-hosts.com (serial 2026080601)
 
 ### Needs Work
 - **Chat System (paused)**: widget embed still blank (DOM timing), moderation UI, message history limits, Cbox parity features (emoji/GIF picker, SSO, webhooks), room permissions system, product-based auto-join rooms, file uploads, voice/video
-- Admin global playlists upload still has issues (empty $_FILES)
-- AutoDJ wizard: media upload, engine detection, finish button
-- DNS glue records for ns1/ns2.planet-hosts.com (subdomain resolution)
-- Missing game DB tables: game_slot_pricing, game_packages (need migrations)
-- GameServers controller uses `is_active`/`status` columns not in current tables
-- repair.planet-hosts.com DNS glue records needed at registrar
 
 ### Known Issues
-- admin/radio/global-playlists/upload/{id} receives empty $_FILES on admin port
-- repair.planet-hosts.com DNS not resolving from some ISPs (needs glue records at registrar)
+- repair.planet-hosts.com DNS not resolving from some ISPs (glue present but some resolvers still cached)
 - streaming_stations IDs changed from 9/10/11 to 12/13/14
