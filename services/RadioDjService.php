@@ -67,7 +67,6 @@ class RadioDjService
                     'email' => $hostingUser->email ?? '',
                     'status' => 'active',
                     'can_stream' => 1,
-                    'role' => 'dj',
                 ]);
                 $dj = $this->db->table('radio_djs')->where('id', $djId)->first();
             } catch (\Exception $e) {
