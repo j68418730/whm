@@ -94,6 +94,14 @@ class ShoutcastV1Driver implements StreamingDriverInterface
                 'config_path' => $configPath, 'status' => 'stopped',
             ]);
         } catch (\Exception $e) {}
+        // Auto-create primary DJ (account username) assigned to all stations
+        try {
+            $user = $this->db->table('hosting_users')->where('id', $userId)->first();
+            if ($user) {
+                $svc = new \Services\RadioDjService($this->db);
+                $svc->ensurePrimaryDj($user);
+            }
+        } catch (\Exception $e) {}
         return ['id' => $id, 'port' => $port, 'password' => $password, 'config_path' => $configPath, 'systemd_service' => $serviceName];
     }
 
