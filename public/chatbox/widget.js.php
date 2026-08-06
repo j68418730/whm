@@ -42,6 +42,7 @@ if ($preselect !== '') {
     var customCss = <?php echo json_encode($tenant->custom_css ?? ''); ?>;
     var apiBase = 'https://planet-hosts.com/chatbox/api.php';
     var tokenParam = <?php echo json_encode($_GET['token'] ?? ''); ?>;
+    var usernameParam = <?php echo json_encode($_GET['username'] ?? ''); ?>;
     var currentUser = null;
     var currentRoomId = (rooms.length > 0) ? rooms[0].id : 0;
     var lastMsgId = 0;
@@ -868,6 +869,22 @@ if ($preselect !== '') {
     }
 
     function escHtml(t) { var d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
+
+        // Username-based auto-login (desktop app passes ?username= — no name prompt needed)
+        if (usernameParam) {
+            var fd = new FormData();
+            fd.append('action', 'guest_login');
+            fd.append('tenant_id', tenantId);
+            fd.append('username', usernameParam);
+            fetch(apiBase, {method:'POST', body: fd}).then(function(r){ return r.json(); }).then(function(d){
+                if (d.success) { currentUser = {username: usernameParam}; }
+                else { currentUser = {username: usernameParam}; }
+                onLoggedIn();
+                var p = document.getElementById('chatbox-panel');
+                if (p) { p.classList.remove('closed'); p.classList.add('open'); }
+            });
+            return;
+        }
 
         // Token-based auto-login (desktop/embedded clients pass ?token=)
         if (tokenParam) {
