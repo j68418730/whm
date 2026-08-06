@@ -193,7 +193,7 @@ function sw(e,id){
 }
 function gw(type){
   var el=document.getElementById('c-'+type),s=BASE_URL,x=sid(),f=fmt(),sn=sname(),u=sUrl();
-  var ifr=function(url,w,h){return f==='iframe'?'<iframe src="'+url+'" width="'+w+'" height="'+h+'" frameborder="0" style="border-radius:10px;max-width:100%"></iframe>':'<div class="ph-embed" data-src="'+url+'" style="min-height:'+h+'px"><script src="'+url+'"><\/script><\/div>'};
+  var ifr=function(url,w,h){return f==='iframe'?'<iframe src="'+url+'" width="'+w+'" height="'+h+'" frameborder="0" style="border-radius:10px;max-width:100%"></iframe>':'<iframe src="'+url+'" width="'+w+'" height="'+h+'" frameborder="0" style="border-radius:10px;max-width:100%"></iframe>'};
   // Find or create preview container in the parent card
   var pv = document.getElementById('pv-'+type);
   if (!pv) {
@@ -207,31 +207,31 @@ function gw(type){
     'p-full':'<div id="ph-player" data-stream="'+x+'"><script src="'+s+'/radio/widgets/player.php?stream='+x+'"><\/script><\/div>',
     'p-mini':'<div style="background:rgba(8,16,28,.9);border-radius:10px;padding:10px;text-align:center;max-width:200px"><div style="font-size:11px;color:#94a3b8">Now Playing</div><audio src="'+u+'" preload="auto" controls style="width:100%;height:30px"></audio></div>',
     'p-float':'<div id="ph-float" style="position:fixed;bottom:20px;right:20px;z-index:9999;width:320px;border-radius:10px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.3)"><script src="'+s+'/radio/widgets/player.php?stream='+x+'"><\/script><\/div>',
-    'p-popup':'<a href="'+s+'/radio/embed.php?stream='+x+'" target="_blank" onclick="window.open(\''+s+'/radio/embed.php?stream='+x+'\',\'radio\',\'width=380,height=250\');return false" style="padding:10px 20px;background:#008cff;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">Open Player</a>',
+    'p-popup':'<a href="'+s+'/radio/embed.php?stream='+x+'" target="_blank" onclick="var w=window.open(\''+s+'/radio/embed.php?stream='+x+'\',\'radio\',\'width=400,height=260,scrollbars=no,resizable=yes\');if(w){w.focus();}return false" style="padding:10px 20px;background:#008cff;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">🔊 Open Player</a>',
     'p-side':'<div style="max-width:240px"><script src="'+s+'/radio/widgets/player.php?stream='+x+'"><\/script><\/div>',
     'p-mob':'<meta name="viewport" content="width=device-width,initial-scale=1"><div style="max-width:100%"><script src="'+s+'/radio/widgets/player.php?stream='+x+'"><\/script><\/div>',
-    'p-dark':'<div style="background:#0a0e1a;color:#e0e0e0;border-radius:12px;padding:16px;font-family:Inter,sans-serif"><div style="font-weight:700;font-size:13px;margin-bottom:6px">'+sn+'</div><audio src="'+u+'" controls style="width:100%"></audio></div>',
-    'p-light':'<div style="background:#fff;color:#1a1a2e;border-radius:12px;padding:16px;font-family:Inter,sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.1)"><div style="font-weight:700;font-size:13px;margin-bottom:6px">'+sn+'</div><audio src="'+u+'" controls style="width:100%"></audio></div>',
-    'p-trans':'<div style="background:transparent"><audio src="'+u+'" controls style="width:100%"></audio></div>',
+    'p-dark':ifr(s+'/radio/embed.php?stream='+x+'&theme=dark',340,340),
+    'p-light':ifr(s+'/radio/embed.php?stream='+x+'&theme=light',340,340),
+    'p-trans':ifr(s+'/radio/embed.php?stream='+x+'&theme=dark',340,320),
     'p-listen':'<a href="'+s+'/radio/embed.php?stream='+x+'" target="_blank" style="display:inline-block;padding:12px 28px;background:#008cff;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">Listen Live</a>',
     'np-basic':'<div id="ph-nowplaying" data-stream="'+x+'"><script src="'+s+'/radio/widgets/nowplaying.php?stream='+x+'"><\/script><\/div>',
     'np-large':ifr(s+'/radio/widgets/nowplaying.php?stream='+x+'&layout=iframe',320,220),
     'np-compact':'<div id="ph-np-compact" data-stream="'+x+'"><script src="'+s+'/radio/widgets/nowplaying.php?stream='+x+'"><\/script><\/div>',
-    'station-info':'<div style="font-size:12px;color:#94a3b8;font-family:Inter,sans-serif"><div id="ph-si-'+x+'"><script src="'+s+'/radio/widgets/nowplaying.php?stream='+x+'"><\/script><\/div></div>',
-    'stream-status':'<div id="ph-status-'+x+'"><script src="'+s+'/radio/widgets/status.php?stream='+x+'"><\/script><\/div>',
-    'history-5':ifr(s+'/radio/widgets/songhistory.php?stream='+x+'&limit=5',320,200),
-    'history-10':ifr(s+'/radio/widgets/songhistory.php?stream='+x+'&limit=10',320,300),
-    'history-25':ifr(s+'/radio/widgets/songhistory.php?stream='+x+'&limit=25',320,400),
-    'history-50':ifr(s+'/radio/widgets/songhistory.php?stream='+x+'&limit=50',320,500),
-    'dj-live':'<script src="'+s+'/radio/widgets/djs.php?stream='+x+'"><\/script>',
-    'dj-schedule':'<iframe src="'+s+'/radio/widgets/schedule.php?stream='+x+'" width="100%" height="300" frameborder="0" style="border-radius:10px"></iframe>',
+    'station-info':ifr(s+'/radio/widgets/nowplaying.php?stream='+x+'&layout=iframe',340,180),
+    'stream-status':ifr(s+'/radio/widgets/status.php?stream='+x+'&layout=iframe',280,120),
+    'history-5':ifr(s+'/radio/widgets/songhistory.php?stream='+x+'&limit=5&layout=iframe',320,200),
+    'history-10':ifr(s+'/radio/widgets/songhistory.php?stream='+x+'&limit=10&layout=iframe',320,300),
+    'history-25':ifr(s+'/radio/widgets/songhistory.php?stream='+x+'&limit=25&layout=iframe',320,400),
+    'history-50':ifr(s+'/radio/widgets/songhistory.php?stream='+x+'&limit=50&layout=iframe',320,500),
+    'dj-live':ifr(s+'/radio/widgets/djs.php?stream='+x+'&layout=iframe',320,200),
+    'dj-schedule':ifr(s+'/radio/widgets/schedule.php?stream='+x+'&layout=iframe',320,300),
     'dj-social':'<div style="text-align:center;font-family:Inter,sans-serif;padding:10px;color:#94a3b8;font-size:12px">Configure social links in station settings</div>',
-    'list-current':'<div id="ph-listeners-'+x+'"><script src="'+s+'/radio/widgets/listeners.php?stream='+x+'"><\/script><\/div>',
-    'list-peak':'<div id="ph-stats-'+x+'"><script src="'+s+'/radio/widgets/stats.php?stream='+x+'"><\/script><\/div>',
-    'list-daily':'<div id="ph-stats-'+x+'"><script src="'+s+'/radio/widgets/stats.php?stream='+x+'"><\/script><\/div>',
-    'req-form':'<script src="'+s+'/radio/widgets/request.php?stream='+x+'"><\/script>',
-    'station-request':'<div id="ph-sr-'+x+'"></div><script src="'+s+'/radio/widgets/station_request.php?stream='+x+'"><\/script>',
-    'social':'<script src="'+s+'/radio/widgets/social.php?stream='+x+'"><\/script>',
+    'list-current':ifr(s+'/radio/widgets/listeners.php?stream='+x+'&layout=iframe',260,140),
+    'list-peak':ifr(s+'/radio/widgets/stats.php?stream='+x+'&layout=iframe',260,140),
+    'list-daily':ifr(s+'/radio/widgets/stats.php?stream='+x+'&layout=iframe',260,140),
+    'req-form':ifr(s+'/radio/widgets/request.php?stream='+x+'&layout=iframe',300,360),
+    'station-request':ifr(s+'/radio/widgets/station_request.php?stream='+x+'&layout=iframe',400,420),
+    'social':ifr(s+'/radio/widgets/social.php?stream='+x+'&layout=iframe',320,160),
     'share':'<div style="display:flex;gap:8px;font-family:Inter,sans-serif"><a href="https://facebook.com/sharer.php?u='+encodeURIComponent(s+'/radio/embed.php?stream='+x)+'" target="_blank" style="text-decoration:none;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:16px">📘</a><a href="https://twitter.com/intent/tweet?url='+encodeURIComponent(s+'/radio/embed.php?stream='+x)+'" target="_blank" style="text-decoration:none;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:16px">🐦</a></div>',
     'donate':'<form action="https://www.paypal.com/donate" method="post" target="_blank" style="text-align:center;font-family:Inter,sans-serif"><input type="hidden" name="business" value=""><button type="submit" style="padding:10px 20px;background:#ffc439;color:#000;border:none;border-radius:6px;font-weight:600;cursor:pointer">❤️ Donate</button></form>',
     'podcast':'<div style="text-align:center;font-family:Inter,sans-serif;padding:10px;color:#64748b;font-size:12px">Add your RSS feed URL in station settings</div>',
@@ -248,15 +248,16 @@ function gw(type){
     'advertisements':'<div id="ph-ads-'+x+'"><script src="'+s+'/radio/advertisements.php?stream='+x+'"><\/script><\/div>',
   };
   el.textContent = codes[type] || 'Generate failed: unknown type '+type;
-  // Render live preview inside the card
+  // Render live preview inside the card — re-execute any <script> tags (innerHTML won't run them)
   var code = codes[type] || '';
   pv.style.display = 'block';
-  if (code.indexOf('<iframe') === 0) {
-    pv.innerHTML = code;
-  } else if (code.indexOf('<div') === 0 || code.indexOf('<a') === 0 || code.indexOf('<form') === 0) {
-    pv.innerHTML = code;
-  } else {
-    pv.innerHTML = code;
+  pv.innerHTML = code;
+  var sels = pv.querySelectorAll('script');
+  for (var i = 0; i < sels.length; i++) {
+    var ns = document.createElement('script');
+    if (sels[i].src) { ns.src = sels[i].src; }
+    else { ns.text = sels[i].textContent; }
+    sels[i].parentNode.replaceChild(ns, sels[i]);
   }
 }
 function cp(id){
