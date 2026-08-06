@@ -98,6 +98,38 @@ class RadioController extends Controller
         return $dir;
     }
 
+    /**
+     * Fetch playlists available to a station: its own PLUS all account-shared
+     * playlists from every station of the same hosting account.
+     */
+    protected function getAccountPlaylists($station)
+    {
+        $hosting = $this->getHosting();
+        if (!$hosting) return [];
+        $realStationId = $station->streaming_id ?? $station->id;
+        // Get all station ids for this account
+        $accountStationIds = [];
+        try {
+            $ss = $this->db->table('streaming_stations')->where('user_id', $hosting->id)->get() ?: [];
+            foreach ($ss as $s) $accountStationIds[] = (int)$s->id;
+        } catch (\Exception $e) {}
+        if (empty($accountStationIds)) {
+            return $this->db->table('radio_playlists')->where('stream_id', $realStationId)->get() ?: [];
+        }
+        try {
+            $pdo = $this->db->pdo();
+            $in = implode(',', array_map('intval', $accountStationIds));
+            $stmt = $pdo->prepare("SELECT p.* FROM radio_playlists p
+                JOIN streaming_stations ss ON ss.id = p.stream_id
+                WHERE (p.stream_id = ? OR (ss.user_id = ? AND p.account_shared = 1))
+                ORDER BY p.name");
+            $stmt->execute([$realStationId, $hosting->id]);
+            return $stmt->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        } catch (\Exception $e) {
+            return $this->db->table('radio_playlists')->where('stream_id', $realStationId)->get() ?: [];
+        }
+    }
+
     public function dashboard()
     {
         if (!$this->auth->check()) { header('Location: /?login'); exit; }
@@ -128,7 +160,7 @@ class RadioController extends Controller
             } catch (\Exception $e) {}
             try { $requests = $this->db->table('radio_requests')->where('stream_id', $realStationId)->orderBy('created_at', 'desc')->limit(50)->get() ?: []; } catch (\Exception $e) {}
             try { $schedule = $this->db->table('radio_schedule')->where('stream_id', $realStationId)->where('is_active', 1)->orderBy('day_of_week')->orderBy('start_time')->get() ?: []; } catch (\Exception $e) {}
-            try { $playlists = $this->db->table('radio_playlists')->where('stream_id', $realStationId)->get() ?: []; } catch (\Exception $e) {}
+            try { $playlists = $this->getAccountPlaylists($station); } catch (\Exception $e) { $playlists = []; }
             try { $songs = $this->db->table('radio_song_history')->where('stream_id', $realStationId)->orderBy('played_at', 'desc')->limit(50)->get() ?: []; } catch (\Exception $e) {}
             $hosting = $this->getHosting();
             try { $settings = $hosting ? $this->db->table('radio_settings')->where('user_id', $hosting->id)->first() ?: [] : []; } catch (\Exception $e) {}
@@ -1233,7 +1265,7 @@ class RadioController extends Controller
             } catch (\Exception $e) { $_SESSION['error'] = 'Save failed.'; }
             header('Location: /user/radio/autodj/setup?step=' . ($step + 1) . '&station_id=' . $sid); exit;
         }
-        $playlists = $this->db->table('radio_playlists')->where('stream_id', $station->streaming_id ?? $station->id)->get() ?: [];
+        $playlists = $this->getAccountPlaylists($station);
         // Count audio files per playlist directory
         $musicDir = "/home/" . ($station->username ?? 'testacct') . "/radio/musicdatabase";
         $songCounts = [];
@@ -1393,8 +1425,7 @@ class RadioController extends Controller
         $question = trim($_POST['question'] ?? $_GET['question'] ?? '');
         if (!$question) { echo json_encode(['error' => 'No question']); exit; }
         $cfg = $this->getAutodjConfig($station->id);
-        $playlists = [];
-        try { $playlists = $this->db->table('radio_playlists')->where('stream_id', $station->streaming_id ?? $station->id)->get() ?: []; } catch (\Exception $e) {}
+        $playlists = $this->getAccountPlaylists($station);
         $plNames = implode(', ', array_map(function($p) { return $p->name; }, $playlists));
         try {
             $apiKey = '';
@@ -1488,7 +1519,7 @@ class RadioController extends Controller
         foreach ($playlists as $p) {
             $globalItems[$p->id] = $this->db->table('radio_global_playlist_items')->where('playlist_id', $p->id)->orderBy('artist')->get() ?: [];
         }
-        $userPlaylists = ($station) ? ($this->db->table('radio_playlists')->where('stream_id', $station->streaming_id ?? $station->id)->get() ?: []) : [];
+        $userPlaylists = ($station) ? ($this->getAccountPlaylists($station)) : [];
         return $this->view('user.radio.global_music', [
             'station' => $station, 'playlists' => $playlists, 'globalItems' => $globalItems,
             'userPlaylists' => $userPlaylists, 'title' => 'Global Music Library'
@@ -1535,9 +1566,20 @@ class RadioController extends Controller
                 "SELECT id, title, artist, duration, file_path FROM radio_playlist_items WHERE playlist_id IN ($ids) ORDER BY RAND() LIMIT 10"
             )->fetchAll(\PDO::FETCH_OBJ) ?: [];
         }
-        // Fallback: get any playlist items for this station
+        // Fallback: get any playlist items for this station (including account-shared)
         if (empty($items)) {
-            $pl = $this->db->table('radio_playlists')->where('stream_id', $stationId)->get() ?: [];
+            try {
+                $hosting = $this->db->table('streaming_stations')->where('id', $stationId)->first();
+                $hostingId = $hosting->user_id ?? 0;
+                $stmt = $this->db->pdo()->prepare("SELECT p.id FROM radio_playlists p
+                    JOIN streaming_stations ss ON ss.id = p.stream_id
+                    WHERE (p.stream_id = ? OR (ss.user_id = ? AND p.account_shared = 1))
+                    ORDER BY p.name LIMIT 20");
+                $stmt->execute([$stationId, $hostingId]);
+                $pl = $stmt->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            } catch (\Exception $e) {
+                $pl = $this->db->table('radio_playlists')->where('stream_id', $stationId)->get() ?: [];
+            }
             foreach ($pl as $p) {
                 $plItems = $this->db->table('radio_playlist_items')->where('playlist_id', $p->id)->orderBy('RAND()')->limit(10)->get() ?: [];
                 $items = array_merge($items, $plItems);
