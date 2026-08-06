@@ -270,6 +270,40 @@ class UserController extends Controller
                         $pdo->prepare("UPDATE chatbox_tenants SET widget_title=?,widget_color=?,widget_bg=?,widget_text_color=?,widget_border_color=?,widget_glow_color=?,widget_avatar_shape=?,font_family=?,theme=?,custom_css=?,guest_enabled=?,registration_enabled=?,voice_enabled=?,player_html=? WHERE id=?")->execute([$_POST['title'],$_POST['color'],$_POST['bg'],$_POST['text_color'],$_POST['border_color'],$_POST['glow_color'],$_POST['avatar_shape'],$_POST['font'],$_POST['theme'],$_POST['custom_css'],(int)($_POST['guest_all']??0),(int)($_POST['reg_all']??0),(int)($_POST['voice_all']??0),$_POST['player_html'],$tenant->id]);
                         $this->response->redirect('/user/chat'); exit;
                     }
+                    if ($_POST['action'] === 'create_token') {
+                        $userId = (int)($_POST['user_id'] ?? 0);
+                        $roomId = (int)($_POST['room_id'] ?? 0);
+                        $userName = trim($_POST['username'] ?? '');
+                        $days = max(1, (int)($_POST['days'] ?? 30));
+                        // Resolve target chat user (existing by id, or create one by username)
+                        $targetId = 0;
+                        if ($userId) $targetId = $userId;
+                        elseif ($userName) {
+                            $cu = $pdo->prepare("SELECT id FROM chatbox_users WHERE tenant_id=? AND username=?");
+                            $cu->execute([$tenant->id, $userName]);
+                            $targetId = (int)$cu->fetchColumn();
+                            if (!$targetId) {
+                                $pw = bin2hex(random_bytes(6));
+                                $pdo->prepare("INSERT INTO chatbox_users (tenant_id,username,password_hash,role,email) VALUES (?,?,?,?,?)")
+                                    ->execute([$tenant->id, $userName, password_hash($pw, PASSWORD_DEFAULT), 'member', '']);
+                                $targetId = (int)$pdo->lastInsertId();
+                            }
+                        }
+                        if ($targetId) {
+                            $token = bin2hex(random_bytes(32));
+                            $exp = date('Y-m-d H:i:s', strtotime("+{$days} days"));
+                            $pdo->prepare("INSERT INTO chatbox_tokens (token,user_id,tenant_id,role,created_by,expires_at) VALUES (?,?,?,?,?,?)")
+                                ->execute([$token, $targetId, $tenant->id, 'member', $u->id ?? 0, $exp]);
+                            $roomSuffix = $roomId ? '&room=' . $roomId : '';
+                            $_SESSION['success'] = "Token created!<br><code style='font-size:10px'>https://planet-hosts.com/chatbox/widget.js.php?tenant_id={$tenant->id}{$roomSuffix}&token={$token}</code>";
+                        }
+                        $this->response->redirect('/user/chat'); exit;
+                    }
+                    if ($_POST['action'] === 'revoke_token') {
+                        $tid = (int)($_POST['token_id'] ?? 0);
+                        $pdo->prepare("DELETE FROM chatbox_tokens WHERE id=? AND tenant_id=?")->execute([$tid, $tenant->id]);
+                        $this->response->redirect('/user/chat'); exit;
+                    }
                 }
             }
             // Reload tenant after possible creation
@@ -279,10 +313,24 @@ class UserController extends Controller
                 $rs = $pdo->prepare("SELECT * FROM chatbox_rooms WHERE tenant_id=? ORDER BY id");
                 $rs->execute([$tenant->id]); $roomsList = $rs->fetchAll(\PDO::FETCH_OBJ);
                 foreach ($roomsList as $r) { if (empty($r->slug)) { $slug=strtolower(preg_replace('/[^a-z0-9-]/','',str_replace(' ','-',$r->name))); if(!$slug)$slug='room-'.$r->id; $pdo->prepare("UPDATE chatbox_rooms SET slug=? WHERE id=?")->execute([$slug, $r->id]); $r->slug=$slug; } }
+                // Tokens for this tenant
+                $tokens = [];
+                try {
+                    $tk = $pdo->prepare("SELECT t.id, t.token, t.user_id, t.role, t.expires_at, t.last_used_at, t.created_at, u.username FROM chatbox_tokens t JOIN chatbox_users u ON u.id=t.user_id WHERE t.tenant_id=? ORDER BY t.id DESC LIMIT 50");
+                    $tk->execute([$tenant->id]);
+                    $tokens = $tk->fetchAll(\PDO::FETCH_OBJ);
+                } catch (\Exception $e) {}
+                // Chat users for token dropdown
+                $chatUsers = [];
+                try {
+                    $cu = $pdo->prepare("SELECT id, username, display_name, role FROM chatbox_users WHERE tenant_id=? ORDER BY username");
+                    $cu->execute([$tenant->id]);
+                    $chatUsers = $cu->fetchAll(\PDO::FETCH_OBJ);
+                } catch (\Exception $e) {}
             }
         }
         $themes = ['default'=>'Default Dark','blue'=>'Blue','black'=>'Black','white'=>'White','gray'=>'Gray','neon'=>'Neon','gaming'=>'Gaming','hacker'=>'Hacker','matrix'=>'Matrix','discord'=>'Discord','twitch'=>'Twitch','retro'=>'Retro','purple'=>'Purple','red'=>'Red','gold'=>'Gold'];
-        return $this->view('user.chat.index', ['user'=>$u, 'hosting'=>$hosting, 'tenant'=>$tenant, 'roomsList'=>$roomsList, 'themes'=>$themes, 'title'=>'My Chat Rooms']);
+        return $this->view('user.chat.index', ['user'=>$u, 'hosting'=>$hosting, 'tenant'=>$tenant, 'roomsList'=>$roomsList, 'themes'=>$themes, 'tokens'=>$tokens ?? [], 'chatUsers'=>$chatUsers ?? [], 'title'=>'My Chat Rooms']);
     }
     public function admins() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/admins.php'; exit; }
     public function djManager() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/dj-manager.php'; exit; }

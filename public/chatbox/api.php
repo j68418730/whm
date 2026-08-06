@@ -5,7 +5,23 @@ $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
 
-// Login
+// Resolve a valid token to a chat user (works for desktop/embedded clients without cookies)
+function chatbox_resolve_token($pdo, $token) {
+    if (!$token) return null;
+    $st = $pdo->prepare("SELECT t.*, u.username, u.display_name FROM chatbox_tokens t
+        JOIN chatbox_users u ON u.id = t.user_id
+        WHERE t.token = ? AND (t.expires_at IS NULL OR t.expires_at > NOW()) AND u.is_banned = 0 LIMIT 1");
+    $st->execute([$token]);
+    $row = $st->fetch(PDO::FETCH_OBJ);
+    if ($row) {
+        $pdo->prepare("UPDATE chatbox_tokens SET last_used_at = NOW() WHERE id = ?")->execute([$row->id]);
+    }
+    return $row;
+}
+$tokenUser = chatbox_resolve_token($pdo, $_GET['token'] ?? $_POST['token'] ?? '');
+$isTokenAuthed = $tokenUser !== null;
+
+// Login (returns a token too, for desktop/embedded clients)
 if ($action === 'login') {
     $tenantId = (int)($_POST['tenant_id'] ?? 0);
     $username = trim($_POST['username'] ?? '');
@@ -17,11 +33,22 @@ if ($action === 'login') {
     $stmt->execute([$tenantId, $username]);
     $user = $stmt->fetch(PDO::FETCH_OBJ);
     if ($user && password_verify($password, $user->password_hash) && !$user->is_banned) {
+        $token = bin2hex(random_bytes(32));
+        $pdo->prepare("INSERT INTO chatbox_tokens (token, user_id, tenant_id, role, created_by) VALUES (?,?,?,?,?)")
+            ->execute([$token, $user->id, $tenantId, $user->role, $user->id]);
         echo json_encode(['success' => true, 'userId' => $user->id, 'username' => $user->username,
-            'displayName' => $user->display_name ?: $user->username, 'role' => $user->role]);
+            'displayName' => $user->display_name ?: $user->username, 'role' => $user->role, 'token' => $token]);
     } else {
         echo json_encode(['success' => false, 'error' => 'Invalid credentials or banned']);
     }
+    exit;
+}
+
+// Validate an existing token (desktop app checks before loading the widget)
+if ($action === 'token_validate') {
+    if (!$tokenUser) { echo json_encode(['success' => false, 'error' => 'Invalid or expired token']); exit; }
+    echo json_encode(['success' => true, 'userId' => $tokenUser->user_id, 'username' => $tokenUser->username,
+        'displayName' => $tokenUser->display_name ?: $tokenUser->username, 'role' => $tokenUser->role, 'tenantId' => $tokenUser->tenant_id]);
     exit;
 }
 
@@ -152,13 +179,23 @@ if ($action === 'get_messages') {
     exit;
 }
 
-// === SEND MESSAGE (guest or registered) ===
+// === SEND MESSAGE (guest or registered or token) ===
 if ($action === 'send_message') {
     $roomId = (int)($_POST['room_id'] ?? 0);
     $tenantId = (int)($_POST['tenant_id'] ?? 0);
-    $username = trim($_POST['username'] ?? 'Guest');
     $message = trim($_POST['message'] ?? '');
-    $userId = (int)($_POST['user_id'] ?? 0);
+    $userId = 0;
+    $username = 'Guest';
+    if ($tokenUser) {
+        // Token-authed: identity is authoritative (desktop/embedded)
+        $userId = (int)$tokenUser->user_id;
+        $username = $tokenUser->username;
+        if (!$tenantId) $tenantId = (int)$tokenUser->tenant_id;
+        if (!$roomId) $roomId = (int)($_POST['room_id'] ?? 0);
+    } else {
+        $username = trim($_POST['username'] ?? 'Guest');
+        $userId = (int)($_POST['user_id'] ?? 0);
+    }
     if ((!$roomId && !$tenantId) || !$message) { echo json_encode(['error'=>'Missing fields']); exit; }
     if (strlen($message) > 2000) { echo json_encode(['error'=>'Message too long']); exit; }
     // Rate limit
