@@ -95,6 +95,15 @@ class IcecastDriver implements StreamingDriverInterface
             ]);
         } catch (\Exception $e) {}
 
+        // Auto-create primary DJ (account username) assigned to all stations
+        try {
+            $user = $this->db->table('hosting_users')->where('id', $userId)->first();
+            if ($user) {
+                $svc = new \Services\RadioDjService($this->db);
+                $svc->ensurePrimaryDj($user);
+            }
+        } catch (\Exception $e) {}
+
         return ['id' => $id, 'port' => $port, 'password' => $password, 'mount_point' => $mount, 'config_path' => $configPath];
     }
 

@@ -113,6 +113,15 @@ class StreamsController extends Controller
             'status' => 'stopped', 'autodj_enabled' => $autodj, 'ssl_enabled' => $ssl,
         ]);
 
+        // Auto-create primary DJ (account username) assigned to all stations
+        try {
+            $user = $this->db->table('hosting_users')->where('id', $uid)->first();
+            if ($user) {
+                $svc = new \Services\RadioDjService($this->db);
+                $svc->ensurePrimaryDj($user);
+            }
+        } catch (\Exception $e) {}
+
         $adminPw = $adminPw ?? $password;
         $hostname = trim($this->request->post('hostname', 'planet-hosts.com'));
 

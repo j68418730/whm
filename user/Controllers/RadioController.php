@@ -275,24 +275,15 @@ class RadioController extends Controller
                     // Port allocation failure is non-fatal for DJ creation
                 }
 
-                // Handle multiple station assignments
-                $stationIds = $_POST['station_ids'] ?? [];
-                if (!empty($stationIds)) {
-                    foreach ($stationIds as $stationId) {
-                        $sid = (int)$stationId;
-                        if ($sid > 0) {
-                            // Convert composite ID (10000+id) to actual streaming_stations.id
-                            $realStreamId = $sid > 10000 ? $sid - 10000 : $sid;
-                            try {
-                                $this->db->table('radio_dj_streams')->insert([
-                                    'dj_id' => $djId,
-                                    'stream_id' => $realStreamId,
-                                    'assigned_by' => $this->auth->user()->id,
-                                ]);
-                            } catch (\Exception $e) {}
-                        }
+                // Assign to ALL stations on the account (icecast + shoutcast v1 + v2)
+                try {
+                    $ss = $this->db->table('streaming_stations')->where('id', $realStationId)->first();
+                    $hostingUserId = $ss->user_id ?? 0;
+                    if ($hostingUserId) {
+                        $djSvc = new \Services\RadioDjService($this->db);
+                        $djSvc->assignNewDjToAllStations($djId, $hostingUserId);
                     }
-                }
+                } catch (\Exception $e) {}
 
                 // Also add to chatbox users
                 try {
