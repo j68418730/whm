@@ -10,7 +10,7 @@ return [
     'render' => function($uw) {
         try {
             $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
-            $todos = $pdo->query("SELECT * FROM todos ORDER BY (status='completed'), created_at DESC LIMIT 20")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            $todos = $pdo->query("SELECT * FROM todos WHERE TRIM(title) <> '' ORDER BY (status='completed'), created_at DESC LIMIT 20")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         } catch (\Exception $e) {
             $todos = [];
         }
@@ -63,7 +63,7 @@ return [
             }
         }
 
-        $html .= '<form class="td-add" method="POST" action="/admin/todo" onsubmit="setTimeout(function(){location.reload()},400)">
+        $html .= '<form class="td-add" method="POST" action="/admin/todo" onsubmit="var i=this.querySelector(\'input[name=title]\');if(!i.value.trim()){i.focus();return false}setTimeout(function(){location.reload()},400)">
               <input name="title" placeholder="Add a task..." required>
               <button type="submit">Add</button></form>';
         $html .= '<div style="margin-top:8px"><a href="/admin/todo" style="color:var(--accent);font-size:11px;text-decoration:none">Open ToDo Board →</a></div>';
