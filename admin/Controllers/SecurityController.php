@@ -125,4 +125,49 @@ class SecurityController extends Controller
         echo $lines ? implode("\n", $lines) : 'No log available.';
         exit;
     }
+
+    // Intrusion detection events (attack_alert.php monitor)
+    public function intrusions()
+    {
+        $this->guard();
+        $user = $this->auth->user();
+        $limit = (int)($this->request->get('limit', 100));
+        $type = $this->request->get('type', '');
+        try {
+            $pdo = $this->db->pdo();
+            $where = ''; $params = [];
+            if ($type) { $where = 'WHERE type = ?'; $params[] = $type; }
+            $q = $pdo->prepare("SELECT * FROM attack_events {$where} ORDER BY last_seen DESC LIMIT " . (int)$limit);
+            $q->execute($params);
+            $events = $q->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            $types = $pdo->query("SELECT type, COUNT(*) c, MAX(last_seen) last FROM attack_events GROUP BY type ORDER BY c DESC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            $summary = $pdo->query("SELECT COUNT(*) total, SUM(CASE WHEN severity='critical' THEN 1 ELSE 0 END) crit, SUM(CASE WHEN resolved=0 THEN 1 ELSE 0 END) open, COUNT(DISTINCT ip) ips FROM attack_events")->fetch(\PDO::FETCH_OBJ);
+        } catch (\Exception $e) {
+            $events = []; $types = []; $summary = (object)['total'=>0,'crit'=>0,'open'=>0,'ips'=>0];
+        }
+        return $this->view('admin.security.intrusions', [
+            'user' => $user,
+            'title' => 'Intrusion Detection',
+            'theme_settings' => json_decode($user->theme_settings ?? '{}', true),
+            'events' => $events,
+            'types' => $types,
+            'summary' => $summary,
+            'typeFilter' => $type,
+        ]);
+    }
+
+    // Resolve a set of intrusion events
+    public function intrusionResolve()
+    {
+        $this->guard();
+        $id = (int)($this->request->post('id', 0));
+        $all = $this->request->post('all', 0);
+        try {
+            $pdo = $this->db->pdo();
+            if ($all) $pdo->exec("UPDATE attack_events SET resolved=1 WHERE resolved=0");
+            else $pdo->prepare("UPDATE attack_events SET resolved=1 WHERE id=?")->execute([$id]);
+            $_SESSION['success_message'] = 'Marked as resolved.';
+        } catch (\Exception $e) {}
+        $this->response->redirect('/admin/security/intrusions');
+    }
 }

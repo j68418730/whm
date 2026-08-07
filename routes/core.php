@@ -83,6 +83,8 @@ $router->get('/admin/security/scan/{tool}', 'Admin\Controllers\SecurityControlle
 $router->get('/admin/security/scan-all', 'Admin\Controllers\SecurityController@scanAll');
 $router->get('/admin/security/fix/{tool}', 'Admin\Controllers\SecurityController@fix');
 $router->get('/admin/security/logs/{tool}', 'Admin\Controllers\SecurityController@logs');
+$router->get('/admin/security/intrusions', 'Admin\Controllers\SecurityController@intrusions');
+$router->post('/admin/security/intrusions/resolve', 'Admin\Controllers\SecurityController@intrusionResolve');
 $router->get('/admin/backup', 'Admin\Controllers\BackupController@index');
 $router->post('/admin/backup/create', 'Admin\Controllers\BackupController@create');
 $router->get('/admin/backup/restore/{name}', 'Admin\Controllers\BackupController@restore');
