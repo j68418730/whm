@@ -1099,9 +1099,11 @@ function toggleDate(el,date){
 <?php
 // Show pending requests across ALL stations this DJ can access, with the station name
 $djIdReqs = $_SESSION['dj_user']['id'] ?? 0;
-$reqStmt = $pdo->prepare("SELECT r.*, ss.name AS station_name, ss.engine AS station_engine
+$reqStmt = $pdo->prepare("SELECT r.*, ss.name AS station_name, ss.engine AS station_engine,
+    rb.brand_logo, rb.brand_primary_color, rb.brand_slogan
     FROM radio_requests r
     JOIN streaming_stations ss ON ss.id = r.stream_id
+    LEFT JOIN radio_branding rb ON rb.station_id = ss.id
     WHERE r.status = 'pending'
       AND (r.stream_id = (SELECT stream_id FROM radio_djs WHERE id = ?)
            OR r.stream_id IN (SELECT stream_id FROM radio_dj_streams WHERE dj_id = ?))
@@ -1117,11 +1119,16 @@ $requests = $reqStmt->fetchAll(PDO::FETCH_OBJ);
 <?php else: ?>
 <?php foreach ($requests as $r): ?>
 <div class="req-item">
-<div>
+<div style="display:flex;gap:8px;align-items:center;min-width:0">
+<?php if (!empty($r->brand_logo)): ?>
+  <img src="https://planet-hosts.com<?=htmlspecialchars($r->brand_logo)?>" alt="" style="width:34px;height:34px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,.08)">
+<?php endif; ?>
+<div style="min-width:0">
 <div class="req-title"><?php echo htmlspecialchars($r->artist . ' - ' . $r->title); ?></div>
 <?php if ($r->guest_name): ?><div class="req-meta">Requested by: <?php echo htmlspecialchars($r->guest_name); ?></div><?php endif; ?>
-<?php if ($r->station_name): ?><div class="req-meta" style="color:#38bdf8">📡 Station: <?php echo htmlspecialchars($r->station_name); ?></div><?php endif; ?>
+<?php if ($r->station_name): ?><div class="req-meta" style="color:<?php echo htmlspecialchars($r->brand_primary_color ?? '#38bdf8'); ?>">📡 Station: <?php echo htmlspecialchars($r->station_name); ?></div><?php endif; ?>
 <?php if ($r->message): ?><div class="req-msg">"<?php echo htmlspecialchars($r->message); ?>"</div><?php endif; ?>
+</div>
 </div>
 <a href="/dj_panel.php?action=remove_request&req_id=<?php echo $r->id; ?>" class="btn btn-danger btn-xs">✕ Remove</a>
 </div>
