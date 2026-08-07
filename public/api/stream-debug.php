@@ -4,6 +4,17 @@ if (!$stationId) { http_response_code(400); echo json_encode(['error'=>'station 
 
 header('Content-Type: application/json');
 
+// Sanitize any string to valid UTF-8 so json_encode never fails on binary log/DB data.
+function sd_utf8($v) {
+    if (is_string($v)) {
+        if (!mb_check_encoding($v, 'UTF-8')) {
+            $v = mb_convert_encoding($v, 'UTF-8', 'UTF-8');
+        }
+        return $v;
+    }
+    return $v;
+}
+
 try {
     $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
 
@@ -123,16 +134,16 @@ try {
     }
 
     echo json_encode([
-        'station' => $station->name ?? "Station #$stationId",
-        'status' => $station->status ?? 'unknown',
+        'station' => sd_utf8($station->name ?? "Station #$stationId"),
+        'status' => sd_utf8($station->status ?? 'unknown'),
         'port' => $sPort,
         'dj_port' => $djPort,
         'src_port' => $srcPort,
-        'engine' => $station->engine ?? 'icecast',
+        'engine' => sd_utf8($station->engine ?? 'icecast'),
         'listeners' => (int)($station->listener_count ?? 0),
-        'current_song' => $station->current_song ?? '',
-        'current_artist' => $station->current_artist ?? '',
-        'current_dj' => $station->current_dj ?? null,
+        'current_song' => sd_utf8($station->current_song ?? ''),
+        'current_artist' => sd_utf8($station->current_artist ?? ''),
+        'current_dj' => $station->current_dj !== null && $station->current_dj !== '' ? sd_utf8($station->current_dj) : null,
         'autodj_enabled' => (bool)($station->autodj_enabled ?? false),
         'autodj_running' => $autodjRunning,
         'autodj_pid' => $autodjPid,
@@ -145,21 +156,21 @@ try {
         'proxy_bytes' => $proxySize,
         'listener_running' => $listenerRunning,
         'listener_pid' => $listenerPid,
-        'last_log' => trim($lastLog),
+        'last_log' => trim(sd_utf8($lastLog)),
         'connections' => array_map(function($c) {
             $dur = $c->connected_at && $c->disconnected_at ? strtotime($c->disconnected_at) - strtotime($c->connected_at) : ($c->connected_at ? time() - strtotime($c->connected_at) : 0);
             return [
-                'dj' => $c->dj_username ?? 'unknown',
-                'connected' => $c->connected_at,
-                'disconnected' => $c->disconnected_at,
+                'dj' => sd_utf8($c->dj_username ?? 'unknown'),
+                'connected' => sd_utf8($c->connected_at),
+                'disconnected' => sd_utf8($c->disconnected_at),
                 'duration' => $dur,
-                'reason' => $c->disconnect_reason ?? '',
-                'ip' => $c->client_ip ?? '',
-                'ua' => $c->user_agent ?? '',
+                'reason' => sd_utf8($c->disconnect_reason ?? ''),
+                'ip' => sd_utf8($c->client_ip ?? ''),
+                'ua' => sd_utf8($c->user_agent ?? ''),
             ];
         }, $connections),
         'recent_songs' => array_map(function($s) {
-            return ['title' => $s->title ?? '', 'artist' => $s->artist ?? '', 'time' => $s->played_at ?? ''];
+            return ['title' => sd_utf8($s->title ?? ''), 'artist' => sd_utf8($s->artist ?? ''), 'time' => sd_utf8($s->played_at ?? '')];
         }, $songs),
         'timestamp' => date('c'),
     ]);
