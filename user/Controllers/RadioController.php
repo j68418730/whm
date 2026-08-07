@@ -388,7 +388,7 @@ class RadioController extends Controller
         if (!$station) exit;
         $update = [];
         if ($u = trim($_POST['username'] ?? '')) $update['username'] = $u;
-        if ($p = trim($_POST['password'] ?? '')) $update['password'] = password_hash($p, PASSWORD_DEFAULT);
+        if ($p = trim($_POST['password'] ?? '')) { $update['password'] = password_hash($p, PASSWORD_DEFAULT); $update['plain_password'] = $p; }
         if (isset($_POST['name'])) $update['name'] = trim($_POST['name']);
         if (isset($_POST['email'])) $update['email'] = trim($_POST['email']);
         if (isset($_POST['bio'])) $update['bio'] = trim($_POST['bio']);
