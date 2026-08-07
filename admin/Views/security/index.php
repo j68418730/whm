@@ -27,7 +27,7 @@
 </style>
 
 <h2>Security Center</h2>
-<p style="color:#64748b;margin-bottom:16px">Optional open-source security tools. Each module can be installed, scanned, and reviewed independently. The firewall (firewalld/fail2ban/ModSecurity/CSF) is managed under <a href="/admin/firewall" style="color:#0A84FF">Firewall</a> and is unchanged.</p>
+<p style="color:#64748b;margin-bottom:16px">The firewall (firewalld/fail2ban/ModSecurity/CSF) is managed under <a href="/admin/firewall" style="color:#0A84FF">Firewall</a>.</p>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px">
   <div class="sc-score"><div class="val"><?php echo (int)$score; ?></div><div class="lbl">Security Score</div></div>
