@@ -40,7 +40,9 @@ class UserController extends Controller
         if (!$this->hostingUser && !empty($hostings)) {
             $this->hostingUser = $hostings[0];
         }
-        if ($this->hostingUser && ($this->hostingUser->status ?? 'active') === 'suspended') {
+        // Block suspended accounts EXCEPT when root is viewing (sudo/login-as mode)
+        $isSudo = !empty($_SESSION['sudo_login']);
+        if ($this->hostingUser && !$isSudo && ($this->hostingUser->status ?? 'active') === 'suspended') {
             $this->response->redirect('/?login=suspended');
             exit;
         }
