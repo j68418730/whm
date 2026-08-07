@@ -1,26 +1,40 @@
 <?php
+require_once __DIR__ . '/../security_guard.php';
+security_guard_run('radio');
+require_once __DIR__ . '/radio_helper.php';
 header('Content-Type: text/html; charset=utf-8');
-$streamId = (int)($_GET['stream'] ?? 0);
+$streamId = (int)($_GET['stream'] ?? $_GET['id'] ?? 0);
 $scroll = $_GET['scroll'] ?? 'yes';
 if (!$streamId) { echo '<!-- No stream ID -->'; exit; }
 
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
-
-// Get stream info
-$stmt = $pdo->prepare("SELECT s.*, d.name as current_dj_name FROM radio_streams s LEFT JOIN radio_djs d ON d.stream_id = s.id AND d.status='active' AND d.username = s.current_dj WHERE s.id = ?");
-$stmt->execute([$streamId]);
-$stream = $stmt->fetch(PDO::FETCH_OBJ);
+$stream = radio_get_stream($streamId);
 if (!$stream) { echo '<!-- Stream not found -->'; exit; }
 
-// Get last 10 songs
-$songs = $pdo->prepare("SELECT * FROM radio_played_songs WHERE stream_id = ? ORDER BY played_at DESC LIMIT 10");
-$songs->execute([$streamId]);
-$songsList = $songs->fetchAll(PDO::FETCH_OBJ);
+$stats = radio_fetch_stats($stream);
+$song = $stats['song'] ?: 'Waiting for source...';
+$artist = $stats['artist'];
+$online = $stats['status'];
+$liveDj = $stats['live_dj'];
+$listeners = $stats['listeners'];
+$bitrate = $stats['bitrate'];
 
-// Get pending requests count
-$reqs = $pdo->prepare("SELECT COUNT(*) FROM radio_requests WHERE stream_id = ? AND status = 'pending'");
-$reqs->execute([$streamId]);
-$requestCount = $reqs->fetchColumn();
+// Get last 10 songs from streaming history if the table exists
+$songsList = [];
+try {
+    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+    $h = $pdo->prepare("SELECT * FROM radio_song_history WHERE stream_id = ? ORDER BY played_at DESC LIMIT 10");
+    $h->execute([(int)$stream->id]);
+    $songsList = $h->fetchAll(PDO::FETCH_OBJ) ?: [];
+} catch (\Exception $e) {}
+
+// Pending requests count (only if table exists)
+$requestCount = 0;
+try {
+    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+    $reqs = $pdo->prepare("SELECT COUNT(*) FROM radio_requests WHERE stream_id = ? AND status = 'pending'");
+    $reqs->execute([(int)$stream->id]);
+    $requestCount = (int)$reqs->fetchColumn();
+} catch (\Exception $e) {}
 
 $scrollStyle = $scroll === 'no' ? 'overflow-y:visible;max-height:none' : 'overflow-y:auto;max-height:300px';
 ?>
@@ -48,16 +62,18 @@ body{background:#0a0e1a;color:#e0e0e0;padding:12px;font-size:13px}
 <div class="widget">
 <div class="section">
 <div class="label">Now Playing</div>
-<div class="value"><?php echo htmlspecialchars($stream->last_song_title ? ($stream->last_song_artist ? $stream->last_song_artist . ' - ' : '') . $stream->last_song_title : 'Waiting for source...'); ?></div>
+<div class="value"><?php echo htmlspecialchars($artist ? $artist . ' - ' . $song : $song); ?></div>
 </div>
 
 <div class="section">
 <div class="label">DJ / Source</div>
 <div class="value">
-<?php if ($stream->autodj_active): ?>
+<?php if ($liveDj): ?>
+<span class="status-dot live"></span> <?php echo htmlspecialchars($liveDj); ?>
+<?php elseif (!empty($stream->autodj_enabled)): ?>
 <span class="status-dot autodj"></span> AutoDJ
-<?php elseif ($stream->current_dj_name): ?>
-<span class="status-dot live"></span> <?php echo htmlspecialchars($stream->current_dj_name); ?>
+<?php elseif ($online): ?>
+<span class="status-dot live"></span> Live
 <?php else: ?>
 <span class="status-dot offline"></span> Offline
 <?php endif; ?>
@@ -70,8 +86,8 @@ body{background:#0a0e1a;color:#e0e0e0;padding:12px;font-size:13px}
 <div class="song-list">
 <?php foreach ($songsList as $s): ?>
 <div class="song-item">
-<span class="song-title"><?php echo htmlspecialchars($s->artist ? $s->artist . ' - ' . $s->title : $s->title); ?></span>
-<span class="song-time"><?php echo date('H:i', strtotime($s->played_at)); ?></span>
+<span class="song-title"><?php echo htmlspecialchars(($s->artist ?? '') ? ($s->artist . ' - ' . $s->title) : ($s->title ?? '')); ?></span>
+<span class="song-time"><?php echo date('H:i', strtotime($s->played_at ?? 'now')); ?></span>
 </div>
 <?php endforeach; ?>
 </div>
