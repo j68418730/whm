@@ -2,6 +2,10 @@
 
 $showLogin = isset($_GET['login']);
 $loginError = isset($loginError) ? $loginError : null;
+// Suspended account -> show a clear suspension message instead of the login form
+if (isset($_GET['login']) && $_GET['login'] === 'suspended') {
+    $showLogin = false;
+}
 $loggedIn = isset($loggedIn) ? $loggedIn : false;
 $user = isset($user) ? $user : null;
 $packagesByType = isset($packagesByType) ? $packagesByType : [];
@@ -581,6 +585,17 @@ $safeText3 = htmlspecialchars($rv->text ?? '', ENT_QUOTES, 'UTF-8');
 </div>
 </div>
 </footer>
+
+<!-- ===== SUSPENDED NOTICE ===== -->
+<?php if (isset($_GET['login']) && $_GET['login'] === 'suspended'): ?>
+<div id="suspendedModal" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.9);backdrop-filter:blur(8px);">
+<div style="background:#0b1728;border:1px solid rgba(248,113,113,.3);border-radius:24px;padding:48px;width:420px;max-width:92vw;text-align:center;">
+<div style="font-size:56px;margin-bottom:16px">🚫</div>
+<h2 style="font-size:24px;font-weight:800;margin-bottom:8px;color:#f87171;">Account Suspended</h2>
+<p style="color:#94a3b8;font-size:14px;line-height:1.6;margin-bottom:24px;">This account has been suspended. You cannot log in, stream, or use your chat services until it is reactivated.<br><br>Please contact support if you believe this is a mistake.</p>
+<a href="/" style="display:inline-block;padding:14px 28px;border-radius:12px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;font-weight:600;text-decoration:none;font-size:14px;">Back to Home</a>
+</div></div>
+<?php endif; ?>
 
 <!-- ===== LOGIN MODAL ===== -->
 <?php if ($showLogin): ?>

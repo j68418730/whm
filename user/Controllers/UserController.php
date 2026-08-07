@@ -40,6 +40,10 @@ class UserController extends Controller
         if (!$this->hostingUser && !empty($hostings)) {
             $this->hostingUser = $hostings[0];
         }
+        if ($this->hostingUser && ($this->hostingUser->status ?? 'active') === 'suspended') {
+            $this->response->redirect('/?login=suspended');
+            exit;
+        }
         if ($this->hostingUser) {
             $this->package = $this->db->table('hosting_packages')->where('id', $this->hostingUser->package_id)->first();
         }
@@ -193,6 +197,13 @@ class UserController extends Controller
         }
 
         if ($user && password_verify($password, $user->password_hash)) {
+            // Suspended accounts cannot log in
+            if ($user->status === 'suspended') {
+                $sec->log($customerId, 'login_blocked', $username, 'login', 'blocked', 'system', "Suspended account login attempt");
+                $sec->alert($customerId, 'suspended', 'Login blocked — account is suspended.');
+                header('Location: /?login=suspended');
+                exit;
+            }
             if ($customerId > 0) $sec->recordLoginAttempt($customerId, $username, true);
             $_SESSION['user'] = (object)[
                 'id' => $user->id, 'email' => $user->email,
