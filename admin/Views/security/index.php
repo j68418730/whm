@@ -34,7 +34,9 @@
 
 <h2>Security Center</h2>
 <p style="color:#64748b;margin-bottom:16px">The firewall (firewalld/fail2ban/ModSecurity/CSF) is managed under <a href="/admin/firewall" style="color:#0A84FF">Firewall</a>.</p>
-
+<div style="margin-bottom:14px">
+  <a href="/admin/security/intrusions" style="display:inline-block;padding:8px 16px;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:#f87171;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600">🛡️ Intrusion Detection — live attack monitor (SQLi, brute-force, scanners)</a>
+</div>
 <?php
 // Build a findings lookup: key => result row
 $findingsMap = [];
