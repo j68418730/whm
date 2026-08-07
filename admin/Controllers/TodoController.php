@@ -47,12 +47,27 @@ class TodoController extends Controller
     public function update($id)
     {
         $progress = (int)$this->request->post('progress', 0);
-        $status = $progress >= 100 ? 'completed' : ($progress > 0 ? 'in_progress' : 'pending');
-        $this->db->table('todos')->where('id', $id)->update([
-            'progress' => $progress, 'status' => $status,
-            'title' => $this->request->post('title', ''),
-            'description' => $this->request->post('description', ''),
-        ]);
+        $title = trim($this->request->post('title', ''));
+        $description = $this->request->post('description', '');
+        $category = trim($this->request->post('category', ''));
+        $done = $this->request->post('done', '');
+
+        $status = 'pending';
+        if ($done !== '') {
+            $status = $done === '1' ? 'completed' : ($progress > 0 ? 'in_progress' : 'pending');
+            $progress = $done === '1' ? 100 : $progress;
+        } elseif ($progress >= 100) {
+            $status = 'completed';
+        } elseif ($progress > 0) {
+            $status = 'in_progress';
+        }
+
+        $data = ['progress' => $progress, 'status' => $status];
+        if ($title !== '') $data['title'] = $title;
+        if ($description !== '') $data['description'] = $description;
+        if ($category !== '') $data['category'] = $category;
+
+        $this->db->table('todos')->where('id', $id)->update($data);
         $_SESSION['success_message'] = 'Task updated.';
         $this->response->redirect('/admin/todo');
         exit;

@@ -1,129 +1,204 @@
+<?php
+$totalTodos = count($todos);
+$doneCount = count(array_filter($todos, fn($t) => (int)$t->progress >= 100));
+$activeCount = $totalTodos - $doneCount;
+$csrf = htmlspecialchars($_SESSION['_csrf_token'] ?? '');
+?>
+<style>
+.todo-summary{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.todo-stat{background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.1);border-radius:12px;padding:14px 20px;min-width:130px;text-align:center}
+.todo-stat .num{font-size:26px;font-weight:800;color:var(--accent,#008cff)}
+.todo-stat.green .num{color:#4ade80}
+.todo-stat.red .num{color:#f87171}
+.todo-stat .lbl{font-size:11px;color:#64748b;margin-top:2px}
+.todo-add{background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.12);border-radius:14px;padding:20px;margin-bottom:20px}
+.todo-add h3{margin:0 0 14px;font-size:15px;color:var(--text,#e0e0e0)}
+.todo-add .row{display:flex;gap:10px;flex-wrap:wrap}
+.todo-add input[type=text],.todo-add select,.todo-add textarea{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:#e0e0e0;border-radius:8px;padding:9px 12px;font-size:13px;outline:none}
+.todo-add input[type=text]{flex:2;min-width:200px}
+.todo-add textarea{flex:1;min-width:200px;resize:vertical}
+.todo-cat{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.todo-cat .chip{padding:5px 12px;border-radius:100px;border:1px solid rgba(255,255,255,.1);font-size:12px;color:#94a3b8;cursor:pointer;background:rgba(255,255,255,.02)}
+.todo-cat .chip.active{background:rgba(0,140,255,.15);border-color:rgba(0,140,255,.4);color:#3bb8ff}
+.todo-group{background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.1);border-radius:14px;margin-bottom:16px;overflow:hidden}
+.todo-group-hdr{display:flex;align-items:center;gap:10px;padding:13px 18px;cursor:pointer;user-select:none;border-bottom:1px solid rgba(255,255,255,.04)}
+.todo-group-hdr:hover{background:rgba(255,255,255,.02)}
+.todo-group-hdr .arrow{transition:transform .2s;font-size:11px;color:#64748b}
+.todo-group-hdr.closed .arrow{transform:rotate(-90deg)}
+.todo-group-hdr h4{flex:1;margin:0;font-size:14px;color:var(--accent,#008cff)}
+.todo-group-hdr .meta{font-size:12px;color:#64748b}
+.todo-group-body{padding:0 18px}
+.todo-group-body.closed{display:none}
+.todo-row{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.todo-row:last-child{border-bottom:none}
+.todo-row.done .ttl{text-decoration:line-through;opacity:.55}
+.todo-row .chk{width:20px;height:20px;flex-shrink:0;margin-top:2px;accent-color:#4ade80;cursor:pointer}
+.todo-row .main{flex:1;min-width:0}
+.todo-row .ttl{font-size:14px;font-weight:600;color:#e0e0e0}
+.todo-row .desc{font-size:12px;color:#94a3b8;margin-top:2px;white-space:pre-wrap;word-break:break-word}
+.todo-row .prg{display:flex;align-items:center;gap:10px;margin-top:8px}
+.todo-row .prg .bar{flex:1;height:7px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden}
+.todo-row .prg .fill{height:100%;background:linear-gradient(90deg,#008cff,#3bb8ff);border-radius:4px;transition:width .3s}
+.todo-row .prg .fill.done{background:linear-gradient(90deg,#22c55e,#4ade80)}
+.todo-row .prg .pct{font-size:12px;color:#64748b;min-width:34px;text-align:right}
+.todo-row .prg input[type=range]{flex:0 0 90px;accent-color:#008cff;cursor:pointer}
+.todo-row .acts{display:flex;gap:5px;flex-shrink:0;align-items:center}
+.todo-row .acts button{border:none;cursor:pointer;border-radius:6px;padding:5px 9px;font-size:12px;background:rgba(255,255,255,.05);color:#94a3b8;transition:.15s}
+.todo-row .acts button:hover{background:rgba(255,255,255,.1);color:#e0e0e0}
+.todo-row .acts button.del:hover{background:rgba(255,60,60,.15);color:#ff6b6b}
+.todo-row .acts button.save{background:rgba(34,197,94,.15);color:#4ade80}
+.todo-edit{display:none;margin-top:8px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px}
+.todo-edit input,.todo-edit select,.todo-edit textarea{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#e0e0e0;border-radius:6px;padding:7px 9px;font-size:12px;outline:none;margin-bottom:6px;width:100%;box-sizing:border-box}
+.todo-empty{padding:30px;text-align:center;color:#64748b;font-size:13px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(0,191,255,.2);color:#e0e0e0;background:rgba(0,140,255,.08);text-decoration:none}
+.btn.primary{background:#008cff;border-color:#008cff;color:#fff}
+.btn:hover{opacity:.9}
+</style>
+
 <?php if (isset($_SESSION['success_message'])): ?>
 <div class="alert alert-success"><?php echo htmlspecialchars($_SESSION['success_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['success_message']); ?></div>
 <?php endif; ?>
 
-<div style="display:flex;gap:12px;align-items:start;flex-wrap:wrap;margin-bottom:16px">
-<a class="btn primary" onclick="document.getElementById('addForm').style.display='block'">+ Add Task</a>
+<div class="todo-summary">
+  <div class="todo-stat"><div class="num"><?php echo $activeCount; ?></div><div class="lbl">Active</div></div>
+  <div class="todo-stat green"><div class="num"><?php echo $doneCount; ?></div><div class="lbl">Completed</div></div>
+  <div class="todo-stat red"><div class="num"><?php echo $totalTodos; ?></div><div class="lbl">Total</div></div>
 </div>
 
-<div id="addForm" style="display:none" class="card" style="margin-bottom:20px">
-<form method="POST" action="/admin/todo">
-<input type="hidden" name="_csrf_token" value="<?php echo htmlspecialchars($_SESSION['_csrf_token'] ?? ''); ?>">
-<div class="form-group"><label>Title</label><input name="title" required></div>
-<div class="form-group"><label>Description</label><textarea name="description"></textarea></div>
-<div class="form-group"><label>Category</label><select name="category">
-<option>Core Platform</option><option>User Portal</option><option>Admin Portal</option><option>Account Management</option>
-<option>Packages</option><option>Resellers</option><option>Server</option><option>DNS</option><option>Email Server</option>
-<option>Security Admin</option><option>Backups</option><option>Monitoring</option><option>System</option>
-<option>Radio Streaming</option><option>Billing</option><option>Support System</option><option>Nice To Have</option>
-</select></div>
-<button type="submit" class="btn primary">Add Task</button>
-<a class="btn secondary" onclick="document.getElementById('addForm').style.display='none'">Cancel</a>
-</form>
+<div class="todo-add">
+  <h3>➕ Add Task</h3>
+  <form method="POST" action="/admin/todo">
+    <input type="hidden" name="_csrf_token" value="<?php echo $csrf; ?>">
+    <div class="row">
+      <input type="text" name="title" placeholder="Task title..." required>
+      <input type="text" name="description" placeholder="Short description (optional)">
+      <select name="category">
+        <option>General</option>
+        <option>Core Platform</option><option>User Portal</option><option>Admin Portal</option>
+        <option>Account Management</option><option>Packages</option><option>Resellers</option>
+        <option>Server</option><option>DNS</option><option>Email Server</option><option>Security Admin</option>
+        <option>Backups</option><option>Monitoring</option><option>System</option><option>API</option>
+        <option>Radio Streaming</option><option>Billing</option><option>Support System</option><option>Nice To Have</option>
+      </select>
+      <button type="submit" class="btn primary">Add</button>
+    </div>
+  </form>
 </div>
 
-<style>
-.toggle-icon{transition:transform .2s;display:inline-block;margin-right:8px;cursor:pointer;user-select:none}
-.toggle-icon.closed{transform:rotate(-90deg)}
-.toggle-body{overflow:hidden;transition:max-height .3s}
-.toggle-body.closed{max-height:0!important;padding:0!important;margin:0!important}
-</style>
+<?php
+$categories = [];
+foreach ($todos as $t) { $categories[$t->category ?? 'General'] = true; }
+$categories = array_keys($categories);
+sort($categories);
+?>
+<div class="todo-cat">
+  <span class="chip active" data-cat="">All</span>
+  <?php foreach ($categories as $cat): ?>
+  <span class="chip" data-cat="<?php echo htmlspecialchars($cat); ?>"><?php echo htmlspecialchars($cat); ?></span>
+  <?php endforeach; ?>
+</div>
 
-<script>
-function updateProgress(id, input) {
-    var val = input.value;
-    var row = input.closest('.task-row');
-    var bar = row.querySelector('.pbar');
-    var pct = row.querySelector('.pct');
-    var formData = new FormData();
-    formData.append('progress', val);
-    formData.append('title', row.dataset.title || '');
-    formData.append('description', row.dataset.desc || '');
-    formData.append('_csrf_token', '<?php echo htmlspecialchars($_SESSION['_csrf_token'] ?? ''); ?>');
-    fetch('/admin/todo/' + id, { method: 'POST', body: formData }).then(function(r) {
-        if (r.ok) {
-            bar.style.width = Math.min(100, Math.max(0, val)) + '%';
-            pct.textContent = val + '%';
-            if (parseInt(val) >= 100) {
-                var parent = row.parentNode;
-                parent.appendChild(row);
-            }
-        }
-    });
-    return false;
-}
-function toggleCat(el) {
-    var name = el.dataset.cat;
-    var body = document.getElementById('cat-' + name);
-    var icon = el.querySelector('.toggle-icon');
-    body.classList.toggle('closed');
-    icon.classList.toggle('closed');
-    var closed = body.classList.contains('closed');
-    try { localStorage.setItem('todo_cat_' + name, closed ? '1' : '0'); } catch(e) {}
-}
-</script>
+<?php if (empty($todos)): ?>
+<div class="todo-empty">No tasks yet. Add one above. ✅</div>
+<?php endif; ?>
 
-<?php $categories = ['Core Platform','User Portal','Files','Domains','Email','Databases','Security','Applications','Advanced','Statistics','Support','Account','Admin Portal','Account Management','Packages','Resellers','Server','DNS','Email Server','Security Admin','Backups','Monitoring','System','API','Reseller Portal','Billing','Automation','Radio Streaming','Support System','Admin Settings','Logging','Nice To Have']; ?>
 <?php foreach ($categories as $cat): ?>
 <?php
 $activeTodos = []; $doneTodos = [];
 foreach ($todos as $t) {
     if (($t->category ?? 'General') === $cat) {
-        if ((int)$t->progress >= 100) $doneTodos[] = $t;
-        else $activeTodos[] = $t;
+        if ((int)$t->progress >= 100) $doneTodos[] = $t; else $activeTodos[] = $t;
     }
 }
 $catTodos = array_merge($activeTodos, $doneTodos);
 if (empty($catTodos)) continue;
 ?>
-<div class="card" style="margin-bottom:16px">
-<div style="display:flex;align-items:center;cursor:pointer;margin-bottom:<?php echo empty($catTodos) ? '0' : '8px'; ?>;user-select:none" onclick="toggleCat(this)" data-cat="<?php echo $cat; ?>">
-<span class="toggle-icon">▼</span>
-<h4 style="color:var(--accent);font-size:15px;margin:0;flex:1"><?php echo htmlspecialchars($cat); ?></h4>
-<span style="font-size:12px;color:var(--text-muted);margin-right:8px"><?php echo count($doneTodos); ?>/<?php echo count($catTodos); ?> done</span>
-<?php if (count($activeTodos) === 0 && count($doneTodos) > 0): ?>
-<a href="/admin/todo/delete-category/<?php echo urlencode($cat); ?>" class="btn btn-sm" style="background:rgba(255,50,50,.1);color:#f87171;padding:2px 10px;font-size:11px;text-decoration:none;border-radius:4px" onclick="return confirm('Delete completed \'<?php echo htmlspecialchars($cat); ?>\' group?')">🗑 Delete All Done</a>
-<?php endif; ?>
-</div>
-<div id="cat-<?php echo $cat; ?>" class="toggle-body">
-<?php foreach ($catTodos as $t): ?>
-<div class="task-row" data-title="<?php echo htmlspecialchars($t->title); ?>" data-desc="<?php echo htmlspecialchars($t->description ?? ''); ?>">
-<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)">
-<div style="flex:1">
-<strong style="font-size:14px"><?php echo htmlspecialchars($t->title); ?></strong>
-<?php if ($t->description): ?><p style="color:var(--text-muted);font-size:12px;margin-top:2px"><?php echo htmlspecialchars($t->description); ?></p><?php endif; ?>
-<div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-<div style="flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden">
-<div class="pbar" style="height:100%;width:<?php echo min(100, max(0, (int)$t->progress)); ?>%;background:linear-gradient(90deg,<?php echo (int)$t->progress >= 100 ? '#4ade80' : '#008cff,#3bb8ff'; ?>);border-radius:3px;transition:width .3s"></div>
-</div>
-<span class="pct" style="font-size:12px;color:var(--text-muted);min-width:35px"><?php echo (int)$t->progress; ?>%</span>
-</div>
-</div>
-<div style="display:flex;gap:4px;flex-shrink:0">
-<input type="number" value="<?php echo (int)$t->progress; ?>" min="0" max="100" style="width:50px;padding:4px 6px;border-radius:4px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;outline:none;font-size:12px" onchange="updateProgress(<?php echo $t->id; ?>, this)">
-<a href="/admin/todo/delete/<?php echo $t->id; ?>" class="btn btn-sm" style="background:rgba(255,50,50,.15);color:#ff6b6b;padding:4px 8px;font-size:13px;border:none;font-weight:700;line-height:1" onclick="return confirm('Delete?')" title="Delete task">✕</a>
-</div>
-</div>
+<div class="todo-group" data-group="<?php echo htmlspecialchars($cat); ?>">
+  <div class="todo-group-hdr" onclick="toggleCat(this)">
+    <span class="arrow">▼</span>
+    <h4><?php echo htmlspecialchars($cat); ?></h4>
+    <span class="meta"><?php echo count($doneTodos); ?>/<?php echo count($catTodos); ?> done</span>
+    <?php if (count($activeTodos) === 0 && count($doneTodos) > 0): ?>
+    <a href="/admin/todo/delete-category/<?php echo urlencode($cat); ?>" style="font-size:11px;color:#f87171;text-decoration:none;padding:3px 10px;background:rgba(255,60,60,.1);border-radius:6px" onclick="return confirm('Delete all completed in \'<?php echo htmlspecialchars($cat); ?>\'?')">🗑 Clear done</a>
+    <?php endif; ?>
+  </div>
+  <div class="todo-group-body">
+    <?php foreach ($catTodos as $t): $done = (int)$t->progress >= 100; ?>
+    <div class="todo-row<?php echo $done ? ' done' : ''; ?>" data-id="<?php echo (int)$t->id; ?>">
+      <input type="checkbox" class="chk" <?php echo $done ? 'checked' : ''; ?> onchange="toggleDone(<?php echo (int)$t->id; ?>, this)">
+      <div class="main">
+        <div class="ttl"><?php echo htmlspecialchars($t->title); ?></div>
+        <?php if (!empty($t->description)): ?><div class="desc"><?php echo nl2br(htmlspecialchars($t->description)); ?></div><?php endif; ?>
+        <div class="prg">
+          <div class="bar"><div class="fill<?php echo $done ? ' done' : ''; ?>" style="width:<?php echo min(100, max(0, (int)$t->progress)); ?>%"></div></div>
+          <span class="pct"><?php echo (int)$t->progress; ?>%</span>
+          <input type="range" min="0" max="100" value="<?php echo (int)$t->progress; ?>" onchange="setProgress(<?php echo (int)$t->id; ?>, this.value)">
+        </div>
+        <div class="todo-edit" data-edit="<?php echo (int)$t->id; ?>">
+          <form method="POST" action="/admin/todo/<?php echo (int)$t->id; ?>">
+            <input type="hidden" name="_csrf_token" value="<?php echo $csrf; ?>">
+            <input type="text" name="title" value="<?php echo htmlspecialchars($t->title); ?>">
+            <textarea name="description" rows="2"><?php echo htmlspecialchars($t->description ?? ''); ?></textarea>
+            <select name="category">
+              <?php foreach ($categories as $c): ?>
+              <option value="<?php echo htmlspecialchars($c); ?>" <?php echo ($t->category ?? 'General') === $c ? 'selected' : ''; ?>><?php echo htmlspecialchars($c); ?></option>
+              <?php endforeach; ?>
+            </select>
+            <button type="submit" class="btn primary" style="padding:6px 12px;font-size:12px">Save</button>
+          </form>
+        </div>
+      </div>
+      <div class="acts">
+        <button title="Edit" onclick="openEdit(<?php echo (int)$t->id; ?>)" style="font-size:13px">✏️</button>
+        <button class="del" title="Delete" onclick="if(confirm('Delete this task?'))location.href='/admin/todo/delete/<?php echo (int)$t->id; ?>'" style="font-size:13px">🗑</button>
+      </div>
+    </div>
+    <?php endforeach; ?>
+  </div>
 </div>
 <?php endforeach; ?>
-</div>
-</div>
-<?php endforeach; if (empty(array_filter($todos))): ?>
-<div class="card"><p style="text-align:center;padding:20px;color:#64748b">No tasks yet.</p></div>
-<?php endif; ?>
 
 <script>
-// Restore toggle state from localStorage
-(function() {
-    var cats = document.querySelectorAll('[data-cat]');
-    for (var i = 0; i < cats.length; i++) {
-        var name = cats[i].dataset.cat;
-        try {
-            if (localStorage.getItem('todo_cat_' + name) === '1') {
-                var body = document.getElementById('cat-' + name);
-                if (body) { body.classList.add('closed'); cats[i].querySelector('.toggle-icon').classList.add('closed'); }
-            }
-        } catch(e) {}
-    }
+var CSRF = '<?php echo $csrf; ?>';
+function post(url, data, cb) {
+    var fd = new FormData();
+    fd.append('_csrf_token', CSRF);
+    for (var k in data) fd.append(k, data[k]);
+    fetch(url, { method: 'POST', body: fd }).then(function(r){ if (r.ok && cb) cb(); }).catch(function(){});
+}
+function setProgress(id, val) {
+    post('/admin/todo/' + id, { progress: val }, function(){ location.reload(); });
+}
+function toggleDone(id, chk) {
+    post('/admin/todo/' + id, { done: chk.checked ? '1' : '0' }, function(){ location.reload(); });
+}
+function openEdit(id) {
+    var el = document.querySelector('[data-edit="' + id + '"]');
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+function toggleCat(hdr) {
+    var body = hdr.nextElementSibling;
+    body.classList.toggle('closed');
+    hdr.classList.toggle('closed');
+    var name = hdr.querySelector('h4').textContent;
+    try { localStorage.setItem('todo_cat_' + name, body.classList.contains('closed') ? '1' : '0'); } catch(e) {}
+}
+// Restore collapsed categories
+(function(){
+    document.querySelectorAll('.todo-group-hdr').forEach(function(h){
+        var name = h.querySelector('h4').textContent;
+        try { if (localStorage.getItem('todo_cat_' + name) === '1') { h.classList.add('closed'); h.nextElementSibling.classList.add('closed'); } } catch(e) {}
+    });
 })();
+// Category filter chips
+document.querySelectorAll('.todo-cat .chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+        document.querySelectorAll('.todo-cat .chip').forEach(function(c){ c.classList.remove('active'); });
+        chip.classList.add('active');
+        var cat = chip.dataset.cat;
+        document.querySelectorAll('.todo-group').forEach(function(g){
+            g.style.display = !cat || g.dataset.group === cat ? '' : 'none';
+        });
+    });
+});
 </script>
