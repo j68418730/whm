@@ -703,7 +703,8 @@ class PlanetStudioController extends Controller
         $ip = $_SERVER['REMOTE_ADDR'] ?? '';
         $reference = 'LOG-' . strtoupper(substr(bin2hex(random_bytes(5)), 0, 10));
         try {
-            $this->db->exec("CREATE TABLE IF NOT EXISTS studio_log_reports (
+            $pdo = $this->db->pdo();
+            $pdo->exec("CREATE TABLE IF NOT EXISTS studio_log_reports (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 reference VARCHAR(20) NOT NULL,
                 message TEXT,
