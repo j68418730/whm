@@ -24,14 +24,19 @@ class AutodjController extends Controller
         $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','Skylinehosting171');
         
         $stations = $pdo->query(
-            "SELECT ss.*,
+            "SELECT ss.*, hu.username AS user_username, hu.email AS user_email,
                     (SELECT COUNT(*) FROM radio_playlist_items pi JOIN radio_playlists p ON pi.playlist_id=p.id WHERE p.stream_id=ss.id) AS song_count,
                     (SELECT COUNT(*) FROM radio_playlists WHERE stream_id=ss.id) AS playlist_count
-             FROM streaming_stations ss ORDER BY ss.name"
+             FROM streaming_stations ss
+             LEFT JOIN hosting_users hu ON hu.id = ss.user_id
+             ORDER BY hu.username, ss.name"
         )->fetchAll(\PDO::FETCH_OBJ);
         
         foreach ($stations as $s) {
-            $pidFile = '/home/testacct/radio/autodj/autodj_' . $s->id . '.pid';
+            $base = '/home/' . ($s->user_username ?? 'testacct') . '/radio/autodj';
+            $pidFile = $base . '/autodj_' . $s->id . '.pid';
+            if (!file_exists($pidFile)) $pidFile = $base . '/autodj.pid';
+            if (!file_exists($pidFile)) $pidFile = '/home/testacct/radio/autodj/autodj_' . $s->id . '.pid';
             if (!file_exists($pidFile)) $pidFile = '/home/testacct/radio/autodj/autodj.pid';
             $s->autodj_running = file_exists($pidFile) && ($pid = (int)@file_get_contents($pidFile)) > 0 && @\posix_kill($pid, 0);
         }
