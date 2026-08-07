@@ -293,37 +293,43 @@ class SecurityToolsService
                 }
                 return [false, 0, ''];
             case 'osv':
-                if (preg_match('/([0-9]+) vulnerabilities? found/i', $log, $m) && (int)$m[1] > 0) {
+                $recent = $this->lastScanBlock($log, 300);
+                if (preg_match('/([0-9]+) vulnerabilities? found/i', $recent, $m) && (int)$m[1] > 0) {
                     return [true, (int)$m[1], $m[0]];
                 }
-                if (preg_match('/Vulnerability found|OSV-Scanner found/i', $log)) {
+                if (preg_match('/Vulnerability found|OSV-Scanner found/i', $recent)) {
                     return [true, 1, 'Vulnerabilities found'];
                 }
                 return [false, 0, ''];
             case 'lynis':
-                if (preg_match('/hardening_index=([0-9]+)/', $log, $m) && (int)$m[1] < 60) {
+                $recent = $this->lastScanBlock($log, 300);
+                if (preg_match('/hardening_index=([0-9]+)/', $recent, $m) && (int)$m[1] < 60) {
                     return [true, 1, 'Lynis hardening index low: ' . (int)$m[1]];
                 }
-                if (preg_match('/Number of warnings|warnings found|Warnings found/i', $log)) {
+                if (preg_match('/Number of warnings|warnings found|Warnings found/i', $recent)) {
                     return [true, 1, 'Lynis audit warnings present'];
                 }
                 return [false, 0, ''];
             case 'aide':
-                if (preg_match('/difference found|Difference found|changes detected|CHANGED/i', $log)) {
+                // Only consider the most recent run (last block) to avoid stale diffs.
+                $recent = $this->lastScanBlock($log, 500);
+                if (preg_match('/difference found|Difference found|changes detected|CHANGED/i', $recent)) {
                     return [true, 1, 'File integrity differences found'];
                 }
                 return [false, 0, ''];
             case 'rkhunter':
                 // Informational warnings (new users, hostname change) are NOT findings.
                 // Only flag real rootkit indicators.
-                if (preg_match('/Possible rootkit|INFECTED|\*\*\* Suspect/i', $log)) {
+                $recent = $this->lastScanBlock($log, 300);
+                if (preg_match('/Possible rootkit|INFECTED|\*\*\* Suspect/i', $recent)) {
                     return [true, 1, 'rkhunter rootkit/suspect indicator found'];
                 }
                 return [false, 0, ''];
             case 'chkrootkit':
                 // Port 465 = Postfix smtps (legit service) — known false positive, exclude it
-                $log = preg_replace('/infected ports: 465/i', '', $log);
-                if (preg_match('/INFECTED|Vulnerable/i', $log)) {
+                $recent = $this->lastScanBlock($log, 300);
+                $recent = preg_replace('/infected ports: 465/i', '', $recent);
+                if (preg_match('/INFECTED|Vulnerable/i', $recent)) {
                     return [true, 1, 'chkrootkit infections found'];
                 }
                 return [false, 0, ''];
