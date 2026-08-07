@@ -33,8 +33,14 @@ class TodoController extends Controller
 
     public function store()
     {
+        $title = trim($this->request->post('title', ''));
+        if ($title === '') {
+            $_SESSION['error_message'] = 'Task title is required.';
+            $this->response->redirect('/admin/todo');
+            exit;
+        }
         $this->db->table('todos')->insertGetId([
-            'title' => $this->request->post('title', 'Untitled'),
+            'title' => $title,
             'description' => $this->request->post('description', ''),
             'category' => $this->request->post('category', 'General'),
             'status' => 'pending', 'progress' => 0,
