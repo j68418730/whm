@@ -204,6 +204,22 @@ function filterSidebar(val) {
 <?php echo htmlspecialchars($user->name ?? 'Admin', ENT_QUOTES, 'UTF-8'); ?>
 </div>
 <?php endif; ?>
+<?php if (isset($todos) || isset($app)): ?>
+<?php
+$todoCount = 0;
+try {
+    $todoRows = \Core\Application::getInstance()->get('db')
+        ->table('todos')->where('progress', '<', 100)->get() ?: [];
+    $todoCount = count($todoRows);
+} catch (\Throwable $e) { $todoCount = 0; }
+?>
+<a href="/admin/todo" style="display:inline-flex;align-items:center;gap:8px;margin-left:auto;padding:7px 14px;background:rgba(0,191,255,.08);border:1px solid rgba(0,191,255,.2);border-radius:8px;color:#e0e0e0;text-decoration:none;font-size:13px;font-weight:600;transition:.2s">
+📋 Todo
+<?php if ($todoCount > 0): ?>
+<span style="background:#f87171;color:#fff;border-radius:100px;padding:2px 8px;font-size:11px;font-weight:700"><?php echo $todoCount; ?></span>
+<?php endif; ?>
+</a>
+<?php endif; ?>
 </div>
 <div class="content">
 <div id="chatAlert" class="alert alert-info" style="display:none;cursor:pointer;background:rgba(56,189,248,.1);color:#38bdf8;border:1px solid rgba(56,189,248,.15);border-radius:8px;font-size:13px;padding:12px 16px;margin-bottom:16px" onclick="window.location.href='/admin/livechat'"><i class="bi bi-chat-dots me-1"></i> <strong>New Chat Messages</strong> &mdash; <span id="chatAlertCount">0</span> waiting. <u>Click to view &rarr;</u></div>
