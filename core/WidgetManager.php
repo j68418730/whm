@@ -105,9 +105,10 @@ class WidgetManager
             ['streaming_engines', 'main', 3],
             ['hostname_status', 'main', 4],
             ['quick_actions', 'side', 0],
-            ['recent_activity', 'side', 1],
-            ['recent_logins', 'side', 2],
-            ['revenue', 'side', 3],
+            ['admin_todo', 'side', 1],
+            ['recent_activity', 'side', 2],
+            ['recent_logins', 'side', 3],
+            ['revenue', 'side', 4],
         ];
 
         foreach ($defaults as $d) {
