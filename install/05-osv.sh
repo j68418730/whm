@@ -8,7 +8,15 @@ sc_log "osv" "install" "RUNNING" "Installing OSV-Scanner"
 if command -v osv-scanner >/dev/null 2>&1; then
     sc_log "osv" "install" "SKIP" "already installed"
 else
-    curl -fsSL https://raw.githubusercontent.com/google/osv-scanner/main/install.sh 2>/dev/null | sh -s -- -b /usr/local/bin >/dev/null 2>&1
+    OSV_VER=$(curl -fsSL https://api.github.com/repos/google/osv-scanner/releases/latest 2>/dev/null | grep -oE '"tag_name": *"v[0-9.]+"' | head -1 | grep -oE 'v[0-9.]+')
+    [ -z "$OSV_VER" ] && OSV_VER="v2.5.0"
+    ARCH=$(uname -m); [ "$ARCH" = "x86_64" ] && ARCH="amd64"; [ "$ARCH" = "aarch64" ] && ARCH="arm64"
+    curl -fsSL -o /usr/local/bin/osv-scanner "https://github.com/google/osv-scanner/releases/download/${OSV_VER}/osv-scanner_linux_${ARCH}" >/dev/null 2>&1
+    chmod +x /usr/local/bin/osv-scanner 2>/dev/null
+    if ! command -v osv-scanner >/dev/null 2>&1; then
+        # fallback: official installer script
+        curl -fsSL https://raw.githubusercontent.com/google/osv-scanner/main/install.sh 2>/dev/null | sh -s -- -b /usr/local/bin >/dev/null 2>&1
+    fi
 fi
 
 cat > /usr/local/bin/ph-osvscan << 'EOF'
