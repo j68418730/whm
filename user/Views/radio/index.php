@@ -859,7 +859,7 @@ function copyDjInfo(){
     <?php foreach ($songs as $sh): ?>
     <tr class="song-row">
       <td><?=htmlspecialchars($sh->title??'Unknown')?></td><td><?=htmlspecialchars($sh->artist??'Unknown')?></td>
-      <td><?=htmlspecialchars($sh->album??'')?></td><td><?=$sh->duration?gmdate('i:s',$sh->duration):'-'?></td>
+      <td><?=htmlspecialchars($sh->album??'')?></td><td><?=!empty($sh->duration)?gmdate('i:s',(int)$sh->duration):'-'?></td>
       <td><?=htmlspecialchars($sh->played_at??'')?></td>
     </tr>
     <?php endforeach; ?>
