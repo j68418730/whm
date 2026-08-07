@@ -89,6 +89,9 @@ $router->post('/admin/ssl/install', 'Admin\Controllers\SslController@install');
 
 // Admin Security Center Routes
 $router->get('/admin/security', 'Admin\Controllers\SecurityController@index');
+$router->get('/admin/security/install/{tool}', 'Admin\Controllers\SecurityController@install');
+$router->get('/admin/security/scan/{tool}', 'Admin\Controllers\SecurityController@scan');
+$router->get('/admin/security/logs/{tool}', 'Admin\Controllers\SecurityController@logs');
 
 // Admin Backup System Routes
 $router->get('/admin/backup', 'Admin\Controllers\BackupController@index');

@@ -72,6 +72,18 @@ class DashboardController extends Controller
         }
         $services[] = ['name' => 'Cron', 'active' => $cronActive, 'status' => $cronActive ? 'active' : ''];
 
+        // Security Center tool status appended to the services list
+        try {
+            $toolsSvc = new \Services\SecurityToolsService($this->db);
+            foreach ($toolsSvc->summary() as $st) {
+                $services[] = [
+                    'name' => '🔒 ' . $st['label'],
+                    'active' => $st['installed'],
+                    'status' => $st['installed'] ? 'active' : '',
+                ];
+            }
+        } catch (\Throwable $e) {}
+
         // Streaming engines status
         $streamEngines = [];
         $sc2Installed = file_exists('/opt/planethosts/shoutcast/sc_serv');
