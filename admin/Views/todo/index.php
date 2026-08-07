@@ -8,6 +8,7 @@
 
 <div id="addForm" style="display:none" class="card" style="margin-bottom:20px">
 <form method="POST" action="/admin/todo">
+<input type="hidden" name="_csrf_token" value="<?php echo htmlspecialchars($_SESSION['_csrf_token'] ?? ''); ?>">
 <div class="form-group"><label>Title</label><input name="title" required></div>
 <div class="form-group"><label>Description</label><textarea name="description"></textarea></div>
 <div class="form-group"><label>Category</label><select name="category">
@@ -38,6 +39,7 @@ function updateProgress(id, input) {
     formData.append('progress', val);
     formData.append('title', row.dataset.title || '');
     formData.append('description', row.dataset.desc || '');
+    formData.append('_csrf_token', '<?php echo htmlspecialchars($_SESSION['_csrf_token'] ?? ''); ?>');
     fetch('/admin/todo/' + id, { method: 'POST', body: formData }).then(function(r) {
         if (r.ok) {
             bar.style.width = Math.min(100, Math.max(0, val)) + '%';
