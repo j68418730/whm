@@ -157,66 +157,6 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <a href="https://planet-hosts.com/radio/embed.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-secondary">Listen</a>
   </div></div>
 
-<?php if (($hosting->username ?? '') === 'testacct'): ?>
-<!-- Real-time Stream Debug for testacct -->
-<div style="background:rgba(255,159,10,.05);border:1px solid rgba(255,159,10,.1);border-radius:10px;padding:12px;margin-bottom:12px">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-<h3 style="margin:0;font-size:12px;color:#f97316">🔧 Stream Debug <span style="font-weight:400;font-size:10px;color:#64748b">(testacct only)</span></h3>
-<div style="display:flex;gap:8px;align-items:center">
-<span id="ov-debug-timer" style="font-size:10px;color:#64748b">5s</span>
-<button class="btn btn-sm" style="font-size:9px;padding:2px 8px;background:rgba(255,159,10,.1);color:#f97316;border:none;border-radius:4px;cursor:pointer" onclick="loadOvDebug()">Refresh</button>
-</div>
-</div>
-<div id="ov-debug-panel" style="font-size:11px;line-height:1.7;font-family:monospace">
-<div style="color:#64748b">Loading...</div>
-</div>
-</div>
-<script>
-setInterval(function(){
-var el=document.getElementById('ov-debug-panel');
-var tm=document.getElementById('ov-debug-timer');
-if(!el)return;
-el.innerHTML='<div style="color:#64748b;font-size:10px">⏳</div>';
-var x=new XMLHttpRequest();
-x.open('GET','/api/stream-debug.php?station=<?=$station->streaming_id ?? $stationId?>',true);
-x.onload=function(){
-if(x.status!==200){el.innerHTML='<div style="color:#f87171">HTTP '+x.status+'</div>';return;}
-try{
-var d=JSON.parse(x.responseText);
-var chk=d.autodj_running&&d.source_connected&&d.proxy_reachable;
-var uc=d.active_upstreams>0?'#4ade80':'#f87171';
-var cc=d.active_clients>0?'#4ade80':'#94a3b8';
-var h='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+(d.status==='running'?'#4ade80':'#f87171')+'">'+(d.status||'?')+'</div><div style="font-size:6px;color:#64748b">Stn</div></div>';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+(d.autodj_running?'#4ade80':'#f87171')+'">'+(d.autodj_running?'Run':'Stop')+'</div><div style="font-size:6px;color:#64748b">AutoDJ</div></div>';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+(d.source_connected?'#4ade80':'#f87171')+'">'+(d.source_connected?'OK':'OFF')+'</div><div style="font-size:6px;color:#64748b">Src</div></div>';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+uc+'">'+(d.active_upstreams||0)+'</div><div style="font-size:6px;color:#64748b">Upstream</div></div>';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+cc+'">'+(d.active_clients||0)+'</div><div style="font-size:6px;color:#64748b">Client</div></div>';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+(d.proxy_reachable?'#4ade80':'#f87171')+'">'+(d.proxy_reachable?d.proxy_response_ms+'ms':'DOWN')+'</div><div style="font-size:6px;color:#64748b">Proxy</div></div>';
-h+='<div style="background:rgba(0,0,0,.3);border-radius:3px;padding:3px;text-align:center"><div style="font-size:10px;font-weight:700;color:'+(d.listener_running?'#4ade80':'#f87171')+'">'+(d.listener_running?'ON':'OFF')+'</div><div style="font-size:6px;color:#64748b">Listnr</div></div>';
-h+='</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:3px">';
-h+='<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:5px;font-size:9px">';
-h+='<div><span style="color:#64748b">Song:</span> <span style="color:#facc15">'+(d.current_song||'—')+'</span></div>';
-h+='<div><span style="color:#64748b">Listeners:</span> <span style="color:#4ade80">'+(d.listeners||0)+'</span></div>';
-h+='<div><span style="color:#64748b">Ports:</span> <span style="color:#94a3b8">DJ:'+(d.dj_port||'—')+' Src:'+(d.src_port||'—')+'</span></div>';
-h+='<div><span style="color:#64748b">PID:</span> <span style="color:#94a3b8">'+(d.autodj_pid||'—')+'</span></div></div>';
-h+='<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:5px;font-size:9px"><div style="color:#64748b;margin-bottom:2px">Events:</div>';
-if(d.connections&&d.connections.length){var n=0;d.connections.forEach(function(c){if(n>=5)return;
-var ts='';if(c.connected){var d2=new Date(c.connected);var h2=d2.getHours()%12||12;var a2=d2.getHours()<12?'AM':'PM';ts=(d2.getMonth()+1)+'/'+d2.getDate()+' '+h2+':'+(d2.getMinutes()<10?'0':'')+d2.getMinutes()+' '+a2;}
-var ag='';if(c.connected){var s=Math.floor((Date.now()-new Date(c.connected))/1000);ag=s<120?s+'s':(s<7200?Math.floor(s/60)+'m':Math.floor(s/3600)+'h');}
-h+='<div><span style="color:#64748b;font-size:8px">'+ts+'</span> '+(c.disconnected?'[DC]':'[LIVE]')+' '+(c.dj||'?')+(c.duration?' '+Math.floor(c.duration/60)+'m':'')+(ag?' <span style="color:#64748b">('+ag+' ago)</span>':'')+(c.reason?' <span style="color:#f87171">'+c.reason+'</span>':'')+'</div>';n++;});
-}else{h+='<div style="color:#64748b">None</div>';}
-h+='</div></div><div style="font-size:7px;color:#64748b;margin-top:3px">'+(d.timestamp||'')+' | '+(d.listeners===0?'<span style="color:#f87171">● 0 listeners</span>':'<span style="color:#4ade80">● OK</span>')+'</div>';
-el.innerHTML=h;
-}catch(e){el.innerHTML='<div style="color:#f87171">Parse</div>';}
-};
-x.onerror=function(){el.innerHTML='<div style="color:#f87171">Net err</div>';};
-x.send();
-},5000);
-</script>
-</script>
-<?php endif; ?>
-
   <div class="card" style="border:1px solid rgba(0,191,255,.12);background:linear-gradient(135deg,rgba(0,140,255,.04),rgba(168,85,247,.02))">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.06)">
     <span style="font-size:16px">🔗</span>
