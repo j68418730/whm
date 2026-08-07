@@ -78,6 +78,11 @@ $router->get('/admin/ftp/delete/{id}', 'Admin\Controllers\FtpController@delete')
 $router->get('/admin/ftp/toggle/{id}', 'Admin\Controllers\FtpController@toggle');
 $router->get('/admin/ssl', 'Admin\Controllers\SslController@index');
 $router->get('/admin/security', 'Admin\Controllers\SecurityController@index');
+$router->get('/admin/security/install/{tool}', 'Admin\Controllers\SecurityController@install');
+$router->get('/admin/security/scan/{tool}', 'Admin\Controllers\SecurityController@scan');
+$router->get('/admin/security/scan-all', 'Admin\Controllers\SecurityController@scanAll');
+$router->get('/admin/security/fix/{tool}', 'Admin\Controllers\SecurityController@fix');
+$router->get('/admin/security/logs/{tool}', 'Admin\Controllers\SecurityController@logs');
 $router->get('/admin/backup', 'Admin\Controllers\BackupController@index');
 $router->post('/admin/backup/create', 'Admin\Controllers\BackupController@create');
 $router->get('/admin/backup/restore/{name}', 'Admin\Controllers\BackupController@restore');
