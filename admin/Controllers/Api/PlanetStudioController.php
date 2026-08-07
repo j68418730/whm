@@ -654,6 +654,81 @@ class PlanetStudioController extends Controller
         }
     }
 
+    // POST /api/autodj/sync — desktop app AutoDJ settings sync (key/value pairs)
+    public function syncAutoDj()
+    {
+        $dj = $this->authDj();
+        if (!$dj) return $this->json(['error' => 'Unauthorized'], 401);
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $stationId = (int)($input['stationId'] ?? 0);
+        $settings = $input['settings'] ?? [];
+        if (!$stationId || !is_array($settings) || empty($settings)) return $this->json(['error' => 'stationId and settings required'], 400);
+
+        $allowed = ['autodj_enabled','playlist_mode','crossfade_enabled','crossfade_time',
+            'normalize_audio','replaygain','silence_detection','remove_duplicates',
+            'max_artist_repeat','max_song_repeat','max_album_repeat','shuffle_enabled',
+            'weight_new_songs','weight_favorites','allow_live_djs','auto_switch_dj',
+            'fallback_autodj','reconnect_time','jingles_enabled','jingle_play_every',
+            'jingle_position','ads_enabled','max_ads_per_hour','requests_enabled',
+            'request_delay','max_requests_per_listener','metadata_update','backup_frequency'];
+        $toStore = [];
+        foreach ($settings as $key => $value) {
+            if (in_array($key, $allowed, true)) $toStore[$key] = $value;
+        }
+        if (empty($toStore)) return $this->json(['error' => 'No valid settings to store'], 400);
+        try {
+            $existing = $this->db->table('radio_autodj_config')->where('station_id', $stationId)->first();
+            if ($existing) {
+                $this->db->table('radio_autodj_config')->where('station_id', $stationId)->update($toStore);
+            } else {
+                $this->db->table('radio_autodj_config')->insertGetId(array_merge(['station_id' => $stationId], $toStore));
+            }
+            return $this->json(['success' => true, 'count' => count($toStore)]);
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // POST /api/studio/log — desktop app error log report (low-space, compact)
+    public function submitLog()
+    {
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $message = trim((string)($input['message'] ?? ''));
+        $appVersion = trim((string)($input['appVersion'] ?? ''));
+        $os = trim((string)($input['os'] ?? ''));
+        $logText = (string)($input['logText'] ?? '');
+        $systemInfo = (string)($input['systemInfo'] ?? '');
+        if ($logText === '' && $message === '') return $this->json(['error' => 'empty report'], 400);
+
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        $reference = 'LOG-' . strtoupper(substr(bin2hex(random_bytes(5)), 0, 10));
+        try {
+            $this->db->exec("CREATE TABLE IF NOT EXISTS studio_log_reports (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                reference VARCHAR(20) NOT NULL,
+                message TEXT,
+                app_version VARCHAR(40),
+                os VARCHAR(120),
+                system_info TEXT,
+                log_text MEDIUMTEXT,
+                ip VARCHAR(45),
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )");
+            $this->db->table('studio_log_reports')->insert([
+                'reference' => $reference,
+                'message' => mb_substr($message, 0, 4000),
+                'app_version' => mb_substr($appVersion, 0, 40),
+                'os' => mb_substr($os, 0, 120),
+                'system_info' => mb_substr($systemInfo, 0, 20000),
+                'log_text' => mb_substr($logText, 0, 250000),
+                'ip' => $ip,
+            ]);
+            return $this->json(['success' => true, 'id' => $reference, 'reference' => $reference]);
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     // POST /api/djs/create — desktop app DJ account creation
     public function createDj()
     {
