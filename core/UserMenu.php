@@ -26,7 +26,9 @@ if (!function_exists('user_menu_sections')) {
 
         $sections[] = ['label' => 'Support', 'href' => '/user/section/support', 'icon' => '🎫', 'match' => ['/user/tickets','/user/support','/user/section/support']];
 
-        $sections[] = ['label' => 'Account', 'href' => '/user/profile', 'icon' => '👤', 'match' => ['/user/profile','/user/security','/user/admins']];
+        $sections[] = ['label' => 'Security', 'href' => '/user/security', 'icon' => '🛡️', 'match' => ['/user/security']];
+
+        $sections[] = ['label' => 'Account', 'href' => '/user/profile', 'icon' => '👤', 'match' => ['/user/profile','/user/admins']];
 
         return $sections;
     }
