@@ -45,7 +45,8 @@ mkdir -p /var/log/planethosts
 CONF="/etc/aide/aide-ph.conf"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] check start" >> "$LOG"
 if command -v aide >/dev/null 2>&1 && [ -f "$CONF" ]; then
-    if [ ! -f /var/lib/aide/aide-ph.db ]; then
+    if [ "$1" = "--baseline" ] || [ ! -f /var/lib/aide/aide-ph.db ]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] baseline rebuild" >> "$LOG"
         timeout 180 aide --config="$CONF" --init >> "$LOG" 2>&1 || true
         cp /var/lib/aide/aide-ph.db.new /var/lib/aide/aide-ph.db 2>/dev/null || true
     fi
