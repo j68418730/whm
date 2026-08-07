@@ -200,9 +200,10 @@ class SecurityToolsService
     {
         $path = '/usr/local/bin/ph-scan-all';
         $content = $this->scanAllScriptContent();
-        if (@file_put_contents($path, $content) === false) return false;
-        @chmod($path, 0755);
-        return $path;
+        $tmp = '/tmp/ph-scan-all-' . getmypid();
+        if (@file_put_contents($tmp, $content) === false) return false;
+        exec('sudo mv ' . escapeshellarg($tmp) . ' ' . escapeshellarg($path) . ' && sudo chmod 755 ' . escapeshellarg($path) . ' 2>/dev/null');
+        return is_file($path) ? $path : false;
     }
 
     protected function scanAllScriptContent()
