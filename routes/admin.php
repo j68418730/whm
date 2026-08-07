@@ -138,6 +138,13 @@ $router->get('/admin/metrics', 'Admin\Controllers\MetricsController@index');
 // Admin Installers & Applications Routes
 $router->get('/admin/installers', 'Admin\Controllers\InstallersController@index');
 
+// Admin Todo Board Routes
+$router->get('/admin/todo', 'Admin\Controllers\TodoController@index');
+$router->post('/admin/todo', 'Admin\Controllers\TodoController@store');
+$router->post('/admin/todo/{id}', 'Admin\Controllers\TodoController@update');
+$router->get('/admin/todo/delete/{id}', 'Admin\Controllers\TodoController@destroy');
+$router->get('/admin/todo/delete-category/{category}', 'Admin\Controllers\TodoController@destroyCategory');
+
 // Admin User Feature Management Routes
 $router->get('/admin/userfeatures', 'Admin\Controllers\UserFeaturesController@index');
 
