@@ -622,7 +622,7 @@ if (!empty($allStations) && count($allStations) > 1): ?>
             foreach ($userStations as $index => $station) {
                 $tabId = $index + 1; // 1, 2, 3, etc.
                 $tabName = $station->name ?? "Stream #{$station->id}";
-                if ($station->id === $_SESSION['dj_user']['stream_id']) {
+                if ($station->id == $_SESSION['dj_user']['stream_id']) {
                     echo "<div class=\"dj-tab active-station act\" onclick=\"sw(event,'station-{$station->id}')\">" . htmlspecialchars($tabName) . "</div>";
                 } else {
                     echo "<div class=\"dj-tab active-station\" onclick=\"sw(event,'station-{$station->id}')\">" . htmlspecialchars($tabName) . "</div>";
@@ -662,7 +662,7 @@ if (!empty($allStations) && count($allStations) > 1): ?>
         
         foreach ($userStations as $station) {
             $stationId = $station->id;
-            $isActiveStation = $stationId === $_SESSION['dj_user']['stream_id'];
+            $isActiveStation = $stationId == $_SESSION['dj_user']['stream_id'];
             echo "<div class=\"dj-panel" . ($isActiveStation ? ' act' : '') . "\" id=\"pn-station-{$stationId}\">\n";
             
             // Full Broadcaster Info card for each station
