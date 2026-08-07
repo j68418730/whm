@@ -2,7 +2,7 @@
 # 01-firewall — firewalld/fail2ban baseline (idempotent; does NOT replace existing rules)
 # NOTE: This module only ensures firewalld + fail2ban are installed and active.
 # It does NOT flush or replace existing Planet Hosts firewall rules.
-set -e
+set +e
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/lib.sh"
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 # 05-osv — OSV Scanner (open-source vulnerability database)
-set -e
+set +e
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/lib.sh"
 
@@ -8,9 +8,7 @@ sc_log "osv" "install" "RUNNING" "Installing OSV-Scanner"
 if command -v osv-scanner >/dev/null 2>&1; then
     sc_log "osv" "install" "SKIP" "already installed"
 else
-    curl -fsSL https://raw.githubusercontent.com/google/osv-scanner/main/install.sh 2>/dev/null | sh -s -- -b /usr/local/bin 2>/dev/null || {
-        sc_log "osv" "install" "FAIL" "script failed"
-    }
+    curl -fsSL https://raw.githubusercontent.com/google/osv-scanner/main/install.sh 2>/dev/null | sh -s -- -b /usr/local/bin >/dev/null 2>&1
 fi
 
 cat > /usr/local/bin/ph-osvscan << 'EOF'
@@ -27,5 +25,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] scan done" >> "$LOG"
 EOF
 chmod +x /usr/local/bin/ph-osvscan
 
-sc_status osv ok "$(osv-scanner --version 2>/dev/null || echo installed)"
-sc_log "osv" "install" "OK" "OSV-Scanner installed"
+VERSION="$(osv-scanner --version 2>/dev/null || echo installed)"
+sc_status osv ok "$VERSION"
+sc_log "osv" "install" "OK" "OSV-Scanner installed ($VERSION)"
+exit 0

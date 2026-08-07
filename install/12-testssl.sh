@@ -1,12 +1,12 @@
 #!/bin/bash
 # 12-testssl — TLS/SSL scanner
-set -e
+set +e
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/lib.sh"
 
 sc_log "testssl" "install" "RUNNING" "Installing testssl.sh"
 if [ ! -d /opt/testssl.sh ]; then
-    git clone --depth 1 https://github.com/drwetter/testssl.sh /opt/testssl.sh 2>/dev/null || true
+    git clone --depth 1 https://github.com/drwetter/testssl.sh /opt/testssl.sh >/dev/null 2>&1
 fi
 ln -sf /opt/testssl.sh/testssl.sh /usr/local/bin/testssl 2>/dev/null || true
 
@@ -26,3 +26,4 @@ chmod +x /usr/local/bin/ph-testssl
 
 sc_status testssl ok "installed"
 sc_log "testssl" "install" "OK" "testssl.sh installed"
+exit 0

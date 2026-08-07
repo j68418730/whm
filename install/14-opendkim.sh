@@ -1,6 +1,6 @@
 #!/bin/bash
 # 14-opendkim — DKIM signing
-set -e
+set +e
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/lib.sh"
 

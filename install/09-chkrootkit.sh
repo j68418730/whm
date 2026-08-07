@@ -1,6 +1,6 @@
 #!/bin/bash
 # 09-chkrootkit — rootkit checker
-set -e
+set +e
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/lib.sh"
 

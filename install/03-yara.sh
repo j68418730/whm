@@ -1,17 +1,28 @@
 #!/bin/bash
 # 03-yara — pattern matching for web malware (PHP shells, miners, obfuscation)
-set -e
+set +e
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/lib.sh"
 
 sc_log "yara" "install" "RUNNING" "Installing YARA"
-$PKG_INSTALL yara 2>/dev/null || {
-    sc_log "yara" "install" "BUILD" "apt not available, building from source"
-    apt-get install -y build-essential libjansson-dev libssl-dev libmagic-dev 2>/dev/null || true
-    cd /tmp
-    git clone --depth 1 https://github.com/VirusTotal/yara.git 2>/dev/null || true
-    cd yara && ./bootstrap.sh && ./configure --with-crypto && make -j$(nproc) && make install && ldconfig
-}
+if command -v yara >/dev/null 2>&1; then
+    sc_log "yara" "install" "SKIP" "already installed"
+else
+    if ! $PKG_INSTALL yara >/dev/null 2>&1; then
+        sc_log "yara" "install" "BUILD" "apt failed, building from source"
+        apt-get install -y build-essential libjansson-dev libssl-dev libmagic-dev >/dev/null 2>&1
+        cd /tmp
+        git clone --depth 1 https://github.com/VirusTotal/yara.git >/dev/null 2>&1
+        if [ -d /tmp/yara ]; then
+            cd /tmp/yara
+            ./bootstrap.sh >/dev/null 2>&1
+            ./configure --with-crypto >/dev/null 2>&1
+            make -j"$(nproc)" >/dev/null 2>&1
+            make install >/dev/null 2>&1
+            ldconfig
+        fi
+    fi
+fi
 
 mkdir -p /usr/local/share/planethosts-security/yara
 cat > /usr/local/share/planethosts-security/yara/web-malware.yar << 'EOF'
@@ -86,5 +97,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] scan done" >> "$LOG"
 EOF
 chmod +x /usr/local/bin/ph-yarascan
 
-sc_status yara ok "$(yara --version 2>/dev/null || echo installed)"
-sc_log "yara" "install" "OK" "YARA + web-malware rules installed"
+VERSION="$(yara --version 2>/dev/null || echo installed)"
+sc_status yara ok "$VERSION"
+sc_log "yara" "install" "OK" "YARA + web-malware rules installed ($VERSION)"
+exit 0

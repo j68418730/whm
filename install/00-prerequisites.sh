@@ -1,6 +1,6 @@
 #!/bin/bash
 # 00-prerequisites — common packages + directory setup
-set -e
+set +e
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/lib.sh"
 

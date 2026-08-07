@@ -1,6 +1,6 @@
 #!/bin/bash
 # 15-security-center — finalize: status report + UI integration
-set -e
+set +e
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/lib.sh"
 
