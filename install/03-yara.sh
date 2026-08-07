@@ -36,30 +36,42 @@ rule PHP_EvalBase64
     condition: any of them
 }
 
-rule PHP_ShellExec
+rule Obfuscated_PHP_Execution
 {
-    meta: description = "Remote execution calls"
+    meta: description = "High-confidence: encoded payload + eval (real malware signal)"
     strings:
-        $a = "shell_exec("
-        $b = "passthru("
-        $c = "proc_open("
-        $d = "popen("
+        $encode = "base64_decode"
+        $gzinflate = "gzinflate"
+        $eval = "eval"
+        $rot13 = "str_rot13"
+    condition:
+        ($encode or $gzinflate or $rot13) and $eval
+}
+
+rule PHP_ShellExec_HighRisk
+{
+    meta: description = "Remote execution — ONLY a finding when paired with obfuscation"
+    strings:
+        $a = "eval(base64_decode"
+        $b = "assert(base64_decode"
+        $c = "gzinflate(base64_decode"
+        $d = "eval(str_rot13"
     condition: any of them
 }
 
 rule PHP_Webshell_Names
 {
-    meta: description = "Known webshell markers"
+    meta: description = "Known webshell markers (high confidence)"
     strings:
         $a = "c99shell"
         $b = "r57shell"
         $c = "b374k"
-        $d = "backdoor"
+        $d = "uname();"
         $e = "webshell"
     condition: any of them
 }
 
-rule Obfuscated_JS_Iframe
+rule Hidden_Iframe_Injection
 {
     meta: description = "Hidden iframe injection"
     strings:
@@ -88,9 +100,17 @@ LOG="/var/log/planethosts/yarascan.log"
 mkdir -p /var/log/planethosts
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] scan start $DIR" >> "$LOG"
 if command -v yara >/dev/null 2>&1 && [ -f "$RULES" ]; then
+    # Skip platform-generated AutoDJ runners, panel runtime, node_modules, caches, and the panel itself
     find "$DIR" -type f \( -name "*.php" -o -name "*.phtml" -o -name "*.php5" -o -name "*.js" \) \
-        -not -path "*/node_modules/*" -not -path "*/.cache/*" 2>/dev/null | while read -r f; do
-        yara "$RULES" "$f" >> "$LOG" 2>/dev/null && echo "HIT: $f" >> "$LOG"
+        -not -path "*/node_modules/*" -not -path "*/.cache/*" -not -path "*/radio/autodj/*" \
+        -not -path "*/snappymail/*" -not -path "/var/www/radiohosting/*" 2>/dev/null | while read -r f; do
+        # IMPORTANT: yara exits 0 even when NO rule matches (clean scan). Only a HIT
+        # when stdout (matched rule names) is non-empty.
+        OUT=$(yara "$RULES" "$f" 2>/dev/null)
+        if [ -n "$OUT" ]; then
+            echo "$OUT" >> "$LOG"
+            echo "HIT: $f" >> "$LOG"
+        fi
     done
 fi
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] scan done" >> "$LOG"
