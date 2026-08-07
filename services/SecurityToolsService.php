@@ -393,9 +393,9 @@ class SecurityToolsService
                 $this->logAction('fix', $key, 'Quarantined YARA rule matches');
                 return ['success' => true, 'message' => 'Quarantined files matching YARA rules.'];
             case 'aide':
-                // Refresh AIDE baseline so clean state is re-recorded
-                exec('sudo aideinit --yes 2>/dev/null; if [ -f /var/lib/aide/aide.db.new.gz ]; then sudo mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz 2>/dev/null; fi', $out);
-                $this->logAction('fix', $key, 'AIDE baseline refreshed');
+                // Refresh AIDE baseline (bounded config) so the clean state is re-recorded
+                exec('if [ -f /etc/aide/aide-ph.conf ]; then sudo timeout 180 aide --config=/etc/aide/aide-ph.conf --init 2>/dev/null; sudo cp /var/lib/aide/aide-ph.db.new /var/lib/aide/aide-ph.db 2>/dev/null; sudo timeout 120 aide --config=/etc/aide/aide-ph.conf --check 2>/dev/null; else sudo aideinit --yes 2>/dev/null; if [ -f /var/lib/aide/aide.db.new.gz ]; then sudo mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz 2>/dev/null; fi; fi', $out);
+                $this->logAction('fix', $key, 'AIDE baseline refreshed (bounded config)');
                 return ['success' => true, 'message' => 'AIDE integrity baseline refreshed.'];
             case 'rkhunter':
                 exec('sudo rkhunter --propupd 2>/dev/null', $out);
