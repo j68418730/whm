@@ -712,6 +712,8 @@ class RadioController extends Controller
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
         if (!$station) exit;
+        // Branding is keyed by the REAL streaming_stations id, not the composite (10000+id)
+        $realStationId = $station->streaming_id ?? ($station->id > 10000 ? $station->id % 10000 : $station->id);
         $fields = ['brand_primary_color', 'brand_secondary_color', 'brand_accent_color',
             'brand_header_font', 'brand_body_font', 'brand_slogan', 'brand_social_twitter',
             'brand_social_facebook', 'brand_social_instagram', 'brand_social_discord',
@@ -720,8 +722,8 @@ class RadioController extends Controller
         foreach ($fields as $f) { if (isset($_POST[$f])) $update[$f] = $_POST[$f]; }
         if (!empty($update)) {
             try {
-                $existing = $this->db->table('radio_branding')->where('station_id', $station->id)->first();
-                if ($existing) { $this->db->table('radio_branding')->where('station_id', $station->id)->update($update); } else { $update['station_id'] = $station->id; $this->db->table('radio_branding')->insertGetId($update); }
+                $existing = $this->db->table('radio_branding')->where('station_id', $realStationId)->first();
+                if ($existing) { $this->db->table('radio_branding')->where('station_id', $realStationId)->update($update); } else { $update['station_id'] = $realStationId; $this->db->table('radio_branding')->insertGetId($update); }
                 $_SESSION['success'] = 'Branding saved!';
             } catch (\Exception $e) { $_SESSION['error'] = 'Failed to save branding.'; }
         }
@@ -733,16 +735,16 @@ class RadioController extends Controller
                     $dir = '/home/' . $station->username . '/radio/branding';
                     if (!is_dir($dir)) @mkdir($dir, 0755, true);
                     $dest = $dir . '/' . $uf . '.' . $ext;
-                    move_uploaded_file($_FILES[$uf]['tmp_name'], $dest);
+                    @move_uploaded_file($_FILES[$uf]['tmp_name'], $dest);
                     try {
                         $val = '/radio/branding/' . $station->id . '/' . $uf . '.' . $ext;
-                        $existing = $this->db->table('radio_branding')->where('station_id', $station->id)->first();
-                        if ($existing) { $this->db->table('radio_branding')->where('station_id', $station->id)->update([$uf => $val]); } else { $this->db->table('radio_branding')->insertGetId(['station_id' => $station->id, $uf => $val]); }
+                        $existing = $this->db->table('radio_branding')->where('station_id', $realStationId)->first();
+                        if ($existing) { $this->db->table('radio_branding')->where('station_id', $realStationId)->update([$uf => $val]); } else { $this->db->table('radio_branding')->insertGetId(['station_id' => $realStationId, $uf => $val]); }
                     } catch (\Exception $e) {}
                 }
             }
         }
-        header('Location: /user/radio?tab=branding&station_id=' . $station->id); exit;
+        header('Location: /user/radio?tab=branding&station_id=' . ($station->id ?? '')); exit;
     }
 
     public function updateSettings()

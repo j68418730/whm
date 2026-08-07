@@ -1,0 +1,25 @@
+-- 2026-08-07: radio_branding table (per-station branding: logo, colors, slogan, socials)
+CREATE TABLE IF NOT EXISTS radio_branding (
+  id INT(11) NOT NULL AUTO_INCREMENT,
+  station_id INT(11) NOT NULL DEFAULT 0,
+  brand_primary_color VARCHAR(20) DEFAULT '#0A84FF',
+  brand_secondary_color VARCHAR(20) DEFAULT '#5856D6',
+  brand_accent_color VARCHAR(20) DEFAULT '#00C853',
+  brand_header_font VARCHAR(100) DEFAULT 'Inter',
+  brand_body_font VARCHAR(100) DEFAULT 'Inter',
+  brand_slogan VARCHAR(255) DEFAULT '',
+  brand_social_twitter VARCHAR(255) DEFAULT '',
+  brand_social_facebook VARCHAR(255) DEFAULT '',
+  brand_social_instagram VARCHAR(255) DEFAULT '',
+  brand_social_discord VARCHAR(255) DEFAULT '',
+  brand_player_theme VARCHAR(50) DEFAULT 'default',
+  brand_player_bg VARCHAR(50) DEFAULT 'dark',
+  brand_logo VARCHAR(500) DEFAULT '',
+  brand_banner VARCHAR(500) DEFAULT '',
+  brand_player_bg_img VARCHAR(500) DEFAULT '',
+  brand_default_art VARCHAR(500) DEFAULT '',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_station (station_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
