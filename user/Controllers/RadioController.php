@@ -24,8 +24,8 @@ class RadioController extends Controller
         if (!$hosting && !empty($user->id)) $hosting = $this->db->table('hosting_users')->where('id', $user->id)->first();
         if (!$hosting && !empty($user->name)) $hosting = $this->db->table('hosting_users')->where('username', $user->name)->first();
         if (!$hosting) $hosting = $this->db->table('hosting_users')->orderBy('id', 'ASC')->first();
-        // Suspended accounts get no radio access
-        if ($hosting && ($hosting->status ?? 'active') === 'suspended') {
+        // Suspended accounts get no radio access (except when root is viewing via sudo/login-as)
+        if ($hosting && empty($_SESSION['sudo_login']) && ($hosting->status ?? 'active') === 'suspended') {
             $this->response->redirect('/?login=suspended');
             exit;
         }
