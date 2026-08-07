@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && preg_match('#^/connector/station/([^
     $brand = $pdo->prepare("SELECT brand_logo, brand_banner, brand_default_art, brand_primary_color, brand_accent_color, brand_slogan FROM radio_branding WHERE station_id = ?");
     $brand->execute([$stationId]);
     $branding = $brand->fetch(PDO::FETCH_ASSOC) ?: [];
-    $stName = $pdo->prepare("SELECT name, logo_url FROM streaming_stations WHERE id = ?");
+    $stName = $pdo->prepare("SELECT name FROM streaming_stations WHERE id = ?");
     $stName->execute([$stationId]);
     $stInfo = $stName->fetch(PDO::FETCH_ASSOC) ?: [];
     $base = "https://planet-hosts.com";
@@ -257,7 +257,7 @@ if (preg_match('#^/connector/station/([^/]+)/requests$#', $uriPath, $m)) {
             FROM radio_branding WHERE station_id = ?");
         $brand->execute([$stationId]);
         $branding = $brand->fetch(PDO::FETCH_ASSOC) ?: [];
-        $stName = $pdo->prepare("SELECT name, logo_url FROM streaming_stations WHERE id = ?");
+        $stName = $pdo->prepare("SELECT name FROM streaming_stations WHERE id = ?");
         $stName->execute([$stationId]);
         $stInfo = $stName->fetch(PDO::FETCH_ASSOC) ?: [];
         $base = "https://planet-hosts.com";
