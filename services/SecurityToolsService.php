@@ -311,11 +311,15 @@ class SecurityToolsService
                 }
                 return [false, 0, ''];
             case 'rkhunter':
-                if (preg_match('/Warning:/i', $log) && preg_match('/Possible|Infected|Suspect|Suspicious/i', $log)) {
-                    return [true, 1, 'rkhunter warnings found'];
+                // Informational warnings (new users, hostname change) are NOT findings.
+                // Only flag real rootkit indicators.
+                if (preg_match('/Possible rootkit|INFECTED|\*\*\* Suspect/i', $log)) {
+                    return [true, 1, 'rkhunter rootkit/suspect indicator found'];
                 }
                 return [false, 0, ''];
             case 'chkrootkit':
+                // Port 465 = Postfix smtps (legit service) — known false positive, exclude it
+                $log = preg_replace('/infected ports: 465/i', '', $log);
                 if (preg_match('/INFECTED|Vulnerable/i', $log)) {
                     return [true, 1, 'chkrootkit infections found'];
                 }
