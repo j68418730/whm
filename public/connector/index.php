@@ -10,6 +10,18 @@ header('Content-Type: application/json');
 
 $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
 
+// Resolve a station identifier from the URL path — accepts a numeric ID (12)
+// OR a URL-safe station name slug (e.g. "Test-Plans-uce"). Returns station id or 0.
+function connector_resolve_station($pdo, $idOrSlug) {
+    if (!$idOrSlug) return 0;
+    if (ctype_digit((string)$idOrSlug)) return (int)$idOrSlug;
+    // Convert slug back to a matchable string: "Test-Plans-uce" -> "Test Plans uce"
+    $name = str_replace('-', ' ', urldecode($idOrSlug));
+    $q = $pdo->prepare("SELECT id FROM streaming_stations WHERE REPLACE(LOWER(name),' ','-') = LOWER(?) LIMIT 1");
+    $q->execute([str_replace(' ', '-', $name)]);
+    return (int)$q->fetchColumn();
+}
+
 // Parse the path from REQUEST_URI
 $uri = $_SERVER['REQUEST_URI'];
 $uriPath = parse_url($uri, PHP_URL_PATH);
@@ -34,8 +46,8 @@ $stmt = $pdo->prepare("SELECT id, user_type, permissions FROM api_keys WHERE key
 }
 
 // ─── PUBLIC REQUEST SUBMISSION (no API key needed) ───
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && preg_match('#^/connector/station/(\d+)/requests$#', $uriPath, $m)) {
-    $stationId = (int)$m[1];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && preg_match('#^/connector/station/([^/]+)/requests$#', $uriPath, $m)) {
+    $stationId = connector_resolve_station($pdo, $m[1]);
     $input = json_decode(file_get_contents('php://input'), true) ?: [];
     if (!empty($input['title']) || !empty($input['songTitle'])) {
         $title = $input['songTitle'] ?? $input['title'];
@@ -50,8 +62,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && preg_match('#^/connector/station/(\
 }
 
 // ─── PUBLIC PENDING REQUESTS (no API key needed) ───
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && preg_match('#^/connector/station/(\d+)/requests$#', $uriPath, $m)) {
-    $stationId = (int)$m[1];
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && preg_match('#^/connector/station/([^/]+)/requests$#', $uriPath, $m)) {
+    $stationId = connector_resolve_station($pdo, $m[1]);
     $rq = $pdo->prepare("SELECT r.id, r.guest_name, r.artist, r.title, r.message, r.status, r.created_at, ss.name AS station_name, ss.engine AS station_engine
         FROM radio_requests r JOIN streaming_stations ss ON ss.id = r.stream_id
         WHERE r.stream_id = ? AND r.status = 'pending' ORDER BY r.created_at ASC");
@@ -74,8 +86,8 @@ try {
 
 // Fallback: a DJ's per-station API key (dj_api_config.api_key) — scoped to the station in the URL path
 if (!$key) {
-    if (preg_match('#^/connector/station/(\d+)#', $uriPath, $m)) {
-        $pathStationId = (int)$m[1];
+    if (preg_match('#^/connector/station/([^/]+)#', $uriPath, $m)) {
+        $pathStationId = connector_resolve_station($pdo, $m[1]);
         try {
             $djk = $pdo->prepare("SELECT c.*, rd.username AS dj_username FROM dj_api_config c JOIN radio_djs rd ON rd.id = c.dj_id WHERE c.api_key = ? AND c.stream_id = ? LIMIT 1");
             $djk->execute([$apiKey, $pathStationId]);
@@ -114,8 +126,8 @@ if (preg_match('#^/connector/dj/station$#', $uriPath)) {
 }
 
 // ─── UPLOAD ───
-if (preg_match('#^/connector/station/(\d+)/upload$#', $uriPath, $m)) {
-    $stationId = (int)$m[1];
+if (preg_match('#^/connector/station/([^/]+)/upload$#', $uriPath, $m)) {
+    $stationId = connector_resolve_station($pdo, $m[1]);
     $file = $_FILES['file'] ?? null;
     if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
         echo json_encode(['success' => false, 'error' => 'Upload failed: ' . ($file['error'] ?? 'no file')]);
@@ -136,8 +148,8 @@ if (preg_match('#^/connector/station/(\d+)/upload$#', $uriPath, $m)) {
 }
 
 // ─── METADATA (update current song) ───
-if (preg_match('#^/connector/station/(\d+)/metadata$#', $uriPath, $m)) {
-    $stationId = (int)$m[1];
+if (preg_match('#^/connector/station/([^/]+)/metadata$#', $uriPath, $m)) {
+    $stationId = connector_resolve_station($pdo, $m[1]);
     $input = json_decode(file_get_contents('php://input'), true);
     $title = $input['title'] ?? '';
     
@@ -151,8 +163,8 @@ if (preg_match('#^/connector/station/(\d+)/metadata$#', $uriPath, $m)) {
 }
 
 // ─── AUTODJ STATUS (read-only) ───
-if (preg_match('#^/connector/station/(\d+)/autodj$#', $uriPath, $m)) {
-    $stationId = (int)$m[1];
+if (preg_match('#^/connector/station/([^/]+)/autodj$#', $uriPath, $m)) {
+    $stationId = connector_resolve_station($pdo, $m[1]);
     $st = $pdo->prepare("SELECT id, name, current_song, autodj_enabled, status FROM streaming_stations WHERE id = ?");
     $st->execute([$stationId]);
     $s = $st->fetch(PDO::FETCH_OBJ);
@@ -184,8 +196,8 @@ if (preg_match('#^/connector/station/(\d+)/autodj$#', $uriPath, $m)) {
 }
 
 // ─── SCHEDULE (read-only) ───
-if (preg_match('#^/connector/station/(\d+)/schedule$#', $uriPath, $m)) {
-    $stationId = (int)$m[1];
+if (preg_match('#^/connector/station/([^/]+)/schedule$#', $uriPath, $m)) {
+    $stationId = connector_resolve_station($pdo, $m[1]);
     $sc = $pdo->prepare("SELECT s.*, d.username as dj_username FROM radio_schedule s LEFT JOIN radio_djs d ON d.id = s.dj_id WHERE s.stream_id = ? AND s.is_active = 1 ORDER BY s.day_of_week, s.start_time");
     $sc->execute([$stationId]);
     $events = $sc->fetchAll(PDO::FETCH_ASSOC);
@@ -195,8 +207,8 @@ if (preg_match('#^/connector/station/(\d+)/schedule$#', $uriPath, $m)) {
 }
 
 // ─── DJ ROTATION (read-only) ───
-if (preg_match('#^/connector/station/(\d+)/dj-rotation$#', $uriPath, $m)) {
-    $stationId = (int)$m[1];
+if (preg_match('#^/connector/station/([^/]+)/dj-rotation$#', $uriPath, $m)) {
+    $stationId = connector_resolve_station($pdo, $m[1]);
     $dj = $pdo->prepare("SELECT ds.*, d.username, d.name as dj_name FROM radio_dj_schedule ds LEFT JOIN radio_djs d ON d.id = ds.dj_id WHERE ds.stream_id = ? ORDER BY ds.scheduled_date DESC, ds.time_slot LIMIT 20");
     $dj->execute([$stationId]);
     $rotation = $dj->fetchAll(PDO::FETCH_ASSOC);
@@ -206,8 +218,8 @@ if (preg_match('#^/connector/station/(\d+)/dj-rotation$#', $uriPath, $m)) {
 }
 
 // ─── REQUESTS ───
-if (preg_match('#^/connector/station/(\d+)/requests$#', $uriPath, $m)) {
-    $stationId = (int)$m[1];
+if (preg_match('#^/connector/station/([^/]+)/requests$#', $uriPath, $m)) {
+    $stationId = connector_resolve_station($pdo, $m[1]);
     $method = $_SERVER['REQUEST_METHOD'];
     
     if ($method === 'GET') {
@@ -255,8 +267,8 @@ if (preg_match('#^/connector/station/(\d+)/requests$#', $uriPath, $m)) {
 }
 
 // ─── STATUS ───
-if (preg_match('#^/connector/station/(\d+)/status$#', $uriPath, $m)) {
-    $stationId = (int)$m[1];
+if (preg_match('#^/connector/station/([^/]+)/status$#', $uriPath, $m)) {
+    $stationId = connector_resolve_station($pdo, $m[1]);
     $st = $pdo->prepare("SELECT id, name, port, status, listener_count, current_song FROM streaming_stations WHERE id = ?");
     $st->execute([$stationId]);
     $s = $st->fetch(PDO::FETCH_OBJ);
