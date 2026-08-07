@@ -487,13 +487,18 @@ class PlanetStudioController extends Controller
         }
         $config = $this->db->table('dj_api_config')->where('dj_id', $radioDj->radio_dj_id)->where('stream_id', $stationId)->first();
         if (!$config) {
+            // Build a readable station slug for the request URL
+            $stRow = $this->db->table('streaming_stations')->where('id', $stationId)->first();
+            $stName = $stRow->name ?? "Stream #{$stationId}";
+            $slug = strtolower(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($stName)), '-'));
+            if ($slug === '') $slug = (string)$stationId;
             $this->db->table('dj_api_config')->insert([
                 'dj_id' => $radioDj->radio_dj_id,
                 'stream_id' => $stationId,
                 'dj_name' => $radioDj->name ?: $radioDj->username,
                 'dj_display_name' => $radioDj->name ?: $radioDj->username,
                 'api_key' => bin2hex(random_bytes(16)),
-                'request_api_url' => 'https://planet-hosts.com/connector/station/' . $stationId . '/requests',
+                'request_api_url' => 'https://planet-hosts.com/connector/station/' . $slug . '/requests',
             ]);
             $config = $this->db->table('dj_api_config')->where('dj_id', $radioDj->radio_dj_id)->where('stream_id', $stationId)->first();
         }
@@ -535,11 +540,15 @@ class PlanetStudioController extends Controller
             if ($exists) {
                 $this->db->table('dj_api_config')->where('dj_id', $radioDj->radio_dj_id)->where('stream_id', $stationId)->update($update);
             } else {
+                $stRow = $this->db->table('streaming_stations')->where('id', $stationId)->first();
+                $stName = $stRow->name ?? "Stream #{$stationId}";
+                $slug = strtolower(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($stName)), '-'));
+                if ($slug === '') $slug = (string)$stationId;
                 $this->db->table('dj_api_config')->insert(array_merge([
                     'dj_id' => $radioDj->radio_dj_id,
                     'stream_id' => $stationId,
                     'api_key' => bin2hex(random_bytes(16)),
-                    'request_api_url' => 'https://planet-hosts.com/connector/station/' . $stationId . '/requests',
+                    'request_api_url' => 'https://planet-hosts.com/connector/station/' . $slug . '/requests',
                 ], $update));
             }
         }

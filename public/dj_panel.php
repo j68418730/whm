@@ -321,7 +321,14 @@ if ($action === 'get_api_config' && isset($_SESSION['dj_user'])) {
     try {
         $djId = $_SESSION['dj_user']['id'] ?? 0;
         $streamId = (int)($_GET['stream_id'] ?? $_SESSION['dj_user']['stream_id'] ?? 0);
-        
+
+        // Look up the station name so URLs can use a readable slug
+        $st = $pdo->prepare("SELECT name FROM streaming_stations WHERE id = ?");
+        $st->execute([$streamId]);
+        $stationName = $st->fetchColumn() ?: "Stream #{$streamId}";
+        $slug = strtolower(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($stationName)), '-'));
+        if ($slug === '') $slug = (string)$streamId;
+
         // Get or create API config scoped to (dj_id, stream_id) — each station has its own key/URL
         $config = $pdo->prepare("SELECT * FROM dj_api_config WHERE dj_id = ? AND stream_id = ?");
         $config->execute([$djId, $streamId]);
@@ -329,19 +336,25 @@ if ($action === 'get_api_config' && isset($_SESSION['dj_user'])) {
         
         if (!$cfg) {
             $apiKey = bin2hex(random_bytes(16));
-            $reqUrl = "https://planet-hosts.com/connector/station/{$streamId}/requests";
+            $reqUrl = "https://planet-hosts.com/connector/station/{$slug}/requests";
             $pdo->prepare("INSERT INTO dj_api_config (dj_id, stream_id, dj_name, dj_display_name, api_key, request_api_url) VALUES (?,?,?,?,?,?)")
                 ->execute([$djId, $streamId, $_SESSION['dj_user']['name'] ?? '', $_SESSION['dj_user']['name'] ?? '', $apiKey, $reqUrl]);
             $config->execute([$djId, $streamId]);
             $cfg = $config->fetch(PDO::FETCH_OBJ);
         }
         
-        // Also return all station configs for this DJ
-        $allStmt = $pdo->prepare("SELECT * FROM dj_api_config WHERE dj_id = ? ORDER BY stream_id");
+        // Also return all station configs for this DJ (with their slugs)
+        $allStmt = $pdo->prepare("SELECT c.*, ss.name AS station_name FROM dj_api_config c LEFT JOIN streaming_stations ss ON ss.id = c.stream_id WHERE c.dj_id = ? ORDER BY c.stream_id");
         $allStmt->execute([$djId]);
         $all = $allStmt->fetchAll(PDO::FETCH_OBJ);
+        foreach ($all as &$c) {
+            $sn = $c->station_name ?? "Stream #{$c->stream_id}";
+            $c->slug = strtolower(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($sn)), '-')) ?: (string)$c->stream_id;
+            $c->request_api_url = "https://planet-hosts.com/connector/station/{$c->slug}/requests";
+        }
+        unset($c);
         
-        echo json_encode(['success' => true, 'data' => $cfg, 'configs' => $all, 'stationId' => $streamId]);
+        echo json_encode(['success' => true, 'data' => $cfg, 'configs' => $all, 'stationId' => $streamId, 'slug' => $slug]);
     } catch (\Exception $e) {
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -1312,14 +1325,15 @@ if (!empty($galleryData)): ?>
         var configs=r.configs||[];
         var apiUrl = d.api_url || 'https://planet-hosts.com/api';
         var apiKey = d.api_key || '';
-        var reqUrl = d.request_api_url || 'https://planet-hosts.com/connector/station/'+d.stream_id+'/requests';
+        var reqUrl = d.request_api_url || 'https://planet-hosts.com/connector/station/'+(d.slug||d.stream_id)+'/requests';
         var h='';
         // Station picker when the DJ has configs for multiple stations
         if(configs.length>1){
           h+='<div style="margin-bottom:12px"><span class="conn-label">Station:</span> <select id="api-station-sel" onchange="loadApiConfig(this.value)" style="margin-left:6px;padding:4px 8px;border-radius:5px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px">';
           configs.forEach(function(c){
             var sid=c.stream_id;
-            h+='<option value="'+sid+'"'+(sid==d.stream_id?' selected':'')+'>Station #'+sid+'</option>';
+            var label=c.station_name || ('Station #'+sid);
+            h+='<option value="'+sid+'"'+(sid==d.stream_id?' selected':'')+'>'+escapeHtml(label)+'</option>';
           });
           h+='</select></div>';
         }
@@ -1352,7 +1366,7 @@ function loadApiConfig(sid){
   if(!c) return;
   var apiUrl = c.api_url || 'https://planet-hosts.com/api';
   var apiKey = c.api_key || '';
-  var reqUrl = c.request_api_url || 'https://planet-hosts.com/connector/station/'+c.stream_id+'/requests';
+  var reqUrl = c.request_api_url || 'https://planet-hosts.com/connector/station/'+(c.slug||c.stream_id)+'/requests';
   document.getElementById('api-apiurl').textContent = apiUrl;
   document.getElementById('api-apikey').textContent = apiKey;
   document.getElementById('api-requrl').textContent = reqUrl;
