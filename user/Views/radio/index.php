@@ -222,7 +222,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
       </div>
     </div>
     <div style="grid-column:1/-1;margin-top:6px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06)">
+      <?php if ($isIces): ?>
+      <a href="http://<?=$streamHost?>:<?=$station->port?>/admin/" target="_blank" style="color:#facc15;font-size:11px;text-decoration:none">🔧 Icecast Admin</a>
+      <span style="color:#64748b;font-size:10px"> — http://<?=$streamHost?>:<?=$station->port?>/admin/</span>
+      <?php else: ?>
       <a href="http://<?=$streamHost?>:<?=$station->port?>/admin.cgi" target="_blank" style="color:#facc15;font-size:11px;text-decoration:none">🔧 SHOUTcast Admin</a>
+      <?php endif; ?>
     </div>
   </div>
   </div>
