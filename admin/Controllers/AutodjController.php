@@ -37,12 +37,14 @@ class AutodjController extends Controller
         $user = $this->auth->user();
         $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','Skylinehosting171');
 
-        // Get all stations with AutoDJ info
+        // Get all stations with AutoDJ info + owning hosting user
         $stations = $pdo->query(
-            "SELECT ss.*, 
+            "SELECT ss.*, hu.username AS user_username, hu.email AS user_email,
                     (SELECT COUNT(*) FROM radio_playlist_items pi JOIN radio_playlists p ON pi.playlist_id=p.id WHERE p.stream_id=ss.id) AS track_count,
                     (SELECT COUNT(*) FROM radio_playlists WHERE stream_id=ss.id) AS playlist_count
-             FROM streaming_stations ss ORDER BY ss.name"
+             FROM streaming_stations ss
+             LEFT JOIN hosting_users hu ON hu.id = ss.user_id
+             ORDER BY hu.username, ss.name"
         )->fetchAll(\PDO::FETCH_OBJ);
 
         $totalTracks = 0;
@@ -52,12 +54,11 @@ class AutodjController extends Controller
             $totalPlaylists += (int)$s->playlist_count;
         }
 
-        // Check if AutoDJ runners are running
+        // Check if AutoDJ runners are running (per-station pid file)
         foreach ($stations as $s) {
-            $pidFile = '/home/' . $s->user_id . '/radio/autodj/autodj.pid';
-            if (!file_exists($pidFile)) {
-                $pidFile = '/home/testacct/radio/autodj/autodj.pid';
-            }
+            $pidFile = '/home/' . ($s->user_username ?? 'testacct') . '/radio/autodj/autodj_' . $s->id . '.pid';
+            if (!file_exists($pidFile)) $pidFile = '/home/' . ($s->user_username ?? 'testacct') . '/radio/autodj/autodj.pid';
+            if (!file_exists($pidFile)) $pidFile = '/home/testacct/radio/autodj/autodj.pid';
             $s->autodj_running = false;
             if (file_exists($pidFile)) {
                 $pid = (int)trim(@file_get_contents($pidFile));
@@ -67,15 +68,25 @@ class AutodjController extends Controller
             }
         }
 
+        // Group stations by owning username
+        $grouped = [];
+        foreach ($stations as $s) {
+            $key = $s->user_username ?: 'Unassigned';
+            $grouped[$key][] = $s;
+        }
+
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         return $this->view('admin.autodj.index', [
             'user' => $user,
             'stations' => $stations,
+            'grouped' => $grouped,
             'autodjStats' => [
                 'total_tracks' => $totalTracks,
                 'total_playlists' => $totalPlaylists,
                 'scheduled_playlists' => 0,
                 'storage_used' => 0,
+                'total_stations' => count($stations),
+                'running' => count(array_filter($stations, fn($s) => $s->autodj_running)),
             ],
             'theme_settings' => $theme_settings
         ]);
