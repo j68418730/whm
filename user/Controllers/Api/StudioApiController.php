@@ -239,7 +239,7 @@ class StudioApiController extends Controller
         if ($p = trim($this->request->post('password', ''))) $update['password'] = password_hash($p, PASSWORD_DEFAULT);
         if ($this->request->post('name') !== null) $update['name'] = trim($this->request->post('name'));
         if ($this->request->post('email') !== null) $update['email'] = trim($this->request->post('email'));
-        if ($this->request->post('role') !== null) $update['role'] = $this->request->post('role');
+        // radio_djs has no 'role' column — role lives in chatbox_users / dj_accounts. Ignore role POST here.
 
         if (!empty($update)) {
             try {

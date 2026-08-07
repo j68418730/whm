@@ -392,7 +392,8 @@ class RadioController extends Controller
         if (isset($_POST['name'])) $update['name'] = trim($_POST['name']);
         if (isset($_POST['email'])) $update['email'] = trim($_POST['email']);
         if (isset($_POST['bio'])) $update['bio'] = trim($_POST['bio']);
-        if (isset($_POST['role'])) $update['role'] = $_POST['role'];
+        // radio_djs has NO 'role' column — role is synced to chatbox_users below.
+        $postedRole = $_POST['role'] ?? '';
         $newStatus = $_POST['status'] ?? '';
         if (in_array($newStatus, ['active','inactive','banned','suspended','on_leave'])) $update['status'] = $newStatus;
         if (!empty($update)) {
@@ -405,7 +406,7 @@ class RadioController extends Controller
                     if ($dj && $ss) {
                         $tenant = $this->db->table('chatbox_tenants')->where('hosting_user_id', $ss->user_id)->first();
                         if ($tenant) {
-                            $chatRole = ($dj->role ?? 'dj') === 'mod' ? 'mod' : 'member';
+                            $chatRole = $postedRole === 'mod' ? 'mod' : 'member';
                             $this->db->table('chatbox_users')->where('tenant_id', $tenant->id)->where('username', $dj->username)->update(['role' => $chatRole]);
                         }
                     }
