@@ -35,56 +35,6 @@ if (empty($packagesByType)) {
         }
     } catch (\Exception $e) {}
 }
-if ($loggedIn && $user):
-?><!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard - Planet Hosts</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',sans-serif;background:#000;color:#fff}
-.dash{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
-.sidebar{background:#0b1728;border-right:1px solid rgba(0,212,255,.2);padding:20px}
-.sidebar h2{font-size:20px;margin-bottom:30px;color:#00d4ff}
-.sidebar a{display:block;color:#c9ddf3;text-decoration:none;padding:12px;border-radius:8px;margin-bottom:4px}
-.sidebar a:hover{background:rgba(0,212,255,.12);color:#fff}
-.main{padding:30px}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:30px}
-.card{background:#0d1b2e;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:24px}
-.card h3{color:#00d4ff;font-size:14px;text-transform:uppercase;margin-bottom:8px}
-.card .value{font-size:32px;font-weight:700}
-.btn{padding:10px 20px;background:linear-gradient(135deg,#008cff,#3bb8ff);border:none;border-radius:8px;color:#fff;text-decoration:none;font-weight:600}
-</style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-</head>
-<body>
-<div class="dash">
-<div class="sidebar">
-<h2>Planet Hosts</h2>
-<a href="#">Dashboard</a>
-<a href="#">Accounts</a>
-<a href="#">Streams</a>
-<a href="#">Servers</a>
-</div>
-<div class="main">
-<div class="topbar"><h1>Dashboard</h1><a href="/admin/logout" class="btn">Logout</a></div>
-<div class="stats">
-<div class="card"><h3>Accounts</h3><div class="value">0</div></div>
-<div class="card"><h3>Streams</h3><div class="value">0</div></div>
-<div class="card"><h3>Servers</h3><div class="value">0</div></div>
-<div class="card"><h3>Uptime</h3><div class="value">99.99%</div></div>
-</div>
-<p style="color:#94a3b8">Welcome, <?php echo htmlspecialchars($user->name ?? 'User', ENT_QUOTES, 'UTF-8'); ?></p>
-</div></div>
-<script>var img=new Image();img.src='https://planet-hosts.com/track.php?id=planethosts&r='+encodeURIComponent(document.referrer)+'&u='+encodeURIComponent(location.href);img.style.display='none';document.body.appendChild(img);</script>
-</body></html>
-<?php
-exit;
-endif;
 ?><!DOCTYPE html>
 <html lang="en">
 <head>
