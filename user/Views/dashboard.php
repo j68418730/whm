@@ -89,6 +89,7 @@ fetch('/admin/support-status/public').then(function(r){return r.json()}).then(fu
 <a href="/user/invoices" class="quick-link"><span class="qicon">💳</span>Pay Invoice</a>
 <a href="/livechat" target="_blank" class="quick-link"><span class="qicon">💬</span>Live Chat</a>
 <a href="/user/domains" class="quick-link"><span class="qicon">🌍</span>Domains</a>
+<a href="/user/security" class="quick-link"><span class="qicon">🛡️</span>Security</a>
 </div>
 
 <!-- Stats Grid -->
