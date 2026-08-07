@@ -27,6 +27,23 @@ function chatbox_resolve_token($pdo, $token) {
 $tokenUser = chatbox_resolve_token($pdo, $_GET['token'] ?? $_POST['token'] ?? '');
 $isTokenAuthed = $tokenUser !== null;
 
+// Block chat for suspended hosting accounts (tenant owner suspended => whole chat offline)
+function chatbox_suspended($pdo, $tenantId) {
+    if (!$tenantId) return false;
+    $st = $pdo->prepare("SELECT t.hosting_user_id, hu.status FROM chatbox_tenants t
+        LEFT JOIN hosting_users hu ON hu.id = t.hosting_user_id
+        WHERE t.id = ?");
+    $st->execute([(int)$tenantId]);
+    $row = $st->fetch(PDO::FETCH_OBJ);
+    return $row && ($row->status ?? 'active') === 'suspended';
+}
+$tenantIdQ = (int)($_GET['tenant_id'] ?? $_POST['tenant_id'] ?? 0);
+$chatSuspended = chatbox_suspended($pdo, $tenantIdQ);
+if ($chatSuspended) {
+    echo json_encode(['success' => false, 'error' => 'Chat unavailable — account suspended.', 'suspended' => true]);
+    exit;
+}
+
 // Login (returns a token too, for desktop/embedded clients)
 if ($action === 'login') {
     $tenantId = (int)($_POST['tenant_id'] ?? 0);

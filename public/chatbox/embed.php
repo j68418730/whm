@@ -3,6 +3,16 @@ require_once __DIR__ . '/../security_guard.php';
 security_guard_run('chat');
 $tenantId = (int)($_GET['tenant_id'] ?? 0);
 if (!$tenantId) { echo 'Invalid tenant'; exit; }
+// Suspended owner => chat offline
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$st = $pdo->prepare("SELECT hu.status FROM chatbox_tenants t LEFT JOIN hosting_users hu ON hu.id = t.hosting_user_id WHERE t.id = ?");
+$st->execute([$tenantId]);
+$ownerStatus = $st->fetchColumn();
+if ($ownerStatus === 'suspended') {
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chat Offline</title></head><body style="margin:0;background:transparent;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Inter,system-ui,sans-serif"><div style="text-align:center;color:#64748b;padding:20px"><div style="font-size:40px;margin-bottom:8px">🚫</div><div style="font-size:14px;font-weight:600">Chat is offline</div><div style="font-size:12px;margin-top:4px">This chat has been suspended.</div></div></body></html>';
+    exit;
+}
 $room = trim($_GET['room'] ?? '');
 $token = trim($_GET['token'] ?? '');
 $roomParam = $room !== '' ? '&room=' . urlencode($room) : '';
