@@ -267,67 +267,104 @@ class SecurityToolsService
     /**
      * Per-tool log parsing to decide whether a scan surfaced something.
      */
-    protected function detectFindings($key, $log)
-    {
+    protected function detectFindings($key, $log)    {
         switch ($key) {
             case 'clamav':
-                if (preg_match_all('/FOUND|Infected files:\s*([0-9]+)/i', $log, $m)) {
+                $recent = $this->lastScanBlock($log, 500);
+                if (preg_match_all('/FOUND|Infected files:\s*([0-9]+)/i', $recent, $m)) {
                     $n = (int)end($m[1]) ?: count($m[0]);
                     return [$n > 0, $n, $n . ' infected file(s) detected'];
                 }
                 return [false, 0, ''];
             case 'yara':
-                if (preg_match_all('/^HIT:/mi', $log, $m)) {
+                $recent = $this->lastScanBlock($log, 500);
+                if (preg_match_all('/^HIT:/mi', $recent, $m)) {
                     return [true, count($m[0]), count($m[0]) . ' rule match(es)'];
                 }
                 return [false, 0, ''];
             case 'trivy':
-                if (preg_match('/Total: ([0-9]+)/i', $log, $m) && (int)$m[1] > 0) {
+                // Only consider the most recent run (last scan block) to avoid stale counts.
+                $recent = $this->lastScanBlock($log, 800);
+                if (preg_match('/Total: ([0-9]+)/i', $recent, $m) && (int)$m[1] > 0) {
                     return [true, (int)$m[1], (int)$m[1] . ' vulnerabilities found'];
                 }
-                if (preg_match('/CRITICAL|HIGH/i', $log) && preg_match('/Vulnerability/i', $log)) {
+                if (preg_match('/CRITICAL|HIGH/i', $recent) && preg_match('/Vulnerability/i', $recent)) {
                     return [true, 1, 'High/Critical vulnerabilities found'];
                 }
                 return [false, 0, ''];
             case 'osv':
-                if (preg_match('/([0-9]+) vulnerabilities? found/i', $log, $m) && (int)$m[1] > 0) {
+                $recent = $this->lastScanBlock($log, 300);
+                if (preg_match('/([0-9]+) vulnerabilities? found/i', $recent, $m) && (int)$m[1] > 0) {
                     return [true, (int)$m[1], $m[0]];
                 }
-                if (preg_match('/Vulnerability found|OSV-Scanner found/i', $log)) {
+                if (preg_match('/Vulnerability found|OSV-Scanner found/i', $recent)) {
                     return [true, 1, 'Vulnerabilities found'];
                 }
                 return [false, 0, ''];
             case 'lynis':
-                if (preg_match('/hardening_index=([0-9]+)/', $log, $m) && (int)$m[1] < 60) {
+                $recent = $this->lastScanBlock($log, 300);
+                if (preg_match('/hardening_index=([0-9]+)/', $recent, $m) && (int)$m[1] < 60) {
                     return [true, 1, 'Lynis hardening index low: ' . (int)$m[1]];
                 }
-                if (preg_match('/Number of warnings|warnings found|Warnings found/i', $log)) {
+                if (preg_match('/Number of warnings|warnings found|Warnings found/i', $recent)) {
                     return [true, 1, 'Lynis audit warnings present'];
                 }
                 return [false, 0, ''];
             case 'aide':
-                if (preg_match('/difference found|Difference found|changes detected|CHANGED/i', $log)) {
+                // Only consider the most recent run (last block) to avoid stale diffs.
+                $recent = $this->lastScanBlock($log, 500);
+                if (preg_match('/difference found|Difference found|changes detected|CHANGED/i', $recent)) {
                     return [true, 1, 'File integrity differences found'];
                 }
                 return [false, 0, ''];
             case 'rkhunter':
-                if (preg_match('/Warning:/i', $log) && preg_match('/Possible|Infected|Suspect|Suspicious/i', $log)) {
-                    return [true, 1, 'rkhunter warnings found'];
+                // Informational warnings (new users, hostname change) are NOT findings.
+                // Only flag real rootkit indicators.
+                $recent = $this->lastScanBlock($log, 300);
+                if (preg_match('/Possible rootkit|INFECTED|\*\*\* Suspect/i', $recent)) {
+                    return [true, 1, 'rkhunter rootkit/suspect indicator found'];
                 }
                 return [false, 0, ''];
             case 'chkrootkit':
-                if (preg_match('/INFECTED|Vulnerable/i', $log)) {
+                // Port 465 = Postfix smtps (legit service) — known false positive, exclude it
+                $recent = $this->lastScanBlock($log, 300);
+                $recent = preg_replace('/infected ports: 465/i', '', $recent);
+                if (preg_match('/INFECTED|Vulnerable/i', $recent)) {
                     return [true, 1, 'chkrootkit infections found'];
                 }
                 return [false, 0, ''];
             case 'testssl':
-                if (preg_match('/Failed|Not offered|vulnerable/i', $log)) {
+                // "not vulnerable (OK)" is GOOD — exclude it. Flag only genuine failures.
+                $recent = $this->lastScanBlock($log, 200);
+                $clean = preg_replace('/not vulnerable|not offered \(|OK\)/i', '', $recent);
+                if (preg_match('/Failed|Not offered|vulnerable|insecure/i', $clean)) {
                     return [true, 1, 'testssl findings — review log'];
                 }
                 return [false, 0, ''];
             default:
                 return [false, 0, ''];
         }
+    }
+
+    /**
+     * Return the tail of a scan log (last run), preferring content after the most
+     * recent ph-* "scan/audit start" marker when present. Falls back to raw tail.
+     */
+    protected function lastScanBlock($log, $tailLines = 500)
+    {
+        if (!is_file($log)) return '';
+        $raw = file_get_contents($log) ?: '';
+        $lines = explode("\n", $raw);
+        $n = count($lines);
+        $start = max(0, $n - $tailLines);
+        // Find the last "scan start"/"audit start"/"check start" marker in the tail window
+        for ($i = $n - 1; $i >= $start && $i >= 0; $i--) {
+            if (preg_match('/scan start|audit start|check start|\[run\]/i', $lines[$i])) {
+                $start = $i;
+                break;
+            }
+        }
+        return implode("\n", array_slice($lines, $start));
     }
 
     public function hasFindings()
@@ -362,9 +399,10 @@ class SecurityToolsService
                 $this->logAction('fix', $key, 'Quarantined YARA rule matches');
                 return ['success' => true, 'message' => 'Quarantined files matching YARA rules.'];
             case 'aide':
-                // Refresh AIDE baseline so clean state is re-recorded
-                exec('sudo aideinit --yes 2>/dev/null; if [ -f /var/lib/aide/aide.db.new.gz ]; then sudo mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz 2>/dev/null; fi', $out);
-                $this->logAction('fix', $key, 'AIDE baseline refreshed');
+                // Refresh AIDE baseline (bounded config) so the clean state is re-recorded.
+                // Runs via the ph-aide wrapper (already granted to www-data in sudoers).
+                exec('sudo /usr/local/bin/ph-aide --baseline >/dev/null 2>&1', $out);
+                $this->logAction('fix', $key, 'AIDE baseline refreshed (bounded config)');
                 return ['success' => true, 'message' => 'AIDE integrity baseline refreshed.'];
             case 'rkhunter':
                 exec('sudo rkhunter --propupd 2>/dev/null', $out);
