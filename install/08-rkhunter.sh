@@ -1,6 +1,6 @@
 #!/bin/bash
 # 08-rkhunter — rootkit hunter
-set -e
+set +e
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/lib.sh"
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 # 13-spamassassin — email spam filtering
-set -e
+set +e
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/lib.sh"
 

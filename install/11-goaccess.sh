@@ -1,6 +1,6 @@
 #!/bin/bash
 # 11-goaccess — real-time log analyzer
-set -e
+set +e
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/lib.sh"
 

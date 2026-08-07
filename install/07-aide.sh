@@ -1,6 +1,6 @@
 #!/bin/bash
 # 07-aide — file integrity monitoring
-set -e
+set +e
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/lib.sh"
 
