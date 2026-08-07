@@ -189,21 +189,23 @@ class SecurityToolsService
     {
         $script = $this->ensureScanAllScript();
         if (!$script) return ['success' => false, 'error' => 'Could not create scan-all script'];
-        exec('sudo bash ' . escapeshellarg($script) . ' > /dev/null 2>&1 &');
+        // Run directly (not via sudo) — the script internally calls sudo /usr/local/bin/ph-* which www-data is allowed to run
+        exec('nohup bash ' . escapeshellarg($script) . ' > /dev/null 2>&1 &');
         return ['success' => true, 'message' => 'All scans started in background.'];
     }
 
     /**
      * Ensure the ph-scan-all aggregator script exists (created idempotently).
+     * Written into storage/security (www-data writable), not /usr/local/bin.
      */
     protected function ensureScanAllScript()
     {
-        $path = '/usr/local/bin/ph-scan-all';
+        if (!is_dir($this->statusDir)) @mkdir($this->statusDir, 0755, true);
+        $path = $this->statusDir . '/scan-all.sh';
         $content = $this->scanAllScriptContent();
-        $tmp = '/tmp/ph-scan-all-' . getmypid();
-        if (@file_put_contents($tmp, $content) === false) return false;
-        exec('sudo mv ' . escapeshellarg($tmp) . ' ' . escapeshellarg($path) . ' && sudo chmod 755 ' . escapeshellarg($path) . ' 2>/dev/null');
-        return is_file($path) ? $path : false;
+        if (@file_put_contents($path, $content) === false) return false;
+        @chmod($path, 0755);
+        return $path;
     }
 
     protected function scanAllScriptContent()
@@ -225,9 +227,12 @@ class SecurityToolsService
         foreach ($tools as $t) {
             if (!$t['cmd']) continue;
             $bash .= "echo \"[run] {$t['key']}\" >> " . escapeshellarg($this->logDir . '/scan-all.log') . "\n";
+            // scan cmd already includes sudo /usr/local/bin/ph-* (allowed for www-data)
             $bash .= "bash -c " . escapeshellarg($t['cmd']) . " >> " . escapeshellarg($t['log']) . " 2>&1 || true\n";
         }
-        $bash .= "echo \"[done] \$TS\" >> " . escapeshellarg($this->logDir . '/scan-all.log') . "\n";
+        $bash .= "DONE=\$(date '+%Y-%m-%d %H:%M:%S')\n";
+        $bash .= "echo \"{\\\"started\\\":\\\"\$TS\\\",\\\"finished\\\":\\\"\$DONE\\\"}\" > \$RESULTS\n";
+        $bash .= "echo \"[done] \$DONE\" >> " . escapeshellarg($this->logDir . '/scan-all.log') . "\n";
         $bash .= "exit 0\n";
         return $bash;
     }
