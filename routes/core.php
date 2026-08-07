@@ -419,6 +419,8 @@ $router->get('/api/autodj/restart/{compositeId}', 'Admin\Controllers\Api\PlanetS
 // Desktop app (Stage 7) API
 $router->post('/api/nowplaying', 'Admin\Controllers\Api\PlanetStudioController@nowPlaying');
 $router->post('/api/playlists/sync', 'Admin\Controllers\Api\PlanetStudioController@syncPlaylist');
+$router->post('/api/autodj/sync', 'Admin\Controllers\Api\PlanetStudioController@syncAutoDj');
+$router->post('/api/studio/log', 'Admin\Controllers\Api\PlanetStudioController@submitLog');
 $router->post('/api/djs/create', 'Admin\Controllers\Api\PlanetStudioController@createDj');
 $router->post('/api/djs/update', 'Admin\Controllers\Api\PlanetStudioController@updateDj');
 $router->post('/api/djs/delete', 'Admin\Controllers\Api\PlanetStudioController@deleteDj');
