@@ -142,7 +142,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div style="font-size:12px;color:#94a3b8" id="ov-song"><?=($autodjCfg&&$autodjCfg->autodj_enabled)?'Loading...':'AutoDJ Stopped'?></div>
     </div>
     <div style="flex-shrink:0;min-width:200px">
-      <audio src="<?=$listenUrl?>" preload="auto" controls style="width:100%;height:36px;border-radius:8px"></audio>
+      <audio src="<?=$listenUrl?>" preload="none" controls style="width:100%;height:36px;border-radius:8px"></audio>
     </div>
     <div style="display:flex;gap:6px;flex-shrink:0">
       <a href="https://planet-hosts.com/radio/embed.php?stream=<?=$station->streaming_id?>" target="_blank" class="btn btn-sm btn-primary" style="font-size:10px;padding:6px 10px">Player</a>
@@ -918,7 +918,7 @@ function copyDjInfo(){
 <div class="card"><div class="empty-state"><div style="font-size:40px;margin-bottom:10px">&#9888;</div><div style="font-size:14px;color:#c0c0c0">No station selected</div></div></div>
 <?php endif; ?>
 <script>
-function getTab(){return new URLSearchParams(window.location.search).get('tab')||'overview';}
+function getTab(){try{return new URLSearchParams(window.location.search).get('tab')||'overview';}catch(e){var m=window.location.search.match(/[?&]tab=([^&]+)/);return m?m[1]:'overview';}}
 function searchSongs(q){document.querySelectorAll('.song-row').forEach(function(r){r.style.display=r.textContent.toLowerCase().indexOf(q.toLowerCase())>=0?'':'none';});}
 function askAI(){var q=document.getElementById('aiQuestion');if(!q.value.trim())return;var chat=document.getElementById('aiChat');var msg=document.createElement('div');msg.style.cssText='padding:8px 12px;margin-bottom:6px;background:rgba(0,140,255,.08);border-radius:8px;font-size:11px;color:#e0e0e0';msg.textContent=q.value;chat.appendChild(msg);chat.scrollTop=chat.scrollHeight;var sug=document.getElementById('aiSuggestions');sug.style.display='block';document.getElementById('aiAnswer').textContent='Thinking...';var x=new XMLHttpRequest();x.open('POST','/user/radio/autodj/ai-ask',true);x.setRequestHeader('Content-Type','application/x-www-form-urlencoded');x.onload=function(){try{var r=JSON.parse(x.responseText);document.getElementById('aiAnswer').textContent=r.answer||'Error: '+(r.error||'Unknown');var resp=document.createElement('div');resp.style.cssText='padding:8px 12px;margin-bottom:6px;background:rgba(168,85,247,.08);border-radius:8px;font-size:11px;color:#94a3b8;white-space:pre-wrap';resp.textContent=r.answer||r.error;chat.appendChild(resp);chat.scrollTop=chat.scrollHeight;}catch(e){document.getElementById('aiAnswer').textContent='Error processing response'}};x.send('question='+encodeURIComponent(q.value)+'&station_id=<?=$stationId?>');q.value='';}
 var _queue=[],_playlistId=<?=$mPlId?:'null'?>;_playlistId=_playlistId||'',_csrf='<?=$_csrf_token??''?>';
