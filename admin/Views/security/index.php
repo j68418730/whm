@@ -1,6 +1,12 @@
 <?php if (isset($_SESSION['success_message'])): ?>
 <div class="alert alert-success"><?php echo htmlspecialchars($_SESSION['success_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['success_message']); ?></div>
 <?php endif; ?>
+<?php if (isset($_SESSION['warning_message'])): ?>
+<div class="alert" style="background:rgba(255,193,7,.1);border:1px solid rgba(255,193,7,.25);color:#ffc107"><?php echo htmlspecialchars($_SESSION['warning_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['warning_message']); ?></div>
+<?php endif; ?>
+<?php if (isset($_SESSION['error_message'])): ?>
+<div class="alert alert-danger"><?php echo htmlspecialchars($_SESSION['error_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['error_message']); ?></div>
+<?php endif; ?>
 
 <style>
 .sc-tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
@@ -29,6 +35,32 @@
 <h2>Security Center</h2>
 <p style="color:#64748b;margin-bottom:16px">The firewall (firewalld/fail2ban/ModSecurity/CSF) is managed under <a href="/admin/firewall" style="color:#0A84FF">Firewall</a>.</p>
 
+<?php
+// Build a findings lookup: key => result row
+$findingsMap = [];
+foreach (($results ?? []) as $r) $findingsMap[$r['key']] = $r;
+$anyFindings = !empty(array_filter($results ?? [], fn($r) => $r['found']));
+?>
+<?php if (!empty($anyFindings)): ?>
+<div style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+  <span style="font-size:22px">⚠️</span>
+  <div style="flex:1">
+    <div style="font-weight:700;color:#f87171;font-size:14px">Security scans found issues</div>
+    <div style="font-size:12px;color:#94a3b8;margin-top:2px">Review the sections highlighted below and use <strong>Fix</strong> where available, or <strong>View Log</strong> for details.</div>
+  </div>
+  <a href="/admin/security/scan-all" class="btn" style="background:rgba(0,140,255,.2);color:#0A84FF;padding:8px 18px;font-size:12px;text-decoration:none;border-radius:6px">↻ Re-run All Scans</a>
+</div>
+<?php else: ?>
+<div style="background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+  <span style="font-size:22px">✅</span>
+  <div style="flex:1">
+    <div style="font-weight:700;color:#4ade80;font-size:14px">No issues detected by recent scans</div>
+    <div style="font-size:12px;color:#94a3b8;margin-top:2px">Run a fresh scan anytime to re-check every module.</div>
+  </div>
+  <a href="/admin/security/scan-all" class="btn" style="background:rgba(0,140,255,.2);color:#0A84FF;padding:8px 18px;font-size:12px;text-decoration:none;border-radius:6px">↻ Scan Now (All)</a>
+</div>
+<?php endif; ?>
+
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px">
   <div class="sc-score"><div class="val"><?php echo (int)$score; ?></div><div class="lbl">Security Score</div></div>
   <div class="sc-score"><div class="val" style="color:#0A84FF"><?php echo count($history); ?></div><div class="lbl">Scan Events</div></div>
@@ -43,14 +75,17 @@
 <?php foreach ($groups as $group => $tools): ?>
 <div class="sc-group"><?php echo htmlspecialchars(ucfirst($group)); ?></div>
 <div class="sc-tools">
-<?php foreach ($tools as $t): $state = $t['state']; $inst = $t['installed']; ?>
-<div class="sc-tool">
-  <h4><?php echo htmlspecialchars($t['label']); ?></h4>
+<?php foreach ($tools as $t): $state = $t['state']; $inst = $t['installed']; $fr = $findingsMap[$t['key']] ?? null; $found = $fr && $fr['found']; ?>
+<div class="sc-tool" style="<?php echo $found ? 'border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.04)' : ''; ?>">
+  <h4><?php echo htmlspecialchars($t['label']); ?>
+    <?php if ($found): ?><span style="color:#f87171;font-size:11px;margin-left:6px">⚠️</span><?php endif; ?>
+  </h4>
   <div class="sub"><?php echo htmlspecialchars($t['version'] ?: 'Not detected'); ?></div>
   <div class="status-row">
     <span class="sc-dot <?php echo $inst ? 'ok' : 'missing'; ?>"></span>
     <span style="font-size:12px;color:<?php echo $inst ? '#4ade80' : '#f87171'; ?>"><?php echo $inst ? 'Installed' : 'Not installed'; ?></span>
-    <?php if ($t['updated']): ?><span style="font-size:10px;color:#64748b;margin-left:auto"><?php echo htmlspecialchars($t['updated']); ?></span><?php endif; ?>
+    <?php if ($found): ?><span style="font-size:11px;color:#f87171;margin-left:auto;font-weight:600"><?php echo htmlspecialchars($fr['detail']); ?></span>
+    <?php elseif ($t['updated']): ?><span style="font-size:10px;color:#64748b;margin-left:auto"><?php echo htmlspecialchars($t['updated']); ?></span><?php endif; ?>
   </div>
   <div class="sc-actions">
     <?php if (!$inst): ?>
@@ -59,6 +94,7 @@
     <a href="/admin/security/install/<?php echo $t['key']; ?>" class="act">Update</a>
     <?php endif; ?>
     <a href="/admin/security/scan/<?php echo $t['key']; ?>" class="scan">Scan Now</a>
+    <?php if ($found): ?><a href="/admin/security/fix/<?php echo $t['key']; ?>" class="fix" style="background:rgba(74,222,128,.18);color:#4ade80" onclick="return confirm('Run fix for <?php echo addslashes($t['label']); ?>?')">Fix</a><?php endif; ?>
     <a href="/admin/security/logs/<?php echo $t['key']; ?>" class="log" target="_blank">View Log</a>
   </div>
 </div>

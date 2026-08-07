@@ -176,4 +176,207 @@ class SecurityToolsService
         usort($out, fn($a, $b) => strcmp($b['at'] ?? '', $a['at'] ?? ''));
         return array_slice($out, 0, $limit);
     }
+
+    // ─────────────────────────────────────────────
+    // Scan All (background) + results + fix
+    // ─────────────────────────────────────────────
+
+    /**
+     * Launch every installed scan in the background via a single aggregator script.
+     * Each ph-* scanner writes its own log + status; the aggregator writes scan-results.json.
+     */
+    public function runAllScans()
+    {
+        $script = $this->ensureScanAllScript();
+        if (!$script) return ['success' => false, 'error' => 'Could not create scan-all script'];
+        exec('sudo bash ' . escapeshellarg($script) . ' > /dev/null 2>&1 &');
+        return ['success' => true, 'message' => 'All scans started in background.'];
+    }
+
+    /**
+     * Ensure the ph-scan-all aggregator script exists (created idempotently).
+     */
+    protected function ensureScanAllScript()
+    {
+        $path = '/usr/local/bin/ph-scan-all';
+        $content = $this->scanAllScriptContent();
+        if (@file_put_contents($path, $content) === false) return false;
+        @chmod($path, 0755);
+        return $path;
+    }
+
+    protected function scanAllScriptContent()
+    {
+        $dir = $this->logDir;
+        $results = $this->statusDir . '/scan-results.json';
+        $tools = [];
+        foreach ($this->tools as $key => $t) {
+            $cmd = $t['scan'] ?? '';
+            $log = $dir . '/' . ($t['log'] ?? $key) . '.log';
+            $tools[] = ['key' => $key, 'cmd' => $cmd, 'log' => $log, 'label' => $t['label']];
+        }
+        // Build a bash script that runs each scanner then writes scan-results.json
+        $bash = "#!/bin/bash\n";
+        $bash .= "RESULTS=" . escapeshellarg($results) . "\n";
+        $bash .= "TS=\$(date '+%Y-%m-%d %H:%M:%S')\n";
+        $bash .= "echo \"{\\\"started\\\":\\\"\$TS\\\",\\\"runs\\\":[]}\" > \$RESULTS\n";
+        $bash .= "findings=\"\"\n";
+        foreach ($tools as $t) {
+            if (!$t['cmd']) continue;
+            $bash .= "echo \"[run] {$t['key']}\" >> " . escapeshellarg($this->logDir . '/scan-all.log') . "\n";
+            $bash .= "bash -c " . escapeshellarg($t['cmd']) . " >> " . escapeshellarg($t['log']) . " 2>&1 || true\n";
+        }
+        $bash .= "echo \"[done] \$TS\" >> " . escapeshellarg($this->logDir . '/scan-all.log') . "\n";
+        $bash .= "exit 0\n";
+        return $bash;
+    }
+
+    /**
+     * Read scan results: parse each tool log for findings and return per-tool status.
+     * Returns array of ['key','label','found' => bool,'count','detail','log'].
+     */
+    public function scanResults()
+    {
+        $out = [];
+        foreach ($this->tools as $key => $tool) {
+            $log = $this->logDir . '/' . ($tool['log'] ?? $key) . '.log';
+            $found = false; $count = 0; $detail = '';
+            if (is_file($log)) {
+                $tail = file_get_contents($log) ?: '';
+                [$found, $count, $detail] = $this->detectFindings($key, $tail);
+            }
+            $out[] = [
+                'key' => $key,
+                'label' => $tool['label'],
+                'group' => $tool['group'],
+                'found' => $found,
+                'count' => $count,
+                'detail' => $detail,
+                'log' => $log,
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * Per-tool log parsing to decide whether a scan surfaced something.
+     */
+    protected function detectFindings($key, $log)
+    {
+        switch ($key) {
+            case 'clamav':
+                if (preg_match_all('/FOUND|Infected files:\s*([0-9]+)/i', $log, $m)) {
+                    $n = (int)end($m[1]) ?: count($m[0]);
+                    return [$n > 0, $n, $n . ' infected file(s) detected'];
+                }
+                return [false, 0, ''];
+            case 'yara':
+                if (preg_match_all('/^HIT:/mi', $log, $m)) {
+                    return [true, count($m[0]), count($m[0]) . ' rule match(es)'];
+                }
+                return [false, 0, ''];
+            case 'trivy':
+                if (preg_match('/Total: ([0-9]+)/i', $log, $m) && (int)$m[1] > 0) {
+                    return [true, (int)$m[1], (int)$m[1] . ' vulnerabilities found'];
+                }
+                if (preg_match('/CRITICAL|HIGH/i', $log) && preg_match('/Vulnerability/i', $log)) {
+                    return [true, 1, 'High/Critical vulnerabilities found'];
+                }
+                return [false, 0, ''];
+            case 'osv':
+                if (preg_match('/([0-9]+) vulnerabilities? found/i', $log, $m) && (int)$m[1] > 0) {
+                    return [true, (int)$m[1], $m[0]];
+                }
+                if (preg_match('/Vulnerability found|OSV-Scanner found/i', $log)) {
+                    return [true, 1, 'Vulnerabilities found'];
+                }
+                return [false, 0, ''];
+            case 'lynis':
+                if (preg_match('/hardening_index=([0-9]+)/', $log, $m) && (int)$m[1] < 60) {
+                    return [true, 1, 'Lynis hardening index low: ' . (int)$m[1]];
+                }
+                if (preg_match('/Number of warnings|warnings found|Warnings found/i', $log)) {
+                    return [true, 1, 'Lynis audit warnings present'];
+                }
+                return [false, 0, ''];
+            case 'aide':
+                if (preg_match('/difference found|Difference found|changes detected|CHANGED/i', $log)) {
+                    return [true, 1, 'File integrity differences found'];
+                }
+                return [false, 0, ''];
+            case 'rkhunter':
+                if (preg_match('/Warning:/i', $log) && preg_match('/Possible|Infected|Suspect|Suspicious/i', $log)) {
+                    return [true, 1, 'rkhunter warnings found'];
+                }
+                return [false, 0, ''];
+            case 'chkrootkit':
+                if (preg_match('/INFECTED|Vulnerable/i', $log)) {
+                    return [true, 1, 'chkrootkit infections found'];
+                }
+                return [false, 0, ''];
+            case 'testssl':
+                if (preg_match('/Failed|Not offered|vulnerable/i', $log)) {
+                    return [true, 1, 'testssl findings — review log'];
+                }
+                return [false, 0, ''];
+            default:
+                return [false, 0, ''];
+        }
+    }
+
+    public function hasFindings()
+    {
+        foreach ($this->scanResults() as $r) if ($r['found']) return true;
+        return false;
+    }
+
+    /**
+     * Run a fix for a tool (e.g. quarantine for ClamAV/YARA, update for AIDE baseline).
+     * Returns success + a human message.
+     */
+    public function runFix($tool)
+    {
+        $t = $this->tools[$tool] ?? null;
+        if (!$t) return ['success' => false, 'error' => 'Unknown tool'];
+        $key = $tool;
+        switch ($key) {
+            case 'clamav':
+                $log = $this->logDir . '/clamscan.log';
+                $qdir = '/var/www/radiohosting/storage/security/quarantine';
+                if (!is_dir($qdir)) @mkdir($qdir, 0755, true);
+                // Quarantine any infected paths logged by clamscan
+                exec("sudo mkdir -p " . escapeshellarg($qdir) . "; grep -iE 'FOUND' " . escapeshellarg($log) . " | grep -oE '/[^ ]+' | while read -r f; do if [ -f \"\$f\" ]; then sudo mv \"\$f\" " . escapeshellarg($qdir) . "/ 2>/dev/null; fi; done", $out);
+                $this->logAction('fix', $key, 'Quarantined infected files to storage/security/quarantine');
+                return ['success' => true, 'message' => 'Quarantined infected files detected by ClamAV.'];
+            case 'yara':
+                $log = $this->logDir . '/yarascan.log';
+                $qdir = '/var/www/radiohosting/storage/security/quarantine';
+                if (!is_dir($qdir)) @mkdir($qdir, 0755, true);
+                exec("sudo mkdir -p " . escapeshellarg($qdir) . "; grep '^HIT:' " . escapeshellarg($log) . " | grep -oE '/[^ ]+' | while read -r f; do if [ -f \"\$f\" ]; then sudo mv \"\$f\" " . escapeshellarg($qdir) . "/ 2>/dev/null; fi; done", $out);
+                $this->logAction('fix', $key, 'Quarantined YARA rule matches');
+                return ['success' => true, 'message' => 'Quarantined files matching YARA rules.'];
+            case 'aide':
+                // Refresh AIDE baseline so clean state is re-recorded
+                exec('sudo aideinit --yes 2>/dev/null; if [ -f /var/lib/aide/aide.db.new.gz ]; then sudo mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz 2>/dev/null; fi', $out);
+                $this->logAction('fix', $key, 'AIDE baseline refreshed');
+                return ['success' => true, 'message' => 'AIDE integrity baseline refreshed.'];
+            case 'rkhunter':
+                exec('sudo rkhunter --propupd 2>/dev/null', $out);
+                $this->logAction('fix', $key, 'rkhunter properties updated');
+                return ['success' => true, 'message' => 'rkhunter baseline properties updated.'];
+            case 'chkrootkit':
+                // No auto-fix; purge typical artifacts not practical. Report only.
+                $this->logAction('fix', $key, 'chkrootkit — manual review required (log)', 'warn');
+                return ['success' => true, 'message' => 'chkrootkit requires manual review — see log.', 'warn' => true];
+            default:
+                $this->logAction('fix', $key, 'Fix requested — review log', 'warn');
+                return ['success' => true, 'message' => 'No automated fix for this tool — review its log.', 'warn' => true];
+        }
+    }
+
+    protected function logAction($action, $tool, $msg, $level = 'info')
+    {
+        $line = '[' . date('Y-m-d H:i:s') . "] [$level] $action:$tool — $msg\n";
+        @file_put_contents($this->logDir . '/security-center.log', $line, FILE_APPEND);
+    }
 }

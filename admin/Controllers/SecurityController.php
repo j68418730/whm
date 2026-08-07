@@ -43,6 +43,8 @@ class SecurityController extends Controller
         $tools = $this->tools->summary();
         $score = $this->tools->score();
         $history = $this->tools->lastScanHistory(20);
+        $results = $this->tools->scanResults();
+        $hasFindings = $this->tools->hasFindings();
 
         // Group for display
         $groups = [];
@@ -55,6 +57,8 @@ class SecurityController extends Controller
             'groups' => $groups,
             'score' => $score,
             'history' => $history,
+            'results' => $results,
+            'hasFindings' => $hasFindings,
         ]);
     }
 
@@ -80,6 +84,32 @@ class SecurityController extends Controller
         if ($t) {
             $this->tools->runScan($t);
             $_SESSION['success_message'] = ucfirst($tool) . ' scan started.';
+        }
+        $this->response->redirect('/admin/security');
+    }
+
+    // Run ALL scans in the background
+    public function scanAll()
+    {
+        $this->guard();
+        $res = $this->tools->runAllScans();
+        if ($res['success']) {
+            $_SESSION['success_message'] = 'All security scans started in the background. Check results shortly.';
+        } else {
+            $_SESSION['error_message'] = $res['error'] ?? 'Failed to start scans.';
+        }
+        $this->response->redirect('/admin/security');
+    }
+
+    // Run a fix for a tool that found issues
+    public function fix($tool)
+    {
+        $this->guard();
+        $res = $this->tools->runFix($tool);
+        if (!empty($res['warn'])) {
+            $_SESSION['warning_message'] = $res['message'];
+        } else {
+            $_SESSION['success_message'] = $res['message'];
         }
         $this->response->redirect('/admin/security');
     }
