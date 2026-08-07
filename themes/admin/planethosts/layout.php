@@ -24,6 +24,10 @@
 .sidebar .nav-link:hover{background:rgba(0,191,255,.04);color:var(--text,#e0e0e0)}
 .sidebar .nav-link.active{color:var(--primary,#008cff);background:rgba(0,140,255,.08);border-left-color:var(--primary,#008cff)}
 .sidebar .nav-link i.bi{font-size:13px;width:16px;text-align:center;flex-shrink:0}
+.sidebar .nav-child{display:flex;align-items:center;gap:8px;padding:4px 14px 4px 26px;color:var(--text_muted,#94a3b8);font-size:12px;text-decoration:none;transition:.1s;border-left:2px solid transparent}
+.sidebar .nav-child:hover{background:rgba(0,191,255,.04);color:var(--text,#e0e0e0)}
+.sidebar .nav-child.active{color:var(--primary,#008cff);border-left-color:var(--primary,#008cff)}
+.sidebar .nav-children .nav-icon{width:auto}
 /* ─── Main ─── */
 .main{flex:1;display:flex;flex-direction:column;min-width:0}
 .topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 24px;border-bottom:1px solid var(--border,rgba(0,191,255,.08));background:rgba(8,16,28,.4)}

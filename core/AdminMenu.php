@@ -25,7 +25,15 @@ if (!function_exists('admin_menu_sections')) {
             ['label' => 'Hosting', 'href' => '/admin/section/hosting', 'icon' => '🌐', 'match' => ['/admin/email', '/admin/mysql', '/admin/ftp', '/admin/ssl', '/admin/backup', '/admin/cron', '/admin/server', '/admin/ssl/universal']],
             ['label' => 'Billing', 'href' => '/admin/section/billing', 'icon' => '💳', 'match' => ['/admin/billing', '/admin/gateways', '/admin/paypal']],
             ['label' => 'Support', 'href' => '/admin/section/support', 'icon' => '🎫', 'match' => ['/admin/support', '/admin/livechat', '/admin/reviews']],
-            ['label' => 'Radio', 'href' => '/admin/section/radio', 'icon' => '📻', 'match' => ['/admin/radio_dashboard', '/admin/streams', '/admin/djs', '/admin/autodj', '/admin/radiosettings', '/admin/streaming', '/admin/port']],
+            ['label' => 'Radio', 'href' => '/admin/section/radio', 'icon' => '📻', 'match' => ['/admin/radio_dashboard', '/admin/streams', '/admin/djs', '/admin/autodj', '/admin/radiosettings', '/admin/streaming', '/admin/port'],
+                'children' => [
+                    ['label' => 'Radio Dashboard', 'href' => '/admin/radio_dashboard', 'match' => ['/admin/radio_dashboard']],
+                    ['label' => 'Streams', 'href' => '/admin/streams', 'match' => ['/admin/streams']],
+                    ['label' => 'DJ Accounts', 'href' => '/admin/djs', 'match' => ['/admin/djs']],
+                    ['label' => 'AutoDJ', 'href' => '/admin/autodj', 'match' => ['/admin/autodj']],
+                    ['label' => 'Widgets', 'href' => '/admin/radio/widgets', 'match' => ['/admin/radio/widgets']],
+                    ['label' => 'Radio Settings', 'href' => '/admin/radiosettings', 'match' => ['/admin/radiosettings']],
+                ]],
             ['label' => 'Games', 'href' => '/admin/section/games', 'icon' => '🎮', 'match' => ['/admin/games']],
             ['label' => 'Builder', 'href' => '/admin/section/builder', 'icon' => '🏗️', 'match' => ['/admin/websitebuilder']],
             ['label' => 'Domains', 'href' => '/admin/section/domains', 'icon' => '🌍', 'match' => ['/admin/domains', '/admin/dns', '/admin/ip']],
@@ -45,10 +53,25 @@ if (!function_exists('render_admin_menu_sections')) {
             foreach ($item['match'] ?? [] as $m) {
                 if ($m && str_starts_with($currentUrl, $m)) { $isActive = true; break; }
             }
+            $hasChildren = !empty($item['children']);
+            $childHtml = '';
+            if ($hasChildren) {
+                foreach ($item['children'] as $child) {
+                    $cActive = false;
+                    foreach ($child['match'] ?? [] as $cm) {
+                        if ($cm && str_starts_with($currentUrl, $cm)) { $cActive = true; $isActive = true; break; }
+                    }
+                    $childHtml .= '<a href="' . htmlspecialchars($child['href']) . '" class="nav-child ' . ($cActive ? 'active' : '') . '">'
+                               . '<span class="nav-icon">·</span> '
+                               . '<span class="nav-label">' . htmlspecialchars($child['label']) . '</span></a>';
+                }
+            }
             $html .= '<a href="' . htmlspecialchars($item['href']) . '" class="nav-link ' . ($isActive ? 'active' : '') . '">'
                    . '<span class="nav-icon">' . $item['icon'] . '</span> '
-                   . '<span class="nav-label">' . htmlspecialchars($item['label']) . '</span>'
-                   . '</a>';
+                   . '<span class="nav-label">' . htmlspecialchars($item['label']) . '</span></a>';
+            if ($childHtml) {
+                $html .= '<div class="nav-children" style="' . ($isActive ? '' : 'display:none') . '">' . $childHtml . '</div>';
+            }
         }
         return $html;
     }
