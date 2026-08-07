@@ -121,18 +121,15 @@ $sigAccess = [
 ];
 
 // Error log signatures: '[timestamp] [php:error] ... message'
-// NOTE: generic PDOExceptions are NOT attacks (they're app bugs). Only flag
-// actual injection/exploit indicators embedded in error output.
+// NOTE: We deliberately do NOT detect SQLi from PHP error logs — legitimate
+// app bugs always contain SQL keywords ("Unknown column X in SELECT"), which
+// produces false positives. Real injection attempts appear in the ACCESS log
+// (the raw request URL), which we detect above. Error logs only flag
+// unambiguous code-execution indicators.
 $sigError = [
-    'sqli' => [
-        '/sql.*injection/i',
-        '/you have an error in your sql syntax.*near.*(union|select|drop|insert|update|delete)/i',
-        '/Unknown column.*(union|select)/i',
-    ],
     'code_exec' => [
         '/Call to undefined function (system|shell_exec|passthru|exec)/i',
         '/preg_replace.*\s*\/\s*[a-z]*e\b/i',
-        '/assert\s*\(/i',
         '/create_function/i',
     ],
 ];
