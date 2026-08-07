@@ -106,24 +106,35 @@ $sigAccess = [
         '/<script>/i', '/%3cscript%3e/i', '/<img[^>]+onerror=/i', '/javascript:/i',
         '/onload\s*=/i', '/<svg[^>]+onclick=/i',
     ],
-    // Known scanners / bots
+    // Known scanners / bots (high-confidence tool UAs + obvious probe paths)
     'scanner' => [
         '/acunetix/i', '/nikto/i', '/sqlmap/i', '/wpscan/i', '/nessus/i', '/burp/i',
-        '/masscan/i', '/zmap/i', '/netsparker/i', '/apachebench/i', '/Hydra/i',
-        '/DirBuster/i', '/wfuzz/i', '/Go-http-client/i', '/python-requests/i',
-        '/nmap/i', '/gobuster/i', '/adminer/i', '/\.git\//i', '/\.env/i',
-        '/wp-login\.php/i', '/xmlrpc\.php/i', '/phpmyadmin/i',
+        '/masscan/i', '/zmap/i', '/netsparker/i', '/apachebench/i', '/hydra/i',
+        '/dirbuster/i', '/wfuzz/i', '/nmap/i', '/gobuster/i', '/c99shell/i',
+        '/\.git\/config/i', '/\.env/i', '/wp-config\.php/i',
     ],
-    // Auth abuse probes
+    // Auth abuse probes (legit /api/login for DJ/desktop is EXCLUDED)
     'auth_abuse' => [
-        '/action=login/i', '/login\.php/i', '/\.htpasswd/i', '/\.htaccess/i',
+        '/wp-login\.php/i', '/\.htpasswd/i', '/\.htaccess/i', '/adminer/i',
+        '/cgi-bin\//i', '/\.\.\/\.\.\/.*(etc|shadow)/i',
     ],
 ];
 
 // Error log signatures: '[timestamp] [php:error] ... message'
+// NOTE: generic PDOExceptions are NOT attacks (they're app bugs). Only flag
+// actual injection/exploit indicators embedded in error output.
 $sigError = [
-    'sqli' => ['/SQL syntax/i', '/Unknown column/i', '/mysql_fetch/i', '/Uncaught.*PDOException/i'],
-    'code_exec' => ['/eval\(/i', '/shell_exec/i', '/system\(/i', '/passthru/i', '/base64_decode/i', '/assert\(/i'],
+    'sqli' => [
+        '/sql.*injection/i',
+        '/you have an error in your sql syntax.*near.*(union|select|drop|insert|update|delete)/i',
+        '/Unknown column.*(union|select)/i',
+    ],
+    'code_exec' => [
+        '/Call to undefined function (system|shell_exec|passthru|exec)/i',
+        '/preg_replace.*\s*\/\s*[a-z]*e\b/i',
+        '/assert\s*\(/i',
+        '/create_function/i',
+    ],
 ];
 
 // Severity by type
