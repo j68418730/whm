@@ -69,7 +69,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && preg_match('#^/connector/station/([^
         WHERE r.stream_id = ? AND r.status = 'pending' ORDER BY r.created_at ASC");
     $rq->execute([$stationId]);
     $requests = $rq->fetchAll(PDO::FETCH_ASSOC);
-    echo json_encode(['success' => true, 'data' => $requests]);
+    $brand = $pdo->prepare("SELECT brand_logo, brand_banner, brand_default_art, brand_primary_color, brand_accent_color, brand_slogan FROM radio_branding WHERE station_id = ?");
+    $brand->execute([$stationId]);
+    $branding = $brand->fetch(PDO::FETCH_ASSOC) ?: [];
+    $stName = $pdo->prepare("SELECT name, logo_url FROM streaming_stations WHERE id = ?");
+    $stName->execute([$stationId]);
+    $stInfo = $stName->fetch(PDO::FETCH_ASSOC) ?: [];
+    $base = "https://planet-hosts.com";
+    $logo = !empty($branding['brand_logo']) ? $base . $branding['brand_logo'] : (!empty($stInfo['logo_url']) ? $base . $stInfo['logo_url'] : '');
+    echo json_encode([
+        'success' => true,
+        'data' => $requests,
+        'station' => [
+            'id' => $stationId,
+            'name' => $stInfo['name'] ?? "Station #{$stationId}",
+            'slug' => strtolower(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($stInfo['name'] ?? "Station #{$stationId}")), '-')) ?: (string)$stationId,
+            'logo' => $logo,
+            'banner' => !empty($branding['brand_banner']) ? $base . $branding['brand_banner'] : '',
+            'default_art' => !empty($branding['brand_default_art']) ? $base . $branding['brand_default_art'] : '',
+            'primary_color' => $branding['brand_primary_color'] ?? '#0A84FF',
+            'accent_color' => $branding['brand_accent_color'] ?? '#00C853',
+            'slogan' => $branding['brand_slogan'] ?? '',
+        ],
+    ]);
     exit;
 }
 
@@ -223,10 +245,38 @@ if (preg_match('#^/connector/station/([^/]+)/requests$#', $uriPath, $m)) {
     $method = $_SERVER['REQUEST_METHOD'];
     
     if ($method === 'GET') {
-        $rq = $pdo->prepare("SELECT id, guest_name, artist, title, message, status, created_at FROM radio_requests WHERE stream_id = ? AND status = 'pending' ORDER BY created_at ASC");
+        $rq = $pdo->prepare("SELECT r.id, r.guest_name, r.artist, r.title, r.message, r.status, r.created_at,
+            ss.name AS station_name, ss.engine AS station_engine
+            FROM radio_requests r JOIN streaming_stations ss ON ss.id = r.stream_id
+            WHERE r.stream_id = ? AND r.status = 'pending' ORDER BY r.created_at ASC");
         $rq->execute([$stationId]);
         $requests = $rq->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode(['success' => true, 'data' => $requests]);
+        // Attach the station branding so the desktop app can show each station's
+        // requests under the correct logo/colors.
+        $brand = $pdo->prepare("SELECT brand_logo, brand_banner, brand_default_art, brand_primary_color, brand_accent_color, brand_slogan
+            FROM radio_branding WHERE station_id = ?");
+        $brand->execute([$stationId]);
+        $branding = $brand->fetch(PDO::FETCH_ASSOC) ?: [];
+        $stName = $pdo->prepare("SELECT name, logo_url FROM streaming_stations WHERE id = ?");
+        $stName->execute([$stationId]);
+        $stInfo = $stName->fetch(PDO::FETCH_ASSOC) ?: [];
+        $base = "https://planet-hosts.com";
+        $logo = !empty($branding['brand_logo']) ? $base . $branding['brand_logo'] : (!empty($stInfo['logo_url']) ? $base . $stInfo['logo_url'] : '');
+        echo json_encode([
+            'success' => true,
+            'data' => $requests,
+            'station' => [
+                'id' => $stationId,
+                'name' => $stInfo['name'] ?? "Station #{$stationId}",
+                'slug' => strtolower(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($stInfo['name'] ?? "Station #{$stationId}")), '-')) ?: (string)$stationId,
+                'logo' => $logo,
+                'banner' => !empty($branding['brand_banner']) ? $base . $branding['brand_banner'] : '',
+                'default_art' => !empty($branding['brand_default_art']) ? $base . $branding['brand_default_art'] : '',
+                'primary_color' => $branding['brand_primary_color'] ?? '#0A84FF',
+                'accent_color' => $branding['brand_accent_color'] ?? '#00C853',
+                'slogan' => $branding['brand_slogan'] ?? '',
+            ],
+        ]);
         exit;
     }
     
