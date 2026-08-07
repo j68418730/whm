@@ -604,12 +604,12 @@ if (!empty($allStations) && count($allStations) > 1): ?>
         // Get all streams for this user (owner mode) or DJ (non-owner)
         if ($isOwner) {
             $userId = $hostingId ?? 0;
-            $stationQuery = $pdo->prepare("SELECT id, name, engine, port, status FROM streaming_stations WHERE user_id=? ORDER BY name");
+            $stationQuery = $pdo->prepare("SELECT id, name, engine, port, dj_port, mount_point, bitrate, status FROM streaming_stations WHERE user_id=? ORDER BY name");
             $stationQuery->execute([$userId]);
         } else {
             // DJ login: only streams assigned to this DJ (primary + radio_dj_streams junction)
             $djId = (int)($_SESSION['dj_user']['id'] ?? 0);
-            $stationQuery = $pdo->prepare("SELECT DISTINCT ss.id, ss.name, ss.engine, ss.port, ss.status
+            $stationQuery = $pdo->prepare("SELECT DISTINCT ss.id, ss.name, ss.engine, ss.port, ss.dj_port, ss.mount_point, ss.bitrate, ss.status
                 FROM streaming_stations ss
                 LEFT JOIN radio_dj_streams rjds ON rjds.stream_id = ss.id
                 WHERE ss.id = (SELECT stream_id FROM radio_djs WHERE id = ?) OR rjds.dj_id = ?
@@ -645,12 +645,12 @@ if (!empty($allStations) && count($allStations) > 1): ?>
     if ($isOwner || $userId > 0) {
         if ($isOwner) {
             $userId = $hostingId ?? 0;
-            $stationQuery = $pdo->prepare("SELECT id, name, engine, port, status FROM streaming_stations WHERE user_id=? ORDER BY name");
+            $stationQuery = $pdo->prepare("SELECT id, name, engine, port, dj_port, mount_point, bitrate, status FROM streaming_stations WHERE user_id=? ORDER BY name");
             $stationQuery->execute([$userId]);
         } else {
             // DJ login: only streams assigned to this DJ (primary + radio_dj_streams junction)
             $djId = (int)($_SESSION['dj_user']['id'] ?? 0);
-            $stationQuery = $pdo->prepare("SELECT DISTINCT ss.id, ss.name, ss.engine, ss.port, ss.status
+            $stationQuery = $pdo->prepare("SELECT DISTINCT ss.id, ss.name, ss.engine, ss.port, ss.dj_port, ss.mount_point, ss.bitrate, ss.status
                 FROM streaming_stations ss
                 LEFT JOIN radio_dj_streams rjds ON rjds.stream_id = ss.id
                 WHERE ss.id = (SELECT stream_id FROM radio_djs WHERE id = ?) OR rjds.dj_id = ?
@@ -701,6 +701,12 @@ if (!empty($allStations) && count($allStations) > 1): ?>
             echo "<div style=\"background:rgba(0,0,0,.3);border-radius:10px;padding:14px;font-family:monospace;font-size:12px\">\n";
             echo "<div style=\"display:flex;justify-content:space-between;align-items:center;padding:4px 0\"><span style=\"color:#64748b\">Server:</span><span style=\"color:#4ade80\" id=\"bi-server-{$stationId}\">{$djHost}</span><button class=\"copy-btn\" onclick=\"cf('bi-server-{$stationId}')\">Copy</button></div>\n";
             echo "<div style=\"display:flex;justify-content:space-between;align-items:center;padding:4px 0\"><span style=\"color:#64748b\">DJ Port:</span><span style=\"color:#38bdf8\" id=\"bi-port-{$stationId}\">{$sPort}</span><button class=\"copy-btn\" onclick=\"cf('bi-port-{$stationId}')\">Copy</button></div>\n";
+            // Mount point is required for Icecast and SHOUTcast v2 (not used by SHOUTcast v1)
+            $mountPoint = $station->mount_point ?? '';
+            if ($mountPoint !== '') {
+                if (!str_starts_with($mountPoint, '/')) $mountPoint = '/' . $mountPoint;
+                echo "<div style=\"display:flex;justify-content:space-between;align-items:center;padding:4px 0\"><span style=\"color:#64748b\">Mount:</span><span style=\"color:#38bdf8\" id=\"bi-mount-{$stationId}\">{$mountPoint}</span><button class=\"copy-btn\" onclick=\"cf('bi-mount-{$stationId}')\">Copy</button></div>\n";
+            }
             echo "<div style=\"display:flex;justify-content:space-between;align-items:center;padding:4px 0\"><span style=\"color:#64748b\">User:</span><span style=\"color:#38bdf8\">{$djUserE}</span></div>\n";
             echo "<div style=\"display:flex;justify-content:space-between;align-items:center;padding:4px 0\"><span style=\"color:#64748b\">Password:</span><span style=\"color:#facc15\" id=\"bi-pass-{$stationId}\">" . ($isOwner ? htmlspecialchars($sPass) : '••••••••') . "</span><button class=\"copy-btn\" onclick=\"tp2({$stationId})\">" . ($isOwner ? 'Hide' : 'Show') . "</button></div>\n";
             echo "<div style=\"display:flex;justify-content:space-between;align-items:center;padding:4px 0\"><span style=\"color:#64748b\">Format:</span><span style=\"color:#94a3b8\">MP3 · " . ((int)($station->bitrate ?? 128)) . " kbps</span></div>\n";
@@ -711,7 +717,7 @@ if (!empty($allStations) && count($allStations) > 1): ?>
             if (!empty($_SESSION['dj_user']['on_leave'])) {
                 echo "<div style=\"font-size:12px;color:#facc15;background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.2);border-radius:8px;padding:10px;width:100%\">🌴 On Leave — streaming &amp; DJ controls are disabled. You can still manage your profile.</div>\n";
             } else {
-                echo "<button class=\"btn btn-primary btn-sm\" onclick=\"ca2({$stationId},'{$djHost}','{$sPort}','{$djUserE}','" . htmlspecialchars($pw) . "')\">📋 Copy All</button>\n";
+                echo "<button class=\"btn btn-primary btn-sm\" onclick=\"ca2({$stationId},'{$djHost}','{$sPort}','{$djUserE}','" . htmlspecialchars($pw) . "','" . addslashes($mountPoint) . "')\">📋 Copy All</button>\n";
                 echo "<button class=\"btn btn-danger btn-sm\" onclick=\"window.location.href='/dj_panel.php?action=takeover'\">🎤 Stop AutoDJ</button>\n";
             }
             echo "</div>\n";
@@ -740,7 +746,7 @@ $hSt = $pdo->prepare("SELECT user_id FROM streaming_stations WHERE id=?");
 $hSt->execute([$streamId]);
 $hRow = $hSt->fetch(PDO::FETCH_OBJ);
 $hostingId = $hRow->user_id ?? 0;
-$userStreams = $pdo->prepare("SELECT id, name, engine, port, status FROM streaming_stations WHERE user_id=? ORDER BY id");
+$userStreams = $pdo->prepare("SELECT id, name, engine, port, dj_port, mount_point, bitrate, status FROM streaming_stations WHERE user_id=? ORDER BY id");
 $userStreams->execute([$hostingId]);
 $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 ?>
@@ -951,7 +957,7 @@ function ca(){navigator.clipboard.writeText('Server: <?php echo addslashes($djHo
 function sc2(s){var u=document.getElementById('sam-user-'+s).textContent,p=document.getElementById('sam-pass-value-'+s).textContent;navigator.clipboard.writeText(u+':'+p);event.target.textContent='Copied!';setTimeout(function(){event.target.textContent='Copy'},1500);}
 function stp2(s){var p=document.getElementById('sam-pass-display-'+s),v=document.getElementById('sam-pass-value-'+s),b=document.getElementById('sam-toggle-'+s);if(p.style.display==='none'){p.style.display='';v.style.display='none';b.textContent='Show'}else{p.style.display='none';v.style.display='';b.textContent='Hide'}}
 function tp2(s){var p=document.getElementById('bi-pass-'+s);if(p.textContent=='••••••••'){p.textContent='<?php echo addslashes($djPass); ?>';event.target.textContent='Hide'}else{p.textContent='••••••••';event.target.textContent='Show'}}
-function ca2(s,h,pt,u,pw){navigator.clipboard.writeText('Server: '+h+'\nDJ Port: '+pt+'\nUsername: '+u+'\nPassword: '+pw+'\nFormat: MP3 128kbps');event.target.textContent='Copied!';setTimeout(function(){event.target.textContent='📋 Copy All'},2000);}
+function ca2(s,h,pt,u,pw,m){m=m||'';navigator.clipboard.writeText('Server: '+h+'\nDJ Port: '+pt+(m?'\nMount: '+m:'')+'\nUsername: '+u+'\nPassword: '+pw+'\nFormat: MP3 128kbps');event.target.textContent='Copied!';setTimeout(function(){event.target.textContent='📋 Copy All'},2000);}
 </script>
 </div>
 </div>
