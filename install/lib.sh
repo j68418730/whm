@@ -6,6 +6,10 @@
 # ─── Logging ───
 SC_LOG="/var/log/planethosts/security-center.log"
 mkdir -p /var/log/planethosts 2>/dev/null || true
+# scan-all.sh runs as www-data and appends to these logs — make the dir www-data-writable
+# (root can still write anything). Applied on every install so fresh servers work.
+chown www-data:www-data /var/log/planethosts 2>/dev/null || true
+chmod 2755 /var/log/planethosts 2>/dev/null || true
 sc_log() {
     local module="$1" action="$2" status="$3" msg="$4"
     local ts=$(date '+%Y-%m-%d %H:%M:%S')

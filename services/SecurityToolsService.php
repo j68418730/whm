@@ -267,25 +267,28 @@ class SecurityToolsService
     /**
      * Per-tool log parsing to decide whether a scan surfaced something.
      */
-    protected function detectFindings($key, $log)
-    {
+    protected function detectFindings($key, $log)    {
         switch ($key) {
             case 'clamav':
-                if (preg_match_all('/FOUND|Infected files:\s*([0-9]+)/i', $log, $m)) {
+                $recent = $this->lastScanBlock($log, 500);
+                if (preg_match_all('/FOUND|Infected files:\s*([0-9]+)/i', $recent, $m)) {
                     $n = (int)end($m[1]) ?: count($m[0]);
                     return [$n > 0, $n, $n . ' infected file(s) detected'];
                 }
                 return [false, 0, ''];
             case 'yara':
-                if (preg_match_all('/^HIT:/mi', $log, $m)) {
+                $recent = $this->lastScanBlock($log, 500);
+                if (preg_match_all('/^HIT:/mi', $recent, $m)) {
                     return [true, count($m[0]), count($m[0]) . ' rule match(es)'];
                 }
                 return [false, 0, ''];
             case 'trivy':
-                if (preg_match('/Total: ([0-9]+)/i', $log, $m) && (int)$m[1] > 0) {
+                // Only consider the most recent run (last scan block) to avoid stale counts.
+                $recent = $this->lastScanBlock($log, 800);
+                if (preg_match('/Total: ([0-9]+)/i', $recent, $m) && (int)$m[1] > 0) {
                     return [true, (int)$m[1], (int)$m[1] . ' vulnerabilities found'];
                 }
-                if (preg_match('/CRITICAL|HIGH/i', $log) && preg_match('/Vulnerability/i', $log)) {
+                if (preg_match('/CRITICAL|HIGH/i', $recent) && preg_match('/Vulnerability/i', $recent)) {
                     return [true, 1, 'High/Critical vulnerabilities found'];
                 }
                 return [false, 0, ''];
@@ -325,13 +328,37 @@ class SecurityToolsService
                 }
                 return [false, 0, ''];
             case 'testssl':
-                if (preg_match('/Failed|Not offered|vulnerable/i', $log)) {
+                // "not vulnerable (OK)" is GOOD — exclude it. Flag only genuine failures.
+                $recent = $this->lastScanBlock($log, 200);
+                $clean = preg_replace('/not vulnerable|not offered \(|OK\)/i', '', $recent);
+                if (preg_match('/Failed|Not offered|vulnerable|insecure/i', $clean)) {
                     return [true, 1, 'testssl findings — review log'];
                 }
                 return [false, 0, ''];
             default:
                 return [false, 0, ''];
         }
+    }
+
+    /**
+     * Return the tail of a scan log (last run), preferring content after the most
+     * recent ph-* "scan/audit start" marker when present. Falls back to raw tail.
+     */
+    protected function lastScanBlock($log, $tailLines = 500)
+    {
+        if (!is_file($log)) return '';
+        $raw = file_get_contents($log) ?: '';
+        $lines = explode("\n", $raw);
+        $n = count($lines);
+        $start = max(0, $n - $tailLines);
+        // Find the last "scan start"/"audit start"/"check start" marker in the tail window
+        for ($i = $n - 1; $i >= $start && $i >= 0; $i--) {
+            if (preg_match('/scan start|audit start|check start|\[run\]/i', $lines[$i])) {
+                $start = $i;
+                break;
+            }
+        }
+        return implode("\n", array_slice($lines, $start));
     }
 
     public function hasFindings()
