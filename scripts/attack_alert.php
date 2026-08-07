@@ -145,12 +145,14 @@ $hosts = []; // type => ip => details (aggregate this run)
 function detectAccess(string $line, array $sigs): array {
     if (!preg_match('/^(\S+)\s+.*?"([^"]*)"\s+\d+/i', $line, $m)) return [];
     $ip = $m[1]; $req = $m[2];
+    // Decode URL-encoding so "UNION%20SELECT" becomes "UNION SELECT" for matching
+    $reqDecoded = urldecode($req);
     $ua = '';
     if (preg_match('/"([^"]*)"\s*$/', $line, $um)) $ua = $um[1];
     $found = [];
     foreach ($sigs as $type => $patterns) {
         foreach ($patterns as $p) {
-            if (preg_match($p, $req)) { $found[] = [$type, $req]; break; }
+            if (preg_match($p, $reqDecoded)) { $found[] = [$type, $req]; break; }
         }
     }
     return $found ? [$ip, $ua, $found] : [];
