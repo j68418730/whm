@@ -137,7 +137,9 @@ class DomainsController extends Controller
                 $docRoot = $home . '/public_html/' . $subdomain;
                 @exec("sudo mkdir -p {$docRoot} && sudo chown -R {$this->hostingUser->username}:{$this->hostingUser->username} {$docRoot} 2>/dev/null");
                 $vhostCfg = "<VirtualHost *:80>\n    ServerName {$full}\n    DocumentRoot {$docRoot}\n    <Directory {$docRoot}>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n    ErrorLog /var/log/apache2/{$full}_error.log\n    CustomLog /var/log/apache2/{$full}_access.log combined\n</VirtualHost>\n";
-                $tmpFile = '/tmp/vhost_' . $full . '.conf';
+                $tmpDir = '/var/www/radiohosting/storage/dns';
+                if (!is_dir($tmpDir)) @mkdir($tmpDir, 0775, true);
+                $tmpFile = $tmpDir . '/vhost_' . $full . '.conf';
                 file_put_contents($tmpFile, $vhostCfg);
                 @exec("sudo cp {$tmpFile} /etc/apache2/sites-available/{$full}.conf && sudo a2ensite {$full}.conf 2>/dev/null");
                 @unlink($tmpFile);
@@ -147,7 +149,7 @@ class DomainsController extends Controller
                 $keyFile = '/etc/letsencrypt/live/' . $domain . '/privkey.pem';
                 if (file_exists($certFile)) {
                     $sslCfg = "<IfModule mod_ssl.c>\n<VirtualHost *:443>\n    ServerName {$full}\n    DocumentRoot {$docRoot}\n    <Directory {$docRoot}>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n    ErrorLog /var/log/apache2/{$full}_error.log\n    CustomLog /var/log/apache2/{$full}_access.log combined\n    SSLEngine on\n    SSLCertificateFile {$certFile}\n    SSLCertificateKeyFile {$keyFile}\n</VirtualHost>\n</IfModule>\n";
-                    $sslFile = '/tmp/vhost_ssl_' . $full . '.conf';
+                    $sslFile = $tmpDir . '/vhost_ssl_' . $full . '.conf';
                     file_put_contents($sslFile, $sslCfg);
                     @exec("sudo cp {$sslFile} /etc/apache2/sites-available/{$full}-le-ssl.conf && sudo a2ensite {$full}-le-ssl.conf 2>/dev/null");
                     @unlink($sslFile);
