@@ -36,10 +36,6 @@ input,select{padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,25
 </div>
 <div id="ftp-fields" style="display:none">
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
-<div style="flex:1;min-width:150px">
-<label style="font-size:11px;color:#64748b;display:block;margin-bottom:2px">Directory</label>
-<input name="ftp_dir" placeholder="public_html/blog" value="public_html">
-</div>
 <div style="flex:1;min-width:120px">
 <label style="font-size:11px;color:#64748b;display:block;margin-bottom:2px">FTP Username</label>
 <input name="ftp_username" placeholder="blog">
@@ -49,6 +45,7 @@ input,select{padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,25
 <input name="ftp_password" type="password" placeholder="Min 6 chars">
 </div>
 </div>
+<p style="font-size:10px;color:#64748b;margin:4px 0 0">The FTP user is jailed to the subdomain folder only — it cannot access other folders.</p>
 </div>
 <button type="submit" class="btn">Create Subdomain</button>
 </form>

@@ -142,15 +142,15 @@ class DomainsController extends Controller
                 if (!empty($_POST['create_ftp'])) {
                     $ftpUser = trim($_POST['ftp_username'] ?: $subdomain);
                     $ftpPass = $_POST['ftp_password'] ?? bin2hex(random_bytes(6));
-                    $ftpDir = trim($_POST['ftp_dir'] ?: 'public_html/' . $subdomain);
+                    // Jail FTP to the subdomain folder itself (never expose public_html or allow escaping it)
+                    $ftpDir = 'public_html/' . $subdomain;
                     $reserved = ['admin','root','administrator','superuser','system','sys','www','web','test','user','guest','demo','ftp','mail','mysql','backup','support','info','hostmaster','postmaster','webmaster','nobody','daemon','bin'];
                     if (in_array(strtolower($ftpUser), $reserved)) { $_SESSION['error'] = "Username '{$ftpUser}' is reserved."; $this->response->redirect('/user/subdomains'); exit; }
                     if (!preg_match('/^[a-z][a-z0-9_]+$/', $ftpUser)) { $_SESSION['error'] = 'Invalid FTP username (letters, numbers, underscore only).'; $this->response->redirect('/user/subdomains'); exit; }
                     if (strlen($ftpPass) < 6) { $_SESSION['error'] = 'FTP password must be at least 6 characters.'; $this->response->redirect('/user/subdomains'); exit; }
                     $fullUser = $ownerUser . '_' . $ftpUser;
                     if ($this->db->table('ftp_accounts')->where('username', $fullUser)->first()) { $_SESSION['error'] = "FTP user '{$fullUser}' already exists."; $this->response->redirect('/user/subdomains'); exit; }
-                    if (str_contains($ftpDir, '..')) { $_SESSION['error'] = 'Invalid directory path.'; $this->response->redirect('/user/subdomains'); exit; }
-                    $absDir = $home . '/' . ltrim($ftpDir, '/');
+                    $absDir = $home . '/' . $ftpDir;
                     @exec("sudo mkdir -p {$absDir} && sudo chown -R {$fullUser}:{$fullUser} {$absDir} 2>/dev/null");
                     try {
                         $this->db->table('ftp_accounts')->insertGetId([
@@ -158,8 +158,10 @@ class DomainsController extends Controller
                             'username' => $fullUser, 'password_hash' => password_hash($ftpPass, PASSWORD_DEFAULT),
                             'directory' => $ftpDir, 'permissions' => 'read_write',
                         ]);
-                        @exec("sudo useradd -m -d {$home} -s /bin/bash {$fullUser} 2>/dev/null");
+                        @exec("sudo useradd -m -d {$absDir} -s /bin/bash {$fullUser} 2>/dev/null");
                         @exec("echo '{$ftpPass}' | sudo passwd --stdin {$fullUser} 2>/dev/null");
+                        // Jail this FTP user to the subdomain folder via vsftpd per-user config
+                        @exec("sudo mkdir -p /etc/vsftpd_user_conf && echo 'local_root={$absDir}' | sudo tee /etc/vsftpd_user_conf/{$fullUser} >/dev/null");
                         $msg .= " FTP account '{$fullUser}' created (pass: {$ftpPass}).";
                     } catch (\Exception $e) { $msg .= ' FTP creation failed.'; }
                 }
