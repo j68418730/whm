@@ -130,6 +130,8 @@ class DomainsController extends Controller
             if ($zone) {
                 $recordId = $this->dns->addRecord($zone->id, $recordName, 'A', $ip, 300);
                 if ($recordId) $this->db->table('dns_records')->where('id', $recordId)->update(['is_user_subdomain' => 1]);
+                // Ensure the wildcard A record exists on the parent zone so all subdomains resolve
+                $this->dns->addRecord($zone->id, '*', 'A', $ip, 300);
                 $msg = "Subdomain {$full} created pointing to {$ip}.";
                 $domainOwner = $this->db->table('hosting_users')->where('domain', $domain)->first();
                 $ownerUser = $domainOwner ? $domainOwner->username : $this->hostingUser->username;

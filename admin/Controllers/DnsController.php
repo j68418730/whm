@@ -40,8 +40,9 @@ class DnsController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $domain = $this->request->post('domain', '');
         if ($domain) {
-            $this->dns->createZone($domain);
-            $_SESSION['success_message'] = "Zone '{$domain}' created.";
+            // provisionDomain creates the zone + SOA/NS/A/www/wildcard/mail records
+            $this->dns->provisionDomain($domain);
+            $_SESSION['success_message'] = "Zone '{$domain}' created (incl. wildcard *." . $domain . ").";
         }
         $this->response->redirect('/admin/dns');
         exit;
