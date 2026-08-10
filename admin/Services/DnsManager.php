@@ -27,6 +27,12 @@ class DnsManager
 
     public function addRecord($zoneId, $name, $type, $value, $ttl = 14400, $priority = null)
     {
+        // Skip duplicates (same zone/name/type/value)
+        $dup = $this->db->table('dns_records')
+            ->where('zone_id', $zoneId)->where('name', $name)
+            ->where('type', strtoupper($type))->where('value', $value)->first();
+        if ($dup) return (int)$dup->id;
+
         $id = $this->db->table('dns_records')->insertGetId([
             'zone_id' => $zoneId, 'name' => $name, 'type' => strtoupper($type),
             'value' => $value, 'ttl' => $ttl, 'priority' => $priority,
@@ -132,6 +138,8 @@ class DnsManager
         // 4. A Records
         $this->addRecord($zoneId, '@', 'A', $ip, 14400);
         $this->addRecord($zoneId, 'www', 'A', $ip, 14400);
+        // Wildcard: all subdomains resolve to the server automatically
+        $this->addRecord($zoneId, '*', 'A', $ip, 14400);
 
         // 5. Mail Records
         $this->addRecord($zoneId, 'mail', 'A', $ip, 14400);
