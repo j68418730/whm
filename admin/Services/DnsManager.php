@@ -83,8 +83,13 @@ class DnsManager
             }
         }
         $content = implode("\n", $lines) . "\n";
-        file_put_contents('/tmp/zone_' . $domain, $content);
-        @exec("sudo cp /tmp/zone_{$domain} {$file} && sudo chown bind:bind {$file} && sudo chmod 644 {$file} 2>/dev/null");
+        // Use a shared, www-data-writable path (NOT /tmp — Apache PrivateTmp means
+        // /tmp writes are in a private namespace root's sudo can't reach).
+        $tmpDir = '/var/www/radiohosting/storage/dns';
+        if (!is_dir($tmpDir)) @mkdir($tmpDir, 0775, true);
+        $tmpFile = $tmpDir . '/zone_' . $domain;
+        file_put_contents($tmpFile, $content);
+        @exec("sudo cp {$tmpFile} {$file} && sudo chown bind:bind {$file} && sudo chmod 644 {$file} 2>/dev/null");
         $this->reloadDns();
     }
 
