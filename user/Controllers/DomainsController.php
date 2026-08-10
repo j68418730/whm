@@ -111,9 +111,24 @@ class DomainsController extends Controller
         if ($subdomain && $domain) {
             $full = $subdomain . '.' . $domain;
             $ip = $_SERVER['SERVER_ADDR'] ?? 'planet-hosts.com';
-            $zone = $this->db->table('dns_zones')->where('domain', $domain)->first();
+            // Resolve the DNS zone: try exact domain first, then strip subdomain prefixes
+            // until we find a managed zone (e.g. test.planet-hosts.com -> planet-hosts.com).
+            $zone = null;
+            $recordName = $subdomain;
+            $zoneDomain = $domain;
+            $parts = explode('.', $domain);
+            while (count($parts) > 1) {
+                $cand = implode('.', $parts);
+                $z = $this->db->table('dns_zones')->where('domain', $cand)->first();
+                if ($z) { $zone = $z; break; }
+                array_shift($parts);
+            }
+            if ($zone && $zone->domain !== $domain) {
+                // We found a parent zone; the record name must be the full sub-subdomain path
+                $recordName = str_replace('.' . $zone->domain, '', $full);
+            }
             if ($zone) {
-                $recordId = $this->dns->addRecord($zone->id, $subdomain, 'A', $ip, 300);
+                $recordId = $this->dns->addRecord($zone->id, $recordName, 'A', $ip, 300);
                 if ($recordId) $this->db->table('dns_records')->where('id', $recordId)->update(['is_user_subdomain' => 1]);
                 $msg = "Subdomain {$full} created pointing to {$ip}.";
                 $domainOwner = $this->db->table('hosting_users')->where('domain', $domain)->first();
