@@ -146,9 +146,23 @@ class DomainsController extends Controller
                 @exec("sudo cp {$tmpFile} /etc/apache2/sites-available/{$full}.conf && sudo a2ensite {$full}.conf 2>/dev/null");
                 @unlink($tmpFile);
 
-                // Create SSL vhost using existing cert
-                $certFile = '/etc/letsencrypt/live/' . $domain . '/fullchain.pem';
-                $keyFile = '/etc/letsencrypt/live/' . $domain . '/privkey.pem';
+                // Auto-issue SSL for the subdomain (webroot challenge) then create SSL vhost
+                $certDir = '/etc/letsencrypt/live/' . $full;
+                $certFile = $certDir . '/fullchain.pem';
+                $keyFile = $certDir . '/privkey.pem';
+                if (!file_exists($certFile)) {
+                    // Ensure webroot challenge dir exists, then run certbot
+                    @exec("sudo mkdir -p {$docRoot}/.well-known/acme-challenge && sudo chown -R www-data:www-data {$docRoot} 2>/dev/null");
+                    $certCmd = "sudo certbot certonly --webroot -w " . escapeshellarg($docRoot)
+                        . " -d " . escapeshellarg($full) . " --non-interactive --agree-tos "
+                        . " --email support@planet-hosts.com --expand 2>&1";
+                    @exec($certCmd, $certOut, $certCode);
+                }
+                if (!file_exists($certFile)) {
+                    // Fall back to the parent domain's cert if issuance failed
+                    $certFile = '/etc/letsencrypt/live/' . $domain . '/fullchain.pem';
+                    $keyFile = '/etc/letsencrypt/live/' . $domain . '/privkey.pem';
+                }
                 if (file_exists($certFile)) {
                     $sslCfg = "<IfModule mod_ssl.c>\n<VirtualHost *:443>\n    ServerName {$full}\n    DocumentRoot {$docRoot}\n    <Directory {$docRoot}>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n    ErrorLog /var/log/apache2/{$full}_error.log\n    CustomLog /var/log/apache2/{$full}_access.log combined\n    SSLEngine on\n    SSLCertificateFile {$certFile}\n    SSLCertificateKeyFile {$keyFile}\n</VirtualHost>\n</IfModule>\n";
                     $sslFile = $tmpDir . '/vhost_ssl_' . $full . '.conf';
