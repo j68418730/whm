@@ -263,7 +263,7 @@ h1{font-size:22px;margin-bottom:4px}
 <?php endif; ?>
 </div>
 <script>
-var SONG_LISTS = <?php echo json_encode(array_map(function($st) { $sid=(int)$st->id; return ['sid'=>$sid, 'list'=>station_song_list($pdo,$sid), 'current'=>station_current_song($pdo,$sid)]; }, $stations)); ?>;
+var SONG_LISTS = <?php echo json_encode(array_map(function($st) use ($pdo) { $sid=(int)$st->id; return ['sid'=>$sid, 'list'=>station_song_list($pdo,$sid), 'current'=>station_current_song($pdo,$sid)]; }, $stations)); ?>;
 function prefill(sid,a,t){document.getElementById('rq-a-'+sid).value=a;document.getElementById('rq-t-'+sid).value=t;document.getElementById('rq-t-'+sid).focus();}
 function submitReq(sid){
   var a=document.getElementById('rq-a-'+sid),t=document.getElementById('rq-t-'+sid),n=document.getElementById('rq-n-'+sid),msg=document.getElementById('rq-msg-'+sid),f=document.querySelector('.req-form[data-station="'+sid+'"]');
