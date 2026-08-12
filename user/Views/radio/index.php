@@ -602,12 +602,14 @@ function copyDjInfo(){
 <div style="text-align:center"><div style="font-size:10px;color:#64748b">Crossfade</div><div style="font-size:14px;font-weight:700;color:#5856D6"><?=$ac->crossfade_time?>s</div></div>
 <div style="text-align:center"><div style="font-size:10px;color:#64748b">Bitrate</div><div style="font-size:14px;font-weight:700;color:#e0e0e0"><?=$ac->bitrate?> kbps</div></div>
 <div style="text-align:center;display:flex;gap:4px">
+<a href="/user/radio/autodj/setup?step=1&station_id=<?=$stationId?>" class="btn btn-sm btn-warning" title="Edit AutoDJ settings">✏️ Edit</a>
 <a href="/user/radio/autodj/start/<?=$stationId?>" class="btn btn-sm <?=$ac->autodj_enabled?'btn-secondary':'btn-success'?>"><?=$ac->autodj_enabled?'Restart':'Start'?></a>
 <a href="/user/radio/autodj/stop/<?=$stationId?>" class="btn btn-sm btn-danger">Stop</a>
 </div>
 </div>
 <div class="nav-pills" style="margin-bottom:12px">
 <a href="?station_id=<?=$stationId?>&tab=autodj&adtab=overview" class="<?=$adTab==='overview'?'active':''?>">Overview</a>
+<a href="?station_id=<?=$stationId?>&tab=autodj&adtab=music" class="<?=$adTab==='music'?'active':''?>">🌐 Global Music</a>
 <a href="?station_id=<?=$stationId?>&tab=autodj&adtab=playback" class="<?=$adTab==='playback'?'active':''?>">Playback</a>
 <a href="?station_id=<?=$stationId?>&tab=autodj&adtab=rotation" class="<?=$adTab==='rotation'?'active':''?>">Rotation</a>
 <a href="?station_id=<?=$stationId?>&tab=autodj&adtab=categories" class="<?=$adTab==='categories'?'active':''?>">Categories</a>
@@ -645,6 +647,12 @@ function copyDjInfo(){
 <a href="?station_id=<?=$stationId?>&tab=playlists" class="btn btn-sm btn-primary">Playlists</a>
 <a href="?station_id=<?=$stationId?>&tab=autodj&adtab=ai" class="btn btn-sm btn-primary" style="background:rgba(168,85,247,.15);color:#a855f7">AI Assistant</a>
 </div></div>
+</div>
+<div class="tab <?=$adTab==='music'?'active':''?>">
+  <div class="card"><div class="hdr"><h3>🌐 Global Music Library</h3><a href="/user/radio/global-music" class="btn btn-sm btn-primary" target="_blank">Open Full Page</a></div>
+  <p style="font-size:11px;color:#64748b;margin-bottom:10px">Browse shared music and download songs to this station's playlists for AutoDJ.</p>
+  <iframe src="/user/radio/global-music?station_id=<?=$stationId?>" style="width:100%;height:520px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:#0a0e1a"></iframe>
+  </div>
 </div>
 <div class="tab <?=$adTab==='playback'?'active':''?>">
 <div class="card"><h3>Playback Controls</h3>
