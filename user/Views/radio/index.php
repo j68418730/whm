@@ -592,7 +592,10 @@ function copyDjInfo(){
 <div style="font-size:50px;margin-bottom:10px">&#9881;</div>
 <div style="font-size:15px;color:#c0c0c0;margin-bottom:4px">AutoDJ Not Configured</div>
 <div style="font-size:11px;color:#64748b;margin-bottom:14px">Complete the setup wizard to configure AutoDJ settings, playlists, and rotation rules</div>
+<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
 <a href="/user/radio/autodj/setup?station_id=<?=$stationId?>" class="btn btn-primary">Start Setup Wizard</a>
+<a href="/user/radio/global-music" class="btn btn-success" style="background:rgba(74,222,128,.15);color:#4ade80">🌐 Browse Global Music</a>
+</div>
 </div>
 <?php else: ?>
 <?php $adTab = $_GET['adtab'] ?? 'overview'; $ac = $autodjCfg; ?>
