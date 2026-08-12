@@ -179,8 +179,11 @@ h1{font-size:22px;margin-bottom:4px}
 <?php foreach ($stations as $st):
     $sid = (int)$st->id;
     $slug = station_slug($st->name ?? "Station #{$sid}", $sid);
-    $stationDjs = $djByStation[$sid] ?? [];
-    $onlineDjs = array_filter($stationDjs, fn($d) => dj_online($d, $pdo));
+    // Pending requests for this station (only shown in the DJ's desktop app, not here)
+    $pendingReqs = [];
+
+    // Only show ONLINE DJs
+    $onlineDjs = array_filter($djByStation[$sid] ?? [], fn($d) => dj_online($d, $pdo));
     $isOnline = !empty($onlineDjs);
     $songList = station_song_list($pdo, $sid);
     $currentTxt = station_current_song($pdo, $sid);
@@ -194,11 +197,6 @@ h1{font-size:22px;margin-bottom:4px}
     $stBanner = !empty($brandRow->brand_banner) ? $base . $brandRow->brand_banner : '';
     $stColor = $brandRow->brand_primary_color ?? '#008cff';
     $stSlogan = $brandRow->brand_slogan ?? '';
-
-    // Pending requests for this station
-    $reqs = $pdo->prepare("SELECT * FROM radio_requests WHERE stream_id=? AND status='pending' ORDER BY created_at ASC");
-    $reqs->execute([$sid]);
-    $pendingReqs = $reqs->fetchAll(PDO::FETCH_OBJ);
 ?>
 <div class="station-block" id="st-<?php echo $sid; ?>">
   <div class="station-banner" <?php if ($stBanner): ?>style="background-image:url('<?php echo htmlspecialchars($stBanner); ?>')"<?php endif; ?>>
@@ -212,20 +210,18 @@ h1{font-size:22px;margin-bottom:4px}
     </span>
   </div>
   <div class="station-body">
-    <?php if (!empty($stationDjs)): foreach ($stationDjs as $dj): ?>
+    <?php if (!empty($onlineDjs)): foreach ($onlineDjs as $dj): ?>
     <div class="dj-row">
-      <?php if ($dj->avatar): ?><img class="dj-avatar" src="<?php echo $base . '/' . ltrim(htmlspecialchars($dj->avatar), '/'); ?>"><?php else: ?><div class="dj-avatar" style="display:flex;align-items:center;justify-content:center;background:rgba(0,140,255,.2);font-size:14px"><?php echo strtoupper(substr($dj->username,0,1)); ?></div><?php endif; ?>
+      <?php if ($dj->avatar): ?><img class="dj-avatar" src="<?php echo $base . '/' . ltrim(htmlspecialchars($dj->avatar), '/'); ?>"><?php else: ?><div class="dj-avatar" style="display:flex;align-items:center;justify-content:center;background:rgba(74,222,128,.2);font-size:14px;color:#4ade80">🔴</div><?php endif; ?>
       <div class="dj-info">
         <div class="dj-name"><?php echo htmlspecialchars($dj->name ?: $dj->username); ?></div>
-        <span class="<?php echo dj_online($dj,$pdo) ? 'dj-online' : 'dj-offline'; ?>"><?php echo dj_online($dj,$pdo) ? '● Online' : '○ Offline'; ?></span>
+        <span class="dj-online">🔴 LIVE</span>
       </div>
       <?php if ($dj->banner || $dj->bio || $dj->website_url): ?>
       <a class="dj-bio-link" href="/dj?u=<?php echo urlencode($dj->username); ?>" target="_blank">View Profile →</a>
       <?php endif; ?>
     </div>
-    <?php endforeach; else: ?>
-    <div class="empty-note">No DJ assigned to this station yet.</div>
-    <?php endif; ?>
+    <?php endforeach; endif; ?>
 
     <?php if (!$isOnline): ?>
     <div class="empty-note">😔 Sorry, No DJ is online right now. Enjoy the AutoDJ stream below.</div>
@@ -251,11 +247,6 @@ h1{font-size:22px;margin-bottom:4px}
       <input id="rq-n-<?php echo $sid; ?>" placeholder="Your Name (optional)" <?php if (!$isOnline) echo 'disabled'; ?>>
       <button <?php if (!$isOnline) echo 'disabled'; ?> onclick="submitReq(<?php echo $sid; ?>)">Send Request</button>
       <div class="msg" id="rq-msg-<?php echo $sid; ?>"></div>
-      <div class="pending-list" id="rq-pending-<?php echo $sid; ?>">
-        <?php foreach ($pendingReqs as $pr): ?>
-        <div class="pending-item">🔴 <b><?php echo htmlspecialchars(($pr->artist ? $pr->artist . ' — ' : '') . $pr->title); ?></b></div>
-        <?php endforeach; ?>
-      </div>
     </div>
   </div>
 </div>
@@ -268,10 +259,16 @@ function prefill(sid,a,t){document.getElementById('rq-a-'+sid).value=a;document.
 function submitReq(sid){
   var a=document.getElementById('rq-a-'+sid),t=document.getElementById('rq-t-'+sid),n=document.getElementById('rq-n-'+sid),msg=document.getElementById('rq-msg-'+sid),f=document.querySelector('.req-form[data-station="'+sid+'"]');
   if(!t.value){msg.style.display='block';msg.style.background='rgba(248,113,113,.1)';msg.style.color='#f87171';msg.textContent='Song title required.';return;}
-  // Red-highlight check: is it in the DJ's list?
-  var key=t.value.trim().toLowerCase()+'|'+a.value.trim().toLowerCase();
-  var inList=false;
-  (SONG_LISTS||[]).forEach(function(s){ if(s.sid===sid && (s.list||[]).indexOf(key)>-1) inList=true; });
+  // Red-highlight check: is it in the DJ's library/list? (partial match, like the desktop app)
+  var qTitle = t.value.trim().toLowerCase(), qArtist = a.value.trim().toLowerCase();
+  var inList = false;
+  (SONG_LISTS||[]).forEach(function(s){
+    if(s.sid!==sid) return;
+    (s.list||[]).forEach(function(k){
+      var parts=k.split('|'); var lt=parts[0]||'', la=parts[1]||'';
+      if((qTitle && lt.indexOf(qTitle)>-1) || (qTitle && qTitle.indexOf(lt)>-1) || (qArtist && la.indexOf(qArtist)>-1)) { inList=true; }
+    });
+  });
   fetch('/connector/station/'+f.dataset.slug+'/requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({artist:a.value,title:t.value,guest_name:n.value})})
   .then(function(r){return r.json()}).then(function(d){
     msg.style.display='block';
