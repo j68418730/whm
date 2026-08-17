@@ -9,7 +9,7 @@ if (!isset($_SESSION['cart'])) $_SESSION['cart'] = [];
 // ─── Add to Cart ───
 if ($action === 'add' && isset($_GET['package'])) {
     $pkgId = (int)$_GET['package'];
-    $pkg = $pdo->prepare("SELECT * FROM hosting_packages WHERE id = ? AND is_active = 1");
+    $pkg = $pdo->prepare("SELECT hp.*, COALESCE(bp.price, hp.monthly_price) as price FROM hosting_packages hp LEFT JOIN billing_products bp ON hp.id = bp.package_id AND bp.is_active = 1 WHERE hp.id = ? AND hp.is_active = 1");
     $pkg->execute([$pkgId]);
     $pkg = $pkg->fetch(PDO::FETCH_OBJ);
     if ($pkg) {
@@ -17,7 +17,7 @@ if ($action === 'add' && isset($_GET['package'])) {
         foreach ($_SESSION['cart'] as &$item) {
             if ($item['id'] == $pkgId) { $item['qty']++; $found = true; break; }
         }
-        if (!$found) $_SESSION['cart'][] = ['id' => $pkgId, 'name' => $pkg->name, 'price' => (float)$pkg->monthly_price, 'qty' => 1];
+        if (!$found) $_SESSION['cart'][] = ['id' => $pkgId, 'name' => $pkg->name, 'price' => (float)$pkg->price, 'qty' => 1];
     }
     header('Location: /cart.php');
     exit;

@@ -87,7 +87,7 @@
 <select name="package_id" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.35);color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box">
 <option value="">Select package...</option>
 <?php foreach ($packages as $p): ?>
-<option value="<?php echo $p->id; ?>"><?php echo htmlspecialchars($p->name); ?> — $<?php echo $p->monthly_price; ?>/mo</option>
+<option value="<?php echo $p->id; ?>"><?php echo htmlspecialchars($p->name); ?> — $<?php echo number_format($p->price ?? $p->monthly_price ?? 0, 2); ?>/mo</option>
 <?php endforeach; ?>
 </select>
 </div>

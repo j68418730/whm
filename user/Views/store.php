@@ -15,7 +15,7 @@
 
 <?php
 $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
-$packages = $pdo->query("SELECT * FROM hosting_packages WHERE is_active = 1 ORDER BY sort_order, monthly_price")->fetchAll(PDO::FETCH_OBJ);
+$packages = $pdo->query("SELECT hp.*, COALESCE(bp.price, hp.monthly_price) as price, bp.setup_fee as bp_setup_fee FROM hosting_packages hp LEFT JOIN billing_products bp ON hp.id = bp.package_id AND bp.is_active = 1 WHERE hp.is_active = 1 ORDER BY hp.sort_order, COALESCE(bp.price, hp.monthly_price)")->fetchAll(PDO::FETCH_OBJ);
 $categories = ['web_hosting' => ['🌐','Web Hosting'], 'icecast' => ['📻','Radio Streaming'], 'game' => ['🎮','Game Servers'], 'builder' => ['🏗️','Website Builder'], 'chat' => ['💬','Chat']];
 ?>
 
@@ -32,7 +32,7 @@ if ($pkg->icecast_enabled) $features[] = 'Icecast Radio';
 if ($pkg->dj_panel_enabled) $features[] = 'DJ Panel';
 if ($pkg->live_chat_enabled) $features[] = 'Live Chat';
 if ($pkg->game_enabled) $features[] = 'Game Server';
-$price = $pkg->monthly_price > 0 ? '$'.number_format($pkg->monthly_price,2) : 'Free';
+$price = $pkg->price > 0 ? '$'.number_format($pkg->price,2) : 'Free';
 ?>
 <div class="plan-card">
 <div class="icon"><?php echo $cat[0]; ?></div>

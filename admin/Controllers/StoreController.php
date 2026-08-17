@@ -19,7 +19,7 @@ class StoreController extends Controller
     public function category($category = null)
     {
         $categories = $this->db->table('package_categories')->orderBy('sort_order', 'ASC')->get() ?: [];
-        $packages = $this->db->table('hosting_packages')->where('is_active', 1)->orderBy('sort_order', 'ASC')->get() ?: [];
+        $packages = $this->db->pdo()->query("SELECT hp.*, COALESCE(bp.price, hp.monthly_price) as price, bp.setup_fee as bp_setup_fee, bp.billing_cycle as billing_cycle FROM hosting_packages hp LEFT JOIN billing_products bp ON hp.id = bp.package_id AND bp.is_active = 1 WHERE hp.is_active = 1 ORDER BY hp.sort_order ASC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
 
         $rawCat = $category;
         if ($rawCat) {
@@ -97,7 +97,7 @@ class StoreController extends Controller
     public function detail($id)
     {
         $id = (int)$id;
-        $product = $this->db->table('hosting_packages')->where('id', $id)->first();
+        $product = $this->db->pdo()->query("SELECT hp.*, COALESCE(bp.price, hp.monthly_price) as price, bp.setup_fee as bp_setup_fee, bp.billing_cycle as billing_cycle FROM hosting_packages hp LEFT JOIN billing_products bp ON hp.id = bp.package_id AND bp.is_active = 1 WHERE hp.id = {$id}")->fetch(\PDO::FETCH_OBJ);
         if (!$product) {
             header('Location: /hosting');
             exit;

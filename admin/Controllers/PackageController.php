@@ -50,6 +50,18 @@ class PackageController extends Controller
             elseif (in_array($t, ['chat_room', 'chat_room_voice', 'dj_panel'])) $statsByType['addon']++;
         }
 
+        // Product counts per package
+        $productCounts = [];
+        try {
+            $allProducts = $this->db->table('billing_products')->get() ?: [];
+            foreach ($allProducts as $bp) {
+                if ($bp->package_id) {
+                    if (!isset($productCounts[$bp->package_id])) $productCounts[$bp->package_id] = 0;
+                    $productCounts[$bp->package_id]++;
+                }
+            }
+        } catch (\Exception $e) {}
+
         // Usage counts
         $usageCounts = [];
         try {
@@ -78,6 +90,7 @@ class PackageController extends Controller
             'packagesStats' => ['total_packages' => $total, 'active_packages' => $active],
             'totalPackages' => $total, 'activePackages' => $active,
             'statsByType' => $statsByType, 'usageCounts' => $usageCounts,
+            'productCounts' => $productCounts,
             'theme_settings' => $theme_settings
         ]);
     }
@@ -137,11 +150,6 @@ class PackageController extends Controller
             'feature_list_id' => (int)$this->request->post('feature_list_id', 0) ?: null,
             'max_domains' => (int)$this->request->post('max_domains', 1),
             'max_subdomains' => (int)$this->request->post('max_subdomains', 0),
-            'monthly_price' => (float)$this->request->post('monthly_price', 0),
-            'quarterly_price' => (float)$this->request->post('quarterly_price', 0),
-            'semi_annual_price' => (float)$this->request->post('semi_annual_price', 0),
-            'annual_price' => (float)$this->request->post('annual_price', 0),
-            'setup_fee' => (float)$this->request->post('setup_fee', 0),
             'disk_space' => (int)$this->request->post('disk_space', 0),
             'bandwidth' => (int)$this->request->post('bandwidth', 0),
             'email_accounts' => (int)$this->request->post('email_accounts', 0),
@@ -157,8 +165,7 @@ class PackageController extends Controller
             'sort_order' => (int)$this->request->post('sort_order', 0),
             'is_active' => 1,
         ];
-        $id = $this->db->table('hosting_packages')->insertGetId($data);
-        $this->syncBillingProduct($id, $data);
+        $this->db->table('hosting_packages')->insertGetId($data);
         $_SESSION['success_message'] = 'Package created.';
         $this->response->redirect('/admin/packages');
         exit;
@@ -171,10 +178,11 @@ class PackageController extends Controller
         $package = $this->db->table('hosting_packages')->where('id', $id)->first();
         if (!$package) { $this->response->redirect('/admin/packages'); exit; }
         if (is_string($package->features)) $package->features = json_decode($package->features, true) ?? [];
+        $billingProducts = $this->db->table('billing_products')->where('package_id', $id)->get() ?: [];
         $categories = $this->getCategories();
         $featureLists = $this->getFeatureLists();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-        return $this->view('admin.package.edit', ['user' => $user, 'package' => $package, 'categories' => $categories, 'featureLists' => $featureLists, 'theme_settings' => $theme_settings]);
+        return $this->view('admin.package.edit', ['user' => $user, 'package' => $package, 'billingProducts' => $billingProducts, 'categories' => $categories, 'featureLists' => $featureLists, 'theme_settings' => $theme_settings]);
     }
 
     public function update($id)
@@ -189,11 +197,6 @@ class PackageController extends Controller
             'feature_list_id' => (int)$this->request->post('feature_list_id', 0) ?: null,
             'max_domains' => (int)$this->request->post('max_domains', 1),
             'max_subdomains' => (int)$this->request->post('max_subdomains', 0),
-            'monthly_price' => (float)$this->request->post('monthly_price', 0),
-            'quarterly_price' => (float)$this->request->post('quarterly_price', 0),
-            'semi_annual_price' => (float)$this->request->post('semi_annual_price', 0),
-            'annual_price' => (float)$this->request->post('annual_price', 0),
-            'setup_fee' => (float)$this->request->post('setup_fee', 0),
             'disk_space' => (int)$this->request->post('disk_space', 0),
             'bandwidth' => (int)$this->request->post('bandwidth', 0),
             'email_accounts' => (int)$this->request->post('email_accounts', 0),
@@ -210,7 +213,6 @@ class PackageController extends Controller
             'is_active' => $this->request->post('is_active') === 'on' ? 1 : (($this->request->post('is_active') ?? '') === '1' ? 1 : 0),
         ];
         $this->db->table('hosting_packages')->where('id', $id)->update($data);
-        $this->syncBillingProduct($id, $data);
         $_SESSION['success_message'] = 'Package updated.';
         $this->response->redirect('/admin/packages');
         exit;
@@ -220,7 +222,6 @@ class PackageController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $this->db->table('hosting_packages')->where('id', $id)->update(['is_active' => 0]);
-        $this->syncBillingProduct($id, ['is_active' => 0]);
         $_SESSION['success_message'] = 'Package deactivated.';
         $this->response->redirect('/admin/packages');
         exit;
@@ -246,48 +247,6 @@ class PackageController extends Controller
         exit;
     }
 
-    protected function syncBillingProduct($pkgId, $data)
-    {
-        $pkg = $this->db->table('hosting_packages')->where('id', $pkgId)->first();
-        if (!$pkg) return;
-
-        $type = strtolower($pkg->type ?? 'web_hosting');
-        $billingType = 'hosting';
-        if (str_contains($type, 'icecast') || str_contains($type, 'shoutcast') || str_contains($type, 'radio') || str_contains($type, 'stream')) $billingType = 'radio';
-        elseif (str_contains($type, 'game')) $billingType = 'game';
-        elseif (str_contains($type, 'vps') || str_contains($type, 'virtual')) $billingType = 'vps';
-        elseif (str_contains($type, 'dedicated') || str_contains($type, 'ded')) $billingType = 'server';
-        elseif (str_contains($type, 'chat') || str_contains($type, 'livechat')) $billingType = 'other';
-        elseif (str_contains($type, 'reseller')) $billingType = 'hosting';
-
-        $productId = $pkg->product_id ?? null;
-        if ($productId) {
-            $this->db->table('billing_products')->where('id', $productId)->update([
-                'name' => $data['name'] ?? $pkg->name,
-                'description' => $data['description'] ?? $pkg->description,
-                'type' => $billingType,
-                'price' => $data['monthly_price'] ?? $pkg->monthly_price,
-                'setup_fee' => $data['setup_fee'] ?? $pkg->setup_fee,
-                'billing_cycle' => 'monthly',
-                'is_active' => $data['is_active'] ?? $pkg->is_active,
-                'sort_order' => $data['sort_order'] ?? $pkg->sort_order,
-            ]);
-        } else {
-            $productId = $this->db->table('billing_products')->insertGetId([
-                'name' => $data['name'] ?? $pkg->name,
-                'description' => $data['description'] ?? $pkg->description,
-                'type' => $billingType,
-                'price' => $data['monthly_price'] ?? $pkg->monthly_price,
-                'setup_fee' => $data['setup_fee'] ?? $pkg->setup_fee,
-                'billing_cycle' => 'monthly',
-                'is_active' => $data['is_active'] ?? $pkg->is_active,
-                'sort_order' => $data['sort_order'] ?? $pkg->sort_order,
-                'package_id' => $pkgId,
-            ]);
-            $this->db->table('hosting_packages')->where('id', $pkgId)->update(['product_id' => $productId]);
-        }
-        $this->db->table('billing_products')->where('id', $productId)->update(['package_id' => $pkgId]);
-    }
 
     // --- Category management ---
 

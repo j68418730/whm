@@ -45,13 +45,13 @@
 <?php $pFeats = is_string($p->features) ? json_decode($p->features, true) ?? [] : ($p->features ?? []); $sp = $pFeats['streaming_package'] ?? []; ?>
 <option value="<?php echo $p->id; ?>"
 data-type="<?php echo $p->type; ?>"
-data-price="<?php echo $p->monthly_price; ?>"
+data-price="<?php echo $p->price ?? $p->monthly_price ?? 0; ?>"
 data-billing="<?php echo $p->billing_cycle; ?>"
 data-listeners="<?php echo $sp['max_listeners'] ?? 0; ?>"
 data-bitrate="<?php echo $sp['max_bitrate'] ?? 128; ?>"
 data-djs="<?php echo $sp['max_djs'] ?? 0; ?>"
 data-disk="<?php echo $p->disk_space ?? 10; ?>"
-data-bandwidth="<?php echo $p->bandwidth ?? 0; ?>"><?php echo htmlspecialchars($p->name); ?> (<?php echo $p->type; ?> - $<?php echo $p->monthly_price; ?>/mo)</option>
+data-bandwidth="<?php echo $p->bandwidth ?? 0; ?>"><?php echo htmlspecialchars($p->name); ?> (<?php echo $p->type; ?> - $<?php echo number_format($p->price ?? $p->monthly_price ?? 0, 2); ?>/mo)</option>
 <?php unset($pFeats, $sp); ?>
 <?php endforeach; ?>
 </select></div>

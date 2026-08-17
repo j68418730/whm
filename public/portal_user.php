@@ -1,6 +1,6 @@
 <?php
 $pdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", "radiouser", "Skylinehosting171");
-$packages = $pdo->query("SELECT * FROM hosting_packages WHERE is_active = 1 ORDER BY type, monthly_price LIMIT 20")->fetchAll(PDO::FETCH_OBJ) ?: [];
+$packages = $pdo->query("SELECT hp.*, COALESCE(bp.price, hp.monthly_price) as price FROM hosting_packages hp LEFT JOIN billing_products bp ON hp.id = bp.package_id AND bp.is_active = 1 WHERE hp.is_active = 1 ORDER BY hp.type, COALESCE(bp.price, hp.monthly_price) LIMIT 20")->fetchAll(PDO::FETCH_OBJ) ?: [];
 $categories = [];
 foreach ($packages as $p) $categories[$p->type ?? "web_hosting"][] = $p;
 $host = $_SERVER["HTTP_HOST"] ?? "planet-hosts.com";
@@ -128,7 +128,7 @@ $catName = $hosts[$type] ?? $type;
 <div class="ico"><?php echo strpos($type,"icecast")!==false ? "≡ƒô╗" : (strpos($type,"game")!==false ? "≡ƒÄ«" : "≡ƒîÉ"); ?></div>
 <div class="cat-name"><?php echo htmlspecialchars($catName); ?></div>
 <div class="nm"><?php echo htmlspecialchars($pkg->name); ?></div>
-<div class="pr">$<?php echo number_format($pkg->monthly_price ?? 0, 2); ?><small>/mo</small></div>
+<div class="pr">$<?php echo number_format($pkg->price ?? $pkg->monthly_price ?? 0, 2); ?><small>/mo</small></div>
 <div class="feat">
 <?php
 if ($pkg->disk_space > 0) echo number_format($pkg->disk_space) . " MB Disk<br>";
