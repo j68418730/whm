@@ -39,7 +39,7 @@ class DatabasesController extends Controller
 
     protected function rootDb()
     {
-        return new \PDO('mysql:host=localhost;charset=utf8mb4', 'root', 'rootpassword');
+        return new \PDO('mysql:host=localhost;charset=utf8mb4', 'root', 'Skylinehosting171');
     }
 
     public function index()
