@@ -287,11 +287,15 @@ class AccountController extends Controller
         $message = trim($_POST['alert_message'] ?? '');
         $type = in_array($_POST['alert_type'] ?? '', ['info','warning','success','danger']) ? $_POST['alert_type'] : 'info';
         if ($title && $message) {
-            $this->db->table('user_alerts')->insertGetId([
-                'hosting_user_id' => $id, 'admin_id' => $this->auth->user()->id,
-                'title' => $title, 'message' => $message, 'type' => $type,
-            ]);
-            $_SESSION['success_message'] = "Alert sent to {$account->username}.";
+            try {
+                $this->db->table('user_alerts')->insertGetId([
+                    'hosting_user_id' => $id, 'admin_id' => $this->auth->user()->id,
+                    'title' => $title, 'message' => $message, 'type' => $type,
+                ]);
+                $_SESSION['success_message'] = "Alert sent to {$account->username}.";
+            } catch (\Exception $e) {
+                $_SESSION['error_message'] = 'Failed to send alert. Please contact support.';
+            }
         }
         $this->response->redirect('/admin/account/show/' . $id);
         exit;
@@ -396,6 +400,26 @@ class AccountController extends Controller
         } catch (\Exception $e) {}
         $_SESSION['success_message'] = "Account '{$account->username}' suspended.";
         $this->response->redirect('/admin/account');
+        exit;
+    }
+
+    public function allowSuspension($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $account = $this->db->table('hosting_users')->where('id', $id)->first();
+        if (!$account) { $_SESSION['error_message'] = 'Account not found.'; $this->response->redirect('/admin/account'); exit; }
+        $allow = (int)$this->request->post('allow_suspension', 1);
+        $this->db->table('hosting_users')->where('id', $id)->update(['allow_suspension' => $allow ? 1 : 0]);
+        try {
+            $this->db->table('activity_logs')->insert([
+                'account_id' => $id, 'admin_id' => $this->auth->user()->id,
+                'action' => 'allow_suspension',
+                'details' => ($allow ? 'Enabled' : 'Disabled') . " auto-suspension for {$account->username}",
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
+            ]);
+        } catch (\Exception $e) {}
+        $_SESSION['success_message'] = "Auto-suspension " . ($allow ? 'enabled' : 'disabled') . " for '{$account->username}'.";
+        $this->response->redirect('/admin/account/show/' . $id);
         exit;
     }
 

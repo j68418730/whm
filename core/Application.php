@@ -117,6 +117,20 @@ class Application
                 id INT AUTO_INCREMENT PRIMARY KEY, user_id INT, total DECIMAL(10,2),
                 status VARCHAR(50) DEFAULT 'pending', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $pdo->exec("CREATE TABLE IF NOT EXISTS user_alerts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                hosting_user_id INT NOT NULL,
+                admin_id INT NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                message TEXT NOT NULL,
+                type ENUM('info','warning','success','danger') NOT NULL DEFAULT 'info',
+                is_read TINYINT(1) NOT NULL DEFAULT 0,
+                can_delete TINYINT(1) NOT NULL DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_hosting_user (hosting_user_id),
+                INDEX idx_is_read (is_read),
+                INDEX idx_created (created_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         } catch (\Exception $e) {}
 
         // Create widget tables if needed
