@@ -64,7 +64,9 @@ if (!empty($strPkg)): ?><span style="color:#0A84FF">🎧 Streaming</span>
 <div><span class="p-status" style="background:<?php echo ($p->is_active ?? 1) ? 'rgba(74,222,128,.12);color:#4ade80' : 'rgba(248,113,113,.12);color:#f87171'; ?>"><?php echo ($p->is_active ?? 1) ? 'Active' : 'Inactive'; ?></span></div>
 <div class="p-actions">
 <a href="/admin/package/edit/<?php echo $p->id; ?>" style="background:rgba(0,140,255,.1);color:#38bdf8">Edit</a>
-<a href="/admin/package/delete/<?php echo $p->id; ?>" style="background:rgba(248,113,113,.12);color:#f87171" onclick="return confirm('Delete?')">Delete</a>
+<a href="/admin/package/clone/<?php echo $p->id; ?>" style="background:rgba(74,222,128,.1);color:#4ade80" onclick="return confirm('Clone this package?')">Clone</a>
+<a href="/admin/package/delete/<?php echo $p->id; ?>" style="background:rgba(250,204,21,.1);color:#facc15" onclick="return confirm('Deactivate this package?')">Deactivate</a>
+<a href="/admin/package/hard-delete/<?php echo $p->id; ?>" style="background:rgba(248,113,113,.12);color:#f87171" onclick="return confirm('PERMANENTLY delete this package? This cannot be undone.')">Delete</a>
 </div>
 </div>
 <?php endforeach; ?>

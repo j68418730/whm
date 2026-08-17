@@ -130,8 +130,9 @@ class PackageController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $data = [
             'name' => $this->request->post('name', ''),
-            'type' => $this->request->post('type', 'Web Hosting'),
+            'type' => $this->request->post('type', 'web_hosting'),
             'description' => $this->request->post('description', ''),
+            'php_version' => $this->request->post('php_version', '8.2'),
             'features' => $this->mergePkgFeatures(),
             'feature_list_id' => (int)$this->request->post('feature_list_id', 0) ?: null,
             'max_domains' => (int)$this->request->post('max_domains', 1),
@@ -143,6 +144,16 @@ class PackageController extends Controller
             'setup_fee' => (float)$this->request->post('setup_fee', 0),
             'disk_space' => (int)$this->request->post('disk_space', 0),
             'bandwidth' => (int)$this->request->post('bandwidth', 0),
+            'email_accounts' => (int)$this->request->post('email_accounts', 0),
+            'ftp_accounts' => (int)$this->request->post('ftp_accounts', 0),
+            'databases' => (int)$this->request->post('databases', 0),
+            'subdomains' => (int)$this->request->post('max_subdomains', 0),
+            'parked_domains' => (int)$this->request->post('parked_domains', 0),
+            'addon_domains' => (int)$this->request->post('addon_domains', 0),
+            'listener_limit' => (int)$this->request->post('listener_limit', 0),
+            'bitrate' => (int)$this->request->post('bitrate', 0),
+            'storage_limit' => (int)$this->request->post('storage_limit', 0),
+            'dj_accounts' => (int)$this->request->post('dj_accounts', 0),
             'sort_order' => (int)$this->request->post('sort_order', 0),
             'is_active' => 1,
         ];
@@ -171,8 +182,9 @@ class PackageController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $data = [
             'name' => $this->request->post('name', ''),
-            'type' => $this->request->post('type', 'Web Hosting'),
+            'type' => $this->request->post('type', 'web_hosting'),
             'description' => $this->request->post('description', ''),
+            'php_version' => $this->request->post('php_version', '8.2'),
             'features' => $this->mergePkgFeatures(),
             'feature_list_id' => (int)$this->request->post('feature_list_id', 0) ?: null,
             'max_domains' => (int)$this->request->post('max_domains', 1),
@@ -184,8 +196,18 @@ class PackageController extends Controller
             'setup_fee' => (float)$this->request->post('setup_fee', 0),
             'disk_space' => (int)$this->request->post('disk_space', 0),
             'bandwidth' => (int)$this->request->post('bandwidth', 0),
+            'email_accounts' => (int)$this->request->post('email_accounts', 0),
+            'ftp_accounts' => (int)$this->request->post('ftp_accounts', 0),
+            'databases' => (int)$this->request->post('databases', 0),
+            'subdomains' => (int)$this->request->post('max_subdomains', 0),
+            'parked_domains' => (int)$this->request->post('parked_domains', 0),
+            'addon_domains' => (int)$this->request->post('addon_domains', 0),
+            'listener_limit' => (int)$this->request->post('listener_limit', 0),
+            'bitrate' => (int)$this->request->post('bitrate', 0),
+            'storage_limit' => (int)$this->request->post('storage_limit', 0),
+            'dj_accounts' => (int)$this->request->post('dj_accounts', 0),
             'sort_order' => (int)$this->request->post('sort_order', 0),
-            'is_active' => $this->request->post('is_active') === 'on' ? 1 : 0,
+            'is_active' => $this->request->post('is_active') === 'on' ? 1 : (($this->request->post('is_active') ?? '') === '1' ? 1 : 0),
         ];
         $this->db->table('hosting_packages')->where('id', $id)->update($data);
         $this->syncBillingProduct($id, $data);
@@ -199,7 +221,27 @@ class PackageController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $this->db->table('hosting_packages')->where('id', $id)->update(['is_active' => 0]);
         $this->syncBillingProduct($id, ['is_active' => 0]);
-        $_SESSION['success_message'] = 'Package deleted.';
+        $_SESSION['success_message'] = 'Package deactivated.';
+        $this->response->redirect('/admin/packages');
+        exit;
+    }
+
+    public function delete($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $pkg = $this->db->table('hosting_packages')->where('id', $id)->first();
+        if (!$pkg) { $_SESSION['error_message'] = 'Package not found.'; $this->response->redirect('/admin/packages'); exit; }
+        $inUse = $this->db->table('hosting_users')->where('package_id', $id)->first();
+        if ($inUse) { $_SESSION['error_message'] = 'Cannot delete — package is in use by active accounts.'; $this->response->redirect('/admin/packages'); exit; }
+        $inUseReseller = $this->db->table('resellers')->where('package_id', $id)->first();
+        if ($inUseReseller) { $_SESSION['error_message'] = 'Cannot delete — package is assigned to resellers.'; $this->response->redirect('/admin/packages'); exit; }
+        $inUseStation = $this->db->table('streaming_stations')->where('package_id', $id)->first();
+        if ($inUseStation) { $_SESSION['error_message'] = 'Cannot delete — package is in use by streaming stations.'; $this->response->redirect('/admin/packages'); exit; }
+        if ($pkg->product_id) {
+            $this->db->table('billing_products')->where('id', $pkg->product_id)->update(['is_active' => 0]);
+        }
+        $this->db->table('hosting_packages')->where('id', $id)->delete();
+        $_SESSION['success_message'] = 'Package permanently deleted.';
         $this->response->redirect('/admin/packages');
         exit;
     }
@@ -209,15 +251,14 @@ class PackageController extends Controller
         $pkg = $this->db->table('hosting_packages')->where('id', $pkgId)->first();
         if (!$pkg) return;
 
-        $typeMap = [
-            'Web Hosting' => 'hosting',
-            'Radio Hosting' => 'radio',
-            'Game Servers' => 'vps',
-            'Streaming Icecast' => 'radio',
-            'Streaming Shoutcast v1' => 'radio',
-            'Streaming Shoutcast v2' => 'radio',
-        ];
-        $billingType = $typeMap[$pkg->type] ?? 'hosting';
+        $type = strtolower($pkg->type ?? 'web_hosting');
+        $billingType = 'hosting';
+        if (str_contains($type, 'icecast') || str_contains($type, 'shoutcast') || str_contains($type, 'radio') || str_contains($type, 'stream')) $billingType = 'radio';
+        elseif (str_contains($type, 'game')) $billingType = 'game';
+        elseif (str_contains($type, 'vps') || str_contains($type, 'virtual')) $billingType = 'vps';
+        elseif (str_contains($type, 'dedicated') || str_contains($type, 'ded')) $billingType = 'server';
+        elseif (str_contains($type, 'chat') || str_contains($type, 'livechat')) $billingType = 'other';
+        elseif (str_contains($type, 'reseller')) $billingType = 'hosting';
 
         $productId = $pkg->product_id ?? null;
         if ($productId) {
@@ -245,7 +286,6 @@ class PackageController extends Controller
             ]);
             $this->db->table('hosting_packages')->where('id', $pkgId)->update(['product_id' => $productId]);
         }
-        // Keep package_id in sync on billing_products
         $this->db->table('billing_products')->where('id', $productId)->update(['package_id' => $pkgId]);
     }
 
