@@ -82,7 +82,6 @@ body{font-family:'Inter',sans-serif;background:#020817;color:#e0e0e0;min-height:
 .group-label::after{content:'';flex:1;height:1px;background:rgba(10,132,255,.12)}
 
 .str-streaming{--accent-color:#0A84FF}
-.str-game{--accent-color:#FF9500}
 
 .toast{position:fixed;bottom:24px;right:24px;background:#0f172a;border:1px solid rgba(74,222,128,.2);color:#4ade80;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transform:translateY(10px);transition:.3s;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
@@ -113,7 +112,6 @@ body{font-family:'Inter',sans-serif;background:#020817;color:#e0e0e0;min-height:
 <button type="button" class="tab" onclick="showTab('pricing',this)"><i class="fa-solid fa-dollar-sign"></i> Pricing</button>
 <button type="button" class="tab" onclick="showTab('features',this)"><i class="fa-solid fa-puzzle-piece"></i> Features</button>
 <button type="button" class="tab" onclick="showTab('streaming',this)"><i class="fa-solid fa-headphones"></i> Streaming</button>
-<button type="button" class="tab" onclick="showTab('games',this)"><i class="fa-solid fa-gamepad"></i> Game Servers</button>
 </div>
 
 <!-- TAB: Basic Info -->
@@ -360,142 +358,6 @@ foreach ($streamingGroups as $gName => $gFields):
 </div>
 </div>
 
-<!-- TAB: Game Servers -->
-<div class="tab-panel" id="panel-games">
-<div class="section str-game">
-<div class="section-title"><i class="fa-solid fa-gamepad"></i> Game Server Package Configuration</div>
-<p style="font-size:12px;color:#64748b;margin-bottom:14px">Configure game server capabilities for this package. Toggle the master switch to enable game features.</p>
-
-<div class="collapse-header" id="gameMasterToggle" onclick="toggleMaster(this,'gameMasterSwitch','gameSections')">
-<div class="left">
-<div class="switch" id="gameMasterSwitch"></div>
-<div><div class="title" style="color:#FF9500">Enable Game Server Package</div><div class="desc">Unlock all game sub-features below</div></div>
-</div>
-<div class="toggle"><i class="fa-solid fa-chevron-down"></i></div>
-</div>
-<div id="gameSections" style="display:none">
-
-<?php
-$gameGroups = [
-    'General' => [
-        ['type'=>'number','name'=>'game_max_servers','label'=>'Maximum Game Servers','val'=>0],
-        ['type'=>'number','name'=>'game_max_instances','label'=>'Maximum Instances','val'=>0],
-        ['type'=>'checkbox','name'=>'game_templates','label'=>'Server Templates'],
-    ],
-    'Steam' => [
-        ['type'=>'checkbox','name'=>'game_steamcmd','label'=>'SteamCMD'],
-        ['type'=>'checkbox','name'=>'game_steam_auto_login','label'=>'Automatic Steam Login'],
-        ['type'=>'checkbox','name'=>'game_workshop','label'=>'Workshop Support'],
-        ['type'=>'checkbox','name'=>'game_workshop_auto_update','label'=>'Workshop Auto Update'],
-        ['type'=>'checkbox','name'=>'game_auto_updates','label'=>'Automatic Game Updates'],
-    ],
-    'Resources' => [
-        ['type'=>'note','label'=>'Allocation','note'=>'CPU, RAM, Disk allocated from account limits'],
-        ['type'=>'number','name'=>'game_cpu_cores','label'=>'CPU Cores','val'=>1],
-        ['type'=>'number','name'=>'game_ram','label'=>'RAM (GB)','val'=>1],
-        ['type'=>'checkbox','name'=>'game_nvme','label'=>'NVMe Storage'],
-        ['type'=>'checkbox','name'=>'game_network_priority','label'=>'Network Priority'],
-    ],
-    'Network' => [
-        ['type'=>'checkbox','name'=>'game_public_ip','label'=>'Public IP'],
-        ['type'=>'checkbox','name'=>'game_ipv6','label'=>'IPv6'],
-        ['type'=>'number','name'=>'game_additional_ports','label'=>'Additional Ports','val'=>0],
-        ['type'=>'checkbox','name'=>'game_custom_ports','label'=>'Custom Ports'],
-        ['type'=>'checkbox','name'=>'game_port_range','label'=>'Port Range'],
-    ],
-    'Game Features' => [
-        ['type'=>'checkbox','name'=>'game_mod_support','label'=>'Mod Support'],
-        ['type'=>'checkbox','name'=>'game_plugin_support','label'=>'Plugin Support'],
-        ['type'=>'checkbox','name'=>'game_custom_maps','label'=>'Custom Maps'],
-        ['type'=>'checkbox','name'=>'game_custom_config','label'=>'Custom Config Files'],
-        ['type'=>'checkbox','name'=>'game_console','label'=>'Console Access'],
-        ['type'=>'checkbox','name'=>'game_rcon','label'=>'RCON'],
-        ['type'=>'checkbox','name'=>'game_web_console','label'=>'Web Console'],
-    ],
-    'File Management' => [
-        ['type'=>'checkbox','name'=>'game_file_manager','label'=>'File Manager'],
-        ['type'=>'checkbox','name'=>'game_sftp','label'=>'SFTP'],
-        ['type'=>'checkbox','name'=>'game_ftp','label'=>'FTP'],
-        ['type'=>'checkbox','name'=>'game_upload_manager','label'=>'Upload Manager'],
-        ['type'=>'checkbox','name'=>'game_download_manager','label'=>'Download Manager'],
-        ['type'=>'checkbox','name'=>'game_archive_manager','label'=>'Archive Manager'],
-    ],
-    'Players' => [
-        ['type'=>'number','name'=>'game_max_players','label'=>'Maximum Player Slots','val'=>0],
-        ['type'=>'number','name'=>'game_reserved_slots','label'=>'Reserved Slots','val'=>0],
-        ['type'=>'checkbox','name'=>'game_whitelist','label'=>'Whitelist'],
-        ['type'=>'checkbox','name'=>'game_blacklist','label'=>'Blacklist'],
-        ['type'=>'checkbox','name'=>'game_bans','label'=>'Bans'],
-        ['type'=>'checkbox','name'=>'game_admins','label'=>'Admins'],
-    ],
-    'Backups' => [
-        ['type'=>'checkbox','name'=>'game_backup_auto','label'=>'Automatic Backups'],
-        ['type'=>'checkbox','name'=>'game_backup_manual','label'=>'Manual Backups'],
-        ['type'=>'number','name'=>'game_snapshots','label'=>'Snapshots','val'=>0],
-        ['type'=>'checkbox','name'=>'game_backup_restore','label'=>'Restore'],
-        ['type'=>'number','name'=>'game_backup_retention','label'=>'Retention (days)','val'=>14],
-    ],
-    'Monitoring' => [
-        ['type'=>'checkbox','name'=>'game_monitor_cpu','label'=>'CPU Usage'],
-        ['type'=>'checkbox','name'=>'game_monitor_ram','label'=>'RAM Usage'],
-        ['type'=>'checkbox','name'=>'game_monitor_disk','label'=>'Disk Usage'],
-        ['type'=>'checkbox','name'=>'game_monitor_players','label'=>'Player Count'],
-        ['type'=>'checkbox','name'=>'game_monitor_uptime','label'=>'Uptime'],
-        ['type'=>'checkbox','name'=>'game_monitor_crash','label'=>'Crash Detection'],
-        ['type'=>'checkbox','name'=>'game_monitor_recovery','label'=>'Auto Recovery'],
-    ],
-    'Security' => [
-        ['type'=>'checkbox','name'=>'game_sec_firewall','label'=>'Firewall Rules'],
-        ['type'=>'checkbox','name'=>'game_sec_ddos','label'=>'DDoS Protection'],
-        ['type'=>'checkbox','name'=>'game_sec_ip_restrict','label'=>'IP Restrictions'],
-        ['type'=>'checkbox','name'=>'game_sec_two_factor','label'=>'Two-Factor Auth'],
-    ],
-    'API' => [
-        ['type'=>'checkbox','name'=>'game_api_rest','label'=>'REST API'],
-        ['type'=>'checkbox','name'=>'game_api_webhooks','label'=>'Webhooks'],
-        ['type'=>'checkbox','name'=>'game_api_console','label'=>'Console API'],
-        ['type'=>'checkbox','name'=>'game_api_stats','label'=>'Statistics API'],
-    ],
-    'Marketplace' => [
-        ['type'=>'checkbox','name'=>'game_market_mods','label'=>'One-Click Mods'],
-        ['type'=>'checkbox','name'=>'game_market_plugins','label'=>'One-Click Plugins'],
-        ['type'=>'checkbox','name'=>'game_market_maps','label'=>'One-Click Maps'],
-        ['type'=>'checkbox','name'=>'game_market_templates','label'=>'Template Marketplace'],
-    ],
-    'Scheduling' => [
-        ['type'=>'checkbox','name'=>'game_sched_restarts','label'=>'Scheduled Restarts'],
-        ['type'=>'checkbox','name'=>'game_sched_backups','label'=>'Scheduled Backups'],
-        ['type'=>'checkbox','name'=>'game_sched_updates','label'=>'Scheduled Updates'],
-        ['type'=>'checkbox','name'=>'game_sched_events','label'=>'Scheduled Events'],
-    ],
-    'Logging' => [
-        ['type'=>'checkbox','name'=>'game_logs_console','label'=>'Console Logs'],
-        ['type'=>'checkbox','name'=>'game_logs_player','label'=>'Player Logs'],
-        ['type'=>'checkbox','name'=>'game_logs_chat','label'=>'Chat Logs'],
-        ['type'=>'checkbox','name'=>'game_logs_crash','label'=>'Crash Logs'],
-        ['type'=>'checkbox','name'=>'game_logs_audit','label'=>'Audit Logs'],
-    ],
-];
-foreach ($gameGroups as $gName => $gFields):
-?>
-<div class="group-label" style="color:#FF9500"><?php echo $gName; ?></div>
-<div class="feature-grid">
-<?php foreach ($gFields as $f):
-    if ($f['type']==='note'): ?>
-<div style="grid-column:1/-1;font-size:10px;color:#475569;padding:2px 0"><em><?php echo $f['label']; ?>: <?php echo $f['note']; ?></em></div>
-<?php elseif ($f['type']==='checkbox'): ?>
-<label class="feature-check"><input type="checkbox" name="custom_pkg[<?php echo $f['name']; ?>]" value="1"> <?php echo $f['label']; ?></label>
-<?php elseif ($f['type']==='number'): ?>
-<div class="form-group"><label><?php echo $f['label']; ?></label><input type="number" name="custom_pkg[<?php echo $f['name']; ?>]" value="<?php echo $f['val']; ?>"></div>
-<?php endif; endforeach; ?>
-</div>
-<?php endforeach; ?>
-
-<div style="margin-top:12px;padding:8px 12px;background:rgba(255,149,0,.05);border:1px solid rgba(255,149,0,.1);border-radius:8px;font-size:11px;color:#64748b"><i class="fa-solid fa-circle-info"></i> Game server storage uses the disk space allocation from the Resources tab.</div>
-</div>
-</div>
-</div>
-
 <!-- Sticky Footer -->
 <div style="position:fixed;bottom:0;left:0;right:0;background:rgba(2,8,23,.95);border-top:1px solid rgba(255,255,255,.06);padding:12px 20px;display:flex;justify-content:center;gap:12px;z-index:100;backdrop-filter:blur(12px)">
 <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Create Package</button>
@@ -522,12 +384,11 @@ function toggleMaster(header, switchId, sectionsId) {
     header.classList.toggle('open', on);
 
     // Create hidden input to track enabled state
-    var inputName = switchId === 'strMasterSwitch' ? 'custom_streaming_enabled' : 'custom_game_enabled';
-    var existing = document.querySelector('input[name="' + inputName + '"]');
+    var existing = document.querySelector('input[name="custom_streaming_enabled"]');
     if (on && !existing) {
         var inp = document.createElement('input');
         inp.type = 'hidden';
-        inp.name = inputName;
+        inp.name = 'custom_streaming_enabled';
         inp.value = '1';
         document.getElementById('pkgForm').appendChild(inp);
     } else if (!on && existing) {
