@@ -177,7 +177,7 @@ class PackageController extends Controller
         $user = $this->auth->user();
         $package = $this->db->table('hosting_packages')->where('id', $id)->first();
         if (!$package) { $this->response->redirect('/admin/packages'); exit; }
-        if (is_string($package->features)) $package->features = json_decode($package->features, true) ?? [];
+        if (isset($package->features) && is_string($package->features)) $package->features = json_decode($package->features, true) ?? [];
         $billingProducts = $this->db->table('billing_products')->where('package_id', $id)->get() ?: [];
         $categories = $this->getCategories();
         $featureLists = $this->getFeatureLists();

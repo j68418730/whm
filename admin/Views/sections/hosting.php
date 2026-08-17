@@ -62,7 +62,8 @@ foreach ($categories as $c) { if ($c->name === $type) { $catIcon = $c->icon ?? '
 <div class="pkg-group-title"><?php echo $catIcon ? htmlspecialchars($catIcon) . ' ' : ''; ?><?php echo htmlspecialchars($typeLabels[$type] ?? $type); ?> <span class="cnt"><?php echo count($pkgs); ?> packages</span></div>
 <div class="pkg-grid">
 <?php foreach ($pkgs as $p):
-    $feats = is_string($p->features) ? json_decode($p->features, true) ?? [] : ($p->features ?? []);
+    $featuresRaw = isset($p->features) ? $p->features : null;
+    $feats = is_string($featuresRaw) ? json_decode($featuresRaw, true) ?? [] : (is_array($featuresRaw) ? $featuresRaw : []);
     $strPkg = $feats['streaming_package'] ?? [];
     $gamePkg = $feats['game_package'] ?? [];
 ?>
