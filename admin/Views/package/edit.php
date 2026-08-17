@@ -273,12 +273,9 @@ $gameGroups = [
 ?>
 <div class="row">
 <div class="form-group"><label>Name</label><input name="name" value="<?php echo htmlspecialchars($package->name ?? '', ENT_QUOTES, 'UTF-8'); ?>" required></div>
-<div class="form-group"><label>Type <a href="/admin/packages/categories" style="color:#0A84FF;font-size:11px">(Manage)</a> <a href="javascript:void(0)" onclick="document.getElementById('addCatModal').style.display='flex'" style="color:#4ade80;font-size:11px">+ Add</a></label>
-<select name="type" id="pkgType"><?php foreach ($categories as $cat): ?><option value="<?php echo htmlspecialchars($cat->type_key ?? $cat->name, ENT_QUOTES, 'UTF-8'); ?>" <?php echo ($package->type ?? '') === ($cat->type_key ?? $cat->name) ? 'selected' : ''; ?>><?php echo htmlspecialchars(($cat->icon ?? '') . ' ' . $cat->name, ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
+<div class="form-group"><label>Category</label><select name="type" id="pkgType" onchange="toggleStreaming()"><?php foreach ($categories as $cat): ?><option value="<?php echo htmlspecialchars($cat->type_key ?? $cat->name, ENT_QUOTES, 'UTF-8'); ?>" <?php echo ($package->type ?? '') === ($cat->type_key ?? $cat->name) ? 'selected' : ''; ?>><?php echo htmlspecialchars(($cat->icon ?? '') . ' ' . $cat->name, ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
 </div>
-<div class="form-group"><label>Description</label><textarea name="description" style="min-height:50px"><?php echo htmlspecialchars($package->description ?? '', ENT_QUOTES, 'UTF-8'); ?></textarea></div>
 <div class="row">
-<div class="form-group"><label>Sort Order</label><input name="sort_order" type="number" value="<?php echo $package->sort_order ?? 0; ?>"></div>
 <div class="form-group"><label>Disk Space (GB)</label><input name="disk_space" type="number" value="<?php echo $package->disk_space ?? 0; ?>"><small style="color:#64748b">Shared by all services</small></div>
 <div class="form-group"><label>Bandwidth (GB)</label><input name="bandwidth" type="number" value="<?php echo $package->bandwidth ?? 0; ?>"></div>
 <div class="form-group"><label>Max Domains</label><input name="max_domains" type="number" value="<?php echo $package->max_domains ?? 1; ?>"></div>
@@ -299,20 +296,23 @@ $gameGroups = [
 </select>
 </div>
 
-<div style="margin:12px 0;border:1px solid rgba(0,191,255,.15);border-radius:8px;padding:12px">
+<div style="margin:12px 0;border:1px solid rgba(0,191,255,.15);border-radius:8px;padding:12px" id="streamingSection">
 <h4 style="color:var(--accent);font-size:14px;margin-bottom:8px">Streaming Limits</h4>
 <div class="row">
 <div class="form-group"><label>Listener Limit</label><input name="listener_limit" type="number" value="<?php echo $package->listener_limit ?? 0; ?>"></div>
 <div class="form-group"><label>Bitrate (kbps)</label><input name="bitrate" type="number" value="<?php echo $package->bitrate ?? 0; ?>"></div>
-<div class="form-group"><label>Storage Limit (GB)</label><input name="storage_limit" type="number" value="<?php echo $package->storage_limit ?? 0; ?>"></div>
 <div class="form-group"><label>DJ Accounts</label><input name="dj_accounts" type="number" value="<?php echo $package->dj_accounts ?? 0; ?>"></div>
-<div class="form-group"><label>PHP Version</label><select name="php_version">
+</div>
+</div>
+
+<div style="margin:12px 0;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:12px">
+<h4 style="color:#94a3b8;font-size:14px;margin-bottom:8px">PHP Version</h4>
+<div class="form-group"><select name="php_version">
 <option value="8.2" <?php echo ($package->php_version ?? '') === '8.2' ? 'selected' : ''; ?>>PHP 8.2</option>
 <option value="8.1" <?php echo ($package->php_version ?? '') === '8.1' ? 'selected' : ''; ?>>PHP 8.1</option>
 <option value="8.0" <?php echo ($package->php_version ?? '') === '8.0' ? 'selected' : ''; ?>>PHP 8.0</option>
 <option value="7.4" <?php echo ($package->php_version ?? '') === '7.4' ? 'selected' : ''; ?>>PHP 7.4</option>
 </select></div>
-</div>
 </div>
 
 <div style="margin:12px 0">
@@ -419,32 +419,16 @@ foreach ($genFeatures as $k=>$l):
 </div>
 </form>
 </div>
-
-<!-- Inline Add Category Modal -->
-<div id="addCatModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);align-items:center;justify-content:center">
-<div style="background:rgba(8,16,28,.95);border:1px solid rgba(0,191,255,.2);border-radius:12px;padding:24px;max-width:420px;width:100%">
-<h3 style="color:#0A84FF;margin:0 0 16px;font-size:16px">Add Category</h3>
-<form method="POST" action="/admin/packages/categories" id="inlineCatForm">
-<div style="display:grid;gap:10px">
-<div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px;font-weight:600">Name</label><input name="name" required placeholder="e.g. VPS Hosting" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:13px"></div>
-<div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px;font-weight:600">Type Key</label><input name="type_key" required placeholder="e.g. vps" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:13px"></div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-<div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px;font-weight:600">Icon</label><input name="icon" value="📦" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:13px"></div>
-<div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px;font-weight:600">Sort</label><input name="sort_order" type="number" value="0" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:13px"></div>
-</div>
-</div>
-<div style="display:flex;gap:8px;margin-top:16px">
-<button type="submit" class="btn primary" style="padding:8px 16px;font-size:12px">Save Category</button>
-<button type="button" class="btn secondary" style="padding:8px 16px;font-size:12px" onclick="document.getElementById('addCatModal').style.display='none'">Cancel</button>
-</div>
-</form>
-</div>
-</div>
-
 <script>
 function toggleSection(cb, id) {
     document.getElementById(id).style.display = cb.checked ? 'block' : 'none';
 }
+function toggleStreaming() {
+    var t = document.getElementById('pkgType').value;
+    var s = document.getElementById('streamingSection');
+    s.style.display = (t === 'icecast' || t === 'icecast_reseller') ? '' : 'none';
+}
+toggleStreaming();
 </script>
 </body>
 </html>
