@@ -144,7 +144,6 @@ class PackageController extends Controller
         $data = [
             'name' => $this->request->post('name', ''),
             'type' => $this->request->post('type', 'web_hosting'),
-            'description' => $this->request->post('description', ''),
             'php_version' => $this->request->post('php_version', '8.2'),
             'features' => $this->mergePkgFeatures(),
             'feature_list_id' => (int)$this->request->post('feature_list_id', 0) ?: null,
@@ -160,9 +159,7 @@ class PackageController extends Controller
             'addon_domains' => (int)$this->request->post('addon_domains', 0),
             'listener_limit' => (int)$this->request->post('listener_limit', 0),
             'bitrate' => (int)$this->request->post('bitrate', 0),
-            'storage_limit' => (int)$this->request->post('storage_limit', 0),
             'dj_accounts' => (int)$this->request->post('dj_accounts', 0),
-            'sort_order' => (int)$this->request->post('sort_order', 0),
             'is_active' => 1,
         ];
         $this->db->table('hosting_packages')->insertGetId($data);
@@ -191,7 +188,6 @@ class PackageController extends Controller
         $data = [
             'name' => $this->request->post('name', ''),
             'type' => $this->request->post('type', 'web_hosting'),
-            'description' => $this->request->post('description', ''),
             'php_version' => $this->request->post('php_version', '8.2'),
             'features' => $this->mergePkgFeatures(),
             'feature_list_id' => (int)$this->request->post('feature_list_id', 0) ?: null,
@@ -207,9 +203,7 @@ class PackageController extends Controller
             'addon_domains' => (int)$this->request->post('addon_domains', 0),
             'listener_limit' => (int)$this->request->post('listener_limit', 0),
             'bitrate' => (int)$this->request->post('bitrate', 0),
-            'storage_limit' => (int)$this->request->post('storage_limit', 0),
             'dj_accounts' => (int)$this->request->post('dj_accounts', 0),
-            'sort_order' => (int)$this->request->post('sort_order', 0),
             'is_active' => $this->request->post('is_active') === 'on' ? 1 : (($this->request->post('is_active') ?? '') === '1' ? 1 : 0),
         ];
         $this->db->table('hosting_packages')->where('id', $id)->update($data);

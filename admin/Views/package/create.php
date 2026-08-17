@@ -80,12 +80,7 @@ body{font-family:'Inter',sans-serif;background:#020817;color:#e0e0e0;min-height:
 <div class="section-title"><i class="fa-solid fa-tag"></i> Basic Info</div>
 <div class="form-grid cols-2">
 <div class="form-group"><label>Package Name *</label><input name="name" required placeholder="e.g. Starter, Basic, Business, Pro"></div>
-<div class="form-group"><label>Category <a href="/admin/packages/categories" style="color:#0A84FF;font-size:11px">(Manage)</a> <a href="javascript:void(0)" onclick="document.getElementById('addCatModal').style.display='flex'" style="color:#4ade80;font-size:11px">+ Add</a></label><select name="type"><?php foreach ($categories as $cat): ?><option value="<?php echo htmlspecialchars($cat->type_key ?? $cat->name, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars(($cat->icon ?? '📦') . ' ' . $cat->name, ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
-</div>
-<div class="form-group" style="margin-top:12px"><label>Description</label><textarea name="description" rows="2" placeholder="Brief description for internal use..."></textarea></div>
-<div class="form-grid cols-2" style="margin-top:12px">
-<div class="form-group"><label>Sort Order</label><input name="sort_order" type="number" value="0"></div>
-<div class="form-group"></div>
+<div class="form-group"><label>Category</label><select name="type" id="pkgType" onchange="toggleStreaming()"><?php foreach ($categories as $cat): ?><option value="<?php echo htmlspecialchars($cat->type_key ?? $cat->name, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars(($cat->icon ?? '📦') . ' ' . $cat->name, ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
 </div>
 </div>
 
@@ -113,13 +108,11 @@ body{font-family:'Inter',sans-serif;background:#020817;color:#e0e0e0;min-height:
 </div>
 
 <!-- STREAMING LIMITS (only for streaming package types) -->
-<div class="section" style="border-color:rgba(10,132,255,.12)">
+<div class="section" id="streamingSection" style="border-color:rgba(10,132,255,.12);display:none">
 <div class="section-title"><i class="fa-solid fa-headphones" style="color:#0A84FF"></i> Streaming Limits</div>
-<p style="font-size:11px;color:#64748b;margin-bottom:12px">Only applies to Icecast / SHOUTcast package types.</p>
-<div class="form-grid cols-4">
+<div class="form-grid cols-3">
 <div class="form-group"><label>Listener Limit</label><input name="listener_limit" type="number" value="0"></div>
 <div class="form-group"><label>Max Bitrate (kbps)</label><input name="bitrate" type="number" value="0"></div>
-<div class="form-group"><label>Storage Limit (GB)</label><input name="storage_limit" type="number" value="0"></div>
 <div class="form-group"><label>DJ Accounts</label><input name="dj_accounts" type="number" value="0"></div>
 </div>
 </div>
@@ -148,27 +141,16 @@ body{font-family:'Inter',sans-serif;background:#020817;color:#e0e0e0;min-height:
 </div>
 </form>
 
-<!-- Inline Add Category Modal -->
-<div id="addCatModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);align-items:center;justify-content:center">
-<div style="background:rgba(8,16,28,.95);border:1px solid rgba(0,191,255,.2);border-radius:12px;padding:24px;max-width:420px;width:100%">
-<h3 style="color:#0A84FF;margin:0 0 16px;font-size:16px">Add Category</h3>
-<form method="POST" action="/admin/packages/categories">
-<div style="display:grid;gap:10px">
-<div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px;font-weight:600">Name</label><input name="name" required placeholder="e.g. VPS Hosting" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:13px"></div>
-<div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px;font-weight:600">Type Key</label><input name="type_key" required placeholder="e.g. vps" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:13px"></div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-<div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px;font-weight:600">Icon</label><input name="icon" value="📦" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:13px"></div>
-<div><label style="display:block;font-size:11px;color:#94a3b8;margin-bottom:3px;font-weight:600">Sort</label><input name="sort_order" type="number" value="0" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:13px"></div>
 </div>
-</div>
-<div style="display:flex;gap:8px;margin-top:16px">
-<button type="submit" class="btn-primary" style="padding:8px 16px;font-size:12px">Save Category</button>
-<button type="button" class="btn-secondary" style="padding:8px 16px;font-size:12px" onclick="document.getElementById('addCatModal').style.display='none'">Cancel</button>
-</div>
-</form>
-</div>
-</div>
-
-</div>
+<script>
+function toggleStreaming() {
+    var t = document.getElementById('pkgType').value;
+    var s = document.getElementById('streamingSection');
+    s.style.display = (t === 'icecast' || t === 'icecast_reseller') ? '' : 'none';
+}
+toggleStreaming();
+</script>
+</body>
+</html>
 </body>
 </html>
