@@ -90,17 +90,17 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 <div class="product-image"><img src="/theme/assets/img/dashboard.png" alt="<?php echo htmlspecialchars($product->name ?? '', ENT_QUOTES, 'UTF-8'); ?>"></div>
 <div class="product-info">
 <h1><?php echo htmlspecialchars($product->name ?? '', ENT_QUOTES, 'UTF-8'); ?> <span>Plan</span></h1>
-<div class="price">$<?php echo number_format((float)($product->monthly_price ?? $product->price ?? 0), 2); ?><small>/month</small></div>
+<div class="price">$<?php echo number_format((float)($product->price ?? $product->monthly_price ?? 0), 2); ?><small>/month</small></div>
 <?php if (!empty($product->description)): ?>
 <p class="desc"><?php echo nl2br(htmlspecialchars($product->description ?? '', ENT_QUOTES, 'UTF-8')); ?></p>
 <?php endif; ?>
 <div class="billing-cycle">
 <label style="font-size:13px;color:#94a3b8;display:block;margin-bottom:6px">Billing Cycle</label>
 <select id="billingCycle">
-<option value="1">Monthly - $<?php echo number_format((float)($product->monthly_price ?? $product->price ?? 0), 2); ?>/mo</option>
-<option value="3">Quarterly - $<?php echo number_format((float)($product->monthly_price ?? $product->price ?? 0) * 3 * 0.95, 2); ?> (5% off)</option>
-<option value="6">Semi-Annual - $<?php echo number_format((float)($product->monthly_price ?? $product->price ?? 0) * 6 * 0.90, 2); ?> (10% off)</option>
-<option value="12">Annual - $<?php echo number_format((float)($product->monthly_price ?? $product->price ?? 0) * 12 * 0.80, 2); ?> (20% off)</option>
+<option value="1">Monthly - $<?php echo number_format((float)($product->price ?? $product->monthly_price ?? 0), 2); ?>/mo</option>
+<option value="3">Quarterly - $<?php echo number_format((float)($product->price ?? $product->monthly_price ?? 0) * 3 * 0.95, 2); ?> (5% off)</option>
+<option value="6">Semi-Annual - $<?php echo number_format((float)($product->price ?? $product->monthly_price ?? 0) * 6 * 0.90, 2); ?> (10% off)</option>
+<option value="12">Annual - $<?php echo number_format((float)($product->price ?? $product->monthly_price ?? 0) * 12 * 0.80, 2); ?> (20% off)</option>
 </select>
 </div>
 <ul class="feature-list">
@@ -119,7 +119,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 <li><i class="fa-solid fa-circle-check"></i> 24/7 Support</li>
 </ul>
 <div style="display:flex;gap:12px;flex-wrap:wrap">
-<a href="/cart.php?action=add&id=<?php echo (int)$product->id; ?>&name=<?php echo urlencode($product->name ?? ''); ?>&price=<?php echo (float)($product->monthly_price ?? $product->price ?? 0); ?>" class="btn btn-primary btn-lg"><i class="fa-solid fa-cart-plus"></i> Order Now</a>
+<a href="/cart.php?action=add&id=<?php echo (int)$product->id; ?>&name=<?php echo urlencode($product->name ?? ''); ?>&price=<?php echo (float)($product->price ?? $product->monthly_price ?? 0); ?>" class="btn btn-primary btn-lg"><i class="fa-solid fa-cart-plus"></i> Order Now</a>
 <a href="/hosting" class="btn btn-secondary btn-lg"><i class="fa-solid fa-arrow-left"></i> Back to Plans</a>
 </div>
 </div>

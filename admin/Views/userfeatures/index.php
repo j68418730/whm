@@ -23,7 +23,7 @@ $feats = json_decode($pkg->features ?? '{}', true);
 ?>
 <tr>
 <td><strong style="font-size:12px"><?php echo htmlspecialchars($pkg->name); ?></strong>
-<?php if ($pkg->monthly_price > 0): ?><span style="color:#64748b;font-size:10px"> $<?php echo number_format($pkg->monthly_price, 2); ?>/mo</span><?php endif; ?>
+<?php $displayPrice = $pkg->price ?? $pkg->monthly_price ?? 0; if ($displayPrice > 0): ?><span style="color:#64748b;font-size:10px"> $<?php echo number_format($displayPrice, 2); ?>/mo</span><?php endif; ?>
 </td>
 <?php foreach ($allFeatures as $fKey => $fLabel): 
 $val = $feats[$fKey] ?? null;

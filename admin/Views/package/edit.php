@@ -276,11 +276,6 @@ $gameGroups = [
 </div>
 <div class="form-group"><label>Description</label><textarea name="description" style="min-height:50px"><?php echo htmlspecialchars($package->description ?? '', ENT_QUOTES, 'UTF-8'); ?></textarea></div>
 <div class="row">
-<div class="form-group"><label>Monthly ($)</label><input name="monthly_price" type="number" step="0.01" value="<?php echo $package->monthly_price ?? 0; ?>"></div>
-<div class="form-group"><label>Quarterly ($)</label><input name="quarterly_price" type="number" step="0.01" value="<?php echo $package->quarterly_price ?? 0; ?>"></div>
-<div class="form-group"><label>Semi-Annual ($)</label><input name="semi_annual_price" type="number" step="0.01" value="<?php echo $package->semi_annual_price ?? 0; ?>"></div>
-<div class="form-group"><label>Annual ($)</label><input name="annual_price" type="number" step="0.01" value="<?php echo $package->annual_price ?? 0; ?>"></div>
-<div class="form-group"><label>Setup Fee ($)</label><input name="setup_fee" type="number" step="0.01" value="<?php echo $package->setup_fee ?? 0; ?>"></div>
 <div class="form-group"><label>Sort Order</label><input name="sort_order" type="number" value="<?php echo $package->sort_order ?? 0; ?>"></div>
 <div class="form-group"><label>Disk Space (GB)</label><input name="disk_space" type="number" value="<?php echo $package->disk_space ?? 0; ?>"><small style="color:#64748b">Shared by all services</small></div>
 <div class="form-group"><label>Bandwidth (GB)</label><input name="bandwidth" type="number" value="<?php echo $package->bandwidth ?? 0; ?>"></div>
@@ -388,6 +383,25 @@ foreach ($genFeatures as $k=>$l):
 <?php endforeach; ?>
 <div style="margin-top:6px;padding:4px 8px;background:rgba(255,255,255,.03);border-radius:4px;font-size:11px;color:#64748b"><strong>Note:</strong> Storage uses disk allocation above.</div>
 </div>
+</div>
+
+<div style="margin-top:16px;border:1px solid rgba(74,222,128,.15);border-radius:8px;padding:12px">
+<h4 style="color:#4ade80;font-size:14px;margin-bottom:8px">Products Using This Package</h4>
+<?php if (!empty($billingProducts)): ?>
+<div style="display:grid;gap:8px">
+<?php foreach ($billingProducts as $bp): ?>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,.03);border-radius:6px">
+<div>
+<span style="font-weight:600;font-size:13px"><?php echo htmlspecialchars($bp->name); ?></span>
+<span style="color:#64748b;font-size:11px;margin-left:8px"><?php echo htmlspecialchars($bp->billing_cycle); ?></span>
+</div>
+<div style="color:#4ade80;font-weight:700;font-size:14px">$<?php echo number_format($bp->price, 2); ?></div>
+</div>
+<?php endforeach; ?>
+</div>
+<?php else: ?>
+<p style="color:#64748b;font-size:12px">No billing products linked to this package.</p>
+<?php endif; ?>
 </div>
 
 <div style="margin-top:20px;border-top:1px solid rgba(255,255,255,.06);padding-top:16px">

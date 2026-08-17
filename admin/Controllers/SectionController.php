@@ -34,7 +34,7 @@ class SectionController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { header('Location: /admin/login'); exit; }
         $user = $this->auth->user();
-        $packages = $this->db->table('hosting_packages')->orderBy('type')->orderBy('monthly_price')->get() ?: [];
+        $packages = $this->db->table('hosting_packages')->orderBy('type')->orderBy('sort_order')->get() ?: [];
         $grouped = [];
         foreach ($packages as $p) {
             $t = $p->type ?? 'web_hosting';

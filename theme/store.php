@@ -188,7 +188,7 @@ $minPrice = ($gt->min_slots ?? 10) * ($gt->price_per_slot ?? 0.50) + ($gt->setup
 <?php foreach ($packagesByType[$currentCategory] as $i => $pkg): ?>
 <div class="store-card<?php if ($i === 1): ?> featured<?php endif; ?>" data-name="<?php echo htmlspecialchars(strtolower($pkg->name ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
 <h4><?php echo htmlspecialchars($pkg->name, ENT_QUOTES, 'UTF-8'); ?></h4>
-<div class="price">$<?php echo number_format((float)($pkg->monthly_price ?? $pkg->price ?? 0), 2); ?><small>/mo</small></div>
+<div class="price">$<?php echo number_format((float)($pkg->price ?? $pkg->monthly_price ?? 0), 2); ?><small>/mo</small></div>
 <p><?php echo htmlspecialchars($pkg->description ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
 <ul class="features-list">
 <?php $pf = is_string($pkg->features ?? null) ? json_decode($pkg->features, true) ?? [] : ($pkg->features ?? []); $sp = $pf['streaming_package'] ?? []; $gp = $pf['game_package'] ?? []; ?>

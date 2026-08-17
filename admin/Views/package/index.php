@@ -41,7 +41,7 @@ foreach ($categories as $c) { if ($c->name === $type) { $catIcon = $c->icon ?? '
 <div class="pkg-card">
 <div class="p-name"><?php echo htmlspecialchars($p->name); ?></div>
 <div class="p-type"><?php echo htmlspecialchars($p->description ? substr($p->description, 0, 60) : ''); ?></div>
-<div class="p-price">$<?php echo number_format($p->monthly_price, 2); ?><small>/mo</small></div>
+<div class="p-price" style="font-size:13px;color:#94a3b8;font-weight:400"><?php echo ($productCounts[$p->id] ?? 0); ?> Product<?php echo ($productCounts[$p->id] ?? 0) !== 1 ? 's' : ''; ?></div>
 <div class="p-features">
 <?php if ($p->disk_space): ?>📁 <?php echo $p->disk_space; ?> GB Disk<br><?php endif; ?>
 <?php if ($p->bandwidth): ?>📶 <?php echo $p->bandwidth; ?> GB BW<br><?php endif; ?>

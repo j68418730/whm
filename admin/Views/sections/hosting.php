@@ -74,8 +74,7 @@ foreach ($categories as $c) { if ($c->name === $type) { $catIcon = $c->icon ?? '
 </div>
 <span class="p-status" style="background:<?php echo ($p->is_active ?? 1) ? 'rgba(74,222,128,.12);color:#4ade80' : 'rgba(248,113,113,.12);color:#f87171' ?>"><?php echo ($p->is_active ?? 1) ? 'Active' : 'Inactive'; ?></span>
 </div>
-<div class="p-price">$<?php echo number_format($p->monthly_price, 2); ?><small>/mo</small></div>
-<div class="p-features">
+<div class="p-features" style="margin-top:6px">
 <?php if (!empty($p->disk_space)): ?><span class="label">📁 Disk:</span> <?php echo number_format($p->disk_space); ?> MB<br><?php endif; ?>
 <?php if (!empty($p->bandwidth)): ?><span class="label">📶 Bandwidth:</span> <?php echo number_format($p->bandwidth); ?> MB<br><?php endif; ?>
 <?php if (!empty($p->email_accounts)): ?><span class="label">✉️ Emails:</span> <?php echo (int)$p->email_accounts; ?><br><?php endif; ?>

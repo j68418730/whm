@@ -125,11 +125,16 @@ class UserController extends Controller
         // Services / Orders (all account types)
         $services = $uid ? ($this->db->table('billing_services')->where('user_id', $uid)->get() ?: []) : [];
         if (empty($services) && $hosting && $pkg) {
+            $bpPrice = 0;
+            try {
+                $bp = $this->db->table('billing_products')->where('package_id', $pkg->id)->where('is_active', 1)->first();
+                if ($bp) $bpPrice = $bp->price ?? 0;
+            } catch (\Exception $e) {}
             $svc = new \stdClass();
             $svc->id = $hosting->id;
             $svc->name = $pkg->name;
             $svc->type = $pkg->type ?? 'web_hosting';
-            $svc->price = $pkg->monthly_price ?? 0;
+            $svc->price = $bpPrice ?: ($pkg->monthly_price ?? 0);
             $services = [$svc];
         }
         $allServicesCount = count($services);

@@ -7,6 +7,6 @@ $sp = $pf['streaming_package'] ?? [];
 <strong>Bitrate:</strong> <?php echo ($sp['max_bitrate'] ?? 'N/A'); ?> kbps<br>
 <strong>Listeners:</strong> <?php echo ($sp['max_listeners'] ?? 'N/A'); ?><br>
 <strong>Storage:</strong> <?php echo ($sp['upload_limit'] ?? 'N/A'); ?> MB<br>
-<strong>Price:</strong> $<?php echo number_format($package->monthly_price, 2); ?>/mo</p>
+<strong>Price:</strong> $<?php echo number_format($package->price ?? $package->monthly_price ?? 0, 2); ?>/mo</p>
 <?php else: ?><p style="color:#64748b">No package assigned.</p>
 <?php endif; ?></div>

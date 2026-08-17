@@ -47,8 +47,8 @@
 <option value="">-- No Package --</option>
 <option value="custom">-- Manual Custom --</option>
 <?php if (isset($packages)): foreach ($packages as $p): ?>
-<option value="<?php echo $p->id; ?>" data-disk="<?php echo $p->disk_space ?? 0; ?>" data-bw="<?php echo $p->bandwidth ?? 0; ?>" data-email="<?php echo $p->email_accounts ?? 0; ?>" data-db="<?php echo $p->databases ?? 0; ?>" data-price="<?php echo $p->monthly_price ?? 0; ?>">
-<?php echo htmlspecialchars($p->name, ENT_QUOTES, 'UTF-8'); ?> ($<?php echo number_format($p->monthly_price ?? 0, 2); ?>/mo)
+<option value="<?php echo $p->id; ?>" data-disk="<?php echo $p->disk_space ?? 0; ?>" data-bw="<?php echo $p->bandwidth ?? 0; ?>" data-email="<?php echo $p->email_accounts ?? 0; ?>" data-db="<?php echo $p->databases ?? 0; ?>" data-price="<?php echo $p->price ?? $p->monthly_price ?? 0; ?>">
+<?php echo htmlspecialchars($p->name, ENT_QUOTES, 'UTF-8'); ?> ($<?php echo number_format($p->price ?? $p->monthly_price ?? 0, 2); ?>/mo)
 </option>
 <?php endforeach; endif; ?>
 </select>

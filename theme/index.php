@@ -27,7 +27,7 @@ try {
 if (empty($packagesByType)) {
     try {
         $app = \Core\Application::getInstance();
-        $allPkgs = $app->get('db')->table('hosting_packages')->where('is_active', 1)->orderBy('sort_order', 'ASC')->get() ?: [];
+        $allPkgs = $app->get('db')->pdo()->query("SELECT hp.*, COALESCE(bp.price, hp.monthly_price) as price FROM hosting_packages hp LEFT JOIN billing_products bp ON hp.id = bp.package_id AND bp.is_active = 1 WHERE hp.is_active = 1 ORDER BY hp.sort_order ASC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         foreach ($allPkgs as $pkg) {
             $t = $pkg->type ?? 'Other';
             if (!isset($packagesByType[$t])) $packagesByType[$t] = [];
@@ -323,7 +323,7 @@ $pkgCount = count($pkgs);
 <div class="pkg-rotate<?php if ($i === 0) echo ' active'; ?>" data-type="<?php echo $type; ?>" data-index="<?php echo $i; ?>">
 <h3><?php echo htmlspecialchars($pkg->name, ENT_QUOTES, 'UTF-8'); ?></h3>
 <div class="subtitle"><?php echo htmlspecialchars($pkg->description ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
-<div class="price">$<?php echo number_format((float)($pkg->monthly_price ?? $pkg->price ?? 0), 2); ?><span>/mo</span></div>
+<div class="price">$<?php echo number_format((float)($pkg->price ?? $pkg->monthly_price ?? 0), 2); ?><span>/mo</span></div>
 <ul>
 <?php $pf = is_string($pkg->features ?? null) ? json_decode($pkg->features, true) ?? [] : ($pkg->features ?? []); $sp = $pf['streaming_package'] ?? []; $gp = $pf['game_package'] ?? []; ?>
 <?php if (!empty($pkg->disk_space) && $pkg->disk_space > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo $pkg->disk_space; ?> GB Disk</li><?php endif; ?>
@@ -339,7 +339,7 @@ $pkgCount = count($pkgs);
 <li><i class="fa-solid fa-check"></i> Free SSL</li>
 <li><i class="fa-solid fa-check"></i> 24/7 Support</li>
 </ul>
-<a href="/cart.php?action=add&id=<?php echo (int)$pkg->id; ?>&name=<?php echo urlencode($pkg->name ?? ''); ?>&price=<?php echo (float)($pkg->monthly_price ?? $pkg->price ?? 0); ?>" class="btn">Order Now →</a>
+<a href="/cart.php?action=add&id=<?php echo (int)$pkg->id; ?>&name=<?php echo urlencode($pkg->name ?? ''); ?>&price=<?php echo (float)($pkg->price ?? $pkg->monthly_price ?? 0); ?>" class="btn">Order Now →</a>
 <a href="/product/<?php echo (int)$pkg->id; ?>" class="btn-outline">Read More →</a>
 </div>
 <?php endforeach; ?>
