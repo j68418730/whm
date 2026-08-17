@@ -47,16 +47,14 @@
 </div>
 
 <?php
-$typeLabels = [
-    'web_hosting' => '🌐 Web Hosting', 'web_reseller' => '🌐 Web Reseller',
-    'icecast' => '🎧 Icecast Streaming', 'icecast_reseller' => '🎧 Icecast Reseller',
-    'vps' => '🖥 VPS', 'dedicated' => '🖥 Dedicated',
-    'game_server' => '🎮 Game Servers', 'dev' => '⚙️ Dev',
-];
+$catMap = [];
+foreach ($categories ?? [] as $c) { $catMap[$c->type_key ?? $c->name] = $c; }
+$typeLabels = [];
+foreach ($categories ?? [] as $c) { $typeLabels[$c->type_key ?? $c->name] = $c->icon . ' ' . $c->name; }
 foreach ($grouped ?? [] as $type => $pkgs):
 if (empty($pkgs)) continue;
-$catIcon = '';
-foreach ($categories as $c) { if ($c->name === $type) { $catIcon = $c->icon ?? ''; break; } }
+$cat = $catMap[$type] ?? null;
+$catIcon = $cat->icon ?? '';
 ?>
 <div style="margin-bottom:20px">
 <div class="pkg-group-title"><?php echo $catIcon ? htmlspecialchars($catIcon) . ' ' : ''; ?><?php echo htmlspecialchars($typeLabels[$type] ?? $type); ?> <span class="cnt"><?php echo count($pkgs); ?> packages</span></div>

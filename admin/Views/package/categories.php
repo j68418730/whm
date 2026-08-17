@@ -12,6 +12,7 @@
 <form method="POST" action="/admin/packages/categories" id="catForm">
 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
 <div class="form-group" style="flex:2;min-width:150px"><label>Category Name</label><input name="name" required placeholder="e.g. Web Hosting"></div>
+<div class="form-group" style="flex:2;min-width:150px"><label>Type Key (matches package type)</label><input name="type_key" required placeholder="e.g. web_hosting"></div>
 <div class="form-group" style="flex:1;min-width:60px"><label>Sort</label><input name="sort_order" type="number" value="0"></div>
 </div>
 
@@ -68,7 +69,7 @@ document.getElementById('iconInput').addEventListener('input', function() {
 </script>
 
 <table>
-<tr><th>Icon</th><th>Name</th><th>Sort</th><th>Actions</th></tr>
+<tr><th>Icon</th><th>Name</th><th>Type Key</th><th>Sort</th><th>Actions</th></tr>
 <?php if (!empty($categories)): foreach ($categories as $cat): ?>
 <tr>
 <form method="POST" action="/admin/packages/categories/update/<?php echo $cat->id; ?>" style="display:contents">
@@ -81,6 +82,7 @@ if (str_starts_with($icon, '/') || str_starts_with($icon, 'http')) {
 }
 ?></td>
 <td><input name="name" value="<?php echo htmlspecialchars($cat->name, ENT_QUOTES, 'UTF-8'); ?>" style="width:100%;padding:4px 8px;border-radius:4px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:13px"></td>
+<td><input name="type_key" value="<?php echo htmlspecialchars($cat->type_key ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%;padding:4px 8px;border-radius:4px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:13px" placeholder="e.g. web_hosting"></td>
 <td><input name="sort_order" type="number" value="<?php echo $cat->sort_order ?? 0; ?>" style="width:60px;padding:4px;border-radius:4px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:13px;text-align:center"></td>
 <td style="display:flex;gap:4px">
 <button type="submit" class="btn btn-sm" style="background:rgba(0,140,255,.1);color:#0A84FF;border:1px solid rgba(0,140,255,.2)">Save</button>
@@ -89,6 +91,6 @@ if (str_starts_with($icon, '/') || str_starts_with($icon, 'http')) {
 </form>
 </tr>
 <?php endforeach; else: ?>
-<tr><td colspan="4" style="text-align:center;padding:20px;color:#64748b">No categories yet.</td></tr>
+<tr><td colspan="5" style="text-align:center;padding:20px;color:#64748b">No categories yet.</td></tr>
 <?php endif; ?>
 </table>
