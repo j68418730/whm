@@ -245,6 +245,7 @@ $router->get('/api/studio/station/{stationId}/djs', 'User\Controllers\Api\Studio
 // $router->delete('/api/studio/station/{stationId}/djs/{djId}', 'User\Controllers\Api\StudioApiController@deleteDj');
 // Chat routes
 $router->post('/chat/start', 'User\Controllers\ChatController@start');
+$router->get('/chat/waiting', 'User\Controllers\ChatController@waiting');
 $router->get('/chat/poll/{sessionId}', 'User\Controllers\ChatController@poll');
 $router->post('/chat/send', 'User\Controllers\ChatController@send');
 $router->post('/chat/upload/{sessionId}', 'User\Controllers\ChatController@upload');

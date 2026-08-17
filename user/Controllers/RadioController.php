@@ -364,7 +364,7 @@ class RadioController extends Controller
         if (!$this->auth->check()) exit;
         $station = $this->getStation();
         if ($station) {
-            $dj = $this->db->table('radio_djs')->where('id', $id)->where('stream_id', $station->streaming_id ?? $station->id)->first();
+            $dj = $this->db->table('radio_djs')->where('id', $id)->first();
             if ($dj) {
                 // Remove from chatbox
                 try {
@@ -374,6 +374,8 @@ class RadioController extends Controller
                         if ($tenant) $this->db->table('chatbox_users')->where('tenant_id', $tenant->id)->where('username', $dj->username)->delete();
                     }
                 } catch (\Exception $e) {}
+                // Remove station assignments then the DJ
+                $this->db->table('radio_dj_streams')->where('dj_id', $id)->delete();
                 $this->db->table('radio_djs')->where('id', $id)->delete();
             }
             $_SESSION['success'] = 'DJ deleted.';
@@ -398,7 +400,7 @@ class RadioController extends Controller
         if (in_array($newStatus, ['active','inactive','banned','suspended','on_leave'])) $update['status'] = $newStatus;
         if (!empty($update)) {
             try {
-                $this->db->table('radio_djs')->where('id', $id)->where('stream_id', $station->streaming_id ?? $station->id)->update($update);
+                $this->db->table('radio_djs')->where('id', $id)->update($update);
                 // Sync chatbox role
                 try {
                     $dj = $this->db->table('radio_djs')->where('id', $id)->first();
@@ -451,7 +453,7 @@ class RadioController extends Controller
         $station = $this->getStation();
         if ($station) {
             $rid = $station->streaming_id ?? $station->id;
-            $dj = $this->db->table('radio_djs')->where('id', $id)->where('stream_id', $rid)->first();
+            $dj = $this->db->table('radio_djs')->where('id', $id)->first();
             if ($dj) {
                 // Cycle: active -> suspended -> on_leave -> active
                 $cycle = ['active' => 'suspended', 'suspended' => 'on_leave', 'on_leave' => 'active'];

@@ -158,6 +158,8 @@ class ShoutcastDriver implements StreamingDriverInterface
             if ($user) {
                 $svc = new \Services\RadioDjService($this->db);
                 $svc->ensurePrimaryDj($user);
+                // Give all existing DJs on the account access to this new station
+                $svc->assignAllDjsToStation($userId, $id);
             }
         } catch (\Exception $e) {}
 

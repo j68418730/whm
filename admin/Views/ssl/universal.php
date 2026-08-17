@@ -100,7 +100,7 @@ echo $icons[$type] ?? '🔌';
 <div id="sslHealthResults">
 <?php if (!empty($health)): ?>
 <table>
-<thead><tr><th>Service</th><th>Domain</th><th>Port</th><th>Status</th><th>Days Left</th><th>TLS OK</th><th>Hostname Match</th></tr></thead>
+<thead><tr><th>Service</th><th>Domain</th><th>Port</th><th>Status</th><th>Days Left</th><th>TLS OK</th><th>Hostname Match</th><th>Actions</th></tr></thead>
 <tbody>
 <?php foreach ($health as $h): ?>
 <tr>
@@ -111,6 +111,13 @@ echo $icons[$type] ?? '🔌';
 <td><?php echo $h['days_left']; ?></td>
 <td><?php echo $h['tls_handshake'] ? '<span style="color:#4ade80">✓</span>' : '<span style="color:#f87171">✗</span>'; ?></td>
 <td><?php echo $h['hostname_match'] ? '<span style="color:#4ade80">✓</span>' : '<span style="color:#f87171">✗</span>'; ?></td>
+<td>
+<?php if ($h['status'] !== 'ok'): ?>
+<a href="/admin/ssl/universal/repair?service_id=<?php echo (int)$h['service_id']; ?>" class="btn btn-sm primary" style="font-size:10px;padding:3px 8px" onclick="return confirm('Repair <?php echo htmlspecialchars($h['service_name'] ?? $h['service']); ?>?')">🔧 Fix</a>
+<?php else: ?>
+<span style="color:#4ade80;font-size:11px">✓ Healthy</span>
+<?php endif; ?>
+</td>
 </tr>
 <?php endforeach; ?>
 </tbody>
@@ -168,7 +175,8 @@ if (!$certExists) { $daysLeft = 0; }
 </div>
 
 <!-- Quick Actions -->
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+<a href="/admin/ssl/universal/fix-all" class="btn primary" style="background:linear-gradient(135deg,#008cff,#0066cc);font-weight:700" onclick="return confirm('Run Fix All? This will re-issue any missing/expiring certificates and reconfigure broken SSL services.')"><i class="bi bi-shield-check"></i> 🔧 Fix All Missing Certs</a>
 <a href="/admin/ssl/universal/renew" class="btn secondary" onclick="return confirm('Renew ALL certificates?')">Renew All Certs</a>
 <a href="/admin/ssl/autossl" class="btn secondary">AutoSSL Settings</a>
 <a href="/admin/ssl/universal/health" class="btn secondary" target="_blank">Health JSON</a>

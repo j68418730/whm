@@ -60,7 +60,19 @@ select option{background:#0a0f1a;color:#e0e0e0}
 </div>
 <?php endforeach; ?>
 </div>
-<?php if (empty($sessions)): ?><p style="color:var(--text-muted);font-size:13px;padding:20px;text-align:center">No chats</p><?php endif; ?>
+<?php if (empty($sessions)): ?><p style="color:var(--text-muted);font-size:13px;padding:10px;text-align:center">No chats</p><?php endif; ?>
+
+<div style="font-size:11px;color:var(--text-muted);margin:14px 0 6px">🟢 ONLINE VISITORS — click to message</div>
+<div id="visitorSidebarList">
+<?php foreach ($visitors as $v): ?>
+<div class="item" onclick="startVisitorChat(<?php echo (int)$v->id; ?>, '<?php echo addslashes($v->name ?: 'Visitor'); ?>')" data-vid="<?php echo (int)$v->id; ?>">
+<span class="badge badge-active" style="font-size:9px">●</span>
+<strong style="font-size:13px"><?php echo htmlspecialchars($v->name ?: 'Visitor'); ?></strong>
+<div style="font-size:11px;color:var(--text-muted)"><?php echo htmlspecialchars($v->browser ?? 'Browser'); ?><?php if ($v->os): ?> / <?php echo htmlspecialchars($v->os); ?><?php endif; ?> · <span style="color:#60a5fa"><?php echo htmlspecialchars($v->current_page ?? '/'); ?></span></div>
+</div>
+<?php endforeach; ?>
+</div>
+<?php if (empty($visitors)): ?><p style="color:var(--text-muted);font-size:13px;padding:10px;text-align:center">No visitors online right now</p><?php endif; ?>
 </div>
 
 <div class="chat-main">
@@ -265,6 +277,8 @@ function refreshChatSidebar() {
 
 // Auto-refresh chat list without needing a page reload.
 sidebarTimer = setInterval(refreshChatSidebar, 3000);
+// Auto-refresh online visitors list too
+var visitorTimer = setInterval(refreshVisitorSidebar, 5000);
 
 function switchTab(name, el) {
     document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
@@ -285,6 +299,39 @@ function loadChat(id) {
     if (pollTimer) clearInterval(pollTimer);
     fetchMessages();
     pollTimer = setInterval(fetchMessages, 2000);
+}
+
+// Admin clicks an online visitor -> start (or reuse) a chat session, then open it
+function startVisitorChat(visitorId, name) {
+    var x = new XMLHttpRequest();
+    x.open('POST', '/admin/livechat/initiate', true);
+    x.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    x.onload = function() {
+        try {
+            var d = JSON.parse(x.responseText);
+            if (d.session_id) {
+                currentSession = d.session_id;
+                loadChat(d.session_id);
+                var input = document.getElementById('chatInput');
+                if (input) { input.focus(); input.placeholder = 'Message ' + name + '...'; }
+            } else if (d.error) { alert(d.error); }
+        } catch(e) { alert('Could not start chat.'); }
+    };
+    x.send('visitor_id=' + visitorId);
+}
+
+function refreshVisitorSidebar() {
+    var x = new XMLHttpRequest();
+    x.open('GET', '/admin/livechat', true);
+    x.onload = function() {
+        if (x.status !== 200) return;
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(x.responseText, 'text/html');
+        var newList = doc.getElementById('visitorSidebarList');
+        var oldList = document.getElementById('visitorSidebarList');
+        if (newList && oldList) oldList.innerHTML = newList.innerHTML;
+    };
+    x.send();
 }
 
 function fetchMessages() {

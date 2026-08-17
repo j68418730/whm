@@ -41,6 +41,19 @@
 <a href="/admin/account/suspend/<?php echo $account->id; ?>" class="btn btn-sm" style="background:rgba(250,204,21,.12);color:#facc15;border:1px solid rgba(250,204,21,.2)" onclick="return confirm('Suspend this account?')"><i class="bi bi-pause-circle"></i> Suspend</a>
 <a href="/admin/account/unsuspend/<?php echo $account->id; ?>" class="btn btn-sm" style="background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.15)"><i class="bi bi-play-circle"></i> Unsuspend</a>
 </div>
+<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)">
+<form method="POST" action="/admin/account/allow-suspension/<?php echo $account->id; ?>" style="display:flex;align-items:center;gap:10px">
+<span style="font-size:12px;color:var(--text_muted)">Allow automatic suspension (quota/billing):</span>
+<select name="allow_suspension" style="width:auto;padding:5px 10px;font-size:12px" onchange="this.form.submit()">
+<option value="1" <?php echo (($account->allow_suspension ?? 1) == 1) ? 'selected' : ''; ?>>Yes</option>
+<option value="0" <?php echo (($account->allow_suspension ?? 1) == 0) ? 'selected' : ''; ?>>No</option>
+</select>
+<button class="btn btn-sm btn-secondary" style="padding:4px 10px">Save</button>
+</form>
+<p style="font-size:11px;color:<?php echo (($account->allow_suspension ?? 1) == 1) ? '#4ade80' : '#f87171'; ?>;margin-top:6px">
+<?php echo (($account->allow_suspension ?? 1) == 1) ? '🟢 This account CAN be auto-suspended when over quota.' : '🔴 Auto-suspension is DISABLED for this account (manual only).'; ?>
+</p>
+</div>
 </div>
 
                 <div class="action-card">

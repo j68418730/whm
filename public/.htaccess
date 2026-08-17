@@ -1,8 +1,8 @@
 RewriteEngine On
 
 # Direct chat room URLs — /chat/{slug} -> /chat/index.php?slug={slug}
-# (skip reserved API actions: start/send/poll/upload — those route through the front controller)
-RewriteCond %{REQUEST_URI} !^/chat/(start|send|poll|upload)(/|$)
+# (skip reserved API actions: start/send/poll/upload/waiting — those route through the front controller)
+RewriteCond %{REQUEST_URI} !^/chat/(start|send|poll|upload|waiting)(/|$)
 RewriteRule ^chat/([a-z0-9-]+)$ chat/index.php?slug=$1 [L,QSA]
 
 # Handle front controller — route everything except existing files to index.php

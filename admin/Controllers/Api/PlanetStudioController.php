@@ -386,18 +386,34 @@ class PlanetStudioController extends Controller
         $out = [];
         foreach ($stmt->fetchAll(\PDO::FETCH_OBJ) as $s) {
             $engine = $s->engine ?? 'icecast';
+            $isShoutcast = str_contains($engine, 'shoutcast');
+            $isShoutcast1 = $engine === 'shoutcast1';
+            $isShoutcast2 = $isShoutcast && !$isShoutcast1;
 
-            $hostname = $s->icecast_hostname ?: ($s->shoutcast_v2_hostname ?: ($s->shoutcast_v1_hostname ?: ($_SERVER['SERVER_NAME'] ?? 'localhost')));
-            $port = (int)($s->icecast_port ?: ($s->shoutcast_v2_port ?: ($s->shoutcast_v1_port ?: $s->port)));
-            $username = $s->icecast_username ?: ($s->shoutcast_v2_username ?: ($s->shoutcast_v1_username ?: 'source'));
-            $password = $s->icecast_password ?: ($s->shoutcast_v2_password ?: ($s->shoutcast_v1_password ?: ($s->plain_password ?: $s->password)));
-            $mount = $s->icecast_mount ?: ($s->mount_point ?? '/live');
-            $protocol = $s->icecast_protocol ?? ($engine === 'shoutcast' ? 'shoutcast_v2' : 'icecast');
-
-            if (str_contains($engine, 'shoutcast')) {
-                $streamType = $engine === 'shoutcast1' ? 'Shoutcast1' : 'Shoutcast2';
+            // Pick the connection config matching this station's actual engine.
+            if ($isShoutcast1) {
+                $hostname = $s->shoutcast_v1_hostname ?: ($s->shoutcast_v2_hostname ?: ($_SERVER['SERVER_NAME'] ?? 'localhost'));
+                $port = (int)($s->shoutcast_v1_port ?: ($s->shoutcast_v2_port ?: $s->port));
+                $username = $s->shoutcast_v2_username ?: 'admin';
+                $password = $s->shoutcast_v1_password ?: ($s->shoutcast_v2_password ?: ($s->plain_password ?: $s->password));
                 $mount = '/stream';
+                $protocol = 'shoutcast_v1';
+                $streamType = 'Shoutcast1';
+            } elseif ($isShoutcast2) {
+                $hostname = $s->shoutcast_v2_hostname ?: ($s->shoutcast_v1_hostname ?: ($_SERVER['SERVER_NAME'] ?? 'localhost'));
+                $port = (int)($s->shoutcast_v2_port ?: ($s->shoutcast_v1_port ?: $s->port));
+                $username = $s->shoutcast_v2_username ?: 'admin';
+                $password = $s->shoutcast_v2_password ?: ($s->shoutcast_v1_password ?: ($s->plain_password ?: $s->password));
+                $mount = '/stream';
+                $protocol = 'shoutcast_v2';
+                $streamType = 'Shoutcast2';
             } else {
+                $hostname = $s->icecast_hostname ?: ($_SERVER['SERVER_NAME'] ?? 'localhost');
+                $port = (int)($s->icecast_port ?: $s->port);
+                $username = $s->icecast_username ?: 'source';
+                $password = $s->icecast_password ?: ($s->plain_password ?: $s->password);
+                $mount = $s->icecast_mount ?: ($s->mount_point ?? '/live');
+                $protocol = $s->icecast_protocol ?? 'icecast';
                 $streamType = 'Icecast';
             }
 
@@ -427,6 +443,7 @@ class PlanetStudioController extends Controller
                     'username' => $username,
                     'password' => $password,
                     'mountPoint' => $mount,
+                    'protocol' => $protocol,
                     'codec' => $codec,
                     'bitrate' => (int)($s->bitrate ?? 128),
                 ],
@@ -611,6 +628,26 @@ class PlanetStudioController extends Controller
                 'engine' => $station->engine,
                 'pid' => $pid,
             ]);
+        } catch (\Exception $e) {
+            return $this->json(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    // GET /api/autodj/stop/{compositeId} — stop AutoDJ for a station
+    public function stopAutodj($compositeId)
+    {
+        $realId = (int)$compositeId % 10000;
+        $station = $this->db->table('streaming_stations')->where('id', $realId)->first();
+        if (!$station) return $this->json(['success' => false, 'message' => 'Station not found'], 404);
+        $hosting = $this->db->table('hosting_users')->where('id', $station->user_id)->first();
+        $username = $hosting ? $hosting->username : 'unknown';
+        try {
+            $cfg = $this->db->table('radio_autodj_config')->where('station_id', $compositeId)->first();
+            $playlistIds = ($cfg && !empty($cfg->playlist_ids)) ? json_decode($cfg->playlist_ids, true) ?: [] : [];
+            $player = new \Services\RadioAutoDJPlayer($station, $username, $playlistIds);
+            $player->stop();
+            $this->db->table('streaming_stations')->where('id', $realId)->update(['autodj_enabled' => 0]);
+            return $this->json(['success' => true, 'message' => 'AutoDJ stopped']);
         } catch (\Exception $e) {
             return $this->json(['success' => false, 'message' => $e->getMessage()]);
         }

@@ -73,9 +73,25 @@ class RadioAutoDJPlayer
             $url = "icecast://source:{$password}@127.0.0.1:{$port}{$mount}";
             // NOTE: no -re — with -f concat + -stream_loop, -re stalls source registration on icecast.
             // Without -re, icecast backpressure paces reads at realtime.
-            $cmd = "nohup ffmpeg -stream_loop -1 -f concat -safe 0 -i " . escapeshellarg($playlistPath)
-                . " -vn -c:a libmp3lame -b:a {$bitrate}k -f mp3 " . escapeshellarg($url)
-                . " > {$logPath} 2>&1 & echo $!";
+            $ff = "ffmpeg -stream_loop -1 -f concat -safe 0 -i " . escapeshellarg($playlistPath)
+                . " -vn -c:a libmp3lame -b:a {$bitrate}k -f mp3 " . escapeshellarg($url);
+            // Retry wrapper: if ffmpeg dies (e.g. icecast mount still in use from a just-disconnected
+            // DJ), wait and relaunch up to 10 times before giving up.
+            $retryScript = $this->autodjDir . "/ffmpeg_retry_{$streamId}.sh";
+            file_put_contents($retryScript,
+                "#!/bin/bash\n"
+                . "trap 'kill -9 \$ffpid 2>/dev/null; exit 0' TERM INT\n"
+                . "for i in \$(seq 1 10); do\n"
+                . "  {$ff} >> " . escapeshellarg($logPath) . " 2>&1 &\n"
+                . "  ffpid=\$!\n"
+                . "  wait \$ffpid\n"
+                . "  code=\$?\n"
+                . "  if [ -f {$pidFile} ]; then pid=\$(cat {$pidFile}); if [ \"\$pid\" != \"\$\$\" ] && kill -0 \"\$pid\" 2>/dev/null; then exit 0; fi; fi\n"
+                . "  sleep 3\n"
+                . "done\n"
+                . "exit \$code\n");
+            @chmod($retryScript, 0755);
+            $cmd = "nohup bash {$retryScript} > {$logPath} 2>&1 & echo $!";
             error_log('AUTODJ: running ffmpeg cmd=' . $cmd);
             exec($cmd, $out, $code);
             error_log('AUTODJ: ffmpeg exit=' . $code . ' out=' . json_encode($out));
@@ -153,7 +169,8 @@ class RadioAutoDJPlayer
 
     protected function generateConcat($files)
     {
-        $path = $this->autodjDir . '/concat.txt';
+        $streamId = $this->stream->id ?? 0;
+        $path = $this->autodjDir . '/concat_' . $streamId . '.txt';
         $content = "ffconcat version 1.0\n";
         foreach ($files as $f) {
             $content .= "file " . escapeshellarg($f) . "\n";
@@ -165,7 +182,8 @@ class RadioAutoDJPlayer
 
     protected function generateM3u($files)
     {
-        $path = $this->autodjDir . '/playlist.m3u';
+        $streamId = $this->stream->id ?? 0;
+        $path = $this->autodjDir . '/playlist_' . $streamId . '.m3u';
         $content = "#EXTM3U\n";
         foreach ($files as $f) {
             $content .= "#EXTINF:-1," . basename($f) . "\n{$f}\n";

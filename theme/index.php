@@ -614,6 +614,8 @@ function startPkgRotation(type) {
 function toggleChatPanel(){
 var p=document.getElementById('chatPanel');
 var f=document.getElementById('floatingChat');
+chatVisitorName=(document.getElementById('chatName')&&document.getElementById('chatName').value.trim())||'Visitor';
+chatVisitorEmail=(document.getElementById('chatEmail')&&document.getElementById('chatEmail').value.trim())||'';
 var isOpen=p.classList.toggle('open');
 if(isOpen){f.style.display='none';sessionStorage.setItem('chatOpen','1');}
 else{f.style.display='block';sessionStorage.setItem('chatOpen','0');}
@@ -621,12 +623,19 @@ else{f.style.display='block';sessionStorage.setItem('chatOpen','0');}
 // Restore chat state from session
 if(sessionStorage.getItem('chatOpen')==='1'){document.getElementById('chatPanel').classList.add('open');document.getElementById('floatingChat').style.display='none';}
 var chatSid=0;
+var chatVisitorName='';
+var chatVisitorEmail='';
 function sendChatMessage(){
-var name=document.getElementById('chatName').value.trim();
-var email=document.getElementById('chatEmail').value.trim();
-var msg=document.getElementById('chatMessage').value.trim();
-if(!name||!email||!msg){alert('Please fill in all fields');return;}
-document.getElementById('chatMessage').value='';
+var msgEl=document.getElementById('chatMessage');
+var msg=(msgEl?msgEl.value:'').trim();
+var nameEl=document.getElementById('chatName');
+var emailEl=document.getElementById('chatEmail');
+// Read fresh from the form if it's still there, else use the cached values
+if(nameEl){chatVisitorName=nameEl.value.trim()||'Visitor';}
+if(emailEl){chatVisitorEmail=emailEl.value.trim();}
+if(!chatVisitorEmail||!msg){alert('Please fill in all fields');return;}
+if(msgEl)msgEl.value='';
+if(nameEl)nameEl.value='';
 if(chatSid===0){
 var x1=new XMLHttpRequest();
 x1.open('POST','/chat/start',true);
@@ -634,14 +643,14 @@ x1.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
 x1.onload=function(){
 try{var d=JSON.parse(x1.responseText);chatSid=d.session_id||d.id||0;
 document.getElementById('chatSessionId').value=chatSid;
-addChatMsg('visitor',name,msg);
-sendMsg(chatSid,name,msg);
+addChatMsg('visitor',chatVisitorName,msg);
+sendMsg(chatSid,chatVisitorName,msg);
 startChatPoll(chatSid);
 document.getElementById('chatForm').innerHTML='<div style="display:flex;gap:8px"><textarea id="chatMessage" placeholder="Type your message..." style="flex:1;min-height:50px"></textarea><button class="btn btn-primary" style="padding:12px 20px;flex-shrink:0;align-self:flex-end" onclick="sendChatMessage()">Send</button></div>';
 }catch(e){console.log(e);}
 };
-x1.send('name='+encodeURIComponent(name)+'&email='+encodeURIComponent(email)+'&subject=Website Contact');
-}else{sendMsg(chatSid,name,msg);addChatMsg('visitor',name,msg);}
+x1.send('name='+encodeURIComponent(chatVisitorName)+'&email='+encodeURIComponent(chatVisitorEmail)+'&subject=Website Contact');
+}else{sendMsg(chatSid,chatVisitorName,msg);addChatMsg('visitor',chatVisitorName,msg);}
 }
 function sendMsg(sid,n,m){
 var x=new XMLHttpRequest();
@@ -662,18 +671,21 @@ box.appendChild(d);
 box.scrollTop=box.scrollHeight;
 }
 var chatPollTimer=null;
+var chatLastMsgId=0;
 function startChatPoll(sid){
 if(chatPollTimer)clearInterval(chatPollTimer);
 chatPollTimer=setInterval(function(){
 var x=new XMLHttpRequest();
-x.open('GET','/chat/poll/'+sid,true);
+x.open('GET','/chat/poll/'+sid+'?since='+chatLastMsgId,true);
 x.onload=function(){
 try{
-var msgs=JSON.parse(x.responseText);
-if(msgs&&msgs.length){
-var lastMsg=msgs[msgs.length-1];
-if(lastMsg.sender_type==='operator'||lastMsg.sender_type==='system'){
-addChatMsg(lastMsg.sender_type,lastMsg.sender_name||'Support',lastMsg.message);
+var d=JSON.parse(x.responseText);
+var msgs=(d&&d.messages)||[];
+for(var i=0;i<msgs.length;i++){
+var m=msgs[i];
+if(m.id>chatLastMsgId)chatLastMsgId=m.id;
+if(m.sender_type==='operator'||m.sender_type==='system'){
+addChatMsg(m.sender_type,m.sender_name||'Support',m.message);
 }
 }
 }catch(e){}
@@ -681,6 +693,31 @@ addChatMsg(lastMsg.sender_type,lastMsg.sender_name||'Support',lastMsg.message);
 x.send();
 },3000);
 }
+
+// Check if an operator started a chat with this visitor (proactive support)
+var chatWaitingTimer=null;
+function checkWaitingChat(){
+if(chatSid!==0)return;
+var x=new XMLHttpRequest();
+x.open('GET','/chat/waiting',true);
+x.onload=function(){
+try{
+var d=JSON.parse(x.responseText);
+if(d&&d.session_id&&d.session_id>0){
+chatSid=d.session_id;
+document.getElementById('chatSessionId').value=chatSid;
+var panel=document.getElementById('chatPanel');
+var flt=document.getElementById('floatingChat');
+if(panel&&!panel.classList.contains('open')){panel.classList.add('open');if(flt)flt.style.display='none';sessionStorage.setItem('chatOpen','1');}
+if(document.getElementById('chatForm'))document.getElementById('chatForm').innerHTML='<div style="display:flex;gap:8px"><textarea id="chatMessage" placeholder="Type your message..." style="flex:1;min-height:50px"></textarea><button class="btn btn-primary" style="padding:12px 20px;flex-shrink:0;align-self:flex-end" onclick="sendChatMessage()">Send</button></div>';
+addChatMsg('system','Support','Support is reaching out to you. How can we help?');
+startChatPoll(chatSid);
+}
+}catch(e){}
+};
+x.send();
+}
+chatWaitingTimer=setInterval(checkWaitingChat,4000);
 
 
 // Visitor tracking
