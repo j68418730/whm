@@ -1,13 +1,13 @@
 <?php
 $email = $_GET['email'] ?? '';
-if (!$email) { header('Location: /webmail_autologin.php'); exit; }
+if (!$email) { header('Location: /snappymail/'); exit; }
 
 $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
 $stmt = $pdo->prepare("SELECT password_plain FROM mail_accounts WHERE email = ? LIMIT 1");
 $stmt->execute([$email]);
 $row = $stmt->fetch(PDO::FETCH_OBJ);
 $password = $row ? $row->password_plain : '';
-if (!$password) { header('Location: /webmail_autologin.php?email=' . urlencode($email)); exit; }
+if (!$password) { header('Location: /snappymail/'); exit; }
 
 $localPart = explode('@', $email)[0];
 exec("id " . escapeshellarg($localPart) . " 2>/dev/null || (useradd -m -d /home/" . escapeshellarg($localPart) . " -s /sbin/nologin " . escapeshellarg($localPart) . " 2>/dev/null && echo " . escapeshellarg($localPart) . ":" . escapeshellarg($password) . " | chpasswd 2>/dev/null)");

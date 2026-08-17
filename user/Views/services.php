@@ -15,7 +15,10 @@
 .svc-card .actions a{padding:4px 10px;border-radius:4px;font-size:10px;text-decoration:none;background:rgba(0,140,255,.12);color:#0A84FF}
 </style>
 
-<h2>My Services</h2>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+<h2 style="margin:0">My Services</h2>
+<a href="/user/billing" style="padding:8px 16px;border-radius:8px;background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff;text-decoration:none;font-size:13px;font-weight:600">+ Order New Service</a>
+</div>
 <p style="color:#64748b;margin-bottom:16px;font-size:12px">All your hosting services in one place.</p>
 
 <?php if (empty($services)): ?>

@@ -79,10 +79,14 @@ class UserController extends Controller
         if ($hosting && ($isWeb || $isVps || $isDedicated)) {
             $dir = '/home/' . $hosting->username;
             if (is_dir($dir)) {
-                $du = @shell_exec("du -sk " . escapeshellarg($dir) . " 2>/dev/null | awk '{print \$1}'");
-                $diskUsed = $du ? round((int)trim($du) / 1024 / 1024, 2) : 0;
+                $du = @shell_exec("du -sb " . escapeshellarg($dir) . " 2>/dev/null | awk '{print \$1}'");
+                $diskUsed = $du ? round((int)trim($du) / 1024 / 1024 / 1024, 2) : 0;
             }
-            $diskPct = $diskTotal > 0 ? round(($diskUsed / $diskTotal) * 100) : 0;
+            if ($diskTotal > 0) {
+                $diskPct = round(($diskUsed / $diskTotal) * 100);
+            } else {
+                $diskPct = $diskUsed > 0 ? 1 : 0;
+            }
         }
 
         // Email (only for web)
@@ -265,7 +269,7 @@ class UserController extends Controller
     public function djApply() { $u = $this->loadUser(); $streams = []; if ($this->hostingUser) { try { $streams = $this->db->table('radio_streams')->where('user_id', $this->hostingUser->id)->get() ?: []; } catch(\Exception $e) {} } return $this->view('user.dj_apply', ['user' => $u, 'hosting' => $this->hostingUser, 'streams' => $streams, 'title' => 'Apply as DJ']); }
     public function djApplySubmit() { $u = $this->loadUser(); if ($this->hostingUser) { $name = $_POST['dj_name'] ?? ''; $email = $_POST['email'] ?? ''; $genres = $_POST['genres'] ?? ''; $bio = $_POST['bio'] ?? ''; $streams = $this->db->table('radio_streams')->where('user_id', $this->hostingUser->id)->get() ?: []; $sid = $streams[0]->id ?? 0; if ($sid && $name) { try { $this->db->table('radio_djs')->insertGetId(['stream_id' => $sid, 'username' => strtolower(preg_replace('/[^a-z0-9]/','',$name)), 'password' => password_hash(bin2hex(random_bytes(4)), PASSWORD_DEFAULT), 'name' => $name, 'email' => $email, 'bio' => $genres ? $genres . "\n" . $bio : $bio, 'status' => 'active']); $_SESSION['success'] = "DJ application submitted!"; } catch(\Exception $e) { $_SESSION['error'] = 'Failed to create DJ.'; } } } header('Location: /user/dj/apply'); exit; }
     public function installerInstall() { $u = $this->loadUser(); $name = $_POST['app_name'] ?? ''; $dir = trim($_POST['directory'] ?? 'public_html'); if ($this->hostingUser && $name) { $home = '/home/' . $this->hostingUser->username; $target = $home . '/' . ltrim($dir, '/'); $localZip = BASE_PATH . '/appsinstall_files/' . $name . '.zip'; if (file_exists($localZip)) { @mkdir($target, 0755, true); copy($localZip, $target . '/installer.zip'); @exec("cd " . escapeshellarg($target) . " && unzip -qo installer.zip 2>/dev/null && rm -f installer.zip && chown -R {$this->hostingUser->username}:{$this->hostingUser->username} . 2>/dev/null"); $subs = glob($target . '/*', GLOB_ONLYDIR); if ($subs && count($subs) === 1) { $bn = basename($subs[0]); if (is_file($subs[0] . '/index.php') || is_file($subs[0] . '/wp-config-sample.php')) { @exec("cd " . escapeshellarg($target) . " && mv " . escapeshellarg($bn) . "/* . 2>/dev/null && mv " . escapeshellarg($bn) . "/.[!.]* . 2>/dev/null && rmdir " . escapeshellarg($bn) . " 2>/dev/null"); } } $_SESSION['success'] = "$name installed successfully!"; } else { $_SESSION['error'] = "App package not found."; } } header('Location: /user/installer'); exit; }
-    public function webmailRedirect() { header('Location: /webmail_autologin.php'); exit; }
+    public function webmailRedirect() { $u = $this->loadUser(); $email = ''; if ($this->hostingUser) { try { $accts = $this->db->table('mail_accounts')->where('domain', $this->hostingUser->domain ?? '')->get() ?: []; if (!empty($accts)) $email = $accts[0]->email ?? ''; } catch (\Exception $e) {} } if ($email) { header('Location: /webmail_autologin.php?email=' . urlencode($email)); } else { header('Location: /snappymail/'); } exit; }
     public function dismissAlert($id) { $u = $this->loadUser(); if ($this->hostingUser) { try { $a = $this->db->table('user_alerts')->where('id', $id)->where('hosting_user_id', $this->hostingUser->id)->first(); if ($a && $a->can_delete) { $this->db->table('user_alerts')->where('id', $id)->update(['is_read' => 1]); echo 'OK'; } else { echo 'LOCKED'; } } catch (\Exception $e) {} } exit; }
     public function fetchAlerts() { $u = $this->loadUser(); header('Content-Type: application/json'); $alerts = []; if ($this->hostingUser) { try { $alerts = $this->db->table('user_alerts')->where('hosting_user_id', $this->hostingUser->id)->where('is_read', 0)->orderBy('created_at', 'DESC')->limit(20)->get() ?: []; } catch (\Exception $e) {} } echo json_encode($alerts); exit; }
     public function logout() { session_destroy(); header('Location: /'); exit; }

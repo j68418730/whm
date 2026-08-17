@@ -29,7 +29,11 @@
 <div style="display:flex"><span style="padding:8px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px 0 0 6px;color:var(--text-muted);font-size:13px"><?php echo htmlspecialchars($hosting->username ?? 'user'); ?>_</span>
 <input name="username" required style="flex:1;padding:8px;border-radius:0 6px 6px 0;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;outline:none"></div></div>
 <div class="form-group" style="flex:1"><label>Password</label><input name="password" style="padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;outline:none" placeholder="auto-generated if empty"></div>
-<div class="form-group"><label>Database</label><select name="database" style="padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;outline:none"><option value="">None</option></select></div>
+<div class="form-group"><label>Database</label><select name="database" style="padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;outline:none"><option value="">None</option>
+<?php if (!empty($databases)): foreach ($databases as $db): ?>
+<option value="<?php echo htmlspecialchars($db->name); ?>"><?php echo htmlspecialchars($db->name); ?></option>
+<?php endforeach; endif; ?>
+</select></div>
 <div class="form-group"><button type="submit" class="btn primary btn-sm">Create</button></div>
 </div></form>
 </div>

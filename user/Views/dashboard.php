@@ -87,7 +87,7 @@ fetch('/admin/support-status/public').then(function(r){return r.json()}).then(fu
 <a href="/pma_autologin.php" target="_blank" class="quick-link"><span class="qicon">🐘</span>phpMyAdmin</a>
 <a href="/webmail_autologin.php" target="_blank" class="quick-link"><span class="qicon">📨</span>Webmail</a>
 <a href="/user/invoices" class="quick-link"><span class="qicon">💳</span>Pay Invoice</a>
-<a href="/livechat" target="_blank" class="quick-link"><span class="qicon">💬</span>Live Chat</a>
+<a href="/user/chat" class="quick-link"><span class="qicon">💬</span>Live Chat</a>
 <a href="/user/domains" class="quick-link"><span class="qicon">🌍</span>Domains</a>
 <a href="/user/security" class="quick-link"><span class="qicon">🛡️</span>Security</a>
 </div>
@@ -104,7 +104,7 @@ fetch('/admin/support-status/public').then(function(r){return r.json()}).then(fu
 
 <div class="dash-card"><div class="icon-box" style="background:rgba(168,85,247,.12)">🎫</div><h3>Tickets</h3><div class="val" style="color:#a78bfa"><?php echo count($openTickets ?? []); ?></div><div class="sub">Open support tickets</div></div>
 
-<div class="dash-card"><div class="icon-box" style="background:rgba(251,146,60,.12)">💾</div><h3>Disk Usage</h3><div class="val" style="color:#fb923c"><?php echo $diskPct ?? 0; ?>%</div><div class="sub">of <?php echo $diskTotal ?? '∞'; ?> GB used</div>
+<div class="dash-card"><div class="icon-box" style="background:rgba(251,146,60,.12)">💾</div><h3>Disk Usage</h3><div class="val" style="color:#fb923c"><?php echo number_format($diskUsed ?? 0, 1); ?> GB</div><div class="sub"><?php echo ($diskTotal ?? 0) > 0 ? 'of ' . $diskTotal . ' GB limit (' . ($diskPct ?? 0) . '%)' : 'No limit set'; ?></div>
 <div class="bar"><div class="fill" style="width:<?php echo min(100, $diskPct ?? 0); ?>%;background:<?php echo ($diskPct ?? 0) > 90 ? '#f87171' : '#fb923c'; ?>"></div></div></div>
 </div>
 
