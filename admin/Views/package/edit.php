@@ -286,6 +286,11 @@ $gameGroups = [
 <div class="form-group"><label>Bandwidth (GB)</label><input name="bandwidth" type="number" value="<?php echo $package->bandwidth ?? 0; ?>"></div>
 <div class="form-group"><label>Max Domains</label><input name="max_domains" type="number" value="<?php echo $package->max_domains ?? 1; ?>"></div>
 <div class="form-group"><label>Max Subdomains</label><input name="max_subdomains" type="number" value="<?php echo $package->max_subdomains ?? 0; ?>"></div>
+<div class="form-group"><label>Email Accounts</label><input name="email_accounts" type="number" value="<?php echo $package->email_accounts ?? 0; ?>"></div>
+<div class="form-group"><label>FTP Accounts</label><input name="ftp_accounts" type="number" value="<?php echo $package->ftp_accounts ?? 0; ?>"></div>
+<div class="form-group"><label>MySQL Databases</label><input name="databases" type="number" value="<?php echo $package->databases ?? 0; ?>"></div>
+<div class="form-group"><label>Parked Domains</label><input name="parked_domains" type="number" value="<?php echo $package->parked_domains ?? 0; ?>"></div>
+<div class="form-group"><label>Addon Domains</label><input name="addon_domains" type="number" value="<?php echo $package->addon_domains ?? 0; ?>"></div>
 </div>
 
 <div class="form-group"><label>Feature List <a href="/admin/feature-lists" style="color:#0A84FF;font-size:12px">(Manage)</a></label>
@@ -295,6 +300,22 @@ $gameGroups = [
 <option value="<?php echo $fl->id; ?>" <?php echo ($package->feature_list_id ?? '') == $fl->id ? 'selected' : ''; ?>><?php echo htmlspecialchars($fl->name); ?></option>
 <?php endforeach; ?>
 </select>
+</div>
+
+<div style="margin:12px 0;border:1px solid rgba(0,191,255,.15);border-radius:8px;padding:12px">
+<h4 style="color:var(--accent);font-size:14px;margin-bottom:8px">Streaming Limits</h4>
+<div class="row">
+<div class="form-group"><label>Listener Limit</label><input name="listener_limit" type="number" value="<?php echo $package->listener_limit ?? 0; ?>"></div>
+<div class="form-group"><label>Bitrate (kbps)</label><input name="bitrate" type="number" value="<?php echo $package->bitrate ?? 0; ?>"></div>
+<div class="form-group"><label>Storage Limit (GB)</label><input name="storage_limit" type="number" value="<?php echo $package->storage_limit ?? 0; ?>"></div>
+<div class="form-group"><label>DJ Accounts</label><input name="dj_accounts" type="number" value="<?php echo $package->dj_accounts ?? 0; ?>"></div>
+<div class="form-group"><label>PHP Version</label><select name="php_version">
+<option value="8.2" <?php echo ($package->php_version ?? '') === '8.2' ? 'selected' : ''; ?>>PHP 8.2</option>
+<option value="8.1" <?php echo ($package->php_version ?? '') === '8.1' ? 'selected' : ''; ?>>PHP 8.1</option>
+<option value="8.0" <?php echo ($package->php_version ?? '') === '8.0' ? 'selected' : ''; ?>>PHP 8.0</option>
+<option value="7.4" <?php echo ($package->php_version ?? '') === '7.4' ? 'selected' : ''; ?>>PHP 7.4</option>
+</select></div>
+</div>
 </div>
 
 <div style="margin:12px 0">
@@ -369,9 +390,14 @@ foreach ($genFeatures as $k=>$l):
 </div>
 </div>
 
-<div style="margin-top:20px;display:flex;gap:12px">
+<div style="margin-top:20px;border-top:1px solid rgba(255,255,255,.06);padding-top:16px">
+<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:16px">
+<input type="checkbox" name="is_active" value="1" <?php echo ($package->is_active ?? 1) ? 'checked' : ''; ?>> Package is Active (visible in store)
+</label>
+<div style="display:flex;gap:12px">
 <button type="submit" class="btn primary">Update Package</button>
 <a href="/admin/packages" class="btn secondary">Cancel</a>
+</div>
 </div>
 </form>
 </div>

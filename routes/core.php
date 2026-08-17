@@ -221,6 +221,7 @@ $router->post('/livechat', 'Admin\Controllers\LiveChatController@portal');
 $router->get('/admin/livechat', 'Admin\Controllers\LiveChatController@index');
 $router->get('/admin/livechat/messages/{sessionId}', 'Admin\Controllers\LiveChatController@messages');
 $router->post('/admin/livechat/send', 'Admin\Controllers\LiveChatController@send');
+$router->post('/admin/livechat/initiate', 'Admin\Controllers\LiveChatController@initiate');
 $router->post('/admin/livechat/transfer/{id}', 'Admin\Controllers\LiveChatController@transfer');
 $router->get('/admin/livechat/close/{id}', 'Admin\Controllers\LiveChatController@close');
 $router->get('/admin/livechat/delete/{id}', 'Admin\Controllers\LiveChatController@delete');
@@ -327,6 +328,7 @@ $router->post('/admin/account/store', 'Admin\Controllers\AccountController@store
 $router->get('/admin/account/show/{id}', 'Admin\Controllers\AccountController@show');
 $router->get('/admin/account/suspend/{id}', 'Admin\Controllers\AccountController@suspend');
 $router->get('/admin/account/unsuspend/{id}', 'Admin\Controllers\AccountController@unsuspend');
+$router->post('/admin/account/allow-suspension/{id}', 'Admin\Controllers\AccountController@allowSuspension');
 $router->get('/admin/account/terminate/{id}', 'Admin\Controllers\AccountController@terminate');
 $router->post('/admin/account/password/{id}', 'Admin\Controllers\AccountController@password');
 $router->get('/admin/account/search', 'Admin\Controllers\AccountController@index');
@@ -341,6 +343,7 @@ $router->post('/admin/package/create', 'Admin\Controllers\PackageController@stor
 $router->get('/admin/package/edit/{id}', 'Admin\Controllers\PackageController@edit');
 $router->post('/admin/package/edit/{id}', 'Admin\Controllers\PackageController@update');
 $router->get('/admin/package/delete/{id}', 'Admin\Controllers\PackageController@destroy');
+$router->get('/admin/package/hard-delete/{id}', 'Admin\Controllers\PackageController@delete');
 $router->post('/admin/package/upgrade/{accountId}', 'Admin\Controllers\PackageController@upgrade');
 $router->post('/admin/package/assign-reseller/{packageId}', 'Admin\Controllers\PackageController@assignReseller');
 $router->get('/admin/packages/categories', 'Admin\Controllers\PackageController@categories');
@@ -418,6 +421,7 @@ $router->post('/api/stations/{stationId}/upload', 'Admin\Controllers\Api\PlanetS
 $router->post('/api/dj/queue', 'Admin\Controllers\Api\PlanetStudioController@updateQueue');
 $router->get('/api/dj/queue/{stationId}', 'Admin\Controllers\Api\PlanetStudioController@getQueue');
 $router->get('/api/autodj/restart/{compositeId}', 'Admin\Controllers\Api\PlanetStudioController@restartAutodj');
+$router->get('/api/autodj/stop/{compositeId}', 'Admin\Controllers\Api\PlanetStudioController@stopAutodj');
 // Desktop app (Stage 7) API
 $router->post('/api/nowplaying', 'Admin\Controllers\Api\PlanetStudioController@nowPlaying');
 $router->post('/api/playlists/sync', 'Admin\Controllers\Api\PlanetStudioController@syncPlaylist');
@@ -574,6 +578,7 @@ $router->get('/admin/billing/products', 'Admin\Controllers\BillingController@pro
 $router->post('/admin/billing/products/store', 'Admin\Controllers\BillingController@productStore');
 $router->post('/admin/billing/products/update/{id}', 'Admin\Controllers\BillingController@productUpdate');
 $router->get('/admin/billing/products/delete/{id}', 'Admin\Controllers\BillingController@productDelete');
+$router->get('/admin/billing/products/toggle/{id}', 'Admin\Controllers\BillingController@productToggle');
 $router->post('/admin/billing/products/sort', 'Admin\Controllers\BillingController@productSort');
 $router->get('/admin/billing/orders', 'Admin\Controllers\BillingController@orders');
 $router->post('/admin/billing/orders/store', 'Admin\Controllers\BillingController@orderStore');
@@ -636,6 +641,7 @@ $router->get('/admin/ssl/universal', 'Admin\Controllers\UniversalSslController@i
 $router->post('/admin/ssl/universal/configure', 'Admin\Controllers\UniversalSslController@configure');
 $router->get('/admin/ssl/universal/renew', 'Admin\Controllers\UniversalSslController@renew');
 $router->get('/admin/ssl/universal/repair', 'Admin\Controllers\UniversalSslController@repair');
+$router->get('/admin/ssl/universal/fix-all', 'Admin\Controllers\UniversalSslController@fixAll');
 $router->get('/admin/ssl/universal/health', 'Admin\Controllers\UniversalSslController@health');
 $router->get('/admin/ssl/universal/scan', 'Admin\Controllers\UniversalSslController@scanPorts');
 $router->post('/admin/ssl/universal/toggle-auto-renew', 'Admin\Controllers\UniversalSslController@toggleAutoRenew');
