@@ -595,7 +595,6 @@ if (!empty($allStations) && count($allStations) > 1): ?>
 <?php endif; ?>
 <span style="font-size:13px;color:#94a3b8"><?php echo htmlspecialchars($_SESSION['dj_user']['name'] ?? ''); ?></span>
 <a href="/dj_panel.php?action=logout">Logout</a>
-<a href="/dj?u=<?php echo urlencode($_SESSION['dj_user']['username'] ?? ''); ?>" target="_blank" style="color:#34d399;text-decoration:none;font-size:13px">📻 My Page</a>
 <a href="/studio/index.php" target="_blank" style="color:#a855f7;text-decoration:none;font-size:13px;margin-left:12px">🎛️ Studio</a>
 </div>
 </div>
@@ -721,7 +720,7 @@ if (!empty($allStations) && count($allStations) > 1): ?>
                 echo "<div style=\"display:flex;justify-content:space-between;align-items:center;padding:4px 0\"><span style=\"color:#64748b\">Mount:</span><span style=\"color:#38bdf8\" id=\"bi-mount-{$stationId}\">{$mountPoint}</span><button class=\"copy-btn\" onclick=\"cf('bi-mount-{$stationId}')\">Copy</button></div>\n";
             }
             echo "<div style=\"display:flex;justify-content:space-between;align-items:center;padding:4px 0\"><span style=\"color:#64748b\">User:</span><span style=\"color:#38bdf8\">{$djUserE}</span></div>\n";
-            echo "<div style=\"display:flex;justify-content:space-between;align-items:center;padding:4px 0\"><span style=\"color:#64748b\">Password:</span><span style=\"color:#facc15\" id=\"bi-pass-{$stationId}\">" . ($isOwner ? htmlspecialchars($sPass) : '••••••••') . "</span><button class=\"copy-btn\" onclick=\"tp2({$stationId})\">" . ($isOwner ? 'Hide' : 'Show') . "</button></div>\n";
+            echo "<div style=\"display:flex;justify-content:space-between;align-items:center;padding:4px 0\"><span style=\"color:#64748b\">Password:</span><span style=\"color:#facc15\" id=\"bi-pass-{$stationId}\">" . ($isOwner ? htmlspecialchars($pw) : '••••••••') . "</span><button class=\"copy-btn\" onclick=\"tp2({$stationId})\">" . ($isOwner ? 'Hide' : 'Show') . "</button></div>\n";
             echo "<div style=\"display:flex;justify-content:space-between;align-items:center;padding:4px 0\"><span style=\"color:#64748b\">Format:</span><span style=\"color:#94a3b8\">MP3 · " . ((int)($station->bitrate ?? 128)) . " kbps</span></div>\n";
             echo "</div>\n";
             
@@ -749,7 +748,10 @@ $ss = $pdo->prepare("SELECT * FROM streaming_stations WHERE id = ?");
 $ss->execute([$streamId]);
 $station = $ss->fetch(PDO::FETCH_OBJ);
 $djPort = $station->dj_port ?? $station->port ?? 8000;
-$djPass = $station->plain_password ?? '';
+// The DJ's own login password (radio_djs.plain_password), not the station source password
+$djPass = $pdo->prepare("SELECT plain_password FROM radio_djs WHERE id=?");
+$djPass->execute([$_SESSION['dj_user']['id'] ?? 0]);
+$djPass = $djPass->fetchColumn() ?: '';
 $djHost = 'planet-hosts.com';
 $djUsername = $_SESSION['dj_user']['username'] ?? '';
 $isOwner = !empty($_SESSION['dj_user']['is_owner']);

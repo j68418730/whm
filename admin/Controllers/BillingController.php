@@ -154,7 +154,30 @@ class BillingController extends Controller
         $this->guard();
         $user = $this->auth->user();
         $products = $this->db->table('billing_products')->orderBy('sort_order', 'ASC')->get() ?: [];
-        return $this->view('admin.billing.products', ['user' => $user, 'title' => 'Billing Products', 'theme_settings' => $this->theme(), 'products' => $products]);
+
+        // Order/service counts per product
+        $orderCounts = [];
+        try {
+            foreach ($this->db->pdo()->query("SELECT product_id, COUNT(*) c FROM billing_orders GROUP BY product_id")->fetchAll(\PDO::FETCH_OBJ) as $r) {
+                $orderCounts[(int)$r->product_id] = (int)$r->c;
+            }
+        } catch (\Exception $e) {}
+        $serviceCounts = [];
+        try {
+            foreach ($this->db->pdo()->query("SELECT product_id, COUNT(*) c FROM billing_services GROUP BY product_id")->fetchAll(\PDO::FETCH_OBJ) as $r) {
+                $serviceCounts[(int)$r->product_id] = (int)$r->c;
+            }
+        } catch (\Exception $e) {}
+
+        // Available hosting packages for linking (package_id)
+        $packages = [];
+        try { $packages = $this->db->table('hosting_packages')->where('is_active', 1)->orderBy('name', 'ASC')->get() ?: []; } catch (\Exception $e) {}
+
+        return $this->view('admin.billing.products', [
+            'user' => $user, 'title' => 'Billing Products', 'theme_settings' => $this->theme(),
+            'products' => $products, 'orderCounts' => $orderCounts, 'serviceCounts' => $serviceCounts,
+            'packages' => $packages,
+        ]);
     }
 
     public function productStore()
@@ -164,8 +187,13 @@ class BillingController extends Controller
         $sort = count($max) + 1;
         $this->db->table('billing_products')->insertGetId([
             'name' => $this->request->post('name', ''), 'description' => $this->request->post('description', ''),
-            'type' => $this->request->post('type', 'hosting'), 'price' => $this->request->post('price', 0),
+            'type' => $this->request->post('type', 'hosting'),
+            'category' => $this->request->post('category', $this->request->post('type', 'hosting')),
+            'price' => $this->request->post('price', 0),
             'setup_fee' => $this->request->post('setup_fee', 0), 'billing_cycle' => $this->request->post('billing_cycle', 'monthly'),
+            'package_id' => $this->request->post('package_id') ? (int)$this->request->post('package_id') : null,
+            'license_key' => $this->request->post('license_key', ''),
+            'image' => $this->request->post('image', ''),
             'is_active' => $this->request->post('is_active', 1), 'sort_order' => $sort,
         ]);
         $_SESSION['success_message'] = 'Product created.';
@@ -177,11 +205,26 @@ class BillingController extends Controller
         $this->guard();
         $this->db->table('billing_products')->where('id', $id)->update([
             'name' => $this->request->post('name', ''), 'description' => $this->request->post('description', ''),
-            'type' => $this->request->post('type', 'hosting'), 'price' => $this->request->post('price', 0),
+            'type' => $this->request->post('type', 'hosting'),
+            'category' => $this->request->post('category', $this->request->post('type', 'hosting')),
+            'price' => $this->request->post('price', 0),
             'setup_fee' => $this->request->post('setup_fee', 0), 'billing_cycle' => $this->request->post('billing_cycle', 'monthly'),
+            'package_id' => $this->request->post('package_id') ? (int)$this->request->post('package_id') : null,
+            'license_key' => $this->request->post('license_key', ''),
+            'image' => $this->request->post('image', ''),
             'is_active' => $this->request->post('is_active', 1),
         ]);
         $_SESSION['success_message'] = 'Product updated.';
+        $this->response->redirect('/admin/billing/products');
+    }
+
+    public function productToggle($id)
+    {
+        $this->guard();
+        $p = $this->db->table('billing_products')->where('id', $id)->first();
+        if ($p) {
+            $this->db->table('billing_products')->where('id', $id)->update(['is_active' => $p->is_active ? 0 : 1]);
+        }
         $this->response->redirect('/admin/billing/products');
     }
 

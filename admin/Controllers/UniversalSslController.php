@@ -225,6 +225,20 @@ class UniversalSslController extends Controller
         $this->response->redirect('/admin/ssl/universal');
     }
 
+    // Fix ALL broken SSL services (missing cert, handshake failed, expiring soon)
+    public function fixAll()
+    {
+        $this->guard();
+        $results = $this->sslManager->fixAll();
+        $parts = ["Checked {$results['checked']}", "Fixed {$results['fixed']}", "Skipped (healthy) {$results['skipped']}"];
+        if (!empty($results['failed'])) {
+            $_SESSION['error_message'] = 'Fix All finished — ' . implode(', ', $parts) . '. Failed: ' . implode('; ', array_slice($results['failed'], 0, 5));
+        } else {
+            $_SESSION['success_message'] = 'Fix All finished — ' . implode(', ', $parts) . '.';
+        }
+        $this->response->redirect('/admin/ssl/universal');
+    }
+
     public function health()
     {
         $this->guard();

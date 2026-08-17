@@ -34,7 +34,20 @@ class SectionController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { header('Location: /admin/login'); exit; }
         $user = $this->auth->user();
-        return $this->view('admin.sections.hosting', ['user' => $user, 'title' => 'Hosting']);
+        $packages = $this->db->table('hosting_packages')->orderBy('type')->orderBy('monthly_price')->get() ?: [];
+        $grouped = [];
+        foreach ($packages as $p) {
+            $t = $p->type ?? 'web_hosting';
+            $grouped[$t][] = $p;
+        }
+        $categories = $this->db->table('package_categories')->get() ?: [];
+        return $this->view('admin.sections.hosting', [
+            'user' => $user,
+            'title' => 'Hosting',
+            'packages' => $packages,
+            'grouped' => $grouped,
+            'categories' => $categories,
+        ]);
     }
 
     public function billing()

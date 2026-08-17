@@ -98,8 +98,8 @@ foreach ($autodjs as $s) {
       </div>
       <div class="meta">Now: <b><?php echo htmlspecialchars($s->current_song ?: '—'); ?></b></div>
       <div class="acts">
-        <a class="start" href="/user/radio/autodj/start/<?php echo 10000 + (int)$s->id; ?>" <?php if (!empty($s->autodj_running)): ?>style="opacity:.4;pointer-events:none"<?php endif; ?>>▶ Start</a>
-        <a class="stop" href="/user/radio/autodj/stop/<?php echo 10000 + (int)$s->id; ?>" <?php if (empty($s->autodj_running)): ?>style="opacity:.4;pointer-events:none"<?php endif; ?>>⏹ Stop</a>
+        <a class="start" href="javascript:void(0)" onclick="adStart(<?php echo (int)$s->id; ?>, this)" <?php if (!empty($s->autodj_running)): ?>style="opacity:.4;pointer-events:none"<?php endif; ?>>▶ Start</a>
+        <a class="stop" href="javascript:void(0)" onclick="adStop(<?php echo (int)$s->id; ?>, this)" <?php if (empty($s->autodj_running)): ?>style="opacity:.4;pointer-events:none"<?php endif; ?>>⏹ Stop</a>
         <a href="/admin/streams/edit/<?php echo (int)$s->id; ?>">✏️ Edit</a>
       </div>
     </div>
@@ -108,3 +108,24 @@ foreach ($autodjs as $s) {
 </div>
 <?php endforeach; ?>
 <?php endif; ?>
+
+<script>
+function adStart(id, btn) {
+    if (!confirm('Start AutoDJ for station ' + id + '?')) return;
+    btn.textContent = 'Starting...';
+    var x = new XMLHttpRequest();
+    x.open('GET', '/api/autodj/restart/' + (10000 + id), true);
+    x.onload = function() {
+        try { var d = JSON.parse(x.responseText); if (d.success) { location.reload(); } else { alert(d.message || 'Failed'); btn.textContent = '▶ Start'; } } catch(e){ alert('Error'); btn.textContent='▶ Start'; }
+    };
+    x.send();
+}
+function adStop(id, btn) {
+    if (!confirm('Stop AutoDJ for station ' + id + '?')) return;
+    btn.textContent = 'Stopping...';
+    var x = new XMLHttpRequest();
+    x.open('GET', '/api/autodj/stop/' + (10000 + id), true);
+    x.onload = function() { location.reload(); };
+    x.send();
+}
+</script>

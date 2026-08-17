@@ -143,4 +143,32 @@ class RadioDjService
         $stations = $this->getAccountStations($hostingUserId);
         $this->assignDjToStations($djId, $stations);
     }
+
+    /**
+     * Assign every DJ on the account to a given station (used when a new station
+     * is created so existing DJs automatically get access to it).
+     */
+    public function assignAllDjsToStation($hostingUserId, $stationId)
+    {
+        $stationId = (int)$stationId;
+        if ($stationId <= 0) return;
+        $accountStations = $this->getAccountStations((int)$hostingUserId);
+        if (!$accountStations) return;
+        $ids = array_map(fn($s) => (int)$s->id, $accountStations);
+        $ph = implode(',', array_fill(0, count($ids), '?'));
+        try {
+            $stmt = $this->db->pdo()->prepare(
+                "SELECT DISTINCT rd.id FROM radio_djs rd
+                 LEFT JOIN radio_dj_streams rjds ON rjds.dj_id = rd.id
+                 WHERE rd.stream_id IN ({$ph}) OR rjds.stream_id IN ({$ph})"
+            );
+            $stmt->execute(array_merge($ids, $ids));
+            $djs = $stmt->fetchAll(\PDO::FETCH_OBJ);
+        } catch (\Exception $e) {
+            $djs = [];
+        }
+        foreach ($djs as $dj) {
+            $this->assignDjToStations((int)$dj->id, [(object)['id' => $stationId]]);
+        }
+    }
 }

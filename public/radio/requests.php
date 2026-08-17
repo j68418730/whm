@@ -217,9 +217,6 @@ h1{font-size:22px;margin-bottom:4px}
         <div class="dj-name"><?php echo htmlspecialchars($dj->name ?: $dj->username); ?></div>
         <span class="dj-online">🔴 LIVE</span>
       </div>
-      <?php if ($dj->banner || $dj->bio || $dj->website_url): ?>
-      <a class="dj-bio-link" href="/dj?u=<?php echo urlencode($dj->username); ?>" target="_blank">View Profile →</a>
-      <?php endif; ?>
     </div>
     <?php endforeach; endif; ?>
 

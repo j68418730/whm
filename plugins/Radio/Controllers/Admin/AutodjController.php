@@ -38,7 +38,18 @@ class AutodjController extends Controller
             if (!file_exists($pidFile)) $pidFile = $base . '/autodj.pid';
             if (!file_exists($pidFile)) $pidFile = '/home/testacct/radio/autodj/autodj_' . $s->id . '.pid';
             if (!file_exists($pidFile)) $pidFile = '/home/testacct/radio/autodj/autodj.pid';
-            $s->autodj_running = file_exists($pidFile) && ($pid = (int)@file_get_contents($pidFile)) > 0 && @\posix_kill($pid, 0);
+            $pidRunning = file_exists($pidFile) && ($pid = (int)@file_get_contents($pidFile)) > 0 && @\posix_kill($pid, 0);
+            // Fallback: check for a live runner/ffmpeg process for this station
+            if (!$pidRunning) {
+                $proc = @shell_exec("pgrep -f \"runner_{$s->id}\" 2>/dev/null | head -1");
+                $s->autodj_running = !empty(trim((string)$proc));
+            } else {
+                $s->autodj_running = true;
+            }
+            // Current song / listeners from DB
+            $s->current_song = $s->current_song ?? '';
+            $s->listener_count = $s->listener_count ?? 0;
+            $s->bitrate = $s->bitrate ?? 128;
         }
         
         return $this->view('Plugins.Radio.Views.admin.autodj.index', [

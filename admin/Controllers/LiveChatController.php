@@ -35,7 +35,19 @@ class LiveChatController extends Controller
         $sessions = $this->db->table('chat_sessions')->get() ?: [];
         $waiting = array_filter($sessions, fn($s) => $s->status === 'waiting');
         $active = array_filter($sessions, fn($s) => $s->status === 'active');
-        $visitors = $this->db->table('chat_visitors')->get() ?: [];
+        // Only show visitors active in the last 3 minutes (online now)
+        $cutoff = date('Y-m-d H:i:s', time() - 180);
+        $visitors = $this->db->table('chat_visitors')->where('last_seen', '>', $cutoff)->get() ?: [];
+        // Deduplicate by session_id, keep the most recent entry
+        $deduped = [];
+        $seen = [];
+        foreach ($visitors as $v) {
+            if (!isset($seen[$v->session_id])) {
+                $seen[$v->session_id] = true;
+                $deduped[] = $v;
+            }
+        }
+        $visitors = $deduped;
         $canned = $this->db->table('chat_canned_responses')->get() ?: [];
         $groups = $this->db->table('chat_operator_groups')->get() ?: [];
         return $this->view('admin.livechat.index', [
@@ -79,6 +91,46 @@ class LiveChatController extends Controller
             $this->db->table('chat_sessions')->where('id', $sessionId)->update(['status' => 'active']);
         }
         $this->response->json(['ok'=>true, 'id'=>$id]);
+        $this->response->send();
+        exit;
+    }
+
+    // Proactively start a chat with a tracked visitor (no message from them needed).
+    public function initiate()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->json(['error'=>'Unauthorized']); $this->response->send(); exit; }
+        $visitorId = (int)$this->request->post('visitor_id', 0);
+        $visitor = $this->db->table('chat_visitors')->where('id', $visitorId)->first();
+        if (!$visitor) { $this->response->json(['error'=>'Visitor not found']); $this->response->send(); exit; }
+
+        // Reuse an existing open session for this visitor if there is one
+        $existing = $this->db->table('chat_sessions')
+            ->where('visitor_id', $visitorId)
+            ->where('status', '!=', 'closed')
+            ->orderBy('id', 'DESC')
+            ->first();
+        if ($existing) {
+            $this->response->json(['ok'=>true, 'session_id'=>$existing->id]);
+            $this->response->send();
+            exit;
+        }
+
+        $sessionId = $this->db->table('chat_sessions')->insertGetId([
+            'visitor_id' => $visitorId,
+            'visitor_name' => $visitor->name ?: 'Visitor',
+            'visitor_email' => $visitor->email ?? '',
+            'status' => 'active',
+            'department' => 'General',
+            'subject' => 'Support initiated chat',
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        $this->db->table('chat_messages')->insertGetId([
+            'session_id' => $sessionId, 'sender_type' => 'system',
+            'sender_name' => 'System',
+            'message' => "Support is reaching out to you.",
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        $this->response->json(['ok'=>true, 'session_id'=>$sessionId]);
         $this->response->send();
         exit;
     }

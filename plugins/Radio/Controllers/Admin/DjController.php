@@ -22,9 +22,35 @@ class DjController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
         $djs = $this->db->table('radio_djs')->get() ?: [];
+        // Use streaming_stations for names (radio_streams.server_name is often empty)
+        $nameRows = $this->db->table('streaming_stations')->get() ?: [];
+        $nameMap = [];
+        foreach ($nameRows as $n) $nameMap[(int)$n->id] = $n->name ?? ('Stream #' . $n->id);
         $streams = $this->db->table('radio_streams')->get() ?: [];
+
+        // Build dj -> assigned streams map (junction + primary) for the table
+        $djStreams = [];
+        foreach ($djs as $d) {
+            $djStreams[$d->id] = [];
+            // Primary stream (radio_djs.stream_id)
+            $primaryId = (int)$d->stream_id;
+            if ($primaryId > 0) {
+                $djStreams[$d->id][$primaryId] = (object)['stream_id' => $primaryId, 'name' => $nameMap[$primaryId] ?? ('Stream #' . $primaryId), 'is_primary' => true];
+            }
+            // Junction streams (radio_dj_streams)
+            try {
+                $jRows = $this->db->table('radio_dj_streams')->where('dj_id', $d->id)->where('is_active', 'yes')->get() ?: [];
+                foreach ($jRows as $jr) {
+                    $sid = (int)$jr->stream_id;
+                    if (isset($djStreams[$d->id][$sid])) continue;
+                    $djStreams[$d->id][$sid] = (object)['stream_id' => $sid, 'name' => $nameMap[$sid] ?? ('Stream #' . $sid), 'is_primary' => false];
+                }
+            } catch (\Exception $e) {}
+        }
+
         return $this->view('Plugins.Radio.Views.admin.djs.index', [
             'user' => $user, 'djs' => $djs, 'streams' => $streams,
+            'djStreams' => $djStreams,
             'djStats' => ['total_djs' => count($djs), 'active_djs' => count(array_filter($djs, fn($d) => $d->status === 'active'))],
             'theme_settings' => json_decode($user->theme_settings ?? '{}', true), 'title' => 'DJ Accounts'
         ]);
@@ -54,22 +80,20 @@ class DjController extends Controller
             'name' => $this->request->post('name', $username), 'email' => $this->request->post('email', ''),
         ]);
         
-        // Store multiple stream assignments (many-to-many relationship)
-        $streamIds = $this->request->post('stream_ids', []);
-        if (!empty($streamIds)) {
-            $assignments = [];
-            foreach ($streamIds as $streamId) {
-                if (!empty($streamId) && (int)$streamId > 0) {
-                    $assignments[] = [
-                        'dj_id' => $djId,
-                        'stream_id' => (int)$streamId,
-                        'assigned_by' => $this->auth->user()->id,
-                    ];
-                }
-            }
-            if (!empty($assignments)) {
+        // Assign the new DJ to ALL streams that exist (so they can stream on every station)
+        $allStreams = $this->db->table('radio_streams')->get() ?: [];
+        $assignments = [];
+        foreach ($allStreams as $stream) {
+            $assignments[] = [
+                'dj_id' => $djId,
+                'stream_id' => (int)$stream->id,
+                'assigned_by' => $this->auth->user()->id,
+            ];
+        }
+        if (!empty($assignments)) {
+            try {
                 $this->db->table('radio_dj_streams')->insert($assignments);
-            }
+            } catch (\Exception $e) {}
         }
         
         $_SESSION['success_message'] = "DJ $username created. Password: $password";

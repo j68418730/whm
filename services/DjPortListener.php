@@ -217,6 +217,14 @@ class DjPortListener
                             @\posix_kill($pid, 9);
                         }
                     }
+                    // Kill ffmpeg retry wrapper + its child ffmpeg so they don't hold the
+                    // icecast mount (killing only the wrapper pid leaves ffmpeg orphaned).
+                    @exec("pkill -f \"ffmpeg_retry_{$stationId}\" 2>/dev/null");
+                    @exec("pkill -f \"ffmpeg.*{$stationId}\" 2>/dev/null");
+                    $sport = (int)($dj->station_port ?? 0);
+                    if ($sport > 0) {
+                        @exec("pkill -f \"ffmpeg.*{$sport}\" 2>/dev/null");
+                    }
                 } catch (\Exception $e) {}
                 usleep(500000);
 
@@ -271,16 +279,25 @@ class DjPortListener
                         usleep(100000);
                     }
                 } elseif ($engine === 'shoutcast' || $engine === 'shoutcast2') {
-                    // SHOUTcast v2 source protocol: HTTP-style SOURCE request
-                    fwrite($upstream, "SOURCE /stream\r\n");
-                    fwrite($upstream, "Content-Type: audio/mpeg\r\n");
-                    fwrite($upstream, "Authorization: Basic " . base64_encode("source:$stationPass") . "\r\n");
-                    fwrite($upstream, "icy-name: {$dj->station_name}\r\n");
-                    fwrite($upstream, "icy-pub: 1\r\n\r\n");
+                    // SHOUTcast v2 running in legacy mode: source connects to portbase+1 (8001)
+                    // with the v1-style handshake (send password\n, expect OK2) — this is the
+                    // same path AutoDJ uses (ShoutcastV1Source) and is verified working.
+                    $stationPortSC = $stationPort + 1;
+                    if (empty($dj->liquidsoap_port)) {
+                        fclose($upstream);
+                        $upstream = @fsockopen($stationHost, $stationPortSC, $errno, $errstr, 5);
+                        if (!$upstream) { @fwrite($conn['client'], "FAIL\r\n"); $this->closeConnection($idx, 'station_unreachable'); return; }
+                        stream_set_blocking($upstream, false);
+                    }
+                    fwrite($upstream, $stationPass . "\r\n");
                     usleep(500000);
                     $resp = @fread($upstream, 1024);
                     $authOk = (strpos($resp, 'OK') !== false || strpos($resp, 'OK2') !== false);
-                    if ($authOk) @fwrite($conn['client'], "OK2\r\n");
+                    if ($authOk) {
+                        @fwrite($conn['client'], "OK2\r\n");
+                        fwrite($upstream, "icy-name: {$dj->station_name}\r\nicy-br: 128\r\nicy-pub: 1\r\n\r\n");
+                        usleep(100000);
+                    }
                 } elseif ($engine === 'icecast' || $engine === 'liquidsoap') {
                     // Icecast source protocol: HTTP PUT with basic auth
                     $putPath = $engine === 'liquidsoap' ? '/live_dj' : $mount;
@@ -335,11 +352,16 @@ class DjPortListener
                     ss.plain_password AS station_password, ss.engine,
                     ss.liquidsoap_port, ss.mount_point,
                     hu.username AS hosting_username
-             FROM radio_djs rd
-             JOIN streaming_stations ss ON ss.id = rd.stream_id
+             FROM streaming_stations ss
              JOIN hosting_users hu ON hu.id = ss.user_id
-             WHERE rd.stream_id = ? AND rd.username = ? AND rd.can_stream = 1 AND rd.status = 'active'
+             JOIN radio_djs rd ON 1=1
+             WHERE ss.id = ?
+               AND rd.username = ?
+               AND rd.can_stream = 1 AND rd.status = 'active'
                AND ss.status = 'running'
+               AND (rd.stream_id = ss.id OR EXISTS (
+                    SELECT 1 FROM radio_dj_streams rj
+                    WHERE rj.dj_id = rd.id AND rj.stream_id = ss.id AND rj.is_active = 'yes'))
              LIMIT 1"
         );
         $q->execute([$stationId, $username]);
@@ -378,10 +400,24 @@ class DjPortListener
     protected function triggerAutodjRestart($stationId)
     {
         $compositeId = 10000 + $stationId;
-        $sock = @fsockopen('127.0.0.1', 80, $e, $s, 3);
+        $ctx = stream_context_create([
+            'ssl' => [
+                'SNI_enabled' => true,
+                'peer_name' => 'planet-hosts.com',
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ],
+        ]);
+        $sock = @stream_socket_client('tls://127.0.0.1:443', $e, $s, 3, STREAM_CLIENT_CONNECT, $ctx);
         if ($sock) {
-            fwrite($sock, "GET /api/autodj/restart/{$compositeId} HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n");
-            $resp = @fread($sock, 1024);
+            fwrite($sock, "GET /api/autodj/restart/{$compositeId} HTTP/1.1\r\nHost: planet-hosts.com\r\nConnection: close\r\n\r\n");
+            $resp = '';
+            stream_set_timeout($sock, 5);
+            while (!feof($sock)) {
+                $l = fgets($sock, 2048);
+                if ($l === false) break;
+                $resp .= $l;
+            }
             $this->log("AutoDJ restart for #{$stationId}: " . (strpos($resp, '"success":true') !== false ? 'OK' : 'FAIL'));
             fclose($sock);
         } else {

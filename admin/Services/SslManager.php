@@ -630,6 +630,49 @@ class SslManager
         return $result;
     }
 
+    /**
+     * Find all SSL services that are NOT working (missing cert, handshake failed,
+     * service down, expiring soon) and attempt to repair them.
+     */
+    public function fixAll()
+    {
+        $results = ['checked' => 0, 'fixed' => 0, 'failed' => [], 'skipped' => 0];
+        $services = $this->db->table('ssl_services')->where('ssl_enabled', 1)->get() ?: [];
+        if (empty($services)) {
+            // Nothing in ssl_services — fall back to scanning /etc/letsencrypt/live domains
+            $liveDir = '/etc/letsencrypt/live';
+            $domains = is_dir($liveDir) ? array_values(array_diff(scandir($liveDir), ['.', '..'])) : [];
+            foreach ($domains as $domain) {
+                if (!is_dir("{$liveDir}/{$domain}")) continue;
+                $certPath = "{$liveDir}/{$domain}/fullchain.pem";
+                if (!file_exists($certPath)) continue;
+                $results['checked']++;
+                // Verify TLS handshake on 443 for this domain
+                $ok = $this->checkServiceSsl('apache', $domain, 443);
+                if ($ok['tls_handshake'] && $ok['cert_exists']) {
+                    $results['skipped']++;
+                } else {
+                    $repair = $this->requestLetsEncrypt($domain);
+                    if ($repair['success']) { $results['fixed']++; }
+                    else { $results['failed'][] = $domain; }
+                }
+            }
+            return $results;
+        }
+
+        foreach ($services as $svc) {
+            $results['checked']++;
+            $check = $this->checkServiceSsl($svc->service_type, $svc->domain, $svc->port);
+            $broken = !$check['cert_exists'] || !$check['tls_handshake'] || !$check['service_running'] || ($check['days_left'] ?? 999) < 7;
+            if (!$broken) { $results['skipped']++; continue; }
+
+            $repair = $this->autoRepair($svc->id);
+            if ($repair['success']) { $results['fixed']++; }
+            else { $results['failed'][] = $svc->domain . ' (' . ($repair['error'] ?? '') . ')'; }
+        }
+        return $results;
+    }
+
     // ─── Port Scanning ──────────────────────────────────────
 
     public function scanListeningPorts()

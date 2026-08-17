@@ -58,22 +58,40 @@ case "$ACTION" in
             log "Starting ${FREQ} backup for ${username}"
 
             # Files backup
-            if tar -czf "$BACKUP_FILE" -C "$HOMEDIR" --exclude="tmp/*" --exclude=".credentials.json" . 2>/dev/null; then
+            if tar -czf "$BACKUP_FILE" -C "$HOMEDIR" --warning=no-file-changed --exclude="tmp/*" --exclude=".credentials.json" . 2>/dev/null; then
                 log "OK ${username}: files backup (${BACKUP_TYPE})"
             else
-                log "FAIL ${username}: files backup failed"
-                continue
+                # tar exits 1 when a file changed while archiving (e.g. live stream logs).
+                # If the archive was still produced, treat it as a success.
+                if [ -s "$BACKUP_FILE" ]; then
+                    log "OK ${username}: files backup (with changed-file warnings)"
+                else
+                    log "FAIL ${username}: files backup failed"
+                    continue
+                fi
             fi
 
             # Database backup
             DB_NAME=$($MYSQL -N -e "SELECT database_name FROM radiohosting.hosting_users WHERE id=${id};" 2>/dev/null || true)
             DB_USER=$($MYSQL -N -e "SELECT database_user FROM radiohosting.hosting_users WHERE id=${id};" 2>/dev/null || true)
             DB_PASS=$($MYSQL -N -e "SELECT database_password FROM radiohosting.hosting_users WHERE id=${id};" 2>/dev/null || true)
+            # mysql -N prints the literal string "NULL" for NULL columns — treat it as empty
+            DB_NAME=$(echo "$DB_NAME" | sed 's/^NULL$//')
+            DB_USER=$(echo "$DB_USER" | sed 's/^NULL$//')
+            DB_PASS=$(echo "$DB_PASS" | sed 's/^NULL$//')
             if [ -n "$DB_NAME" ] && [ -n "$DB_USER" ] && [ -n "$DB_PASS" ]; then
                 if mysqldump -u "${DB_USER}" -p"${DB_PASS}" "${DB_NAME}" 2>/dev/null | gzip > "$DB_BACKUP"; then
                     log "OK ${username}: database backup (${DB_NAME})"
                 else
                     log "WARN ${username}: database backup failed"
+                fi
+            else
+                # Account shares the central radiohosting DB (no per-account db).
+                # Dump the central DB so the account still has data recoverability.
+                if mysqldump -u root -pSkylinehosting171 radiohosting 2>/dev/null | gzip > "${BACKUP_DIR}/${BACKUP_TYPE}/${username}_central_${TIMESTAMP}.sql.gz"; then
+                    log "OK ${username}: central database backup (radiohosting)"
+                else
+                    log "WARN ${username}: central database backup failed"
                 fi
             fi
 

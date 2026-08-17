@@ -16,12 +16,16 @@ log() {
 $MYSQL -N -e "
 SELECT u.id, u.username, u.domain, u.disk_used, u.bandwidth_used, 
        p.disk_space, p.bandwidth, p.email_accounts, p.databases,
-       p.subdomains, p.addon_domains, p.ftp_accounts
+       p.subdomains, p.addon_domains, p.ftp_accounts, u.allow_suspension
 FROM radiohosting.hosting_users u 
 JOIN radiohosting.hosting_packages p ON u.package_id = p.id 
 WHERE u.status IN ('completed','active');
-" 2>/dev/null | while IFS=$'\t' read -r id username domain disk_used bw_used max_disk max_bw max_emails max_dbs max_sub max_addon max_ftp; do
+" 2>/dev/null | while IFS=$'\t' read -r id username domain disk_used bw_used max_disk max_bw max_emails max_dbs max_sub max_addon max_ftp allow_suspension; do
     [ -z "$id" ] && continue
+    # Skip auto-suspend if admin has disabled it for this account (manual only)
+    if [ "${allow_suspension:-1}" = "0" ]; then
+        continue
+    fi
     HOMEDIR="/home/${username}"
     VIOLATIONS=""
     SHOULD_SUSPEND=0

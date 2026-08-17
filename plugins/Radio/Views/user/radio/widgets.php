@@ -28,17 +28,21 @@
 .btn-s2:hover{background:rgba(255,255,255,.1)}
 .wc-cat{font-size:14px;font-weight:700;color:#e0e0e0;margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.06)}
 .wc-cat:first-child{margin-top:0}
+.pv-wrap{margin-top:8px}
+.pv-label{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:600;margin-bottom:6px}
+.pv-box{border:1px dashed rgba(0,140,255,.25);border-radius:8px;background:rgba(0,0,0,.2);padding:12px;overflow:hidden;display:flex;align-items:flex-start;justify-content:center;min-height:50px}
+.pv-box > *{max-width:100%}
 </style>
 <?php $streams = $streams ?? []; ?>
 <div class="wc-wrap">
 <div class="wc-header">
 <h2>Widget Center</h2>
-<p>Generate embed codes for your radio station — works with Icecast &amp; SHOUTcast</p>
+<p>Embed codes for your radio station are generated automatically — previews shown below. Works with Icecast &amp; SHOUTcast</p>
 </div>
 <div class="wc-bar">
 <div class="fg"><label>Stream</label><select id="ws-s">
 <?php foreach($streams as $s): ?>
-<option value="<?=$s->id?>"><?=htmlspecialchars($s->name)?> (<?=strtoupper($s->server_type)?>)</option>
+<option value="<?=$s->id?>" <?=($station&&$station->id==$s->id)?'selected':''?>><?=htmlspecialchars($s->name)?> (<?=strtoupper($s->server_type)?>)</option>
 <?php endforeach; ?>
 </select></div>
 <div class="fg" style="flex:0.5"><label>Format</label><select id="ws-f"><option value="html">HTML</option><option value="iframe">Iframe</option></select></div>
@@ -57,28 +61,29 @@
 <div class="wc-cat">HTML5 Players</div>
 <div class="wc-grid">
 <?php $cards = [
-  ['Full HTML5 Player','full','Full player with play/pause, volume, song info, listeners, progress bar'],
-  ['Mini Player','mini','Compact player with play/pause and song display'],
-  ['Floating Player','float','Fixed at bottom-right of website'],
-  ['Popup Player','popup','Opens player in a separate popup window'],
-  ['Sidebar Player','side','Vertical player for sidebars'],
-  ['Mobile Player','mob','Optimized for phones'],
-  ['Dark Player','dark','Dark themed player'],
-  ['Light Player','light','Light themed player'],
-  ['Transparent Player','trans','Transparent background, no frame'],
+  ['Full HTML5 Player','p-full','Full player with play/pause, volume, song info, listeners, progress bar'],
+  ['Mini Player','p-mini','Compact player with play/pause and song display'],
+  ['Floating Player','p-float','Fixed at bottom-right of website'],
+  ['Popup Player','p-popup','Opens player in a separate popup window'],
+  ['Sidebar Player','p-side','Vertical player for sidebars'],
+  ['Mobile Player','p-mob','Optimized for phones'],
+  ['Dark Player','p-dark','Dark themed player'],
+  ['Light Player','p-light','Light themed player'],
+  ['Transparent Player','p-trans','Transparent background, no frame'],
 ];
 foreach($cards as $c): ?>
-<div class="wc-card"><h4><?=$c[0]?></h4><p><?=$c[2]?></p>
-<code id="c-p-<?=$c[1]?>">Select stream &amp; generate</code>
-<div id="pv-p-<?=$c[1]?>" class="pv-box" style="display:none;margin-top:8px"></div>
-<div class="wc-acts"><button class="btn-s btn-p" onclick="gw('p-<?=$c[1]?>')">Generate</button><button class="btn-s btn-s2" onclick="cp('c-p-<?=$c[1]?>')">Copy</button></div></div>
+<div class="wc-card" data-wc="<?=$c[1]?>"><h4><?=$c[0]?></h4><p><?=$c[2]?></p>
+<code id="c-<?=$c[1]?>">Generating…</code>
+<div class="pv-wrap"><div class="pv-label">Preview</div><div class="pv-box" id="pv-<?=$c[1]?>"></div></div>
+<div class="wc-acts"><button class="btn-s btn-s2" onclick="cp('c-<?=$c[1]?>')">Copy Code</button></div></div>
 <?php endforeach; ?>
 </div>
 <div class="wc-cat">Listen Live Button</div>
 <div class="wc-grid">
-<div class="wc-card"><h4>Listen Live Button</h4><p>Styled button that opens the player</p>
-<code id="c-p-listen">Select stream &amp; generate</code>
-<div class="wc-acts"><button class="btn-s btn-p" onclick="gw('p-listen')">Generate</button><button class="btn-s btn-s2" onclick="cp('c-p-listen')">Copy</button></div></div>
+<div class="wc-card" data-wc="p-listen"><h4>Listen Live Button</h4><p>Styled button that opens the player</p>
+<code id="c-p-listen">Generating…</code>
+<div class="pv-wrap"><div class="pv-label">Preview</div><div class="pv-box" id="pv-p-listen"></div></div>
+<div class="wc-acts"><button class="btn-s btn-s2" onclick="cp('c-p-listen')">Copy Code</button></div></div>
 </div>
 </div>
 
@@ -90,19 +95,22 @@ foreach($cards as $c): ?>
   ['Large Now Playing','np-large','Album cover + Artist + Title + Album + Genre'],
   ['Compact Now Playing','np-compact','Single line minimalist'],
 ] as $c): ?>
-<div class="wc-card"><h4><?=$c[0]?></h4><p><?=$c[2]?></p>
-<code id="c-<?=$c[1]?>">Select stream &amp; generate</code>
-<div class="wc-acts"><button class="btn-s btn-p" onclick="gw('<?=$c[1]?>')">Generate</button><button class="btn-s btn-s2" onclick="cp('c-<?=$c[1]?>')">Copy</button></div></div>
+<div class="wc-card" data-wc="<?=$c[1]?>"><h4><?=$c[0]?></h4><p><?=$c[2]?></p>
+<code id="c-<?=$c[1]?>">Generating…</code>
+<div class="pv-wrap"><div class="pv-label">Preview</div><div class="pv-box" id="pv-<?=$c[1]?>"></div></div>
+<div class="wc-acts"><button class="btn-s btn-s2" onclick="cp('c-<?=$c[1]?>')">Copy Code</button></div></div>
 <?php endforeach; ?>
 </div>
 <div class="wc-cat">Station Info</div>
 <div class="wc-grid">
-<div class="wc-card"><h4>Station Information</h4><p>Name, genre, bitrate, listener count</p>
-<code id="c-station-info">Select stream &amp; generate</code>
-<div class="wc-acts"><button class="btn-s btn-p" onclick="gw('station-info')">Generate</button><button class="btn-s btn-s2" onclick="cp('c-station-info')">Copy</button></div></div>
-<div class="wc-card"><h4>Stream Status</h4><p>Online/offline badge with uptime</p>
-<code id="c-stream-status">Select stream &amp; generate</code>
-<div class="wc-acts"><button class="btn-s btn-p" onclick="gw('stream-status')">Generate</button><button class="btn-s btn-s2" onclick="cp('c-stream-status')">Copy</button></div></div>
+<div class="wc-card" data-wc="station-info"><h4>Station Information</h4><p>Name, genre, bitrate, listener count</p>
+<code id="c-station-info">Generating…</code>
+<div class="pv-wrap"><div class="pv-label">Preview</div><div class="pv-box" id="pv-station-info"></div></div>
+<div class="wc-acts"><button class="btn-s btn-s2" onclick="cp('c-station-info')">Copy Code</button></div></div>
+<div class="wc-card" data-wc="stream-status"><h4>Stream Status</h4><p>Online/offline badge with uptime</p>
+<code id="c-stream-status">Generating…</code>
+<div class="pv-wrap"><div class="pv-label">Preview</div><div class="pv-box" id="pv-stream-status"></div></div>
+<div class="wc-acts"><button class="btn-s btn-s2" onclick="cp('c-stream-status')">Copy Code</button></div></div>
 </div>
 </div>
 
@@ -110,9 +118,10 @@ foreach($cards as $c): ?>
 <div class="wc-cat">Song History</div>
 <div class="wc-grid">
 <?php foreach([5,10,25,50] as $n): ?>
-<div class="wc-card"><h4>Last <?=$n?> Songs</h4><p>Recently played tracks</p>
-<code id="c-history-<?=$n?>">Select stream &amp; generate</code>
-<div class="wc-acts"><button class="btn-s btn-p" onclick="gw('history-<?=$n?>')">Generate</button><button class="btn-s btn-s2" onclick="cp('c-history-<?=$n?>')">Copy</button></div></div>
+<div class="wc-card" data-wc="history-<?=$n?>"><h4>Last <?=$n?> Songs</h4><p>Recently played tracks</p>
+<code id="c-history-<?=$n?>">Generating…</code>
+<div class="pv-wrap"><div class="pv-label">Preview</div><div class="pv-box" id="pv-history-<?=$n?>"></div></div>
+<div class="wc-acts"><button class="btn-s btn-s2" onclick="cp('c-history-<?=$n?>')">Copy Code</button></div></div>
 <?php endforeach; ?>
 </div>
 </div>
@@ -125,9 +134,10 @@ foreach($cards as $c): ?>
   ['DJ Schedule','dj-schedule','Weekly DJ schedule grid'],
   ['DJ Social Media','dj-social','DJ social media links'],
 ] as $c): ?>
-<div class="wc-card"><h4><?=$c[0]?></h4><p><?=$c[2]?></p>
-<code id="c-<?=$c[1]?>">Select stream &amp; generate</code>
-<div class="wc-acts"><button class="btn-s btn-p" onclick="gw('<?=$c[1]?>')">Generate</button><button class="btn-s btn-s2" onclick="cp('c-<?=$c[1]?>')">Copy</button></div></div>
+<div class="wc-card" data-wc="<?=$c[1]?>"><h4><?=$c[0]?></h4><p><?=$c[2]?></p>
+<code id="c-<?=$c[1]?>">Generating…</code>
+<div class="pv-wrap"><div class="pv-label">Preview</div><div class="pv-box" id="pv-<?=$c[1]?>"></div></div>
+<div class="wc-acts"><button class="btn-s btn-s2" onclick="cp('c-<?=$c[1]?>')">Copy Code</button></div></div>
 <?php endforeach; ?>
 </div>
 </div>
@@ -140,9 +150,10 @@ foreach($cards as $c): ?>
   ['Peak Listeners','list-peak','Highest listener count ever'],
   ['Daily Listeners','list-daily','Today\'s listener count'],
 ] as $c): ?>
-<div class="wc-card"><h4><?=$c[0]?></h4><p><?=$c[2]?></p>
-<code id="c-<?=$c[1]?>">Select stream &amp; generate</code>
-<div class="wc-acts"><button class="btn-s btn-p" onclick="gw('<?=$c[1]?>')">Generate</button><button class="btn-s btn-s2" onclick="cp('c-<?=$c[1]?>')">Copy</button></div></div>
+<div class="wc-card" data-wc="<?=$c[1]?>"><h4><?=$c[0]?></h4><p><?=$c[2]?></p>
+<code id="c-<?=$c[1]?>">Generating…</code>
+<div class="pv-wrap"><div class="pv-label">Preview</div><div class="pv-box" id="pv-<?=$c[1]?>"></div></div>
+<div class="wc-acts"><button class="btn-s btn-s2" onclick="cp('c-<?=$c[1]?>')">Copy Code</button></div></div>
 <?php endforeach; ?>
 </div>
 </div>
@@ -170,9 +181,10 @@ foreach($cards as $c): ?>
   ['DJ Application','apply','DJ application form for your site'],
 ];
 foreach($extra as $c): ?>
-<div class="wc-card"><h4><?=$c[0]?></h4><p><?=$c[2]?></p>
-<code id="c-<?=$c[1]?>">Select stream &amp; generate</code>
-<div class="wc-acts"><button class="btn-s btn-p" onclick="gw('<?=$c[1]?>')">Generate</button><button class="btn-s btn-s2" onclick="cp('c-<?=$c[1]?>')">Copy</button></div></div>
+<div class="wc-card" data-wc="<?=$c[1]?>"><h4><?=$c[0]?></h4><p><?=$c[2]?></p>
+<code id="c-<?=$c[1]?>">Generating…</code>
+<div class="pv-wrap"><div class="pv-label">Preview</div><div class="pv-box" id="pv-<?=$c[1]?>"></div></div>
+<div class="wc-acts"><button class="btn-s btn-s2" onclick="cp('c-<?=$c[1]?>')">Copy Code</button></div></div>
 <?php endforeach; ?>
 </div>
 </div>
@@ -191,18 +203,9 @@ function sw(e,id){
   e.currentTarget.classList.add('act');
   document.getElementById('sec-'+id).classList.add('act');
 }
-function gw(type){
-  var el=document.getElementById('c-'+type),s=BASE_URL,x=sid(),f=fmt(),sn=sname(),u=sUrl();
-  var ifr=function(url,w,h){return f==='iframe'?'<iframe src="'+url+'" width="'+w+'" height="'+h+'" frameborder="0" style="border-radius:10px;max-width:100%"></iframe>':'<iframe src="'+url+'" width="'+w+'" height="'+h+'" frameborder="0" style="border-radius:10px;max-width:100%"></iframe>'};
-  // Find or create preview container in the parent card
-  var pv = document.getElementById('pv-'+type);
-  if (!pv) {
-    pv = document.createElement('div');
-    pv.id = 'pv-'+type;
-    pv.className = 'pv-box';
-    pv.style.cssText = 'display:none;margin-top:8px;background:rgba(0,0,0,.15);border-radius:8px;padding:10px;overflow:hidden';
-    el.parentNode.insertBefore(pv, el.nextSibling);
-  }
+function wc(type){
+  var s=BASE_URL,x=sid(),f=fmt(),sn=sname(),u=sUrl();
+  var ifr=function(url,w,h){return '<iframe src="'+url+'" width="'+w+'" height="'+h+'" frameborder="0" style="border-radius:10px;max-width:100%"></iframe>'};
   var codes = {
     'p-full':'<div id="ph-player" data-stream="'+x+'"><script src="'+s+'/radio/widgets/player.php?stream='+x+'"><\/script><\/div>',
     'p-mini':'<div style="background:rgba(8,16,28,.9);border-radius:10px;padding:10px;text-align:center;max-width:200px"><div style="font-size:11px;color:#94a3b8">Now Playing</div><audio src="'+u+'" preload="auto" controls style="width:100%;height:30px"></audio></div>',
@@ -247,12 +250,21 @@ function gw(type){
     'apply':'<div id="ph-apply-'+x+'">DJ application form - create at /user/radio</div>',
     'advertisements':'<div id="ph-ads-'+x+'"><script src="'+s+'/radio/advertisements.php?stream='+x+'"><\/script><\/div>',
   };
-  el.textContent = codes[type] || 'Generate failed: unknown type '+type;
-  // Render live preview inside the card — re-execute any <script> tags (innerHTML won't run them)
-  var code = codes[type] || '';
-  pv.style.display = 'block';
-  pv.innerHTML = code;
-  var sels = pv.querySelectorAll('script');
+  return codes[type] || 'Generate failed: unknown type '+type;
+}
+// Preview version — keep floating/mobile widgets contained INSIDE the card (not the viewport)
+function pvHtml(code){
+  var c = code;
+  c = c.replace(/position:fixed;?/g, 'position:static;');
+  c = c.replace(/position: fixed;?/g, 'position: static;');
+  c = c.replace(/z-index:9999;?/g, '');
+  c = c.replace(/<meta name="viewport"[^>]*>/g, '');
+  c = c.replace(/right:20px;?/g, '');
+  c = c.replace(/bottom:20px;?/g, '');
+  return c;
+}
+function runScripts(root){
+  var sels = root.querySelectorAll('script');
   for (var i = 0; i < sels.length; i++) {
     var ns = document.createElement('script');
     if (sels[i].src) { ns.src = sels[i].src; }
@@ -260,8 +272,25 @@ function gw(type){
     sels[i].parentNode.replaceChild(ns, sels[i]);
   }
 }
+function renderCard(type){
+  var el = document.getElementById('c-'+type);
+  var pv = document.getElementById('pv-'+type);
+  if (!el || !pv) return;
+  var code = wc(type);
+  el.textContent = code;
+  pv.innerHTML = pvHtml(code);
+  runScripts(pv);
+}
+function genAll(){
+  document.querySelectorAll('[data-wc]').forEach(function(card){
+    renderCard(card.getAttribute('data-wc'));
+  });
+}
 function cp(id){
   var el=document.getElementById(id);
   navigator.clipboard.writeText(el.textContent).then(function(){el.style.background='rgba(74,222,128,.2)';setTimeout(function(){el.style.background=''},1000)});
 }
+document.getElementById('ws-s').addEventListener('change', genAll);
+document.getElementById('ws-f').addEventListener('change', genAll);
+genAll();
 </script>

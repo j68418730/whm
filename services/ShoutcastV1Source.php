@@ -35,8 +35,16 @@ class ShoutcastV1Source
         if ($this->pidFile) file_put_contents($this->pidFile, getmypid());
         $this->log("AutoDJ started");
 
-        // Connect once and stay connected
-        $sock = $this->connect();
+        // Connect (with retries) and stay connected.
+        // After a DJ disconnects, the source server may still be releasing the
+        // source slot, so the first attempt can fail transiently.
+        $sock = null;
+        for ($attempt = 1; $attempt <= 10; $attempt++) {
+            $sock = $this->connect();
+            if ($sock) break;
+            $this->log("Retry $attempt/10 in 2s...");
+            sleep(2);
+        }
         if (!$sock) { $this->log("Initial connection failed"); return; }
 
         while ($this->running) {
@@ -52,8 +60,13 @@ class ShoutcastV1Source
             // If we get here and socket died, try to reconnect
             if (!$sock) {
                 $this->log("Socket lost, reconnecting...");
-                $sock = $this->connect();
-                if (!$sock) { sleep(3); }
+                for ($attempt = 1; $attempt <= 10; $attempt++) {
+                    $sock = $this->connect();
+                    if ($sock) break;
+                    $this->log("Reconnect $attempt/10 in 2s...");
+                    sleep(2);
+                }
+                if (!$sock) sleep(3);
             }
         }
         if ($sock) fclose($sock);

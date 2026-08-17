@@ -29,15 +29,14 @@ td{padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.04);color:#c0c0c0}
 </div>
 
 <div class="crd"><h2>Upload Songs</h2>
-<form method="post" action="/admin/radio/global-playlists/upload/<?=$playlist->id?>" enctype="multipart/form-data">
-  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <label style="flex:1;padding:20px;border:2px dashed rgba(0,140,255,.2);border-radius:10px;text-align:center;color:#64748b;font-size:12px;cursor:pointer;transition:.15s;display:block" onmouseover="this.style.borderColor='rgba(0,140,255,.4)';this.style.color='#94a3b8'" onmouseout="this.style.borderColor='rgba(0,140,255,.2)';this.style.color='#64748b'">
-    <input type="file" name="files[]" multiple accept=".mp3,.aac,.ogg,.flac,.wav,.m4a" style="display:block;margin:0 auto;font-size:11px;color:#e0e0e0;background:rgba(0,0,0,.3);padding:6px;border-radius:4px;border:1px solid rgba(255,255,255,.08)" onchange="document.getElementById('file-count').textContent=this.files.length+' file(s) selected'">
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+  <label style="flex:1;padding:20px;border:2px dashed rgba(0,140,255,.2);border-radius:10px;text-align:center;color:#64748b;font-size:12px;cursor:pointer;transition:.15s;display:block" onmouseover="this.style.borderColor='rgba(0,140,255,.4)';this.style.color='#94a3b8'" onmouseout="this.style.borderColor='rgba(0,140,255,.2)';this.style.color='#64748b'">
+    <input type="file" id="gp-upload-input" name="files[]" multiple accept=".mp3,.aac,.ogg,.flac,.wav,.m4a" style="display:block;margin:0 auto;font-size:11px;color:#e0e0e0;background:rgba(0,0,0,.3);padding:6px;border-radius:4px;border:1px solid rgba(255,255,255,.08)" onchange="onFilesSelected(this.files)">
     <span id="file-count" style="display:block;margin-top:6px">Click to browse (mp3, aac, ogg, flac, wav, m4a)</span>
-    </label>
-  </div>
-  <button class="btn btn-p" style="margin-top:8px">Upload</button>
-</form>
+  </label>
+</div>
+<div id="gp-upload-queue" style="margin-top:8px;font-size:11px;color:#94a3b8"></div>
+<button class="btn btn-p" id="gp-upload-btn" style="margin-top:8px;display:none" onclick="startGpUpload()">Upload <span id="gp-upload-count"></span></button>
 </div>
 
 <div class="crd"><h2>Songs (<?=count($items)?>)</h2>
@@ -57,3 +56,53 @@ td{padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.04);color:#c0c0c0}
 <?php endif; ?>
 </div>
 </div>
+
+<script>
+var gpQueue = [];
+var gpPlaylistId = <?=(int)$playlist->id?>;
+var gpInput = document.getElementById('gp-upload-input');
+var gpQEl = document.getElementById('gp-upload-queue');
+var gpBtn = document.getElementById('gp-upload-btn');
+var gpCnt = document.getElementById('gp-upload-count');
+
+function onFilesSelected(files) {
+    gpQueue = Array.prototype.slice.call(files);
+    gpBtn.style.display = gpQueue.length ? 'inline-block' : 'none';
+    gpCnt.textContent = gpQueue.length;
+    gpQEl.innerHTML = '';
+    gpQueue.forEach(function(f, i) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)';
+        row.innerHTML = '<span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + f.name + ' (' + Math.round(f.size/1024) + ' KB)</span>'
+            + '<div style="width:120px;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;flex-shrink:0"><div class="gp-bar" style="width:0;height:100%;background:linear-gradient(90deg,#008cff,#3bb8ff);transition:width .2s"></div></div>';
+        gpQEl.appendChild(row);
+    });
+}
+
+function startGpUpload() {
+    if (!gpQueue.length) return;
+    gpBtn.disabled = true;
+    gpBtn.textContent = 'Uploading...';
+    var rows = gpQEl.children;
+    var i = 0;
+    function uploadNext() {
+        if (i >= gpQueue.length) { gpBtn.textContent = 'Done'; setTimeout(function(){ location.reload(); }, 1200); return; }
+        var bar = rows[i].querySelector('.gp-bar');
+        var fd = new FormData();
+        fd.append('files[]', gpQueue[i]);
+        var x = new XMLHttpRequest();
+        x.open('POST', '/admin/radio/global-playlists/upload/' + gpPlaylistId, true);
+        x.upload.onprogress = function(ev) {
+            if (ev.lengthComputable && bar) bar.style.width = Math.round(ev.loaded / ev.total * 100) + '%';
+        };
+        x.onload = function() {
+            if (bar) bar.style.width = '100%';
+            i++;
+            uploadNext();
+        };
+        x.onerror = function() { i++; uploadNext(); };
+        x.send(fd);
+    }
+    uploadNext();
+}
+</script>

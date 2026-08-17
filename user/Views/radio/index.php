@@ -129,9 +129,6 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <a href="?station_id=<?=$stationId?>&tab=backups" class="<?=$tab==='backups'?'active':''?>">Backups</a>
   <a href="/user/radio/global-music" style="color:#4ade80;font-weight:700">🌐 Global Music</a>
   <a href="/user/radio/widgets?station_id=<?=$stationId?>" style="color:#a855f7;font-weight:700">🎨 Widgets</a>
-  <?php if (!empty($djs)): foreach($djs as $dj): ?>
-  <a href="/dj?u=<?=urlencode($dj->username)?>" target="_blank" style="color:#34d399;font-weight:600">📻 <?=htmlspecialchars($dj->name?:$dj->username)?>'s Page</a>
-  <?php break; endforeach; endif; ?>
   <a href="/dj_panel.php" target="_blank" style="color:#facc15;font-weight:600">🎧 DJ Panel</a>
 </div>
 <div class="tab <?=$tab==='overview'?'active':''?>">
@@ -285,8 +282,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <?php if ($stationDjPort): ?>
         <a href="#" class="btn btn-sm btn-secondary" onclick="showDjInfo(<?=$dj->id?>,'<?=$dj->username?>',<?=$stationDjPort?>);return false">Info</a>
         <?php endif; ?>
-        <a href="/user/radio/dj/toggle/<?=$dj->id?>" class="btn btn-sm btn-warning" title="Cycles: active → suspended → on leave"><?=($dj->status??'active')==='active'?'Suspend':(($dj->status??'')==='on_leave'?'Reactivate':'On Leave')?></a>
-        <a href="/user/radio/dj/delete/<?=$dj->id?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a>
+        <a href="/user/radio/dj/toggle/<?=$dj->id?>?station_id=<?=$stationId?>" class="btn btn-sm btn-warning" title="Cycles: active → suspended → on leave"><?=($dj->status??'active')==='active'?'Suspend':(($dj->status??'')==='on_leave'?'Reactivate':'On Leave')?></a>
+        <a href="/user/radio/dj/delete/<?=$dj->id?>?station_id=<?=$stationId?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a>
       </td>
     </tr>
     <?php endforeach; ?>
@@ -378,14 +375,11 @@ function copyDjInfo(){
 
   <?php if (!empty($djs)): ?>
   <div class="card"><h3>📻 Request Page Link</h3>
-  <p style="font-size:11px;color:#64748b;margin-bottom:8px">Share this URL so listeners can request songs from your DJs:</p>
-  <?php foreach ($djs as $dj): ?>
+  <p style="font-size:11px;color:#64748b;margin-bottom:8px">Share this URL so listeners can request songs. It shows the station and whichever DJ is online:</p>
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
-    <span style="font-size:11px;color:#94a3b8;min-width:80px"><?=htmlspecialchars($dj->name?:$dj->username)?>:</span>
-    <input class="inp inp-sm" value="https://planet-hosts.com/dj?u=<?=urlencode($dj->username)?>" readonly style="flex:1;font-family:monospace;font-size:12px;color:#38bdf8">
+    <input class="inp inp-sm" value="https://planet-hosts.com/radio/requests.php?u=<?=urlencode($hosting->username??$station->username??'')?>" readonly style="flex:1;font-family:monospace;font-size:12px;color:#38bdf8">
     <button class="btn btn-sm btn-primary" onclick="var i=this.previousElementSibling;i.select();navigator.clipboard.writeText(i.value);this.textContent='Copied!';setTimeout(function(){this.textContent='Copy'}.bind(this),2000)">Copy</button>
   </div>
-  <?php endforeach; ?>
   </div>
   <?php endif; ?>
   <?php $editDjId = (int)($_GET['edit_dj']??0); $editDj = null; foreach($djs as $d){if($d->id==$editDjId){$editDj=$d;break;}} ?>

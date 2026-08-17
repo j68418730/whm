@@ -59,6 +59,26 @@ class ChatController extends Controller
         exit;
     }
 
+    // Visitor-side: is there a chat session an operator started for me?
+    // Matches by the same PHP session cookie used for visitor tracking.
+    public function waiting()
+    {
+        $sessId = $_COOKIE['PHPSESSID'] ?? session_id();
+        $visitor = $this->db->table('chat_visitors')->where('session_id', $sessId)->first();
+        $found = 0;
+        if ($visitor) {
+            $open = $this->db->table('chat_sessions')
+                ->where('visitor_id', $visitor->id)
+                ->where('status', '!=', 'closed')
+                ->orderBy('id', 'DESC')
+                ->first();
+            if ($open) $found = (int)$open->id;
+        }
+        $this->response->json(['session_id' => $found]);
+        $this->response->send();
+        exit;
+    }
+
     public function send()
     {
         $sessionId = (int)$this->request->post('session_id', 0);

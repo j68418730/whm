@@ -78,19 +78,25 @@ if (class_exists('\\Core\\License')) {
 
 <script>
 function filterSidebar(val) {
-    var items = document.querySelectorAll('.sidebar a');
-    var sections = document.querySelectorAll('.nav-section');
+    var sections = document.querySelectorAll('#adminSidebar .nav-section');
     var q = val.toLowerCase().trim();
     sections.forEach(function(s) {
         var count = 0;
         s.querySelectorAll('a').forEach(function(a) {
-            var text = a.textContent.toLowerCase();
+            if (a.closest('script')) return;
+            var text = (a.textContent || '').toLowerCase();
             var match = !q || text.indexOf(q) !== -1;
             a.style.display = match ? '' : 'none';
             if (match) count++;
         });
         s.style.display = count > 0 ? '' : 'none';
+        var label = s.querySelector('.nav-label');
+        if (label) label.style.display = count > 0 ? '' : 'none';
     });
+    // Clear search when input cleared
+    if (!q) {
+        sections.forEach(function(s){ s.style.display=''; var label=s.querySelector('.nav-label'); if(label)label.style.display=''; });
+    }
 }
 </script>
 

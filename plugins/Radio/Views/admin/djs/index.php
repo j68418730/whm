@@ -75,10 +75,12 @@
 <td><?php echo htmlspecialchars($d->name ?? ''); ?></td>
 <td>
 <?php
-$assignedStreamsForDJ = array_filter($djs[$d->id] ?? [], fn($s) => $s['stream_id'] ?? false);
-if (!empty($assignedStreamsForDJ)) {
-    foreach ($assignedStreamsForDJ as $stream) {
-        echo '<span style="display:inline-block;background:rgba(0,191,255,.1);padding:2px 8px;border-radius:4px;margin:2px;font-size:12px;">' . htmlspecialchars($stream['stream_id']) . '</span>';
+$djStreams = $djStreams ?? [];
+$assigned = $djStreams[$d->id] ?? [];
+if (!empty($assigned)) {
+    foreach ($assigned as $sid => $st) {
+        $star = !empty($st->is_primary) ? ' ★' : '';
+        echo '<a href="/admin/streams/edit/' . (int)$sid . '" title="Open station #' . (int)$sid . ' dashboard" style="display:inline-block;background:rgba(0,191,255,.1);padding:2px 8px;border-radius:4px;margin:2px;font-size:12px;text-decoration:none;color:#38bdf8">' . htmlspecialchars($st->name) . $star . '</a>';
     }
 } else {
     echo '<span style="color:#64748b;font-size:12px;">No streams assigned</span>';
@@ -86,7 +88,7 @@ if (!empty($assignedStreamsForDJ)) {
 ?>
 </td>
 <td><?php echo $d->status === 'active' ? '<span style="color:#4ade80">Active</span>' : ($d->status === 'banned' ? '<span style="color:#f87171">Banned</span>' : '<span style="color:#64748b">Inactive</span>'); ?></td>
-<td><?php echo $d->last_login ?: 'Never'; ?></td>
+<td><?php echo $d->last_active ?: ($d->last_login ?: 'Never'); ?></td>
 <td><a href="/admin/djs/edit/<?php echo $d->id; ?>" class="btn btn-sm secondary">Edit</a>
 <a href="/admin/djs/remove/<?php echo $d->id; ?>" class="btn btn-sm" style="background:rgba(248,113,113,.15);color:#f87171" onclick="return confirm('Remove DJ?')">🗑</a></td>
 </tr>
