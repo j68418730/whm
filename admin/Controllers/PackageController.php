@@ -265,6 +265,7 @@ class PackageController extends Controller
         $this->db->table('package_categories')->insertGetId([
             'name' => $this->request->post('name', ''),
             'icon' => $this->request->post('icon', '📦'),
+            'type_key' => $this->request->post('type_key', ''),
             'sort_order' => (int)$this->request->post('sort_order', 0),
         ]);
         $_SESSION['success_message'] = 'Category created.';
@@ -277,10 +278,12 @@ class PackageController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $name = $this->request->post('name', '');
         $icon = $this->request->post('icon', '');
+        $typeKey = $this->request->post('type_key', '');
         $sort = (int)$this->request->post('sort_order', 0);
         if ($name) {
             $data = ['name' => $name];
             if ($icon) $data['icon'] = $icon;
+            if ($typeKey !== '') $data['type_key'] = $typeKey;
             if ($sort) $data['sort_order'] = $sort;
             $this->db->table('package_categories')->where('id', $id)->update($data);
             $_SESSION['success_message'] = 'Category updated.';

@@ -23,16 +23,14 @@
 </style>
 
 <?php
-$typeLabels = [
-    'web_hosting' => 'Web Hosting', 'web_reseller' => 'Web Hosting Reseller',
-    'icecast' => 'Icecast Streaming', 'icecast_reseller' => 'Icecast Reseller',
-    'vps' => 'VPS', 'dedicated' => 'Dedicated',
-    'game_server' => 'Game Server',
-];
+$catMap = [];
+foreach ($categories as $c) { $catMap[$c->type_key ?? $c->name] = $c; }
+$typeLabels = [];
+foreach ($categories as $c) { $typeLabels[$c->type_key ?? $c->name] = $c->name; }
 foreach ($grouped as $type => $pkgs):
 if (empty($pkgs)) continue;
-$catIcon = '';
-foreach ($categories as $c) { if ($c->name === $type) { $catIcon = $c->icon ?? ''; break; } }
+$cat = $catMap[$type] ?? null;
+$catIcon = $cat->icon ?? '';
 ?>
 <div class="card" style="padding:16px 20px;margin-bottom:16px">
 <h3 style="color:var(--accent);font-size:15px;margin-bottom:4px"><?php echo $catIcon ? htmlspecialchars($catIcon) . ' ' : ''; ?><?php echo htmlspecialchars($typeLabels[$type] ?? $type); ?></h3>
@@ -46,7 +44,8 @@ foreach ($categories as $c) { if ($c->name === $type) { $catIcon = $c->icon ?? '
 <?php if ($p->disk_space): ?>📁 <?php echo $p->disk_space; ?> GB Disk<br><?php endif; ?>
 <?php if ($p->bandwidth): ?>📶 <?php echo $p->bandwidth; ?> GB BW<br><?php endif; ?>
 <?php
-$pFeats = is_string($p->features) ? json_decode($p->features, true) ?? [] : ($p->features ?? []);
+$pFeaturesRaw = isset($p->features) ? $p->features : null;
+$pFeats = is_string($pFeaturesRaw) ? json_decode($pFeaturesRaw, true) ?? [] : (is_array($pFeaturesRaw) ? $pFeaturesRaw : []);
 $strPkg = $pFeats['streaming_package'] ?? [];
 $gamePkg = $pFeats['game_package'] ?? [];
 if (!empty($strPkg)): ?><span style="color:#0A84FF">🎧 Streaming</span>
