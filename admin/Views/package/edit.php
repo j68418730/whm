@@ -28,7 +28,8 @@ input:focus,select:focus{border-color:#0A84FF}
 <h1>Edit Package</h1>
 <form method="POST" action="/admin/package/edit/<?php echo $package->id; ?>">
 <?php
-$feats = is_string($package->features) ? json_decode($package->features, true) ?? [] : ($package->features ?? []);
+$featuresRaw = isset($package->features) ? $package->features : null;
+$feats = is_string($featuresRaw) ? json_decode($featuresRaw, true) ?? [] : (is_array($featuresRaw) ? $featuresRaw : []);
 $strPkg = $feats['streaming_package'] ?? [];
 $gamePkg = $feats['game_package'] ?? [];
 function ck($feats, $key, $section=null) {
@@ -338,10 +339,11 @@ foreach ($genFeatures as $k=>$l):
 <h6 style="margin:10px 0 4px;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase"><?php echo $gName; ?></h6>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 12px;font-size:12px;padding:4px 8px;background:rgba(255,255,255,.02);border-radius:4px">
 <?php foreach ($gFields as $f):
-    $fn = substr($f['name'], 4); // remove "str_" prefix
     if ($f['type']==='note'): ?>
 <div style="grid-column:1/-1;font-size:11px;color:#64748b;padding:2px 0"><em><?php echo $f['label']; ?>: <?php echo $f['note']; ?></em></div>
-<?php elseif ($f['type']==='checkbox'): ?>
+<?php else:
+    $fn = substr($f['name'] ?? '', 4); // remove "str_" prefix
+    if ($f['type']==='checkbox'): ?>
 <label class="feature-check"><input type="checkbox" name="custom_pkg[<?php echo $f['name']; ?>]" value="1" <?php echo ck($strPkg, $fn); ?>> <?php echo $f['label']; ?></label>
 <?php elseif ($f['type']==='number'): ?>
 <div class="form-group" style="margin:2px 0"><label style="font-size:11px"><?php echo $f['label']; ?></label>
@@ -353,7 +355,7 @@ foreach ($genFeatures as $k=>$l):
 <option value="<?php echo $fv; ?>" <?php echo sl($strPkg, $fn, $fv); ?>><?php echo $fl; ?></option>
 <?php endforeach; ?>
 </select></div>
-<?php endif; endforeach; ?>
+<?php endif; endif; endforeach; ?>
 </div>
 <?php endforeach; ?>
 <div style="margin-top:6px;padding:4px 8px;background:rgba(255,255,255,.03);border-radius:4px;font-size:11px;color:#64748b"><strong>Note:</strong> Storage uses disk allocation above.</div>
@@ -370,15 +372,16 @@ foreach ($genFeatures as $k=>$l):
 <h6 style="margin:10px 0 4px;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase"><?php echo $gName; ?></h6>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 12px;font-size:12px;padding:4px 8px;background:rgba(255,255,255,.02);border-radius:4px">
 <?php foreach ($gFields as $f):
-    $fn = substr($f['name'], 5); // remove "game_" prefix
     if ($f['type']==='note'): ?>
 <div style="grid-column:1/-1;font-size:11px;color:#64748b;padding:2px 0"><em><?php echo $f['label']; ?>: <?php echo $f['note']; ?></em></div>
-<?php elseif ($f['type']==='checkbox'): ?>
+<?php else:
+    $fn = substr($f['name'] ?? '', 5); // remove "game_" prefix
+    if ($f['type']==='checkbox'): ?>
 <label class="feature-check"><input type="checkbox" name="custom_pkg[<?php echo $f['name']; ?>]" value="1" <?php echo ck($gamePkg, $fn); ?>> <?php echo $f['label']; ?></label>
 <?php elseif ($f['type']==='number'): ?>
 <div class="form-group" style="margin:2px 0"><label style="font-size:11px"><?php echo $f['label']; ?></label>
 <input type="number" name="custom_pkg[<?php echo $f['name']; ?>]" value="<?php echo val($gamePkg, $fn, $f['val']); ?>" style="width:100%;padding:3px 6px;font-size:11px"></div>
-<?php endif; endforeach; ?>
+<?php endif; endif; endforeach; ?>
 </div>
 <?php endforeach; ?>
 <div style="margin-top:6px;padding:4px 8px;background:rgba(255,255,255,.03);border-radius:4px;font-size:11px;color:#64748b"><strong>Note:</strong> Storage uses disk allocation above.</div>

@@ -83,7 +83,7 @@ class Database
                     $clauses = [];
                     $params = [];
                     foreach ($this->wheres as $w) {
-                        $clauses[] = "{$w[0]} {$w[1]} ?";
+                        $clauses[] = "`{$w[0]}` {$w[1]} ?";
                         $params[] = $w[2];
                     }
                     $sql = "SELECT {$this->columns} FROM {$this->table} WHERE " . implode(' AND ', $clauses);
@@ -107,7 +107,7 @@ class Database
                 $clauses = [];
                 $params = [];
                 foreach ($this->wheres as $w) {
-                    $clauses[] = "{$w[0]} {$w[1]} ?";
+                    $clauses[] = "`{$w[0]}` {$w[1]} ?";
                     $params[] = $w[2];
                 }
                 $sql = "DELETE FROM {$this->table} WHERE " . implode(' AND ', $clauses);
@@ -119,12 +119,12 @@ class Database
                 $sets = [];
                 $params = [];
                 foreach ($data as $col => $val) {
-                    $sets[] = "{$col} = ?";
+                    $sets[] = "`{$col}` = ?";
                     $params[] = $val;
                 }
                 $clauses = [];
                 foreach ($this->wheres as $w) {
-                    $clauses[] = "{$w[0]} {$w[1]} ?";
+                    $clauses[] = "`{$w[0]}` {$w[1]} ?";
                     $params[] = $w[2];
                 }
                 $sql = "UPDATE {$this->table} SET " . implode(', ', $sets) . " WHERE " . implode(' AND ', $clauses);
@@ -146,7 +146,7 @@ class Database
                     $clauses = [];
                     $params = [];
                     foreach ($this->wheres as $w) {
-                        $clauses[] = "{$w[0]} {$w[1]} ?";
+                        $clauses[] = "`{$w[0]}` {$w[1]} ?";
                         $params[] = $w[2];
                     }
                     $sql = "SELECT COUNT(*) AS c FROM {$this->table} WHERE " . implode(' AND ', $clauses);
