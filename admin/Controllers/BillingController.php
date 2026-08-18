@@ -173,10 +173,14 @@ class BillingController extends Controller
         $packages = [];
         try { $packages = $this->db->table('hosting_packages')->where('is_active', 1)->orderBy('name', 'ASC')->get() ?: []; } catch (\Exception $e) {}
 
+        // Billing categories
+        $billingCats = [];
+        try { $billingCats = $this->db->table('billing_categories')->where('is_active', 1)->orderBy('sort_order', 'ASC')->get() ?: []; } catch (\Exception $e) {}
+
         return $this->view('admin.billing.products', [
             'user' => $user, 'title' => 'Billing Products', 'theme_settings' => $this->theme(),
             'products' => $products, 'orderCounts' => $orderCounts, 'serviceCounts' => $serviceCounts,
-            'packages' => $packages,
+            'packages' => $packages, 'billingCats' => $billingCats,
         ]);
     }
 
@@ -245,6 +249,61 @@ class BillingController extends Controller
         }
         $this->response->json(['ok' => true])->send();
         exit;
+    }
+
+    // ── Product Categories ──
+    public function categories()
+    {
+        $this->guard();
+        $user = $this->auth->user();
+        $categories = $this->db->table('billing_categories')->orderBy('sort_order', 'ASC')->get() ?: [];
+        return $this->view('admin.billing.categories', [
+            'user' => $user, 'title' => 'Billing Categories', 'theme_settings' => $this->theme(),
+            'categories' => $categories,
+        ]);
+    }
+
+    public function categoryStore()
+    {
+        $this->guard();
+        $max = $this->db->table('billing_categories')->get() ?: [];
+        $this->db->table('billing_categories')->insertGetId([
+            'name' => $this->request->post('name', ''),
+            'slug' => $this->request->post('slug', ''),
+            'icon' => $this->request->post('icon', '📦'),
+            'sort_order' => count($max) + 1,
+            'is_active' => 1,
+        ]);
+        $this->response->redirect('/admin/billing/categories');
+    }
+
+    public function categoryUpdate($id)
+    {
+        $this->guard();
+        $this->db->table('billing_categories')->where('id', $id)->update([
+            'name' => $this->request->post('name', ''),
+            'slug' => $this->request->post('slug', ''),
+            'icon' => $this->request->post('icon', '📦'),
+            'sort_order' => (int)$this->request->post('sort_order', 0),
+        ]);
+        $this->response->redirect('/admin/billing/categories');
+    }
+
+    public function categoryDelete($id)
+    {
+        $this->guard();
+        $this->db->table('billing_categories')->where('id', $id)->delete();
+        $this->response->redirect('/admin/billing/categories');
+    }
+
+    public function categoryToggle($id)
+    {
+        $this->guard();
+        $c = $this->db->table('billing_categories')->where('id', $id)->first();
+        if ($c) {
+            $this->db->table('billing_categories')->where('id', $id)->update(['is_active' => $c->is_active ? 0 : 1]);
+        }
+        $this->response->redirect('/admin/billing/categories');
     }
 
     // ── Orders ──

@@ -42,6 +42,7 @@
 <a href="/admin/billing" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text-secondary)">📊 Dashboard</a>
 <a href="/admin/billing/cart" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text-secondary)">🛒 Cart</a>
 <a href="/admin/billing/products" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff">📦 Products</a>
+<a href="/admin/billing/categories" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text-secondary)">🏷️ Categories</a>
 <a href="/admin/billing/orders" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text-secondary)">📋 Orders</a>
 <a href="/admin/billing/services" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text-secondary)">🖥 Services</a>
 <a href="/admin/billing/invoices" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text-secondary)">💰 Invoices</a>
@@ -67,6 +68,7 @@ $products = $products ?? [];
 $orderCounts = $orderCounts ?? [];
 $serviceCounts = $serviceCounts ?? [];
 $packages = $packages ?? [];
+$billingCats = $billingCats ?? [];
 $pkgMap = [];
 foreach ($packages as $pg) $pkgMap[$pg->id] = $pg->name;
 
@@ -127,7 +129,10 @@ foreach ($catNames as $cat):
 <div><label>Type</label><select name="type" id="f_type" onchange="syncCat()">
 <option value="hosting">Hosting</option><option value="radio">Radio</option><option value="vps">VPS</option><option value="domain">Domain</option><option value="addon">Addon</option><option value="game">Game Server</option><option value="server">Server</option><option value="ssl">SSL</option><option value="other">Other</option>
 </select></div>
-<div><label>Category / Group</label><input name="category" id="f_category" placeholder="e.g. Web Hosting, Reseller"></div>
+<div><label>Category <a href="/admin/billing/categories" target="_blank" style="color:#0A84FF;font-size:10px;text-decoration:none">(Manage)</a></label>
+<select name="category" id="f_category"><option value="">— Select —</option>
+<?php foreach ($billingCats as $bc): ?><option value="<?php echo htmlspecialchars($bc->name); ?>"><?php echo htmlspecialchars(($bc->icon ?? '📦') . ' ' . $bc->name); ?></option><?php endforeach; ?>
+</select></div>
 <div><label>Linked Package (optional)</label><select name="package_id" id="f_package"><option value="">— None —</option>
 <?php foreach ($packages as $pg): ?><option value="<?php echo $pg->id; ?>"><?php echo htmlspecialchars($pg->name); ?> (<?php echo htmlspecialchars($pg->type); ?>)</option><?php endforeach; ?>
 </select></div>
@@ -167,7 +172,10 @@ function openEdit(id,name,desc,type,cat,price,setup,cycle,active,pkg,license,ima
     document.getElementById('f_desc').value = desc;
     document.getElementById('f_image').value = image;
     document.getElementById('f_type').value = type;
-    document.getElementById('f_category').value = cat;
+    var catSel = document.getElementById('f_category');
+    for (var i = 0; i < catSel.options.length; i++) {
+        if (catSel.options[i].value === cat) { catSel.selectedIndex = i; break; }
+    }
     document.getElementById('f_package').value = pkg || '';
     document.getElementById('f_license').value = license;
     document.getElementById('f_price').value = price;
@@ -179,9 +187,10 @@ function openEdit(id,name,desc,type,cat,price,setup,cycle,active,pkg,license,ima
 function syncCat() {
     var t = document.getElementById('f_type');
     var c = document.getElementById('f_category');
-    if (!c.value.trim()) {
-        var map = {hosting:'Web Hosting',radio:'Radio',vps:'VPS',domain:'Domain',addon:'Addon',game:'Game Server',server:'Server',ssl:'SSL',other:'Other'};
-        c.value = map[t.value] || t.value;
+    var map = {hosting:'Web Hosting',radio:'Radio',vps:'VPS',domain:'Domain',addon:'Addon',game:'Game Server',server:'Server',ssl:'SSL',other:'Other'};
+    var target = map[t.value] || t.value;
+    for (var i = 0; i < c.options.length; i++) {
+        if (c.options[i].value === target) { c.selectedIndex = i; break; }
     }
 }
 function openModal(){ document.getElementById('bpModal').classList.add('open'); }
