@@ -1,6 +1,5 @@
 <div style="display:flex;gap:12px;align-items:start;flex-wrap:wrap;margin-bottom:20px">
 <a href="/admin/package/create" class="btn primary">+ Create Package</a>
-<a href="/admin/packages/categories" class="btn secondary">Manage Categories</a>
 </div>
 
 <div class="stats-grid">
@@ -23,22 +22,25 @@
 </style>
 
 <?php
-$catMap = [];
-foreach ($categories as $c) { $catMap[$c->type_key ?? $c->name] = $c; }
-$typeLabels = [];
-foreach ($categories as $c) { $typeLabels[$c->type_key ?? $c->name] = $c->name; }
-foreach ($grouped as $type => $pkgs):
-if (empty($pkgs)) continue;
-$cat = $catMap[$type] ?? null;
-$catIcon = $cat->icon ?? '';
+$typeLabels = [
+    'web_hosting' => 'Web Hosting',
+    'web_reseller' => 'Web Reseller',
+    'icecast' => 'Icecast',
+    'icecast_reseller' => 'Icecast Reseller',
+    'shoutcast' => 'SHOUTcast',
+    'shoutcast_reseller' => 'SHOUTcast Reseller',
+    'game_server' => 'Game Server',
+    'vps' => 'VPS',
+    'dedicated' => 'Dedicated',
+    'dev' => 'Dev',
+];
 ?>
-<div class="card" style="padding:16px 20px;margin-bottom:16px">
-<h3 style="color:var(--accent);font-size:15px;margin-bottom:4px"><?php echo $catIcon ? htmlspecialchars($catIcon) . ' ' : ''; ?><?php echo htmlspecialchars($typeLabels[$type] ?? $type); ?></h3>
+
 <div class="pkg-grid">
-<?php foreach ($pkgs as $p): ?>
+<?php foreach ($packages as $p): ?>
 <div class="pkg-card">
 <div class="p-name"><?php echo htmlspecialchars($p->name); ?></div>
-<div class="p-type"><?php echo htmlspecialchars($p->description ? substr($p->description, 0, 60) : ''); ?></div>
+<div class="p-type"><?php echo $typeLabels[$p->type] ?? $p->type; ?></div>
 <div class="p-price" style="font-size:13px;color:#94a3b8;font-weight:400"><?php echo ($productCounts[$p->id] ?? 0); ?> Product<?php echo ($productCounts[$p->id] ?? 0) !== 1 ? 's' : ''; ?></div>
 <div class="p-features">
 <?php if ($p->disk_space): ?>📁 <?php echo $p->disk_space; ?> GB Disk<br><?php endif; ?>
@@ -70,7 +72,7 @@ if (!empty($strPkg)): ?><span style="color:#0A84FF">🎧 Streaming</span>
 </div>
 <?php endforeach; ?>
 </div>
-</div>
-<?php endforeach; if (empty(array_filter($grouped))): ?>
+
+<?php if (empty($packages)): ?>
 <div class="card"><p style="text-align:center;color:#64748b;padding:20px">No packages defined yet. <a href="/admin/package/create">Create your first package</a></p></div>
 <?php endif; ?>

@@ -346,10 +346,6 @@ $router->get('/admin/package/delete/{id}', 'Admin\Controllers\PackageController@
 $router->get('/admin/package/hard-delete/{id}', 'Admin\Controllers\PackageController@delete');
 $router->post('/admin/package/upgrade/{accountId}', 'Admin\Controllers\PackageController@upgrade');
 $router->post('/admin/package/assign-reseller/{packageId}', 'Admin\Controllers\PackageController@assignReseller');
-$router->get('/admin/packages/categories', 'Admin\Controllers\PackageController@categories');
-$router->post('/admin/packages/categories', 'Admin\Controllers\PackageController@storeCategory');
-$router->post('/admin/packages/categories/update/{id}', 'Admin\Controllers\PackageController@updateCategory');
-$router->get('/admin/packages/categories/delete/{id}', 'Admin\Controllers\PackageController@deleteCategory');
 // JSON endpoint for landing page
 $router->get('/admin/admins', 'Admin\Controllers\AdminsController@index');
 $router->post('/admin/admins/create', 'Admin\Controllers\AdminsController@create');

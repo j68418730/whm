@@ -80,7 +80,18 @@ body{font-family:'Inter',sans-serif;background:#020817;color:#e0e0e0;min-height:
 <div class="section-title"><i class="fa-solid fa-tag"></i> Basic Info</div>
 <div class="form-grid cols-2">
 <div class="form-group"><label>Package Name *</label><input name="name" required placeholder="e.g. Starter, Basic, Business, Pro"></div>
-<div class="form-group"><label>Category</label><select name="type" id="pkgType" onchange="toggleStreaming()"><?php foreach ($categories as $cat): ?><option value="<?php echo htmlspecialchars($cat->type_key ?? $cat->name, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars(($cat->icon ?? '📦') . ' ' . $cat->name, ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
+<div class="form-group"><label>Server Type</label><select name="type" id="pkgType" onchange="toggleStreaming()">
+<option value="web_hosting">Web Hosting</option>
+<option value="web_reseller">Web Reseller</option>
+<option value="icecast">Icecast Streaming</option>
+<option value="icecast_reseller">Icecast Reseller</option>
+<option value="shoutcast">SHOUTcast</option>
+<option value="shoutcast_reseller">SHOUTcast Reseller</option>
+<option value="game_server">Game Server</option>
+<option value="vps">VPS</option>
+<option value="dedicated">Dedicated</option>
+<option value="dev">Dev</option>
+</select></div>
 </div>
 </div>
 

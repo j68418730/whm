@@ -20,11 +20,6 @@ class PackageController extends Controller
         $this->db = $app->get('db');
     }
 
-    protected function getCategories()
-    {
-        return $this->db->table('package_categories')->get() ?: [];
-    }
-
     protected function getFeatureLists()
     {
         return $this->db->table('feature_lists')->where('is_active', 1)->orderBy('name', 'ASC')->get() ?: [];
@@ -35,20 +30,9 @@ class PackageController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
         $packages = $this->db->table('hosting_packages')->orderBy('type', 'ASC')->orderBy('sort_order', 'ASC')->get() ?: [];
-        $categories = $this->getCategories();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         $total = count($packages);
         $active = count(array_filter($packages, function($p) { return ($p->is_active ?? 0) == 1; }));
-
-        // Stats by type category
-        $statsByType = ['hosting' => 0, 'streaming' => 0, 'game' => 0, 'addon' => 0];
-        foreach ($packages as $p) {
-            $t = $p->type ?? '';
-            if (in_array($t, ['web_hosting', 'web_reseller'])) $statsByType['hosting']++;
-            elseif (in_array($t, ['shoutcast', 'shoutcast_reseller', 'icecast', 'icecast_reseller'])) $statsByType['streaming']++;
-            elseif (in_array($t, ['game_server'])) $statsByType['game']++;
-            elseif (in_array($t, ['chat_room', 'chat_room_voice', 'dj_panel'])) $statsByType['addon']++;
-        }
 
         // Product counts per package
         $productCounts = [];
@@ -62,34 +46,9 @@ class PackageController extends Controller
             }
         } catch (\Exception $e) {}
 
-        // Usage counts
-        $usageCounts = [];
-        try {
-            $allUsers = $this->db->table('hosting_users')->get() ?: [];
-            $allResellers = $this->db->table('resellers')->get() ?: [];
-            $allStations = $this->db->table('streaming_stations')->get() ?: [];
-            foreach ($packages as $p) {
-                $cnt = ['accounts' => 0, 'resellers' => 0, 'stations' => 0];
-                foreach ($allUsers as $u) { if ($u->package_id == $p->id) $cnt['accounts']++; }
-                foreach ($allResellers as $r) { if ($r->package_id == $p->id) $cnt['resellers']++; }
-                foreach ($allStations as $s) { if ($s->package_id == $p->id) $cnt['stations']++; }
-                if ($cnt['accounts'] || $cnt['resellers'] || $cnt['stations']) $usageCounts[$p->id] = $cnt;
-            }
-        } catch (\Exception $e) {}
-
-        // Group by type for display
-        $grouped = [];
-        foreach ($packages as $p) {
-            $t = $p->type ?? 'other';
-            $grouped[$t][] = $p;
-        }
-
         return $this->view('admin.package.index', [
-            'user' => $user, 'packages' => $packages, 'categories' => $categories,
-            'grouped' => $grouped,
+            'user' => $user, 'packages' => $packages,
             'packagesStats' => ['total_packages' => $total, 'active_packages' => $active],
-            'totalPackages' => $total, 'activePackages' => $active,
-            'statsByType' => $statsByType, 'usageCounts' => $usageCounts,
             'productCounts' => $productCounts,
             'theme_settings' => $theme_settings
         ]);
@@ -99,10 +58,9 @@ class PackageController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-        $categories = $this->getCategories();
         $featureLists = $this->getFeatureLists();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-        return $this->view('admin.package.create', ['user' => $user, 'categories' => $categories, 'featureLists' => $featureLists, 'theme_settings' => $theme_settings]);
+        return $this->view('admin.package.create', ['user' => $user, 'featureLists' => $featureLists, 'theme_settings' => $theme_settings]);
     }
 
     protected function mergePkgFeatures()
@@ -176,10 +134,9 @@ class PackageController extends Controller
         if (!$package) { $this->response->redirect('/admin/packages'); exit; }
         if (isset($package->features) && is_string($package->features)) $package->features = json_decode($package->features, true) ?? [];
         $billingProducts = $this->db->table('billing_products')->where('package_id', $id)->get() ?: [];
-        $categories = $this->getCategories();
         $featureLists = $this->getFeatureLists();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-        return $this->view('admin.package.edit', ['user' => $user, 'package' => $package, 'billingProducts' => $billingProducts, 'categories' => $categories, 'featureLists' => $featureLists, 'theme_settings' => $theme_settings]);
+        return $this->view('admin.package.edit', ['user' => $user, 'package' => $package, 'billingProducts' => $billingProducts, 'featureLists' => $featureLists, 'theme_settings' => $theme_settings]);
     }
 
     public function update($id)
@@ -243,57 +200,6 @@ class PackageController extends Controller
 
 
     // --- Category management ---
-
-    public function categories()
-    {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $user = $this->auth->user();
-        $categories = $this->getCategories();
-        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-        return $this->view('admin.package.categories', ['user' => $user, 'categories' => $categories, 'theme_settings' => $theme_settings, 'title' => 'Package Categories']);
-    }
-
-    public function storeCategory()
-    {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $this->db->table('package_categories')->insertGetId([
-            'name' => $this->request->post('name', ''),
-            'icon' => $this->request->post('icon', '📦'),
-            'type_key' => $this->request->post('type_key', ''),
-            'sort_order' => (int)$this->request->post('sort_order', 0),
-        ]);
-        $_SESSION['success_message'] = 'Category created.';
-        $this->response->redirect('/admin/packages/categories');
-        exit;
-    }
-
-    public function updateCategory($id)
-    {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $name = $this->request->post('name', '');
-        $icon = $this->request->post('icon', '');
-        $typeKey = $this->request->post('type_key', '');
-        $sort = (int)$this->request->post('sort_order', 0);
-        if ($name) {
-            $data = ['name' => $name];
-            if ($icon) $data['icon'] = $icon;
-            if ($typeKey !== '') $data['type_key'] = $typeKey;
-            if ($sort) $data['sort_order'] = $sort;
-            $this->db->table('package_categories')->where('id', $id)->update($data);
-            $_SESSION['success_message'] = 'Category updated.';
-        }
-        $this->response->redirect('/admin/packages/categories');
-        exit;
-    }
-
-    public function deleteCategory($id)
-    {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $this->db->table('package_categories')->where('id', $id)->delete();
-        $_SESSION['success_message'] = 'Category deleted.';
-        $this->response->redirect('/admin/packages/categories');
-        exit;
-    }
 
     public function upgrade($accountId)
     {

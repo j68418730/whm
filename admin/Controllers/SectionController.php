@@ -40,13 +40,11 @@ class SectionController extends Controller
             $t = $p->type ?? 'web_hosting';
             $grouped[$t][] = $p;
         }
-        $categories = $this->db->table('package_categories')->get() ?: [];
         return $this->view('admin.sections.hosting', [
             'user' => $user,
             'title' => 'Hosting',
             'packages' => $packages,
             'grouped' => $grouped,
-            'categories' => $categories,
         ]);
     }
 
