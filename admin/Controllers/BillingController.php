@@ -198,7 +198,9 @@ class BillingController extends Controller
             'package_id' => $this->request->post('package_id') ? (int)$this->request->post('package_id') : null,
             'license_key' => $this->request->post('license_key', ''),
             'image' => $this->request->post('image', ''),
-            'is_active' => $this->request->post('is_active', 1), 'sort_order' => $sort,
+            'is_active' => $this->request->post('is_active', 1),
+            'is_visible' => $this->request->post('is_visible', 1),
+            'sort_order' => $sort,
         ]);
         $_SESSION['success_message'] = 'Product created.';
         $this->response->redirect('/admin/billing/products');
@@ -217,6 +219,7 @@ class BillingController extends Controller
             'license_key' => $this->request->post('license_key', ''),
             'image' => $this->request->post('image', ''),
             'is_active' => $this->request->post('is_active', 1),
+            'is_visible' => $this->request->post('is_visible', 1),
         ]);
         $_SESSION['success_message'] = 'Product updated.';
         $this->response->redirect('/admin/billing/products');
@@ -232,11 +235,53 @@ class BillingController extends Controller
         $this->response->redirect('/admin/billing/products');
     }
 
+    public function productToggleVisible($id)
+    {
+        $this->guard();
+        $p = $this->db->table('billing_products')->where('id', $id)->first();
+        if ($p) {
+            $this->db->table('billing_products')->where('id', $id)->update(['is_visible' => $p->is_visible ? 0 : 1]);
+        }
+        $this->response->redirect('/admin/billing/products');
+    }
+
     public function productDelete($id)
     {
         $this->guard();
         $this->db->table('billing_products')->where('id', $id)->delete();
         $this->response->redirect('/admin/billing/products');
+    }
+
+    public function productClone($id)
+    {
+        $this->guard();
+        $orig = $this->db->table('billing_products')->where('id', $id)->first();
+        if (!$orig) { $this->response->redirect('/admin/billing/products'); exit; }
+        $max = $this->db->table('billing_products')->get() ?: [];
+        $this->db->table('billing_products')->insertGetId([
+            'name' => $orig->name . ' (Clone)',
+            'description' => $orig->description,
+            'type' => $orig->type,
+            'category' => $orig->category,
+            'price' => $orig->price,
+            'setup_fee' => $orig->setup_fee,
+            'billing_cycle' => $orig->billing_cycle,
+            'package_id' => $orig->package_id,
+            'license_key' => $orig->license_key,
+            'image' => $orig->image,
+            'is_active' => 0,
+            'is_visible' => 0,
+            'sort_order' => count($max) + 1,
+        ]);
+        $_SESSION['success_message'] = 'Product cloned (inactive).';
+        $this->response->redirect('/admin/billing/products');
+    }
+
+    public function productCopy($id)
+    {
+        $this->guard();
+        $this->response->json(['id' => (int)$id])->send();
+        exit;
     }
 
     public function productSort()
