@@ -273,7 +273,18 @@ $gameGroups = [
 ?>
 <div class="row">
 <div class="form-group"><label>Name</label><input name="name" value="<?php echo htmlspecialchars($package->name ?? '', ENT_QUOTES, 'UTF-8'); ?>" required></div>
-<div class="form-group"><label>Category</label><select name="type" id="pkgType" onchange="toggleStreaming()"><?php foreach ($categories as $cat): ?><option value="<?php echo htmlspecialchars($cat->type_key ?? $cat->name, ENT_QUOTES, 'UTF-8'); ?>" <?php echo ($package->type ?? '') === ($cat->type_key ?? $cat->name) ? 'selected' : ''; ?>><?php echo htmlspecialchars(($cat->icon ?? '') . ' ' . $cat->name, ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
+<div class="form-group"><label>Server Type</label><select name="type" id="pkgType" onchange="toggleStreaming()">
+<option value="web_hosting" <?php echo ($package->type ?? '') === 'web_hosting' ? 'selected' : ''; ?>>Web Hosting</option>
+<option value="web_reseller" <?php echo ($package->type ?? '') === 'web_reseller' ? 'selected' : ''; ?>>Web Reseller</option>
+<option value="icecast" <?php echo ($package->type ?? '') === 'icecast' ? 'selected' : ''; ?>>Icecast Streaming</option>
+<option value="icecast_reseller" <?php echo ($package->type ?? '') === 'icecast_reseller' ? 'selected' : ''; ?>>Icecast Reseller</option>
+<option value="shoutcast" <?php echo ($package->type ?? '') === 'shoutcast' ? 'selected' : ''; ?>>SHOUTcast</option>
+<option value="shoutcast_reseller" <?php echo ($package->type ?? '') === 'shoutcast_reseller' ? 'selected' : ''; ?>>SHOUTcast Reseller</option>
+<option value="game_server" <?php echo ($package->type ?? '') === 'game_server' ? 'selected' : ''; ?>>Game Server</option>
+<option value="vps" <?php echo ($package->type ?? '') === 'vps' ? 'selected' : ''; ?>>VPS</option>
+<option value="dedicated" <?php echo ($package->type ?? '') === 'dedicated' ? 'selected' : ''; ?>>Dedicated</option>
+<option value="dev" <?php echo ($package->type ?? '') === 'dev' ? 'selected' : ''; ?>>Dev</option>
+</select></div>
 </div>
 <div class="row">
 <div class="form-group"><label>Disk Space (GB)</label><input name="disk_space" type="number" value="<?php echo $package->disk_space ?? 0; ?>"><small style="color:#64748b">Shared by all services</small></div>

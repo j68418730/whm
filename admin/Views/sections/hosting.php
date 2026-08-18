@@ -47,17 +47,23 @@
 </div>
 
 <?php
-$catMap = [];
-foreach ($categories ?? [] as $c) { $catMap[$c->type_key ?? $c->name] = $c; }
-$typeLabels = [];
-foreach ($categories ?? [] as $c) { $typeLabels[$c->type_key ?? $c->name] = $c->icon . ' ' . $c->name; }
+$typeLabels = [
+    'web_hosting' => '🌐 Web Hosting',
+    'web_reseller' => '🌐 Web Reseller',
+    'icecast' => '🎧 Icecast',
+    'icecast_reseller' => '🎧 Icecast Reseller',
+    'shoutcast' => '📡 SHOUTcast',
+    'shoutcast_reseller' => '📡 SHOUTcast Reseller',
+    'game_server' => '🎮 Game Server',
+    'vps' => '🖥️ VPS',
+    'dedicated' => '🖥️ Dedicated',
+    'dev' => '🔧 Dev',
+];
 foreach ($grouped ?? [] as $type => $pkgs):
 if (empty($pkgs)) continue;
-$cat = $catMap[$type] ?? null;
-$catIcon = $cat->icon ?? '';
 ?>
 <div style="margin-bottom:20px">
-<div class="pkg-group-title"><?php echo $catIcon ? htmlspecialchars($catIcon) . ' ' : ''; ?><?php echo htmlspecialchars($typeLabels[$type] ?? $type); ?> <span class="cnt"><?php echo count($pkgs); ?> packages</span></div>
+<div class="pkg-group-title"><?php echo htmlspecialchars($typeLabels[$type] ?? $type); ?> <span class="cnt"><?php echo count($pkgs); ?> packages</span></div>
 <div class="pkg-grid">
 <?php foreach ($pkgs as $p):
     $featuresRaw = isset($p->features) ? $p->features : null;
