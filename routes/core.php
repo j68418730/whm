@@ -580,6 +580,11 @@ $router->post('/admin/billing/products/update/{id}', 'Admin\Controllers\BillingC
 $router->get('/admin/billing/products/delete/{id}', 'Admin\Controllers\BillingController@productDelete');
 $router->get('/admin/billing/products/toggle/{id}', 'Admin\Controllers\BillingController@productToggle');
 $router->post('/admin/billing/products/sort', 'Admin\Controllers\BillingController@productSort');
+$router->get('/admin/billing/categories', 'Admin\Controllers\BillingController@categories');
+$router->post('/admin/billing/categories/store', 'Admin\Controllers\BillingController@categoryStore');
+$router->post('/admin/billing/categories/update/{id}', 'Admin\Controllers\BillingController@categoryUpdate');
+$router->get('/admin/billing/categories/delete/{id}', 'Admin\Controllers\BillingController@categoryDelete');
+$router->get('/admin/billing/categories/toggle/{id}', 'Admin\Controllers\BillingController@categoryToggle');
 $router->get('/admin/billing/orders', 'Admin\Controllers\BillingController@orders');
 $router->post('/admin/billing/orders/store', 'Admin\Controllers\BillingController@orderStore');
 $router->post('/admin/billing/orders/update/{id}', 'Admin\Controllers\BillingController@orderUpdate');
