@@ -21,17 +21,18 @@ try {
 $allCategories = [];
 try {
     $app = \Core\Application::getInstance();
-    $allCategories = $app->get('db')->table('package_categories')->orderBy('sort_order', 'ASC')->get() ?: [];
+    $allCategories = $app->get('db')->table('billing_categories')->where('is_active', 1)->orderBy('sort_order', 'ASC')->get() ?: [];
 } catch (\Exception $e) {}
-// Auto-load packages from DB if not provided
+// Auto-load billing products grouped by category for pricing
+$packagesByType = isset($packagesByType) ? $packagesByType : [];
 if (empty($packagesByType)) {
     try {
         $app = \Core\Application::getInstance();
-        $allPkgs = $app->get('db')->pdo()->query("SELECT hp.*, COALESCE(bp.price, hp.monthly_price) as price FROM hosting_packages hp LEFT JOIN billing_products bp ON hp.id = bp.package_id AND bp.is_active = 1 WHERE hp.is_active = 1 ORDER BY hp.sort_order ASC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
-        foreach ($allPkgs as $pkg) {
-            $t = $pkg->type ?? 'Other';
-            if (!isset($packagesByType[$t])) $packagesByType[$t] = [];
-            $packagesByType[$t][] = $pkg;
+        $allProducts = $app->get('db')->pdo()->query("SELECT bp.*, hp.disk_space, hp.bandwidth, hp.email_accounts, hp.databases, hp.subdomains, hp.addon_domains, hp.features as pkg_features FROM billing_products bp LEFT JOIN hosting_packages hp ON bp.package_id = hp.id WHERE bp.is_active = 1 AND bp.is_visible = 1 ORDER BY bp.category ASC, bp.sort_order ASC, bp.price ASC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        foreach ($allProducts as $prod) {
+            $cat = trim((string)($prod->category ?? '')) ?: ($prod->type ?? 'other');
+            if (!isset($packagesByType[$cat])) $packagesByType[$cat] = [];
+            $packagesByType[$cat][] = $prod;
         }
     } catch (\Exception $e) {}
 }
@@ -270,15 +271,21 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 </div>
 <?php if (!empty($packagesByType)):
 $catIcons = [
-    'web_hosting'=>'🌐', 'Web Hosting'=>'🌐',
-    'web_reseller'=>'🏢', 'Web Hosting Reseller'=>'🏢',
-    'shoutcast'=>'📡', 'SHOUTcast'=>'📡',
-    'icecast'=>'🎵', 'Icecast Streaming'=>'🎵',
-    'icecast_reseller'=>'🎵', 'Icecast Reseller'=>'🎵',
-    'vps'=>'🖥', 'VPS Servers'=>'🖥',
-    'dedicated'=>'🔧', 'Dedicated Servers'=>'🔧',
-    'game_server'=>'🎮', 'Game Servers'=>'🎮',
+    'Web Hosting'=>'🌐', 'web_hosting'=>'🌐',
+    'Reseller'=>'🏢', 'web_reseller'=>'🏢',
+    'Radio Reseller'=>'📡',
+    'Radio'=>'🎵', 'Icecast Streaming'=>'🎵', 'Icecast Reseller'=>'🎵', 'SHOUTcast'=>'📡',
+    'VPS'=>'🖥', 'VPS Servers'=>'🖥',
+    'Dedicated'=>'🔧', 'Dedicated Servers'=>'🔧',
+    'Game Server'=>'🎮', 'Game Servers'=>'🎮',
+    'Other'=>'📦', 'Domain'=>'🌍', 'Addon'=>'🧩', 'Server'=>'🖥', 'SSL'=>'🔒',
 ];
+function ph_format_bytes($mb) {
+    $mb = (float)$mb;
+    if ($mb <= 0) return '';
+    if ($mb >= 1024) { $gb = $mb / 1024; return ($gb == (int)$gb) ? ((int)$gb . ' GB') : number_format($gb, 1) . ' GB'; }
+    return ((int)$mb . ' MB');
+}
 ?>
 <style>
 .pricing-rotate-col{background:rgba(8,16,28,.4);border:1px solid rgba(0,191,255,.08);border-radius:14px;padding:18px;transition:.3s}
@@ -325,22 +332,24 @@ $pkgCount = count($pkgs);
 <div class="subtitle"><?php echo htmlspecialchars($pkg->description ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
 <div class="price">$<?php echo number_format((float)($pkg->price ?? $pkg->monthly_price ?? 0), 2); ?><span>/mo</span></div>
 <ul>
-<?php $pf = is_string($pkg->features ?? null) ? json_decode($pkg->features, true) ?? [] : ($pkg->features ?? []); $sp = $pf['streaming_package'] ?? []; $gp = $pf['game_package'] ?? []; ?>
-<?php if (!empty($pkg->disk_space) && $pkg->disk_space > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo $pkg->disk_space; ?> GB Disk</li><?php endif; ?>
-<?php if (!empty($pkg->bandwidth) && $pkg->bandwidth > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo $pkg->bandwidth; ?> GB Bandwidth</li><?php endif; ?>
-<?php if (!empty($sp['max_listeners'])): ?><li><i class="fa-solid fa-check"></i> <?php echo $sp['max_listeners']; ?> Listeners</li><?php endif; ?>
+<?php $pf = is_string($pkg->pkg_features ?? null) ? json_decode($pkg->pkg_features, true) ?? [] : (is_array($pkg->pkg_features ?? null) ? $pkg->pkg_features : []); $sp = $pf['streaming_package'] ?? []; $gp = $pf['game_package'] ?? []; ?>
+<?php if (!empty($pkg->disk_space) && $pkg->disk_space > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo ph_format_bytes($pkg->disk_space); ?> Disk</li><?php endif; ?>
+<?php if (!empty($pkg->bandwidth) && $pkg->bandwidth > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo ph_format_bytes($pkg->bandwidth); ?> Bandwidth</li><?php endif; ?>
+<?php if (!empty($sp['max_listeners'])): ?><li><i class="fa-solid fa-check"></i> <?php echo number_format((int)$sp['max_listeners']); ?> Listeners</li><?php endif; ?>
 <?php if (!empty($sp['max_bitrate'])): ?><li><i class="fa-solid fa-check"></i> <?php echo $sp['max_bitrate']; ?> kbps</li><?php endif; ?>
-<?php if (!empty($sp['upload_limit'])): ?><li><i class="fa-solid fa-check"></i> <?php echo $sp['upload_limit']; ?> MB Upload</li><?php endif; ?>
-<?php if (!empty($pkg->email_accounts) && $pkg->email_accounts > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo $pkg->email_accounts; ?> Emails</li><?php endif; ?>
-<?php if (!empty($pkg->databases) && $pkg->databases > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo $pkg->databases; ?> Databases</li><?php endif; ?>
-<?php if (!empty($pkg->subdomains) && $pkg->subdomains > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo $pkg->subdomains; ?> Subdomains</li><?php endif; ?>
-<?php if (!empty($pkg->addon_domains) && $pkg->addon_domains > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo $pkg->addon_domains; ?> Addon Domains</li><?php endif; ?>
-<?php if (!empty($sp['max_djs'])): ?><li><i class="fa-solid fa-check"></i> <?php echo $sp['max_djs']; ?> DJ Accounts</li><?php endif; ?>
+<?php if (!empty($sp['max_stations'])): ?><li><i class="fa-solid fa-check"></i> <?php echo $sp['max_stations']; ?> Station<?php if ($sp['max_stations'] > 1) echo 's'; ?></li><?php endif; ?>
+<?php if (!empty($sp['max_djs'])): ?><li><i class="fa-solid fa-check"></i> <?php echo $sp['max_djs']; ?> DJ Account<?php if ($sp['max_djs'] > 1) echo 's'; ?></li><?php endif; ?>
+<?php if (!empty($pkg->email_accounts) && $pkg->email_accounts > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo number_format($pkg->email_accounts); ?> Email<?php if ($pkg->email_accounts > 1) echo 's'; ?></li><?php endif; ?>
+<?php if (!empty($pkg->databases) && $pkg->databases > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo number_format($pkg->databases); ?> Database<?php if ($pkg->databases > 1) echo 's'; ?></li><?php endif; ?>
+<?php if (!empty($pkg->subdomains) && $pkg->subdomains > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo number_format($pkg->subdomains); ?> Subdomain<?php if ($pkg->subdomains > 1) echo 's'; ?></li><?php endif; ?>
+<?php if (!empty($pkg->addon_domains) && $pkg->addon_domains > 0): ?><li><i class="fa-solid fa-check"></i> <?php echo number_format($pkg->addon_domains); ?> Addon Domain<?php if ($pkg->addon_domains > 1) echo 's'; ?></li><?php endif; ?>
+<?php if (!empty($gp['max_servers'])): ?><li><i class="fa-solid fa-check"></i> <?php echo $gp['max_servers']; ?> Game Server<?php if ($gp['max_servers'] > 1) echo 's'; ?></li><?php endif; ?>
+<?php if (!empty($gp['max_players'])): ?><li><i class="fa-solid fa-check"></i> <?php echo number_format($gp['max_players']); ?> Player Slots</li><?php endif; ?>
 <li><i class="fa-solid fa-check"></i> Free SSL</li>
 <li><i class="fa-solid fa-check"></i> 24/7 Support</li>
 </ul>
-<a href="/cart.php?action=add&id=<?php echo (int)$pkg->id; ?>&name=<?php echo urlencode($pkg->name ?? ''); ?>&price=<?php echo (float)($pkg->price ?? $pkg->monthly_price ?? 0); ?>" class="btn">Order Now →</a>
-<a href="/product/<?php echo (int)$pkg->id; ?>" class="btn-outline">Read More →</a>
+<a href="/cart.php?action=add&id=<?php echo (int)$pkg->id; ?>&name=<?php echo urlencode($pkg->name ?? ''); ?>&price=<?php echo (float)($pkg->price ?? 0); ?>" class="btn">Order Now →</a>
+<a href="/product/<?php echo (int)$pkg->id; ?>" class="btn-outline">Details →</a>
 </div>
 <?php endforeach; ?>
 </div>
