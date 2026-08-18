@@ -574,7 +574,9 @@ $router->get('/admin/billing/products', 'Admin\Controllers\BillingController@pro
 $router->post('/admin/billing/products/store', 'Admin\Controllers\BillingController@productStore');
 $router->post('/admin/billing/products/update/{id}', 'Admin\Controllers\BillingController@productUpdate');
 $router->get('/admin/billing/products/delete/{id}', 'Admin\Controllers\BillingController@productDelete');
+$router->get('/admin/billing/products/clone/{id}', 'Admin\Controllers\BillingController@productClone');
 $router->get('/admin/billing/products/toggle/{id}', 'Admin\Controllers\BillingController@productToggle');
+$router->get('/admin/billing/products/toggle-visible/{id}', 'Admin\Controllers\BillingController@productToggleVisible');
 $router->post('/admin/billing/products/sort', 'Admin\Controllers\BillingController@productSort');
 $router->get('/admin/billing/categories', 'Admin\Controllers\BillingController@categories');
 $router->post('/admin/billing/categories/store', 'Admin\Controllers\BillingController@categoryStore');

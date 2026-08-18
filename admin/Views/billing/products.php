@@ -26,6 +26,10 @@
 .bp-toggle{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;border:none;text-decoration:none}
 .bp-toggle.on{background:rgba(74,222,128,.15);color:#4ade80}
 .bp-toggle.off{background:rgba(248,113,113,.15);color:#f87171}
+.bp-vis{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600;text-decoration:none}
+.bp-vis.on{background:rgba(56,189,248,.12);color:#38bdf8}
+.bp-vis.off{background:rgba(148,163,184,.12);color:#64748b}
+.bp-card .bp-actions a,.bp-card .bp-actions button{padding:4px 10px;border-radius:5px;font-size:10px;text-decoration:none;font-weight:600;border:none;cursor:pointer}
 .bp-modal{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px}
 .bp-modal.open{display:flex}
 .bp-modal .card{max-width:560px;width:100%;margin:0}
@@ -35,6 +39,10 @@
 .bp-modal input,.bp-modal select,.bp-modal textarea{width:100%;padding:8px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box}
 .bp-modal input:focus,.bp-modal select:focus,.bp-modal textarea:focus{border-color:#0A84FF}
 .bp-modal select option{background:#0a0f1a;color:#e0e0e0}
+.bp-copy-modal textarea{width:100%;min-height:80px;background:rgba(0,0,0,.5);color:#4ade80;font-family:monospace;font-size:12px;padding:10px;border:1px solid rgba(255,255,255,.1);border-radius:6px;resize:vertical;box-sizing:border-box}
+.bp-copy-modal .copy-row{margin-bottom:10px}
+.bp-copy-modal .copy-row label{display:block;font-size:11px;color:#64748b;margin-bottom:4px;font-weight:600}
+.bp-copy-modal .copy-btn{margin-top:6px}
 </style>
 
 <div class="bp-wrap">
@@ -72,7 +80,6 @@ $billingCats = $billingCats ?? [];
 $pkgMap = [];
 foreach ($packages as $pg) $pkgMap[$pg->id] = $pg->name;
 
-// Collect categories preserving order
 $catNames = [];
 foreach ($products as $p) {
     $c = trim((string)($p->category ?? '')) ?: ($p->type ?? 'hosting');
@@ -91,6 +98,7 @@ foreach ($catNames as $cat):
     $oc = $orderCounts[$p->id] ?? 0;
     $sc = $serviceCounts[$p->id] ?? 0;
     $catVal = trim((string)($p->category ?? '')) ?: ($p->type ?? 'hosting');
+    $vis = $p->is_visible ?? 1;
 ?>
 <div class="bp-card" data-id="<?php echo $p->id; ?>" draggable="true">
 <div class="drag-handle">⠿</div>
@@ -99,14 +107,18 @@ foreach ($catNames as $cat):
 <?php if (!empty($p->description)): ?><div class="bp-desc"><?php echo htmlspecialchars($p->description); ?></div><?php endif; ?>
 <div class="bp-meta">
 <a class="bp-toggle <?php echo $p->is_active ? 'on' : 'off'; ?>" href="/admin/billing/products/toggle/<?php echo $p->id; ?>"><?php echo $p->is_active ? '✓ Active' : '✕ Inactive'; ?></a>
+<a class="bp-vis <?php echo $vis ? 'on' : 'off'; ?>" href="/admin/billing/products/toggle-visible/<?php echo $p->id; ?>"><?php echo $vis ? '👁 Visible' : '🚫 Hidden'; ?></a>
 <span style="font-size:10px;color:#94a3b8"><?php echo htmlspecialchars($p->type); ?> · <?php echo htmlspecialchars($p->billing_cycle); ?></span>
 </div>
 <?php if (isset($pkgMap[$p->package_id])): ?><div style="font-size:10px;color:#38bdf8;margin-top:4px">📦 <?php echo htmlspecialchars($pkgMap[$p->package_id]); ?></div><?php endif; ?>
 <div class="bp-price">$<?php echo number_format((float)$p->price, 2); ?><small><?php echo (float)$p->setup_fee > 0 ? ' + $'.number_format((float)$p->setup_fee,2).' setup' : ' / '.$p->billing_cycle; ?></small></div>
 <div class="bp-stats"><span>🛒 <?php echo $oc; ?> orders</span><span>🖥 <?php echo $sc; ?> services</span></div>
 <div class="bp-actions">
-<a class="btn btn-sm secondary" onclick="openEdit(<?php echo $p->id; ?>,'<?php echo htmlspecialchars(addslashes($p->name)); ?>','<?php echo htmlspecialchars(addslashes($p->description ?? '')); ?>','<?php echo $p->type; ?>','<?php echo htmlspecialchars(addslashes($catVal)); ?>',<?php echo (float)$p->price; ?>,<?php echo (float)$p->setup_fee ?? 0; ?>,'<?php echo $p->billing_cycle; ?>',<?php echo (int)$p->is_active; ?>,<?php echo (int)($p->package_id ?? 0); ?>,'<?php echo htmlspecialchars(addslashes($p->license_key ?? '')); ?>','<?php echo htmlspecialchars(addslashes($p->image ?? '')); ?>')">✏ Edit</a>
-<a href="/admin/billing/products/delete/<?php echo $p->id; ?>" class="btn btn-sm danger" onclick="return confirm('Delete product <?php echo htmlspecialchars($p->name); ?>?')">🗑</a>
+<a class="btn btn-sm secondary" style="background:rgba(0,140,255,.1);color:#38bdf8" onclick="openEdit(<?php echo $p->id; ?>,'<?php echo htmlspecialchars(addslashes($p->name)); ?>','<?php echo htmlspecialchars(addslashes($p->description ?? '')); ?>','<?php echo $p->type; ?>','<?php echo htmlspecialchars(addslashes($catVal)); ?>',<?php echo (float)$p->price; ?>,<?php echo (float)$p->setup_fee ?? 0; ?>,'<?php echo $p->billing_cycle; ?>',<?php echo (int)$p->is_active; ?>,<?php echo (int)($p->package_id ?? 0); ?>,'<?php echo htmlspecialchars(addslashes($p->license_key ?? '')); ?>','<?php echo htmlspecialchars(addslashes($p->image ?? '')); ?>',<?php echo (int)$vis; ?>)">✏ Edit</a>
+<a href="/admin/billing/products/clone/<?php echo $p->id; ?>" style="background:rgba(74,222,128,.1);color:#4ade80" onclick="return confirm('Clone this product?')">⧉ Clone</a>
+<button type="button" style="background:rgba(168,85,247,.1);color:#c084fc" onclick="openCopy(<?php echo $p->id; ?>,'<?php echo htmlspecialchars(addslashes($p->name)); ?>')">📋 Copy</button>
+<a href="/admin/billing/products/toggle/<?php echo $p->id; ?>" style="background:rgba(250,204,21,.1);color:#facc15"><?php echo $p->is_active ? '⏻ Off' : '⏻ On'; ?></a>
+<a href="/admin/billing/products/delete/<?php echo $p->id; ?>" style="background:rgba(248,113,113,.12);color:#f87171" onclick="return confirm('Delete product <?php echo htmlspecialchars($p->name); ?>?')">🗑</a>
 </div>
 </div>
 <?php endforeach; ?>
@@ -140,12 +152,43 @@ foreach ($catNames as $cat):
 <div><label>Price ($)</label><input name="price" id="f_price" type="number" step="0.01" value="0.00"></div>
 <div><label>Setup Fee ($)</label><input name="setup_fee" id="f_setup" type="number" step="0.01" value="0.00"></div>
 <div><label>Billing Cycle</label><select name="billing_cycle" id="f_cycle"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="semiannual">Semi-Annual</option><option value="annual">Annual</option><option value="biennial">Biennial</option></select></div>
+<div class="full" style="display:flex;gap:16px;align-items:center;padding-top:4px">
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;text-transform:none;letter-spacing:0;color:#e0e0e0;cursor:pointer;margin:0">
+<input type="checkbox" name="is_visible" id="f_visible" value="1" checked style="width:auto"> Visible on Store
+</label>
+</div>
 </div>
 <div style="display:flex;gap:8px;margin-top:16px">
 <button type="submit" class="btn primary">Save Product</button>
 <button type="button" class="btn secondary" onclick="closeModal()">Cancel</button>
 </div>
 </form>
+</div>
+</div>
+
+<!-- Copy/Embed Modal -->
+<div class="bp-modal bp-copy-modal" id="copyModal">
+<div class="card">
+<h3 style="color:var(--accent);margin:0 0 14px">📋 Embed Code</h3>
+<p style="font-size:12px;color:#64748b;margin:0 0 14px">Share this product with a direct link or embed it on any website.</p>
+<div class="copy-row">
+<label>Direct Link</label>
+<input type="text" id="copyLink" readonly style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px;font-family:monospace;box-sizing:border-box">
+</div>
+<div class="copy-row">
+<label>Embed (iframe)</label>
+<textarea id="copyIframe" readonly rows="3"></textarea>
+</div>
+<div class="copy-row">
+<label>Embed (script)</label>
+<textarea id="copyScript" readonly rows="3"></textarea>
+</div>
+<div style="display:flex;gap:8px;margin-top:14px">
+<button class="btn primary copy-btn" onclick="copyText('copyLink')">Copy Link</button>
+<button class="btn secondary copy-btn" onclick="copyText('copyIframe')">Copy Iframe</button>
+<button class="btn secondary copy-btn" onclick="copyText('copyScript')">Copy Script</button>
+<button type="button" class="btn secondary" onclick="closeCopyModal()">Close</button>
+</div>
 </div>
 </div>
 
@@ -162,9 +205,10 @@ function openAdd() {
     document.getElementById('f_setup').value = '0.00';
     document.getElementById('f_cycle').value = 'monthly';
     document.getElementById('f_active').value = '1';
+    document.getElementById('f_visible').checked = true;
     openModal();
 }
-function openEdit(id,name,desc,type,cat,price,setup,cycle,active,pkg,license,image) {
+function openEdit(id,name,desc,type,cat,price,setup,cycle,active,pkg,license,image,visible) {
     editingId = id;
     document.getElementById('bpModalTitle').textContent = 'Edit Product';
     document.getElementById('bpForm').action = '/admin/billing/products/update/' + id;
@@ -182,6 +226,7 @@ function openEdit(id,name,desc,type,cat,price,setup,cycle,active,pkg,license,ima
     document.getElementById('f_setup').value = setup;
     document.getElementById('f_cycle').value = cycle;
     document.getElementById('f_active').value = active;
+    document.getElementById('f_visible').checked = !!visible;
     openModal();
 }
 function syncCat() {
@@ -195,6 +240,23 @@ function syncCat() {
 }
 function openModal(){ document.getElementById('bpModal').classList.add('open'); }
 function closeModal(){ document.getElementById('bpModal').classList.remove('open'); }
+
+function openCopy(id, name) {
+    var base = window.location.origin;
+    var link = base + '/billing/product?id=' + id;
+    document.getElementById('copyLink').value = link;
+    document.getElementById('copyIframe').value = '<iframe src="' + link + '" width="100%" height="600" frameborder="0" style="border:none;border-radius:8px"></iframe>';
+    document.getElementById('copyScript').value = '<div id="ph-product-' + id + '"></div>\n<script src="' + base + '/billing/embed.js" data-product="' + id + '"><\/script>';
+    document.getElementById('copyModal').classList.add('open');
+}
+function closeCopyModal(){ document.getElementById('copyModal').classList.remove('open'); }
+function copyText(fieldId) {
+    var el = document.getElementById(fieldId);
+    el.select();
+    el.setSelectionRange(0, 99999);
+    document.execCommand('copy');
+    if (typeof showToast === 'function') showToast('Copied!');
+}
 
 // Category filters
 (function(){
