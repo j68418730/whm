@@ -37,16 +37,8 @@ class AuthController extends Controller
             $loginError = $_SESSION['login_error'] ?? null;
             unset($_SESSION['login_error']);
 
-            // Fetch active packages grouped by type
-            $app = \Core\Application::getInstance();
-            $db = $app->get('db');
-            $allPackages = $db->table('hosting_packages')->where('is_active', 1)->get();
-            $types = ['web_hosting', 'web_reseller', 'icecast', 'icecast_reseller', 'vps', 'dedicated'];
+            // Let theme/index.php auto-load billing_products from DB
             $packagesByType = [];
-            foreach ($types as $type) {
-                $items = array_filter($allPackages, function($p) use ($type) { return $p->type === $type; });
-                if ($items) $packagesByType[$type] = array_values($items);
-            }
 
             ob_start();
             require $themeFile;
@@ -63,6 +55,41 @@ class AuthController extends Controller
             exit;
         }
         $this->login();
+    }
+
+    public function productPage($id)
+    {
+        $themeFile = BASE_PATH . '/theme/product.php';
+        if (!is_file($themeFile)) { header("Location: /"); exit; }
+
+        $app = \Core\Application::getInstance();
+        $db = $app->get('db');
+        $product = $db->table('billing_products')->where('id', (int)$id)->first();
+        if (!$product || !$product->is_active) { header("Location: /"); exit; }
+
+        // Join hosting package for specs
+        if ($product->package_id) {
+            $pkg = $db->table('hosting_packages')->where('id', $product->package_id)->first();
+            if ($pkg) {
+                $product->disk_space = $pkg->disk_space;
+                $product->bandwidth = $pkg->bandwidth;
+                $product->email_accounts = $pkg->email_accounts;
+                $product->databases = $pkg->databases;
+                $product->subdomains = $pkg->subdomains;
+                $product->addon_domains = $pkg->addon_domains;
+                $product->pkg_features = is_string($pkg->features) ? json_decode($pkg->features, true) ?? [] : ($pkg->features ?? []);
+            }
+        }
+
+        $user = $this->auth->user();
+        $loggedIn = $this->auth->check();
+
+        ob_start();
+        require $themeFile;
+        $content = ob_get_clean();
+        $this->response->setContent($content);
+        $this->response->send();
+        exit;
     }
 
     /**

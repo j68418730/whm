@@ -1,4 +1,10 @@
 <?php
+function ph_format_bytes($mb) {
+    $mb = (float)$mb;
+    if ($mb <= 0) return '';
+    if ($mb >= 1024) { $gb = $mb / 1024; return ($gb == (int)$gb) ? ((int)$gb . ' GB') : number_format($gb, 1) . ' GB'; }
+    return ((int)$mb . ' MB');
+}
 $showLogin = isset($_GET['login']);
 $loggedIn = isset($loggedIn) ? $loggedIn : false;
 $user = isset($user) ? $user : null;
@@ -104,17 +110,19 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 </select>
 </div>
 <ul class="feature-list">
-<?php $pf = is_string($product->features ?? null) ? json_decode($product->features, true) ?? [] : ($product->features ?? []); $sp = $pf['streaming_package'] ?? []; $gp = $pf['game_package'] ?? []; ?>
-<?php if (!empty($product->disk_space) && $product->disk_space > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $product->disk_space; ?> GB Disk</li><?php endif; ?>
-<?php if (!empty($product->bandwidth) && $product->bandwidth > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $product->bandwidth; ?> GB Bandwidth</li><?php endif; ?>
-<?php if (!empty($sp['max_listeners'])): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $sp['max_listeners']; ?> Listeners</li><?php endif; ?>
+<?php $pf = is_string($product->pkg_features ?? null) ? json_decode($product->pkg_features, true) ?? [] : (is_array($product->pkg_features ?? null) ? $product->pkg_features : []); $sp = $pf['streaming_package'] ?? []; $gp = $pf['game_package'] ?? []; ?>
+<?php if (!empty($product->disk_space) && $product->disk_space > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo ph_format_bytes($product->disk_space); ?> Disk</li><?php endif; ?>
+<?php if (!empty($product->bandwidth) && $product->bandwidth > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo ph_format_bytes($product->bandwidth); ?> Bandwidth</li><?php endif; ?>
+<?php if (!empty($sp['max_listeners'])): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo number_format((int)$sp['max_listeners']); ?> Listeners</li><?php endif; ?>
 <?php if (!empty($sp['max_bitrate'])): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $sp['max_bitrate']; ?> kbps</li><?php endif; ?>
-<?php if (!empty($sp['upload_limit'])): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $sp['upload_limit']; ?> MB Upload</li><?php endif; ?>
-<?php if (!empty($product->email_accounts) && $product->email_accounts > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $product->email_accounts; ?> Emails</li><?php endif; ?>
-<?php if (!empty($product->databases) && $product->databases > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $product->databases; ?> Databases</li><?php endif; ?>
-<?php if (!empty($product->addon_domains) && $product->addon_domains > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $product->addon_domains; ?> Addon Domains</li><?php endif; ?>
-<?php if (!empty($product->subdomains) && $product->subdomains > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $product->subdomains; ?> Subdomains</li><?php endif; ?>
-<?php if (!empty($sp['max_djs'])): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $sp['max_djs']; ?> DJ Accounts</li><?php endif; ?>
+<?php if (!empty($sp['max_stations'])): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $sp['max_stations']; ?> Station<?php if ($sp['max_stations'] > 1) echo 's'; ?></li><?php endif; ?>
+<?php if (!empty($sp['max_djs'])): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $sp['max_djs']; ?> DJ Account<?php if ($sp['max_djs'] > 1) echo 's'; ?></li><?php endif; ?>
+<?php if (!empty($product->email_accounts) && $product->email_accounts > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo number_format($product->email_accounts); ?> Email<?php if ($product->email_accounts > 1) echo 's'; ?></li><?php endif; ?>
+<?php if (!empty($product->databases) && $product->databases > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo number_format($product->databases); ?> Database<?php if ($product->databases > 1) echo 's'; ?></li><?php endif; ?>
+<?php if (!empty($product->addon_domains) && $product->addon_domains > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo number_format($product->addon_domains); ?> Addon Domain<?php if ($product->addon_domains > 1) echo 's'; ?></li><?php endif; ?>
+<?php if (!empty($product->subdomains) && $product->subdomains > 0): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo number_format($product->subdomains); ?> Subdomain<?php if ($product->subdomains > 1) echo 's'; ?></li><?php endif; ?>
+<?php if (!empty($gp['max_servers'])): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo $gp['max_servers']; ?> Game Server<?php if ($gp['max_servers'] > 1) echo 's'; ?></li><?php endif; ?>
+<?php if (!empty($gp['max_players'])): ?><li><i class="fa-solid fa-circle-check"></i> <?php echo number_format($gp['max_players']); ?> Player Slots</li><?php endif; ?>
 <li><i class="fa-solid fa-circle-check"></i> Free SSL</li>
 <li><i class="fa-solid fa-circle-check"></i> 24/7 Support</li>
 </ul>
