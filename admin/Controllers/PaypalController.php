@@ -176,7 +176,7 @@ class PaypalController extends Controller
                     'method' => 'paypal', 'status' => 'completed',
                     'transaction_id' => $txnId, 'notes' => "PayPal REST Capture Order #{$refId}: {$payerEmail}",
                 ]);
-                $this->db->table('billing_orders')->where('id', $refId)->update(['status' => 'paid']);
+                $this->db->table('billing_orders')->where('id', $refId)->update(['status' => 'active']);
                 $this->provisionOrder($order->user_id, $order->items, $refId);
                 $_SESSION['success_message'] = 'Payment received! Your services are being provisioned.';
                 header('Location: /cart.php?action=thankyou&order=' . $refId);
@@ -285,7 +285,7 @@ class PaypalController extends Controller
                         'method' => 'paypal', 'status' => 'completed',
                         'transaction_id' => $txnId, 'notes' => "PayPal IPN Order #{$orderId}: {$payerEmail}",
                     ]);
-                    $this->db->table('billing_orders')->where('id', $orderId)->update(['status' => 'paid']);
+                    $this->db->table('billing_orders')->where('id', $orderId)->update(['status' => 'active']);
                     $this->provisionOrder($order->user_id, $order->items, $orderId);
                 }
             } else {
