@@ -86,7 +86,7 @@ class AdminsController extends Controller
             $this->response->redirect('/admin/admins'); exit;
         }
         $new = $target->is_active ? 0 : 1;
-        $this->db->table('admins')->where('id', (int)$id)->update(['is_active' => $new]);
+        $this->db->table('admins')->where('id', (int)$id)->update(['is_active' => $new, 'status' => $new ? 'active' : 'disabled']);
         $_SESSION['success_message'] = $new ? 'Admin unsuspended.' : 'Admin suspended.';
         $this->response->redirect('/admin/admins');
         exit;
