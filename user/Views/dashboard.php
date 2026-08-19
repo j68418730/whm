@@ -9,11 +9,6 @@
 .dash-card .bar{height:4px;border-radius:2px;margin-top:10px;background:rgba(255,255,255,.05)}
 .dash-card .bar .fill{height:100%;border-radius:2px;transition:width .5s}
 
-.quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:24px}
-.quick-link{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 12px;background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.06);border-radius:12px;text-decoration:none;color:#e0e0e0;font-size:12px;font-weight:500;transition:.15s}
-.quick-link:hover{border-color:rgba(0,140,255,.3);background:rgba(0,140,255,.04);transform:translateY(-2px)}
-.quick-link .qicon{font-size:24px}
-
 .section-title{font-size:15px;font-weight:700;margin:0 0 14px;display:flex;align-items:center;gap:8px}
 .section-title span{font-weight:400;font-size:12px;color:#64748b}
 .activity-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
@@ -78,19 +73,6 @@ fetch('/admin/support-status/public').then(function(r){return r.json()}).then(fu
     else{icon.style.background='#64748b';label.textContent='Support is Offline — Submit a ticket';bar.style.borderColor='rgba(100,116,139,.3)';}
 }).catch(function(){document.getElementById('supportStatusBar').style.display='none'});
 </script>
-
-<!-- Quick Actions -->
-<div class="quick-grid">
-<a href="/user/services" class="quick-link"><span class="qicon">🌐</span>My Services</a>
-<a href="/user/files" class="quick-link"><span class="qicon">📁</span>File Manager</a>
-<a href="/user/tickets" class="quick-link"><span class="qicon">🎫</span>Open Ticket</a>
-<a href="/pma_autologin.php" target="_blank" class="quick-link"><span class="qicon">🐘</span>phpMyAdmin</a>
-<a href="/webmail_autologin.php" target="_blank" class="quick-link"><span class="qicon">📨</span>Webmail</a>
-<a href="/user/invoices" class="quick-link"><span class="qicon">💳</span>Pay Invoice</a>
-<a href="/user/chat" class="quick-link"><span class="qicon">💬</span>Live Chat</a>
-<a href="/user/domains" class="quick-link"><span class="qicon">🌍</span>Domains</a>
-<a href="/user/security" class="quick-link"><span class="qicon">🛡️</span>Security</a>
-</div>
 
 <!-- Stats Grid -->
 <div class="dash-grid">
