@@ -106,8 +106,8 @@ if ($action === 'checkout' && $_POST) {
 
         if (!$user) {
             $username = explode('@', $email)[0] . rand(100, 999);
-            $pdo->prepare("INSERT INTO hosting_users (username, email, password_hash, name, status, created_at)
-                VALUES (?, ?, ?, ?, 'pending', NOW())")->execute([$username, $email, password_hash($password, PASSWORD_DEFAULT), $name]);
+            $pdo->prepare("INSERT INTO hosting_users (username, email, password_hash, first_name, reseller_id, status, created_at)
+                VALUES (?, ?, ?, ?, 0, 'active', NOW())")->execute([$username, $email, password_hash($password, PASSWORD_DEFAULT), $name]);
             $userId = $pdo->lastInsertId();
         } else {
             $userId = $user->id;
