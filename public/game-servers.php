@@ -334,7 +334,7 @@ function updatePricing(slots) {
 <?php if ($pkg->setup_fee > 0): ?>
 <div class="pkg-slots" style="color:#fbbf24;font-size:.7rem">+<?php echo $currency; ?><?php echo number_format($pkg->setup_fee, 2); ?> setup</div>
 <?php endif; ?>
-<a class="btn-select" href="/cart.php?action=add_game&game_id=<?php echo $selectedGameId; ?>&package_id=<?php echo $pkg->id; ?>&slots=<?php echo $pkg->slots; ?>&price=<?php echo $pkg->price; ?>&setup=<?php echo $pkg->setup_fee ?? 0; ?>&pkg_name=<?php echo urlencode($pkg->name); ?>">Select</a>
+<a class="btn-select" href="/cart.php?action=add_game&game_id=<?php echo $selectedGameId; ?>&package_id=<?php echo $pkg->id; ?>&template_id=<?php echo (int)($pkg->template_id ?? 0); ?>&slots=<?php echo $pkg->slots; ?>&price=<?php echo $pkg->price; ?>&setup=<?php echo $pkg->setup_fee ?? 0; ?>&pkg_name=<?php echo urlencode($pkg->name); ?>">Select</a>
 </div>
 <?php endforeach; ?>
 </div>

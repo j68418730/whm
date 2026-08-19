@@ -136,8 +136,14 @@ class GameServersController extends Controller
         $user = $this->auth->user();
         $packages = $this->db->table('game_packages')->get() ?: [];
         $types = $this->db->table('game_types')->orderBy('sort_order', 'ASC')->get() ?: [];
+        $templates = [];
+        try {
+            $templates = $this->db->pdo()->query("SELECT id, name, appid FROM game_templates WHERE status = 'active' ORDER BY name ASC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        } catch (\Exception $e) {}
         $typeMap = [];
         foreach ($types as $t) $typeMap[$t->id] = $t->name;
+        $templateMap = [];
+        foreach ($templates as $t) $templateMap[$t->id] = $t;
         return $this->view('admin.gameservers.packages', [
             'user' => $user,
             'title' => 'Game Packages',
@@ -145,6 +151,8 @@ class GameServersController extends Controller
             'packages' => $packages,
             'types' => $types,
             'typeMap' => $typeMap,
+            'templates' => $templates,
+            'templateMap' => $templateMap,
         ]);
     }
 
@@ -154,6 +162,7 @@ class GameServersController extends Controller
         $id = (int)$this->request->post('id', 0);
         $data = [
             'game_type_id' => (int)$this->request->post('game_type_id', 0),
+            'template_id' => (int)$this->request->post('template_id', 0),
             'name' => $this->request->post('name', ''),
             'description' => $this->request->post('description', ''),
             'slots' => (int)$this->request->post('slots', 10),

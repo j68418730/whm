@@ -12,6 +12,12 @@
 <option value="<?php echo $t->id; ?>"><?php echo htmlspecialchars($t->name); ?></option>
 <?php endforeach; ?>
 </select></div>
+<div class="form-group"><label>Template (installed after payment)</label><select name="template_id" id="editTemplate">
+<option value="0">— Auto-detect from game name —</option>
+<?php foreach ($templates as $t): ?>
+<option value="<?php echo $t->id; ?>"><?php echo htmlspecialchars($t->name); ?> (App <?php echo htmlspecialchars($t->appid); ?>)</option>
+<?php endforeach; ?>
+</select></div>
 <div class="form-group"><label>Package Name</label><input name="name" id="editName" required></div>
 <div class="form-group"><label>Description</label><textarea name="description" id="editDesc" rows="2"></textarea></div>
 <div class="form-group" style="display:flex;gap:8px">
@@ -26,11 +32,15 @@
 <button type="submit" class="btn primary">Save</button>
 <a class="btn btn-sm" style="background:#333;color:#ccc;cursor:pointer" onclick="cancelEdit()">Cancel</a>
 </form></div>
-<table><tr><th>Game</th><th>Name</th><th>Slots</th><th>Price</th><th>Setup</th><th>Cycle</th><th>Status</th><th></th></tr>
+<table><tr><th>Game</th><th>Name</th><th>Template</th><th>Slots</th><th>Price</th><th>Setup</th><th>Cycle</th><th>Status</th><th></th></tr>
 <?php if (!empty($packages)): foreach ($packages as $pkg): ?>
 <tr>
 <td><?php echo htmlspecialchars($typeMap[$pkg->game_type_id] ?? 'Unknown'); ?></td>
 <td><strong><?php echo htmlspecialchars($pkg->name); ?></strong></td>
+<td><?php
+$tid = (int)($pkg->template_id ?? 0);
+echo $tid ? htmlspecialchars($templateMap[$tid]->name ?? '#' . $tid) : '<span style="color:#64748b">Auto</span>';
+?></td>
 <td><?php echo $pkg->slots; ?></td>
 <td>$<?php echo number_format($pkg->price, 2); ?></td>
 <td>$<?php echo number_format($pkg->setup_fee, 2); ?></td>
@@ -40,12 +50,13 @@
 <a class="btn btn-sm" style="background:#333;color:#ccc;cursor:pointer" onclick="editPkg(<?php echo htmlspecialchars(json_encode($pkg), ENT_QUOTES, 'UTF-8'); ?>)">Edit</a>
 <a href="/admin/games/packages/delete/<?php echo $pkg->id; ?>" class="btn btn-sm danger" onclick="return confirm('Delete this package?')">Delete</a>
 </td></tr>
-<?php endforeach; else: ?><tr><td colspan="8" style="text-align:center;padding:20px;color:#64748b">No packages yet.</td></tr>
+<?php endforeach; else: ?><tr><td colspan="9" style="text-align:center;padding:20px;color:#64748b">No packages yet.</td></tr>
 <?php endif; ?></table>
 <script>
 function editPkg(p) {
     document.getElementById('editId').value = p.id;
     document.getElementById('editGame').value = p.game_type_id;
+    document.getElementById('editTemplate').value = p.template_id || 0;
     document.getElementById('editName').value = p.name;
     document.getElementById('editDesc').value = p.description || '';
     document.getElementById('editSlots').value = p.slots;

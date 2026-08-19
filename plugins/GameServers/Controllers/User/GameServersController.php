@@ -57,7 +57,7 @@ class GameServersController extends Controller
         return $this->view('Plugins.GameServers.Views.user.show', [
             'user' => $this->auth->user(), 'hosting' => $hosting, 'server' => $server,
             'gameType' => $gameType, 'configContent' => $configContent, 'consoleLog' => $consoleLog,
-            'title' => $server->server_name
+            'title' => $server->server_name ?: $server->name
         ]);
     }
 

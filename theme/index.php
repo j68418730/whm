@@ -354,8 +354,14 @@ $pkgCount = count($pkgs);
 <li><i class="fa-solid fa-check"></i> Free SSL</li>
 <li><i class="fa-solid fa-check"></i> 24/7 Support</li>
 </ul>
+<?php $isGamePkg = (($pkg->type ?? '') === 'game'); ?>
+<?php if ($isGamePkg): ?>
+<a href="/game-servers.php" class="btn">Order Now →</a>
+<a href="/game-servers.php" class="btn-outline">See Games →</a>
+<?php else: ?>
 <a href="/cart.php?action=add&id=<?php echo (int)$pkg->id; ?>&name=<?php echo urlencode($pkg->name ?? ''); ?>&price=<?php echo (float)($pkg->price ?? 0); ?>" class="btn">Order Now →</a>
 <a href="/product/<?php echo (int)$pkg->id; ?>" class="btn-outline">Details →</a>
+<?php endif; ?>
 </div>
 <?php endforeach; ?>
 </div>

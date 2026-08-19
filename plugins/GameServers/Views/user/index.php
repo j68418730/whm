@@ -24,7 +24,7 @@
 <tbody>
 <?php foreach ($servers as $s): ?>
 <tr>
-<td><strong><?php echo htmlspecialchars($s->server_name); ?></strong></td>
+<td><strong><?php echo htmlspecialchars($s->server_name ?: $s->name); ?></strong></td>
 <td><?php echo htmlspecialchars($s->game_type); ?></td>
 <td><?php echo (int)$s->port; ?></td>
 <td>
@@ -34,7 +34,7 @@
 <?php else: ?><span class="status-badge status-terminated">● Stopped</span>
 <?php endif; ?>
 </td>
-<td><?php echo (int)$s->current_players; ?> / <?php echo (int)$s->max_players; ?></td>
+<td><?php echo (int)($s->current_players ?? 0); ?> / <?php echo (int)($s->max_players ?? 16); ?></td>
 <td style="white-space:nowrap">
 <a href="/user/games/show/<?php echo $s->id; ?>" class="btn btn-sm primary"><i class="bi bi-eye"></i> Manage</a>
 <a href="/user/games/start/<?php echo $s->id; ?>" class="btn btn-sm" style="background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.2)"><i class="bi bi-play-fill"></i></a>

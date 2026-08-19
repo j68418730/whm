@@ -66,7 +66,7 @@ $statusColor = $statusColors[$s->status] ?? '#64748b';
 <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:<?php echo $statusColor; ?>;border-radius:14px 0 0 14px"></div>
 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
 <div>
-<h4 style="margin:0;font-size:14px"><?php echo htmlspecialchars($s->server_name); ?></h4>
+<h4 style="margin:0;font-size:14px"><?php echo htmlspecialchars($s->server_name ?: $s->name); ?></h4>
 <span style="font-size:11px;color:#64748b"><?php echo htmlspecialchars($s->game_type); ?> · Port <?php echo (int)$s->port; ?></span>
 </div>
 <span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:6px;background:<?php echo $statusColor; ?>20;color:<?php echo $statusColor; ?>">
@@ -87,7 +87,7 @@ $statusColor = $statusColors[$s->status] ?? '#64748b';
 <?php else: ?>
 <a href="/admin/games/suspend/<?php echo $s->id; ?>" class="btn btn-sm" style="background:rgba(250,204,21,.12);color:#facc15"><i class="bi bi-lock"></i> Suspend</a>
 <?php endif; ?>
-<a href="/admin/games/uninstall/<?php echo $s->id; ?>" class="btn btn-sm" style="background:rgba(248,113,113,.12);color:#f87171" onclick="return confirm('Uninstall <?php echo htmlspecialchars(addslashes($s->server_name), ENT_QUOTES, 'UTF-8'); ?>?')"><i class="bi bi-trash"></i></a>
+<a href="/admin/games/uninstall/<?php echo $s->id; ?>" class="btn btn-sm" style="background:rgba(248,113,113,.12);color:#f87171" onclick="return confirm('Uninstall <?php echo htmlspecialchars(addslashes($s->server_name ?: $s->name), ENT_QUOTES, 'UTF-8'); ?>?')"><i class="bi bi-trash"></i></a>
 </div>
 </div>
 <?php endforeach; ?>

@@ -143,13 +143,25 @@ class PaypalController extends Controller
                     $items = json_decode($order->items, true);
                     if (!empty($items)) {
                         require_once BASE_PATH . '/services/AutoProvision.php';
-                        $pkgId = $items[0]['id'];
-                        autoProvision($order->user_id, $pkgId);
-                        // Check if radio package — auto-create Icecast stream
-                        $pkgCheck = $this->db->table('hosting_packages')->where('id', $pkgId)->first();
-                        if ($pkgCheck && stripos($pkgCheck->type ?? '', 'icecast') !== false) {
-                            require_once BASE_PATH . '/services/RadioProvision.php';
-                            radioProvision($order->user_id, $pkgId);
+                        require_once BASE_PATH . '/services/GameProvision.php';
+                        $hostingProvisioned = false;
+                        foreach ($items as $item) {
+                            $itemType = $item['type'] ?? 'hosting';
+                            if ($itemType === 'game') {
+                                gameProvision($orderId, $order->user_id, $item);
+                            } elseif (!$hostingProvisioned) {
+                                $pkgId = $item['id'] ?? null;
+                                if ($pkgId && !is_string($pkgId)) {
+                                    autoProvision($order->user_id, $pkgId);
+                                    // Check if radio package — auto-create Icecast stream
+                                    $pkgCheck = $this->db->table('hosting_packages')->where('id', $pkgId)->first();
+                                    if ($pkgCheck && stripos($pkgCheck->type ?? '', 'icecast') !== false) {
+                                        require_once BASE_PATH . '/services/RadioProvision.php';
+                                        radioProvision($order->user_id, $pkgId);
+                                    }
+                                }
+                                $hostingProvisioned = true;
+                            }
                         }
                     }
                 }
