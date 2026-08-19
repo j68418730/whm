@@ -24,10 +24,7 @@ $router->get('/user/files/extract', 'User\Controllers\FileManagerController@extr
 $router->post('/user/files/chmod', 'User\Controllers\FileManagerController@chmod');
 $router->get('/user/files/properties', 'User\Controllers\FileManagerController@properties');
 $router->get('/user/files/search', 'User\Controllers\FileManagerController@search');
-$router->get('/user/services/web', 'User\Controllers\UserController@services');
-$router->get('/user/services/radio', 'User\Controllers\UserController@services');
-$router->get('/user/services/vps', 'User\Controllers\UserController@services');
-$router->get('/user/services/domains', 'User\Controllers\UserController@services');
+$router->get('/user/services/{type}', 'User\Controllers\UserController@manage');
 $router->get('/user/domains', 'User\Controllers\DomainsController@index');
 $router->get('/user/domains/add', 'User\Controllers\DomainsController@add');
 $router->post('/user/domains/add', 'User\Controllers\DomainsController@add');

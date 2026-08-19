@@ -172,7 +172,7 @@ class UserController extends Controller
             'emailCount' => $emailCount, 'emailAllowed' => $emailAllowed,
             'domains' => $domains, 'openTickets' => $openTickets, 'pendingTickets' => $pendingTickets,
             'resolvedTickets' => $resolvedTickets, 'openInvoices' => $openInvoices, 'paidInvoices' => $paidInvoices,
-            'services' => $services, 'allServicesCount' => $allServicesCount, 'orders' => $orders,
+            'services' => $services, 'servicesAll' => $this->buildServiceList(), 'allServicesCount' => $allServicesCount, 'orders' => $orders,
             'gameServers' => $gameServers, 'hasGames' => $hasGames,
             'chatTenant' => $chatTenant, 'hasChat' => $hasChat,
             'recentActivity' => $recentActivity,
@@ -181,7 +181,56 @@ class UserController extends Controller
         ]);
     }
 
-    public function services() { $u = $this->loadUser(); $services = []; $uid = $this->hostingUser->id ?? 0; $username = $this->hostingUser->username ?? ''; if ($this->hostingUser) { $services[] = ['icon' => '🌐', 'name' => 'Web Hosting', 'status' => $this->hostingUser->status ?? 'active', 'detail' => 'Username: ' . $username . ' | Domain: ' . ($this->hostingUser->domain ?? '-'), 'link' => '/user']; try { $streams = $this->db->table('streaming_stations')->where('user_id', $uid)->get() ?: []; foreach ($streams as $s) { $services[] = ['icon' => '📻', 'name' => $s->name ?: 'Radio Stream', 'status' => $s->status ?? 'stopped', 'detail' => ($s->engine ?? 'icecast') . ' | Port: ' . $s->port, 'link' => '/user/radio?station_id=' . (10000 + $s->id)]; } } catch (\Exception $e) {} try { $domains = $this->db->table('dns_zones')->where('domain', 'LIKE', '%' . ($this->hostingUser->domain ?? '') . '%')->get() ?: []; foreach ($domains as $d) { $services[] = ['icon' => '🔗', 'name' => $d->domain, 'status' => 'active', 'detail' => 'DNS managed', 'link' => '/user/domains/zone/' . $d->id]; } } catch (\Exception $e) {} try { $ftps = $this->db->table('ftp_accounts')->where('hosting_user_id', $uid)->get() ?: []; foreach ($ftps as $f) { $services[] = ['icon' => '📁', 'name' => 'FTP: ' . $f->username, 'status' => $f->is_active ? 'active' : 'suspended', 'detail' => 'Dir: ' . $f->directory, 'link' => '/user/ftp']; } } catch (\Exception $e) {} try { $zones = $this->db->table('dns_zones')->where('domain', 'LIKE', '%' . ($this->hostingUser->domain ?? '') . '%')->get() ?: []; foreach ($zones as $z) { $recs = $this->db->table('dns_records')->where('zone_id', $z->id)->where('type', 'A')->where('is_user_subdomain', 1)->get() ?: []; foreach ($recs as $r) { $services[] = ['icon' => '🌍', 'name' => $r->name . '.' . $z->domain, 'status' => 'active', 'detail' => 'Subdomain', 'link' => '/user/domains/zone/' . $z->id]; } } } catch (\Exception $e) {} try { $sites = $this->db->table('wb_sites')->where('user_id', $uid)->get() ?: []; foreach ($sites as $s) { $services[] = ['icon' => '🏗️', 'name' => $s->name ?: 'Website', 'status' => $s->published ? 'active' : 'pending', 'detail' => 'Builder site', 'link' => '/user/websitebuilder']; } } catch (\Exception $e) {} } return $this->view('user.services', ['user' => $u, 'hosting' => $this->hostingUser, 'services' => $services, 'title' => 'My Services']); }
+    public function services() { $u = $this->loadUser(); return $this->view('user.services', ['user' => $u, 'hosting' => $this->hostingUser, 'services' => $this->buildServiceList(), 'title' => 'My Services']); }
+
+    protected function buildServiceList() {
+        $services = []; $uid = $this->hostingUser->id ?? 0; $username = $this->hostingUser->username ?? '';
+        if ($this->hostingUser) {
+            $services[] = ['icon' => '🌐', 'name' => 'Web Hosting', 'type' => 'web', 'status' => $this->hostingUser->status ?? 'active', 'detail' => 'Username: ' . $username . ' | Domain: ' . ($this->hostingUser->domain ?? '-'), 'link' => '/user/services/web'];
+            try { $streams = $this->db->table('streaming_stations')->where('user_id', $uid)->get() ?: []; foreach ($streams as $s) { $services[] = ['icon' => '📻', 'name' => $s->name ?: 'Radio Stream', 'type' => 'radio', 'status' => $s->status ?? 'stopped', 'detail' => ($s->engine ?? 'icecast') . ' | Port: ' . $s->port, 'link' => '/user/radio?station_id=' . (10000 + $s->id)]; } } catch (\Exception $e) {}
+            try { $domains = $this->db->table('dns_zones')->where('domain', 'LIKE', '%' . ($this->hostingUser->domain ?? '') . '%')->get() ?: []; foreach ($domains as $d) { $services[] = ['icon' => '🔗', 'name' => $d->domain, 'type' => 'dns', 'status' => 'active', 'detail' => 'DNS managed', 'link' => '/user/domains/zone/' . $d->id]; } } catch (\Exception $e) {}
+            try { $ftps = $this->db->table('ftp_accounts')->where('hosting_user_id', $uid)->get() ?: []; foreach ($ftps as $f) { $services[] = ['icon' => '📁', 'name' => 'FTP: ' . $f->username, 'type' => 'ftp', 'status' => $f->is_active ? 'active' : 'suspended', 'detail' => 'Dir: ' . $f->directory, 'link' => '/user/ftp']; } } catch (\Exception $e) {}
+            try { $zones = $this->db->table('dns_zones')->where('domain', 'LIKE', '%' . ($this->hostingUser->domain ?? '') . '%')->get() ?: []; foreach ($zones as $z) { $recs = $this->db->table('dns_records')->where('zone_id', $z->id)->where('type', 'A')->where('is_user_subdomain', 1)->get() ?: []; foreach ($recs as $r) { $services[] = ['icon' => '🌍', 'name' => $r->name . '.' . $z->domain, 'type' => 'dns', 'status' => 'active', 'detail' => 'Subdomain', 'link' => '/user/domains/zone/' . $z->id]; } } } catch (\Exception $e) {}
+            try { $sites = $this->db->table('wb_sites')->where('user_id', $uid)->get() ?: []; foreach ($sites as $s) { $services[] = ['icon' => '🏗️', 'name' => $s->name ?: 'Website', 'type' => 'builder', 'status' => $s->published ? 'active' : 'pending', 'detail' => 'Builder site', 'link' => '/user/websitebuilder']; } } catch (\Exception $e) {}
+        }
+        return $services;
+    }
+
+    public function manage($type = 'web') {
+        $u = $this->loadUser();
+        $all = $this->buildServiceList();
+        $svc = null;
+        foreach ($all as $s) { if (($s['type'] ?? '') === $type) { $svc = $s; break; } }
+        if (!$svc) { $svc = ['icon' => '🌐', 'name' => 'Service', 'type' => $type, 'status' => 'active', 'detail' => ucfirst($type), 'link' => '/user/services/' . $type]; }
+        $pkg = $this->package;
+        $feats = is_string($pkg->features ?? null) ? json_decode($pkg->features, true) ?? [] : ($pkg->features ?? []);
+        $included = [];
+        $features = [];
+        $price = 0;
+        if ($pkg) {
+            $included[] = ['💾', 'Disk Space', ($pkg->disk_space ?? 0) . ' GB'];
+            if (($pkg->bandwidth ?? 0) > 0) $included[] = ['📶', 'Bandwidth', ($pkg->bandwidth ?? 0) . ' GB'];
+            if (($pkg->email_accounts ?? 0) > 0) $included[] = ['📧', 'Email Accounts', $pkg->email_accounts];
+            if (($pkg->ftp_accounts ?? 0) > 0) $included[] = ['📁', 'FTP Accounts', $pkg->ftp_accounts];
+            if (($pkg->databases ?? 0) > 0) $included[] = ['🗄️', 'MySQL Databases', $pkg->databases];
+            if (($pkg->max_domains ?? 0) > 0) $included[] = ['🌍', 'Max Domains', $pkg->max_domains];
+            if (($pkg->max_subdomains ?? 0) > 0) $included[] = ['🔗', 'Max Subdomains', $pkg->max_subdomains];
+            if (($pkg->parked_domains ?? 0) > 0) $included[] = ['📌', 'Parked Domains', $pkg->parked_domains];
+            if (($pkg->addon_domains ?? 0) > 0) $included[] = ['➕', 'Addon Domains', $pkg->addon_domains];
+            $included[] = ['🐘', 'PHP Version', $pkg->php_version ?? '8.2'];
+            if (($pkg->listener_limit ?? 0) > 0) $included[] = ['🎧', 'Listener Limit', $pkg->listener_limit];
+            if (($pkg->bitrate ?? 0) > 0) $included[] = ['📻', 'Bitrate', ($pkg->bitrate ?? 0) . ' kbps'];
+            if (($pkg->dj_accounts ?? 0) > 0) $included[] = ['🎛️', 'DJ Accounts', $pkg->dj_accounts];
+            $genLabels = ['cron' => 'Cron', 'ssh' => 'SSH', 'ssl' => 'SSL', 'git' => 'Git', 'nodejs' => 'Node.js', 'python' => 'Python', 'ruby' => 'Ruby', 'terminal' => 'Terminal', 'backups' => 'Backups', 'installer' => 'Installer', 'builder' => 'Website Builder', 'ai_builder' => 'AI Builder', 'ai_assistant' => 'AI Assistant', 'marketplace' => 'Marketplace', 'api' => 'API', 'webhooks' => 'Webhooks', 'chat' => 'Chatbox', 'chat_voice' => '+ Voice', 'chat_video' => '+ Video', 'dj_panel' => 'DJ Panel'];
+            foreach ($genLabels as $k => $l) { if (!empty($feats[$k])) $features[] = $l; }
+            $fl = null;
+            try { if (($pkg->feature_list_id ?? 0) > 0) $fl = $this->db->table('feature_lists')->where('id', $pkg->feature_list_id)->first(); } catch (\Exception $e) {}
+            if ($fl) $features[] = $fl->name;
+            try { $bp = $this->db->table('billing_products')->where('package_id', $pkg->id)->where('is_active', 1)->first(); $price = $bp->price ?? 0; } catch (\Exception $e) {}
+            if ($price <= 0) $price = $pkg->monthly_price ?? 0;
+        }
+        return $this->view('user.manage', ['user' => $u, 'hosting' => $this->hostingUser, 'package' => $pkg, 'service' => $svc, 'type' => $type, 'included' => $included, 'features' => $features, 'price' => $price, 'title' => ucfirst($type) . ' Service']);
+    }
     public function usage() { $u = $this->loadUser(); return $this->view('user.usage', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Resource Usage']); }
     public function profile() { $u = $this->loadUser(); return $this->view('user.profile', ['user' => $u, 'hosting' => $this->hostingUser, 'package' => $this->package, 'title' => 'Profile']); }
     public function security() { $u = $this->loadUser(); return $this->view('user.security', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Security']); }

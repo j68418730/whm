@@ -9,6 +9,11 @@
 .dash-card .bar{height:4px;border-radius:2px;margin-top:10px;background:rgba(255,255,255,.05)}
 .dash-card .bar .fill{height:100%;border-radius:2px;transition:width .5s}
 
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:24px}
+.quick-link{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 12px;background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.06);border-radius:12px;text-decoration:none;color:#e0e0e0;font-size:12px;font-weight:500;transition:.15s}
+.quick-link:hover{border-color:rgba(0,140,255,.3);background:rgba(0,140,255,.04);transform:translateY(-2px)}
+.quick-link .qicon{font-size:24px}
+
 .section-title{font-size:15px;font-weight:700;margin:0 0 14px;display:flex;align-items:center;gap:8px}
 .section-title span{font-weight:400;font-size:12px;color:#64748b}
 .activity-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
@@ -74,6 +79,19 @@ fetch('/admin/support-status/public').then(function(r){return r.json()}).then(fu
 }).catch(function(){document.getElementById('supportStatusBar').style.display='none'});
 </script>
 
+<!-- Quick Actions -->
+<div class="quick-grid">
+<a href="/user/services" class="quick-link"><span class="qicon">🌐</span>My Services</a>
+<a href="/user/files" class="quick-link"><span class="qicon">📁</span>File Manager</a>
+<a href="/user/tickets" class="quick-link"><span class="qicon">🎫</span>Open Ticket</a>
+<a href="/pma_autologin.php" target="_blank" class="quick-link"><span class="qicon">🐘</span>phpMyAdmin</a>
+<a href="/webmail_autologin.php" target="_blank" class="quick-link"><span class="qicon">📨</span>Webmail</a>
+<a href="/user/invoices" class="quick-link"><span class="qicon">💳</span>Pay Invoice</a>
+<a href="/user/chat" class="quick-link"><span class="qicon">💬</span>Live Chat</a>
+<a href="/user/domains" class="quick-link"><span class="qicon">🌍</span>Domains</a>
+<a href="/user/security" class="quick-link"><span class="qicon">🛡️</span>Security</a>
+</div>
+
 <!-- Stats Grid -->
 <div class="dash-grid">
 <div class="dash-card"><div class="icon-box" style="background:rgba(0,140,255,.12)">🖥</div><h3>Services</h3><div class="val" style="color:#0A84FF"><?php echo $allServicesCount ?? count($services ?? []); ?></div><div class="sub">Active services</div></div>
@@ -96,11 +114,11 @@ fetch('/admin/support-status/public').then(function(r){return r.json()}).then(fu
 
 <!-- Services List -->
 <div class="dash-card" style="grid-column:1/-1">
-<h3 class="section-title">My Services <span>(<?php echo count($services ?? []); ?>)</span></h3>
-<?php if (!empty($services)): foreach ($services as $svc): ?>
+<h3 class="section-title">My Services <span>(<?php echo count($servicesAll ?? []); ?>)</span></h3>
+<?php if (!empty($servicesAll)): foreach (array_slice($servicesAll, 0, 8) as $svc): ?>
 <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px">
-<div><strong><?php echo htmlspecialchars($svc->name ?? "Service #{$svc->id}"); ?></strong><br><span style="color:#64748b;font-size:11px"><?php echo htmlspecialchars($svc->type ?? ''); ?></span></div>
-<a href="/user/services" class="btn btn-sm" style="background:rgba(0,140,255,.1);color:#0A84FF;border:1px solid rgba(0,140,255,.2);text-decoration:none;padding:4px 12px;border-radius:6px;font-size:12px">Manage</a>
+<div><strong><?php echo htmlspecialchars($svc['name'] ?? 'Service'); ?></strong><br><span style="color:#64748b;font-size:11px"><?php echo htmlspecialchars($svc['detail'] ?? $svc['type'] ?? ''); ?></span></div>
+<a href="<?php echo $svc['link'] ?? '/user/services'; ?>" class="btn btn-sm" style="background:rgba(0,140,255,.1);color:#0A84FF;border:1px solid rgba(0,140,255,.2);text-decoration:none;padding:4px 12px;border-radius:6px;font-size:12px">Manage</a>
 </div>
 <?php endforeach; else: ?>
 <p style="color:#64748b;font-size:13px;text-align:center;padding:20px 0">No active services.</p>
