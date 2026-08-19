@@ -235,7 +235,7 @@ class GameTemplateEngine
         return $imported;
     }
 
-    protected function getBinaryName($template)
+    public function getBinaryName($template)
     {
         return $this->getBinaryNameFromString($template->name ?? 'server');
     }
