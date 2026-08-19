@@ -644,12 +644,6 @@ $router->post('/admin/games/servers/store', 'Admin\Controllers\GameServersContro
 $router->get('/admin/games/servers/toggle/{id}', 'Admin\Controllers\GameServersController@serversToggle');
 $router->get('/admin/games/servers/status/{id}', 'Admin\Controllers\GameServersController@serversStatus');
 $router->get('/admin/games/servers/delete/{id}', 'Admin\Controllers\GameServersController@serversDelete');
-$router->get('/admin/games/templates', 'Admin\Controllers\GameServersController@templates');
-$router->post('/admin/games/templates/store', 'Admin\Controllers\GameServersController@templatesStore');
-$router->get('/admin/games/templates/toggle/{id}', 'Admin\Controllers\GameServersController@templatesToggle');
-$router->get('/admin/games/templates/delete/{id}', 'Admin\Controllers\GameServersController@templatesDelete');
-$router->get('/admin/games/templates/catalog', 'Admin\Controllers\GameServersController@templatesCatalog');
-$router->get('/admin/games/templates/view/{id}', 'Admin\Controllers\GameServersController@templateView');
 $router->get('/admin/games/settings', 'Admin\Controllers\GameServersController@settings');
 $router->post('/admin/games/settings/save', 'Admin\Controllers\GameServersController@settingsSave');
 
