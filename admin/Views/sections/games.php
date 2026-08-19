@@ -12,9 +12,9 @@
 <p style="color:#64748b;margin-bottom:20px">Manage game servers, pricing, packages, templates, and settings.</p>
 
 <div class="section-grid">
-<a href="/admin/games" class="section-card"><div class="icon">🎮</div><div class="name">Game Servers</div><div class="desc">Game server management</div></a>
+<a href="/admin/games/servers" class="section-card"><div class="icon">🎮</div><div class="name">Game Servers</div><div class="desc">Server instances management</div></a>
+<a href="/admin/games" class="section-card"><div class="icon">🏷️</div><div class="name">Game Types</div><div class="desc">Available game types</div></a>
 <a href="/admin/games/pricing" class="section-card"><div class="icon">💵</div><div class="name">Slot Pricing</div><div class="desc">Per-slot pricing config</div></a>
 <a href="/admin/games/packages" class="section-card"><div class="icon">📦</div><div class="name">Packages</div><div class="desc">Game hosting packages</div></a>
-<a href="/admin/games/templates" class="section-card"><div class="icon">📄</div><div class="name">Game Templates</div><div class="desc">Server installation templates</div></a>
 <a href="/admin/games/settings" class="section-card"><div class="icon">⚙️</div><div class="name">Settings</div><div class="desc">Game module configuration</div></a>
 </div>

@@ -180,6 +180,112 @@ class GameServersController extends Controller
         $this->response->redirect('/admin/games/packages');
     }
 
+    // ─── Game Servers (instances) ───
+
+    public function servers()
+    {
+        $this->guard();
+        $user = $this->auth->user();
+        $servers = $this->db->table('game_servers')->orderBy('id', 'DESC')->get() ?: [];
+        $types = $this->db->table('game_types')->orderBy('sort_order', 'ASC')->get() ?: [];
+        $typeMap = [];
+        foreach ($types as $t) $typeMap[$t->id] = $t->name;
+        $owners = $this->db->table('hosting_users')->get() ?: [];
+        $ownerMap = [];
+        foreach ($owners as $o) $ownerMap[$o->id] = $o->username . ($o->domain ? ' (' . $o->domain . ')' : '');
+        $serverStatusMap = ['stopped' => 'Stopped', 'running' => 'Running', 'starting' => 'Starting', 'suspended' => 'Suspended', 'installing' => 'Installing'];
+        // Sync migration flag: servers created before type_id existed carry game_type string
+        $settings = [];
+        $rows = $this->db->table('game_settings')->get() ?: [];
+        foreach ($rows as $r) $settings[$r->setting_key] = $r->setting_value;
+        return $this->view('admin.gameservers.servers', [
+            'user' => $user,
+            'title' => 'Game Servers',
+            'theme_settings' => $this->theme(),
+            'servers' => $servers,
+            'types' => $types,
+            'typeMap' => $typeMap,
+            'ownerMap' => $ownerMap,
+            'serverStatusMap' => $serverStatusMap,
+            'settings' => $settings,
+        ]);
+    }
+
+    public function serversStore()
+    {
+        $this->guard();
+        $id = (int)$this->request->post('id', 0);
+        $data = [
+            'user_id' => (int)$this->request->post('user_id', 0),
+            'type_id' => (int)$this->request->post('type_id', 0),
+            'name' => $this->request->post('name', ''),
+            'game_type' => $this->request->post('game_type', ''),
+            'port' => (int)$this->request->post('port', 0),
+            'status' => $this->request->post('status', 'stopped'),
+            'install_path' => $this->request->post('install_path', ''),
+            'config_path' => $this->request->post('config_path', ''),
+            'is_active' => (int)$this->request->post('is_active', 1),
+        ];
+        if (!$data['name']) {
+            $_SESSION['error_message'] = 'Server name is required.';
+            $this->response->redirect('/admin/games/servers'); exit;
+        }
+        if ($data['type_id'] && !$data['game_type']) {
+            $gt = $this->db->table('game_types')->where('id', $data['type_id'])->first();
+            if ($gt) $data['game_type'] = $gt->name;
+        }
+        if ($id) {
+            $this->db->table('game_servers')->where('id', $id)->update($data);
+            $_SESSION['success_message'] = 'Game server updated.';
+        } else {
+            if ($data['port'] <= 0) $data['port'] = $this->nextPort();
+            $this->db->table('game_servers')->insertGetId($data);
+            $_SESSION['success_message'] = 'Game server created.';
+        }
+        $this->response->redirect('/admin/games/servers');
+    }
+
+    protected function nextPort()
+    {
+        $stmt = $this->db->pdo()->query("SELECT COALESCE(MAX(port), 27000) AS maxport FROM game_servers");
+        $row = $stmt->fetch();
+        $next = ((int)($row['maxport'] ?? 27000)) + 1;
+        return $next > 65535 ? 27015 : $next;
+    }
+
+    public function serversToggle($id)
+    {
+        $this->guard();
+        $s = $this->db->table('game_servers')->where('id', (int)$id)->first();
+        if (!$s) { $_SESSION['error_message'] = 'Server not found.'; $this->response->redirect('/admin/games/servers'); exit; }
+        $new = $s->is_active ? 0 : 1;
+        $status = $new ? ($s->status === 'suspended' ? 'stopped' : $s->status) : 'suspended';
+        $this->db->table('game_servers')->where('id', (int)$id)->update(['is_active' => $new, 'status' => $status]);
+        $_SESSION['success_message'] = $new ? 'Game server activated.' : 'Game server suspended.';
+        $this->response->redirect('/admin/games/servers');
+    }
+
+    public function serversStatus($id)
+    {
+        $this->guard();
+        $s = $this->db->table('game_servers')->where('id', (int)$id)->first();
+        if (!$s) { $_SESSION['error_message'] = 'Server not found.'; $this->response->redirect('/admin/games/servers'); exit; }
+        $status = $this->request->get('status', '');
+        $allowed = ['stopped', 'running', 'starting', 'suspended', 'installing'];
+        if (!in_array($status, $allowed)) { $status = $s->status; }
+        $this->db->table('game_servers')->where('id', (int)$id)->update(['status' => $status]);
+        $_SESSION['success_message'] = "Status set to '{$status}'.";
+        $this->response->redirect('/admin/games/servers');
+    }
+
+    public function serversDelete($id)
+    {
+        $this->guard();
+        $this->db->table('game_servers')->where('id', (int)$id)->delete();
+        $_SESSION['success_message'] = 'Game server deleted.';
+        $this->response->redirect('/admin/games/servers');
+    }
+
     // ─── Settings ───
 
     public function settings()

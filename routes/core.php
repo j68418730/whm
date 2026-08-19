@@ -639,6 +639,11 @@ $router->get('/admin/games/pricing/delete/{id}', 'Admin\Controllers\GameServersC
 $router->get('/admin/games/packages', 'Admin\Controllers\GameServersController@packages');
 $router->post('/admin/games/packages/store', 'Admin\Controllers\GameServersController@packagesStore');
 $router->get('/admin/games/packages/delete/{id}', 'Admin\Controllers\GameServersController@packagesDelete');
+$router->get('/admin/games/servers', 'Admin\Controllers\GameServersController@servers');
+$router->post('/admin/games/servers/store', 'Admin\Controllers\GameServersController@serversStore');
+$router->get('/admin/games/servers/toggle/{id}', 'Admin\Controllers\GameServersController@serversToggle');
+$router->get('/admin/games/servers/status/{id}', 'Admin\Controllers\GameServersController@serversStatus');
+$router->get('/admin/games/servers/delete/{id}', 'Admin\Controllers\GameServersController@serversDelete');
 $router->get('/admin/games/settings', 'Admin\Controllers\GameServersController@settings');
 $router->post('/admin/games/settings/save', 'Admin\Controllers\GameServersController@settingsSave');
 
