@@ -34,6 +34,8 @@ function radioProvision($userId, $packageId) {
     $username = $user->username;
     $configDir = "/home/{$username}/radio/streams";
     @mkdir($configDir, 0755, true);
+    $logDir = "{$configDir}/logs";
+    @mkdir($logDir, 0755, true);
     $musicDir = "/home/{$username}/radio/musicdatabase";
     @mkdir($musicDir, 0755, true);
 
@@ -45,9 +47,9 @@ function radioProvision($userId, $packageId) {
         <admin-user>admin</admin-user>
         <admin-password>{$password}</admin-password>
     </authentication>
-    <hostname>localhost</hostname>
+    <hostname>{$username}.planet-hosts.com</hostname>
     <listen-socket><port>{$port}</port></listen-socket>
-    <paths><basedir>/usr/share/icecast2</basedir><logdir>/var/log/icecast2</logdir>
+    <paths><basedir>/usr/share/icecast2</basedir><logdir>{$logDir}</logdir>
         <webroot>/usr/share/icecast2/web</webroot><adminroot>/usr/share/icecast2/admin</adminroot>
         <alias source="/" dest="/status.xsl"/></paths>
     <logging><accesslog>access.log</accesslog><errorlog>error.log</errorlog></logging>
