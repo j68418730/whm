@@ -350,6 +350,8 @@ $router->post('/admin/package/assign-reseller/{packageId}', 'Admin\Controllers\P
 // JSON endpoint for landing page
 $router->get('/admin/admins', 'Admin\Controllers\AdminsController@index');
 $router->post('/admin/admins/create', 'Admin\Controllers\AdminsController@create');
+$router->post('/admin/admins/edit/{id}', 'Admin\Controllers\AdminsController@edit');
+$router->post('/admin/admins/change-password/{id}', 'Admin\Controllers\AdminsController@changePassword');
 $router->get('/admin/admins/toggle-status/{id}', 'Admin\Controllers\AdminsController@toggleStatus');
 $router->post('/admin/admins/permissions/{id}', 'Admin\Controllers\AdminsController@updatePermissions');
 $router->get('/admin/admins/delete/{id}', 'Admin\Controllers\AdminsController@delete');

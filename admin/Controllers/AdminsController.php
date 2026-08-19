@@ -105,6 +105,63 @@ class AdminsController extends Controller
         exit;
     }
 
+    public function edit($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $this->requireSuper();
+        $target = $this->db->table('admins')->where('id', (int)$id)->first();
+        if (!$target) { $_SESSION['error_message'] = 'Admin not found.'; $this->response->redirect('/admin/admins'); exit; }
+        if (in_array($target->username, ['root', 'kane'])) {
+            $_SESSION['error_message'] = 'Cannot edit root or kane.';
+            $this->response->redirect('/admin/admins'); exit;
+        }
+        $username = trim($this->request->post('username', ''));
+        $email    = trim($this->request->post('email', ''));
+        $role     = $this->request->post('role', $target->role);
+        if (!$username) {
+            $_SESSION['error_message'] = 'Username is required.';
+            $this->response->redirect('/admin/admins'); exit;
+        }
+        $dup = $this->db->table('admins')->where('username', $username)->where('id', '!=', (int)$id)->first();
+        if ($dup) {
+            $_SESSION['error_message'] = "Username '{$username}' is already taken.";
+            $this->response->redirect('/admin/admins'); exit;
+        }
+        $this->db->table('admins')->where('id', (int)$id)->update([
+            'username' => $username,
+            'email'    => $email ?: $username . '@planet-hosts.com',
+            'role'     => $role,
+            'name'     => $username,
+        ]);
+        $_SESSION['success_message'] = "Admin '{$username}' updated.";
+        $this->response->redirect('/admin/admins');
+        exit;
+    }
+
+    public function changePassword($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $this->requireSuper();
+        $target = $this->db->table('admins')->where('id', (int)$id)->first();
+        if (!$target) { $_SESSION['error_message'] = 'Admin not found.'; $this->response->redirect('/admin/admins'); exit; }
+        if (in_array($target->username, ['root', 'kane'])) {
+            $_SESSION['error_message'] = 'Cannot change password for root or kane.';
+            $this->response->redirect('/admin/admins'); exit;
+        }
+        $password = $this->request->post('password', '');
+        if (!$password || strlen($password) < 6) {
+            $_SESSION['error_message'] = 'Password must be at least 6 characters.';
+            $this->response->redirect('/admin/admins'); exit;
+        }
+        $this->db->table('admins')->where('id', (int)$id)->update([
+            'password_hash'        => password_hash($password, PASSWORD_DEFAULT),
+            'must_change_password' => 0,
+        ]);
+        $_SESSION['success_message'] = "Password updated for '{$target->username}'.";
+        $this->response->redirect('/admin/admins');
+        exit;
+    }
+
     public function delete($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }

@@ -87,6 +87,8 @@ $isProtected = in_array($a->username, ['root', 'kane']);
 <?php endif; ?>
 <div style="display:flex;gap:4px;margin-left:auto">
 <?php if (!$isProtected): ?>
+<button onclick="openEditModal(<?php echo $a->id; ?>,'<?php echo htmlspecialchars(addslashes($a->username)); ?>','<?php echo htmlspecialchars(addslashes($a->email ?? '')); ?>','<?php echo $a->role; ?>')" class="btn btn-sm" style="font-size:10px;padding:3px 8px;background:rgba(99,102,241,.12);color:#818cf8;border:none;border-radius:4px;cursor:pointer">Edit</button>
+<button onclick="openPassModal(<?php echo $a->id; ?>,'<?php echo htmlspecialchars(addslashes($a->username)); ?>')" class="btn btn-sm" style="font-size:10px;padding:3px 8px;background:rgba(168,85,247,.12);color:#c084fc;border:none;border-radius:4px;cursor:pointer">Password</button>
 <a href="/admin/admins/toggle-status/<?php echo $a->id; ?>" class="btn btn-sm" style="font-size:10px;padding:3px 8px;background:<?php echo $a->is_active ? 'rgba(250,204,21,.1)' : 'rgba(74,222,128,.1)'; ?>;color:<?php echo $a->is_active ? '#facc15' : '#4ade80'; ?>;text-decoration:none;border-radius:4px">
 <?php echo $a->is_active ? 'Suspend' : 'Unsuspend'; ?>
 </a>
@@ -96,6 +98,89 @@ $isProtected = in_array($a->username, ['root', 'kane']);
 <?php endif; ?>
 </div>
 </div>
-</div>
 <?php endforeach; ?>
 </div>
+
+<!-- Edit Admin Modal -->
+<div id="editModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center">
+<div style="background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:24px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+<h3 style="margin:0;color:#e2e8f0;font-size:16px">Edit Admin</h3>
+<span onclick="closeEditModal()" style="cursor:pointer;color:#64748b;font-size:20px">&times;</span>
+</div>
+<form method="POST" id="editForm">
+<input type="hidden" name="username" id="edit_username_val">
+<div style="margin-bottom:10px">
+<label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:4px">Username</label>
+<input name="display_username" id="edit_username" required style="width:100%;padding:8px 10px;font-size:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);color:#e2e8f0;border-radius:6px">
+</div>
+<div style="margin-bottom:10px">
+<label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:4px">Email</label>
+<input name="email" id="edit_email" type="email" style="width:100%;padding:8px 10px;font-size:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);color:#e2e8f0;border-radius:6px">
+</div>
+<div style="margin-bottom:16px">
+<label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:4px">Role</label>
+<select name="role" id="edit_role" style="width:100%;padding:8px 10px;font-size:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);color:#e2e8f0;border-radius:6px">
+<option value="admin">Admin</option>
+<option value="super">Super Admin</option>
+<option value="support">Support Staff</option>
+<option value="sales">Sales</option>
+<option value="billing">Billing</option>
+<option value="technical">Technical Support</option>
+<option value="server">Server Support</option>
+<option value="streaming">Streaming Support</option>
+<option value="game">Game Server Support</option>
+<option value="domain">Domain Support</option>
+<option value="cpanel">Control Panel Support</option>
+<option value="abuse">Abuse Department</option>
+<option value="dmca">DMCA / Copyright</option>
+<option value="linux">Linux Support</option>
+<option value="windows">Windows Server Support</option>
+</select>
+</div>
+<div style="display:flex;gap:8px;justify-content:flex-end">
+<button type="button" onclick="closeEditModal()" style="padding:8px 16px;font-size:12px;background:rgba(255,255,255,.05);color:#94a3b8;border:1px solid rgba(255,255,255,.08);border-radius:6px;cursor:pointer">Cancel</button>
+<button type="submit" style="padding:8px 16px;font-size:12px;background:rgba(99,102,241,.2);color:#818cf8;border:1px solid rgba(99,102,241,.3);border-radius:6px;cursor:pointer">Save</button>
+</div>
+</form>
+</div>
+</div>
+
+<!-- Change Password Modal -->
+<div id="passModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+<div style="background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:24px;width:400px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+<h3 style="margin:0;color:#e2e8f0;font-size:16px">Change Password — <span id="pass_admin_name"></span></h3>
+<span onclick="closePassModal()" style="cursor:pointer;color:#64748b;font-size:20px">&times;</span>
+</div>
+<form method="POST" id="passForm">
+<div style="margin-bottom:14px">
+<label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:4px">New Password (min 6 characters)</label>
+<input name="password" id="pass_input" type="password" required minlength="6" style="width:100%;padding:8px 10px;font-size:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);color:#e2e8f0;border-radius:6px">
+</div>
+<div style="display:flex;gap:8px;justify-content:flex-end">
+<button type="button" onclick="closePassModal()" style="padding:8px 16px;font-size:12px;background:rgba(255,255,255,.05);color:#94a3b8;border:1px solid rgba(255,255,255,.08);border-radius:6px;cursor:pointer">Cancel</button>
+<button type="submit" style="padding:8px 16px;font-size:12px;background:rgba(168,85,247,.2);color:#c084fc;border:1px solid rgba(168,85,247,.3);border-radius:6px;cursor:pointer">Update Password</button>
+</div>
+</form>
+</div>
+</div>
+
+<script>
+function openEditModal(id, username, email, role) {
+  document.getElementById('editForm').action = '/admin/admins/edit/' + id;
+  document.getElementById('edit_username').value = username;
+  document.getElementById('edit_email').value = email;
+  document.getElementById('edit_role').value = role;
+  document.getElementById('editModal').style.display = 'flex';
+}
+function closeEditModal() { document.getElementById('editModal').style.display = 'none'; }
+
+function openPassModal(id, username) {
+  document.getElementById('passForm').action = '/admin/admins/change-password/' + id;
+  document.getElementById('pass_admin_name').textContent = username;
+  document.getElementById('pass_input').value = '';
+  document.getElementById('passModal').style.display = 'flex';
+}
+function closePassModal() { document.getElementById('passModal').style.display = 'none'; }
+</script>
