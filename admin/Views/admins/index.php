@@ -15,9 +15,9 @@
 <div class="form-group" style="margin:0"><label style="font-size:11px">Email</label><input name="email" type="email" placeholder="optional" style="width:100%;padding:6px 10px;font-size:12px"></div>
 <div class="form-group" style="margin:0"><label style="font-size:11px">Role</label>
 <select name="role" style="width:100%;padding:6px 10px;font-size:12px">
-<option value="admin">Admin</option>
-<option value="super">Super Admin</option>
-<option value="support">Support Staff</option>
+<?php foreach ($allRoles as $r): ?>
+<option value="<?php echo $r; ?>"><?php echo ucfirst($r); ?></option>
+<?php endforeach; ?>
 </select>
 </div>
 </div>
@@ -27,6 +27,7 @@
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:4px;max-height:200px;overflow-y:auto;padding:8px;background:rgba(0,0,0,.15);border-radius:6px">
 <?php
 $allPerms = ['billing','accounts','packages','resellers','streaming','domains','dns','ssl','ssh','ftp','email','databases','backups','support','tickets','livechat','kb','announcements','reports','servers','plugins','templates','security','api','settings','theme'];
+$allRoles = ['admin','super','support','sales','billing','technical','server','streaming','game','domain','cpanel','abuse','dmca','linux','windows'];
 foreach ($allPerms as $perm):
 ?>
 <label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;padding:2px 4px;border-radius:3px;background:rgba(255,255,255,.02)">
@@ -109,10 +110,9 @@ $isProtected = in_array($a->username, ['root', 'kane']);
 <span onclick="closeEditModal()" style="cursor:pointer;color:#64748b;font-size:20px">&times;</span>
 </div>
 <form method="POST" id="editForm">
-<input type="hidden" name="username" id="edit_username_val">
 <div style="margin-bottom:10px">
 <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:4px">Username</label>
-<input name="display_username" id="edit_username" required style="width:100%;padding:8px 10px;font-size:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);color:#e2e8f0;border-radius:6px">
+<input name="username" id="edit_username" required style="width:100%;padding:8px 10px;font-size:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);color:#e2e8f0;border-radius:6px">
 </div>
 <div style="margin-bottom:10px">
 <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:4px">Email</label>
