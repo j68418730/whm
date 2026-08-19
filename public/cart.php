@@ -106,8 +106,10 @@ if ($action === 'checkout' && $_POST) {
 
         if (!$user) {
             $username = explode('@', $email)[0] . rand(100, 999);
+            $defaultResellerId = $pdo->query("SELECT id FROM resellers WHERE is_active = 1 ORDER BY id ASC LIMIT 1")->fetchColumn();
+            if (!$defaultResellerId) $defaultResellerId = 1;
             $pdo->prepare("INSERT INTO hosting_users (username, email, password_hash, first_name, reseller_id, status, created_at)
-                VALUES (?, ?, ?, ?, 0, 'active', NOW())")->execute([$username, $email, password_hash($password, PASSWORD_DEFAULT), $name]);
+                VALUES (?, ?, ?, ?, ?, 'active', NOW())")->execute([$username, $email, password_hash($password, PASSWORD_DEFAULT), $name, $defaultResellerId]);
             $userId = $pdo->lastInsertId();
         } else {
             $userId = $user->id;
