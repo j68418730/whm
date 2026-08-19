@@ -178,6 +178,7 @@ class PaypalController extends Controller
                 ]);
                 $this->db->table('billing_orders')->where('id', $refId)->update(['status' => 'active']);
                 $this->provisionOrder($order->user_id, $order->items, $refId);
+                $this->ensureOrderInvoice($order);
                 $_SESSION['success_message'] = 'Payment received! Your services are being provisioned.';
                 header('Location: /cart.php?action=thankyou&order=' . $refId);
                 exit;
@@ -215,6 +216,30 @@ class PaypalController extends Controller
         $_SESSION['error_message'] = 'Payment was cancelled. Nothing was charged.';
         header('Location: ' . $backOrder);
         exit;
+    }
+
+    // ── Create a paid invoice for a fulfilled order (idempotent) ──
+    protected function ensureOrderInvoice($order)
+    {
+        if (!$order || !$order->id) return null;
+        $marker = 'PayPal Order #' . $order->id;
+        $existing = $this->db->table('invoices')->where('notes', $marker)->first();
+        if ($existing) return $existing->id;
+        $num = 'INV-' . date('Ymd') . '-' . str_pad($order->id, 4, '0', STR_PAD_LEFT);
+        return $this->db->table('invoices')->insertGetId([
+            'user_id' => (int)$order->user_id,
+            'invoice_number' => $num,
+            'date' => date('Y-m-d'),
+            'due_date' => date('Y-m-d'),
+            'subtotal' => (float)$order->total,
+            'tax_rate' => 0,
+            'tax_amount' => 0,
+            'total' => (float)$order->total,
+            'credit_applied' => 0,
+            'status' => 'paid',
+            'notes' => $marker,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
     }
 
     // ── Provisioning shared by REST capture and legacy IPN ──
@@ -286,6 +311,7 @@ class PaypalController extends Controller
                         'transaction_id' => $txnId, 'notes' => "PayPal IPN Order #{$orderId}: {$payerEmail}",
                     ]);
                     $this->db->table('billing_orders')->where('id', $orderId)->update(['status' => 'active']);
+                    $this->ensureOrderInvoice($order);
                     $this->provisionOrder($order->user_id, $order->items, $orderId);
                 }
             } else {
