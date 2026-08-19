@@ -17,13 +17,16 @@ function radioProvision($userId, $packageId) {
     $existing = $pdo->prepare("SELECT id FROM streaming_stations WHERE user_id = ?"); $existing->execute([$userId]);
     if ($existing->fetch()) return false;
 
-    // Find available port
+    // Find available port (respect busing streaming_stations + radio_streams + live TCP listeners)
     $usedPorts = [];
-    $q = $pdo->query("SELECT port FROM streaming_stations");
+    $q = $pdo->query("SELECT port FROM streaming_stations UNION SELECT port FROM radio_streams");
     foreach ($q as $r) $usedPorts[(int)$r['port']] = true;
+    foreach (explode("\n", (string)@shell_exec('ss -ltn')) as $line) {
+        if (preg_match('/:(\d+)\s/', $line, $m) && $m[1] > 1024) $usedPorts[(int)$m[1]] = true;
+    }
 
     $port = 8000;
-    for ($i = 0; $i < 1000; $i++) {
+    for ($i = 0; $i < 2000; $i++) {
         if (!isset($usedPorts[$port + $i])) { $port = $port + $i; break; }
     }
 
@@ -68,11 +71,17 @@ XML;
         ->execute([$streamId, $userId, $port, password_hash($password, PASSWORD_DEFAULT), $password, $configFile]);
 
     // Start Icecast
-    exec("nohup /usr/bin/icecast -c {$configFile} > /dev/null 2>&1 & echo \$!", $out);
+    exec("nohup /usr/bin/icecast2 -b -c {$configFile} > /dev/null 2>&1 & echo \$!", $out);
+    sleep(1);
     $pid = (int)($out[0] ?? 0);
-    if ($pid > 0) {
+    sleep(2);
+    $listening = (bool)@("" !== (string)@shell_exec('ss -ltn | grep -q ":' . (int)$port . ' " && echo yes'));
+    if ($pid > 0 && $listening) {
         $pdo->prepare("UPDATE streaming_stations SET status = 'running' WHERE id = ?")->execute([$streamId]);
         $pdo->prepare("UPDATE radio_streams SET status = 'running', pid_file = ? WHERE id = ?")->execute(['/var/run/icecast_' . $streamId . '.pid', $streamId]);
+    } else {
+        $pdo->prepare("UPDATE streaming_stations SET status = 'stopped' WHERE id = ?")->execute([$streamId]);
+        $pdo->prepare("UPDATE radio_streams SET status = 'stopped' WHERE id = ?")->execute([$streamId]);
     }
 
     return $streamId;
