@@ -29,6 +29,13 @@ class PaypalController extends Controller
         return $r ? $r->setting_value : $default;
     }
 
+    protected function setSetting($key, $value)
+    {
+        $r = $this->db->table('automation_settings')->where('setting_key', $key)->first();
+        if ($r) $this->db->table('automation_settings')->where('setting_key', $key)->update(['setting_value' => $value]);
+        else $this->db->table('automation_settings')->insertGetId(['setting_key' => $key, 'setting_value' => $value]);
+    }
+
     public function settings()
     {
         $this->guard();
@@ -39,6 +46,8 @@ class PaypalController extends Controller
             'paypal_email' => $this->getSetting('paypal_email', ''),
             'paypal_client_id' => $this->getSetting('paypal_client_id', ''),
             'paypal_secret' => $this->getSetting('paypal_secret', ''),
+            'paypal_live_client_id' => $this->getSetting('paypal_live_client_id', ''),
+            'paypal_live_secret' => $this->getSetting('paypal_live_secret', ''),
             'paypal_mode' => $this->getSetting('paypal_mode', 'sandbox'),
             'paypal_enabled' => $this->getSetting('paypal_enabled', '0'),
         ]);
@@ -47,68 +56,207 @@ class PaypalController extends Controller
     public function settingsSave()
     {
         $this->guard();
-        foreach (['paypal_email','paypal_client_id','paypal_secret','paypal_mode','paypal_enabled'] as $k) {
-            $v = $this->request->post($k, '');
-            $r = $this->db->table('automation_settings')->where('setting_key', $k)->first();
-            if ($r) $this->db->table('automation_settings')->where('setting_key', $k)->update(['setting_value' => $v]);
-            else $this->db->table('automation_settings')->insertGetId(['setting_key' => $k, 'setting_value' => $v]);
+        foreach (['paypal_email','paypal_client_id','paypal_secret','paypal_live_client_id','paypal_live_secret','paypal_mode','paypal_enabled'] as $k) {
+            $this->setSetting($k, $this->request->post($k, ''));
         }
         $_SESSION['success_message'] = 'PayPal settings saved.';
         $this->response->redirect('/admin/paypal/settings');
     }
 
-    // ── Public Payment Form ──
-    public function pay($invoiceId)
+    protected function baseUrl()
     {
-        $invoice = $this->db->table('invoices')->where('id', $invoiceId)->first();
-        if (!$invoice) { echo 'Invoice not found'; exit; }
-        $paypalEnabled = $this->getSetting('paypal_enabled', '0');
-        $paypalEmail = $this->getSetting('paypal_email', '');
-        $paypalMode = $this->getSetting('paypal_mode', 'sandbox');
-        $actionUrl = $paypalMode === 'live'
-            ? 'https://www.paypal.com/cgi-bin/webscr'
-            : 'https://www.sandbox.paypal.com/cgi-bin/webscr';
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        return $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'planet-hosts.com');
+    }
 
-        echo '<!DOCTYPE html><html><head><title>Pay Invoice</title>
+    protected function loadPayable($invoiceId = null)
+    {
+        // Cart orders carry order_id; invoices carry invoice_id (or route segment)
+        $orderId = (int)($this->request->get('order_id', 0) ?: 0);
+        $invoiceId = (int)($this->request->get('invoice_id', 0) ?: $invoiceId);
+        if ($orderId) {
+            $order = $this->db->table('billing_orders')->where('id', $orderId)->first();
+            if (!$order) return [null, null, 'Order not found'];
+            return [$order, 'order', null];
+        }
+        if ($invoiceId) {
+            $invoice = $this->db->table('invoices')->where('id', $invoiceId)->first();
+            if (!$invoice) return [null, null, 'Invoice not found'];
+            return [$invoice, 'invoice', null];
+        }
+        return [null, null, 'No payable reference provided.'];
+    }
+
+    protected function renderError($title, $message, $backUrl = '/cart.php')
+    {
+        echo '<!DOCTYPE html><html><head><title>' . htmlspecialchars($title) . '</title>
         <link rel="stylesheet" href="/theme/assets/css/style.css">
         <style>body{display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}</style></head><body>
         <div class="card" style="max-width:450px;width:100%;text-align:center">
-        <h2 style="color:var(--accent);margin-bottom:8px">Pay Invoice #' . htmlspecialchars($invoice->invoice_number) . '</h2>
-        <p style="font-size:24px;font-weight:700;margin:12px 0">$' . number_format($invoice->total, 2) . '</p>';
-        
-        if ($paypalEnabled === '1' && $paypalEmail) {
-            echo '<form action="' . $actionUrl . '" method="POST">
-            <input type="hidden" name="cmd" value="_xclick">
-            <input type="hidden" name="business" value="' . htmlspecialchars($paypalEmail) . '">
-            <input type="hidden" name="item_name" value="Invoice ' . htmlspecialchars($invoice->invoice_number) . '">
-            <input type="hidden" name="item_number" value="' . $invoice->id . '">
-            <input type="hidden" name="amount" value="' . $invoice->total . '">
-            <input type="hidden" name="currency_code" value="USD">
-            <input type="hidden" name="return" value="http://' . $_SERVER['HTTP_HOST'] . '/user/billing">
-            <input type="hidden" name="notify_url" value="http://' . $_SERVER['HTTP_HOST'] . '/paypal/ipn">
-            <input type="hidden" name="cancel_return" value="http://' . $_SERVER['HTTP_HOST'] . '/user/billing">
-            <button type="submit" class="btn primary" style="font-size:18px;padding:14px 40px">Pay with PayPal &rarr;</button>
-            </form>';
-        } else {
-            echo '<p style="color:var(--text-secondary)">PayPal is not configured. Please contact support.</p>';
-        }
-        echo '<a href="/user/billing" class="btn secondary" style="margin-top:12px">Back</a>
+        <h2 style="color:var(--accent);margin-bottom:8px">' . htmlspecialchars($title) . '</h2>
+        <p style="color:#e2e8f0;margin:12px 0">' . htmlspecialchars($message) . '</p>
+        <a href="' . htmlspecialchars($backUrl) . '" class="btn secondary" style="margin-top:12px">Back</a>
         </div></body></html>';
+        exit;
     }
 
-    // ── PayPal IPN Listener ──
+    // ── Public Payment Flow (REST Orders v2) ──
+    public function pay($invoiceId = null)
+    {
+        require_once BASE_PATH . '/services/PaypalApi.php';
+
+        list($payable, $type, $err) = $this->loadPayable($invoiceId);
+        if (!$payable) $this->renderError('Payment Error', $err);
+        if (!paypal_is_enabled()) $this->renderError('Payment Unavailable', 'PayPal is not configured. Please contact support or choose another payment method.');
+
+        $amount = (float)($type === 'order' ? $payable->total : $payable->total);
+        $label = $type === 'order' ? ('Order #' . $payable->id) : ('Invoice ' . $payable->invoice_number);
+        $ref = $type . '_' . $payable->id;
+        $returnUrl = $this->baseUrl() . '/paypal/return?ref_type=' . $type . '&ref_id=' . (int)$payable->id;
+        $cancelUrl = $this->baseUrl() . '/paypal/cancel?ref_type=' . $type . '&ref_id=' . (int)$payable->id;
+        $mode = paypal_mode();
+
+        $orderJson = paypal_create_order($mode, $amount, $ref, $returnUrl, $cancelUrl, $label);
+        $approve = paypal_approve_url($orderJson);
+        if (!$approve) {
+            $detail = $orderJson['message'] ?? 'Unable to create the PayPal order.';
+            $this->renderError('Payment Error', $detail, $type === 'order' ? '/cart.php' : '/user/billing');
+        }
+        header('Location: ' . $approve);
+        exit;
+    }
+
+    // PayPal redirects back here after the buyer approves → CAPTURE the payment
+    public function returnFlow()
+    {
+        require_once BASE_PATH . '/services/PaypalApi.php';
+
+        $refType = $this->request->get('ref_type', '');
+        $refId = (int)($this->request->get('ref_id', 0) ?: 0);
+        $paypalOrderId = $this->request->get('token', '');
+        $mode = paypal_mode();
+
+        $backOrder = '/cart.php';
+        if ($refType === 'invoice') $backOrder = '/user/billing';
+
+        if (!$paypalOrderId || !$refId) {
+            $_SESSION['error_message'] = 'Payment return was missing its reference.';
+            header('Location: ' . $backOrder); exit;
+        }
+
+        $capture = paypal_capture_order($mode, $paypalOrderId);
+        $status = $capture['status'] ?? '';
+        if ($status !== 'COMPLETED') {
+            $detail = $capture['message'] ?? 'PayPal payment was not completed.';
+            $_SESSION['error_message'] = $detail;
+            header('Location: ' . $backOrder); exit;
+        }
+
+        $txnId = '';
+        foreach ($capture['purchase_units'] ?? [] as $pu) {
+            foreach ($pu['payments']['captures'] ?? [] as $cap) {
+                if (isset($cap['id'])) $txnId = $cap['id'];
+            }
+        }
+        $amount = (float)($capture['purchase_units'][0]['payments']['captures'][0]['amount']['value'] ?? 0);
+        $payerEmail = $capture['payer']['email_address'] ?? '';
+
+        $existing = $this->db->table('billing_payments')->where('transaction_id', $txnId)->first();
+        if ($existing) {
+            $_SESSION['success_message'] = 'Payment already recorded.';
+            header('Location: ' . ($refType === 'order' ? '/cart.php?action=thankyou&order=' . $refId : '/user/billing'));
+            exit;
+        }
+
+        if ($refType === 'order') {
+            $order = $this->db->table('billing_orders')->where('id', $refId)->first();
+            if ($order) {
+                $this->db->table('billing_payments')->insertGetId([
+                    'user_id' => $order->user_id, 'amount' => $amount ?: $order->total,
+                    'method' => 'paypal', 'status' => 'completed',
+                    'transaction_id' => $txnId, 'notes' => "PayPal REST Capture Order #{$refId}: {$payerEmail}",
+                ]);
+                $this->db->table('billing_orders')->where('id', $refId)->update(['status' => 'paid']);
+                $this->provisionOrder($order->user_id, $order->items, $refId);
+                $_SESSION['success_message'] = 'Payment received! Your services are being provisioned.';
+                header('Location: /cart.php?action=thankyou&order=' . $refId);
+                exit;
+            }
+            $_SESSION['error_message'] = 'Order not found.';
+            header('Location: /cart.php'); exit;
+        }
+
+        if ($refType === 'invoice') {
+            $invoice = $this->db->table('invoices')->where('id', $refId)->first();
+            if ($invoice) {
+                $this->db->table('billing_payments')->insertGetId([
+                    'user_id' => $invoice->user_id, 'invoice_id' => $refId,
+                    'amount' => $amount ?: $invoice->total, 'method' => 'paypal',
+                    'status' => 'completed', 'transaction_id' => $txnId,
+                    'notes' => "PayPal REST Capture Invoice {$refId}: {$payerEmail}",
+                ]);
+                if ($invoice->total <= ($amount ?: $invoice->total)) {
+                    $this->db->table('invoices')->where('id', $refId)->update(['status' => 'paid']);
+                }
+                $_SESSION['success_message'] = 'Invoice paid.';
+                header('Location: /user/billing');
+                exit;
+            }
+        }
+        $_SESSION['error_message'] = 'Could not locate the payment reference.';
+        header('Location: ' . $backOrder);
+        exit;
+    }
+
+    public function cancelFlow()
+    {
+        $refType = $this->request->get('ref_type', '');
+        $backOrder = $refType === 'invoice' ? '/user/billing' : '/cart.php';
+        $_SESSION['error_message'] = 'Payment was cancelled. Nothing was charged.';
+        header('Location: ' . $backOrder);
+        exit;
+    }
+
+    // ── Provisioning shared by REST capture and legacy IPN ──
+    protected function provisionOrder($userId, $itemsJson, $orderId = 0)
+    {
+        $items = json_decode($itemsJson, true);
+        if (empty($items)) return;
+        require_once BASE_PATH . '/services/AutoProvision.php';
+        require_once BASE_PATH . '/services/GameProvision.php';
+        $hostingProvisioned = false;
+        foreach ($items as $item) {
+            $itemType = $item['type'] ?? 'hosting';
+            if ($itemType === 'game') {
+                gameProvision($orderId, $userId, $item);
+            } elseif (!$hostingProvisioned) {
+                $pkgId = $item['id'] ?? null;
+                if ($pkgId && !is_string($pkgId)) {
+                    autoProvision($userId, $pkgId);
+                    $pkgCheck = $this->db->table('hosting_packages')->where('id', $pkgId)->first();
+                    if ($pkgCheck && stripos($pkgCheck->type ?? '', 'icecast') !== false) {
+                        require_once BASE_PATH . '/services/RadioProvision.php';
+                        radioProvision($userId, $pkgId);
+                    }
+                }
+                $hostingProvisioned = true;
+            }
+        }
+    }
+
+    // ── PayPal IPN Listener (legacy email flow, kept as fallback) ──
     public function ipn()
     {
         $raw = file_get_contents('php://input');
         $data = $_POST;
-        
+
         // Verify with PayPal
         $data['cmd'] = '_notify-validate';
         $paypalMode = $this->getSetting('paypal_mode', 'sandbox');
         $paypalUrl = $paypalMode === 'live'
             ? 'https://ipnpb.paypal.com/cgi-bin/webscr'
             : 'https://ipnpb.sandbox.paypal.com/cgi-bin/webscr';
-        
+
         $ch = curl_init($paypalUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
@@ -116,17 +264,17 @@ class PaypalController extends Controller
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         $response = curl_exec($ch);
         curl_close($ch);
-        
+
         if ($response === 'VERIFIED' && ($data['payment_status'] ?? '') === 'Completed') {
             $itemNumber = $data['item_number'] ?? '';
             $txnId = $data['txn_id'] ?? '';
             $amount = (float)($data['mc_gross'] ?? 0);
             $payerEmail = $data['payer_email'] ?? '';
-            
+
             $existing = $this->db->table('billing_payments')
                 ->where('transaction_id', $txnId)->first();
             if ($existing) { http_response_code(200); echo 'OK'; exit; }
-            
+
             // Handle order payments (from cart)
             if (strpos($itemNumber, 'order_') === 0) {
                 $orderId = (int)substr($itemNumber, 6);
@@ -138,32 +286,7 @@ class PaypalController extends Controller
                         'transaction_id' => $txnId, 'notes' => "PayPal IPN Order #{$orderId}: {$payerEmail}",
                     ]);
                     $this->db->table('billing_orders')->where('id', $orderId)->update(['status' => 'paid']);
-                    
-                    // Auto-provision: create account for the first item in the order
-                    $items = json_decode($order->items, true);
-                    if (!empty($items)) {
-                        require_once BASE_PATH . '/services/AutoProvision.php';
-                        require_once BASE_PATH . '/services/GameProvision.php';
-                        $hostingProvisioned = false;
-                        foreach ($items as $item) {
-                            $itemType = $item['type'] ?? 'hosting';
-                            if ($itemType === 'game') {
-                                gameProvision($orderId, $order->user_id, $item);
-                            } elseif (!$hostingProvisioned) {
-                                $pkgId = $item['id'] ?? null;
-                                if ($pkgId && !is_string($pkgId)) {
-                                    autoProvision($order->user_id, $pkgId);
-                                    // Check if radio package — auto-create Icecast stream
-                                    $pkgCheck = $this->db->table('hosting_packages')->where('id', $pkgId)->first();
-                                    if ($pkgCheck && stripos($pkgCheck->type ?? '', 'icecast') !== false) {
-                                        require_once BASE_PATH . '/services/RadioProvision.php';
-                                        radioProvision($order->user_id, $pkgId);
-                                    }
-                                }
-                                $hostingProvisioned = true;
-                            }
-                        }
-                    }
+                    $this->provisionOrder($order->user_id, $order->items, $orderId);
                 }
             } else {
                 // Handle invoice payments (existing)
@@ -184,7 +307,7 @@ class PaypalController extends Controller
                 }
             }
         }
-        
+
         http_response_code(200);
         echo 'OK';
         exit;
