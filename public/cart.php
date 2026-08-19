@@ -7,17 +7,29 @@ $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radi
 if (!isset($_SESSION['cart'])) $_SESSION['cart'] = [];
 
 // ─── Add to Cart ───
-if ($action === 'add' && isset($_GET['package'])) {
-    $pkgId = (int)$_GET['package'];
-    $pkg = $pdo->prepare("SELECT hp.*, COALESCE(bp.price, hp.monthly_price) as price FROM hosting_packages hp LEFT JOIN billing_products bp ON hp.id = bp.package_id AND bp.is_active = 1 WHERE hp.id = ? AND hp.is_active = 1");
-    $pkg->execute([$pkgId]);
+// Accept either ?action=add&package={hosting_package_id} (store/internal)
+// or ?action=add&id={billing_product_id | hosting_package_id} (homepage/store cards).
+if ($action === 'add' && (isset($_GET['package']) || isset($_GET['id']))) {
+    $pkgId = (int)($_GET['package'] ?? $_GET['id']);
+    $pkg = $pdo->prepare("SELECT hp.*, COALESCE(bp.price, hp.monthly_price) as price, bp.id AS product_id, bp.billing_cycle AS billing_cycle
+        FROM hosting_packages hp
+        LEFT JOIN billing_products bp ON hp.id = bp.package_id AND bp.is_active = 1
+        WHERE hp.is_active = 1 AND (hp.id = ? OR bp.id = ?) LIMIT 1");
+    $pkg->execute([$pkgId, $pkgId]);
     $pkg = $pkg->fetch(PDO::FETCH_OBJ);
     if ($pkg) {
         $found = false;
         foreach ($_SESSION['cart'] as &$item) {
-            if ($item['id'] == $pkgId) { $item['qty']++; $found = true; break; }
+            if ($item['id'] == $pkg->id) { $item['qty']++; $found = true; break; }
         }
-        if (!$found) $_SESSION['cart'][] = ['id' => $pkgId, 'name' => $pkg->name, 'price' => (float)$pkg->price, 'qty' => 1];
+        if (!$found) $_SESSION['cart'][] = [
+            'id' => (int)$pkg->id,
+            'product_id' => (int)($pkg->product_id ?? 0),
+            'name' => $pkg->name,
+            'price' => (float)$pkg->price,
+            'billing_cycle' => $pkg->billing_cycle ?? 'monthly',
+            'qty' => 1,
+        ];
     }
     header('Location: /cart.php');
     exit;
@@ -155,6 +167,12 @@ input,select{width:100%;padding:10px 14px;background:rgba(0,0,0,.3);border:1px s
 .alert-success{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);color:#4ade80}
 .thankyou{text-align:center;padding:40px 0}
 .thankyou .icon{font-size:64px;margin-bottom:16px}
+.cart-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.cart-tab{padding:9px 18px;border-radius:9px;border:1px solid rgba(255,255,255,.08);background:rgba(8,16,28,.6);color:#cbd5e1;text-decoration:none;font-size:13px;font-weight:600;transition:.2s}
+.cart-tab:hover{border-color:#008cff;color:#fff}
+.cart-tab.active{background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff;border-color:transparent;box-shadow:0 0 18px rgba(0,140,255,.25)}
+.btn-outline{background:transparent;border:1px solid rgba(0,191,255,.25);color:#cbd5e1}
+.btn-outline:hover{border-color:#008cff;color:#fff;background:rgba(0,140,255,.08)}
 </style></head><body>
 <div class="bg"></div>
 <div class="container">
@@ -172,6 +190,15 @@ If you selected manual payment, an admin will review and activate your account.<
 <?php exit; endif; ?>
 
 <h1>🛒 Shopping <span>Cart</span></h1>
+
+<div class="cart-tabs">
+<a class="cart-tab active" href="/cart.php">🛒 Cart</a>
+<a class="cart-tab" href="/game-servers.php">🎮 Game Servers</a>
+<a class="cart-tab" href="/hosting/Web+Hosting">🌐 Web Hosting</a>
+<a class="cart-tab" href="/hosting/Radio+Streaming">🎵 Radio Streaming</a>
+<a class="cart-tab" href="/hosting/Reseller">🏢 Reseller</a>
+<a class="cart-tab" href="/hosting/VPS">🖥 VPS</a>
+</div>
 
 <?php if (!empty($_SESSION['cart_errors'])): ?>
 <div class="alert alert-error"><?php echo implode('<br>', $_SESSION['cart_errors']); unset($_SESSION['cart_errors']); ?></div>
@@ -222,7 +249,8 @@ $total = array_sum(array_map(fn($i) => $i['price'] * $i['qty'], $_SESSION['cart'
 <option value="manual">Bank Transfer / CashApp (Manual)</option>
 </select>
 </div>
-<button type="submit" class="btn btn-primary" style="width:100%">Place Order — $<?php echo number_format($total, 2); ?>/mo</button>
+<button type="submit" class="btn btn-primary" style="width:100%">Pay Now — $<?php echo number_format($total, 2); ?>/mo</button>
+<a href="/" class="btn btn-outline" style="width:100%;margin-top:8px">↩ Order More</a>
 </form>
 </div>
 <?php endif; ?>
