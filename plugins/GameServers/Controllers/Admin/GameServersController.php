@@ -47,7 +47,7 @@ class GameServersController extends Controller
         return $this->view('Plugins.GameServers.Views.admin.show', [
             'user' => $user, 'server' => $server, 'owner' => $owner, 'gameType' => $gameType,
             'hostingUsers' => $hostingUsers, 'configContent' => $configContent,
-            'consoleLog' => $consoleLog, 'title' => '🎮 ' . $server->server_name
+            'consoleLog' => $consoleLog, 'title' => '🎮 ' . ($server->server_name ?: $server->name)
         ]);
     }
 
@@ -127,7 +127,8 @@ class GameServersController extends Controller
     public function start($id) { return $this->doAction($id, 'start'); }
     public function stop($id) { return $this->doAction($id, 'stop'); }
     public function restart($id) {
-        $mg = new \Plugins\GameServers\Services\GameServerManager();
+        require_once BASE_PATH . '/plugins/GameServers/Services/GameServerManager.php';
+        $mg = new \GameServers\Services\GameServerManager();
         $mg->stop((int)$id);
         sleep(1);
         $mg->start((int)$id);
@@ -136,7 +137,8 @@ class GameServersController extends Controller
 
     public function status($id) {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { echo '{}'; exit; }
-        $m = new \Plugins\GameServers\Services\GameServerManager();
+        require_once BASE_PATH . '/plugins/GameServers/Services/GameServerManager.php';
+        $m = new \GameServers\Services\GameServerManager();
         $this->response->json($m->getStatus((int)$id));
         $this->response->send(); exit;
     }
@@ -204,7 +206,8 @@ class GameServersController extends Controller
 
     protected function doAction($id, $m) {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $mg = new \Plugins\GameServers\Services\GameServerManager();
+        require_once BASE_PATH . '/plugins/GameServers/Services/GameServerManager.php';
+        $mg = new \GameServers\Services\GameServerManager();
         $mg->$m((int)$id);
         $this->response->redirect('/admin/games');
     }

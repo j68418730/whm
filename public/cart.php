@@ -32,6 +32,7 @@ if ($action === 'add_game' && isset($_GET['game_id'])) {
     $pps = (float)($_GET['pps'] ?? 0);
     $pkgId = isset($_GET['package_id']) ? (int)$_GET['package_id'] : 0;
     $pkgName = $_GET['pkg_name'] ?? '';
+    $templateId = isset($_GET['template_id']) ? (int)$_GET['template_id'] : 0;
 
     $game = $pdo->prepare("SELECT * FROM game_types WHERE id = ? AND is_active = 1");
     $game->execute([$gameId]);
@@ -45,6 +46,7 @@ if ($action === 'add_game' && isset($_GET['game_id'])) {
             'price_per_slot' => $pps,
             'setup' => $setup,
             'package_id' => $pkgId,
+            'template_id' => $templateId,
             'id' => 'game_' . $gameId . '_' . $slots,
             'name' => $name,
             'price' => $price + $setup,

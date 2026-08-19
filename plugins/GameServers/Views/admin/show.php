@@ -8,7 +8,7 @@
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
 <div>
 <a href="/admin/games" style="color:#64748b;font-size:13px;text-decoration:none">← Back to Game Servers</a>
-<h2 style="margin:8px 0 0">🎮 <?php echo htmlspecialchars($server->server_name); ?></h2>
+<h2 style="margin:8px 0 0">🎮 <?php echo htmlspecialchars($server->server_name ?: $server->name); ?></h2>
 <p style="color:#64748b;font-size:13px"><?php echo htmlspecialchars($server->game_type); ?> · Port <?php echo (int)$server->port; ?> · PID: <?php echo $server->pid ?: 'N/A'; ?></p>
 </div>
 <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -69,7 +69,7 @@
 <div class="card">
 <h4 style="margin-bottom:12px;color:var(--accent)"><i class="bi bi-file-earmark-text"></i> Configuration</h4>
 <form method="POST" action="/admin/games/save-config/<?php echo $server->id; ?>">
-<textarea name="config_content" rows="15" style="width:100%;padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.4);color:#fff;font-family:monospace;font-size:12px;outline:none;resize:vertical"><?php echo htmlspecialchars($configContent ?: '# Configuration for ' . $server->server_name . "\n# Edit settings below and click Save."); ?></textarea>
+<textarea name="config_content" rows="15" style="width:100%;padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.4);color:#fff;font-family:monospace;font-size:12px;outline:none;resize:vertical"><?php echo htmlspecialchars($configContent ?: '# Configuration for ' . ($server->server_name ?? $server->name) . "\n# Edit settings below and click Save."); ?></textarea>
 <div style="display:flex;gap:8px;margin-top:10px;justify-content:space-between;align-items:center">
 <button type="submit" class="btn btn-sm primary"><i class="bi bi-floppy"></i> Save Config</button>
 <span style="font-size:11px;color:#64748b"><?php echo htmlspecialchars($server->config_path ?: $server->install_path . '/server.cfg'); ?></span>

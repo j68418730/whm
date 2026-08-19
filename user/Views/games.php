@@ -21,12 +21,11 @@ try { $gameServers = $this->db->table('game_servers')->where('user_id', $hosting
 <?php else: ?>
 <table class="table"><thead><tr><th>Name</th><th>Game</th><th>Status</th><th>Players</th><th></th></tr></thead>
 <tbody><?php foreach($gameServers as $gs): ?>
-<tr><td><?php echo htmlspecialchars($gs->server_name ?? 'Server'); ?></td><td><?php echo htmlspecialchars($gs->game ?? '-'); ?></td>
+<tr><td><?php echo htmlspecialchars($gs->server_name ?: $gs->name ?? 'Server'); ?></td><td><?php echo htmlspecialchars($gs->game_type ?? $gs->game ?? '-'); ?></td>
 <td><span style="color:<?php echo $gs->status==='running'?'#4ade80':'#64748b'; ?>">● <?php echo $gs->status ?? 'stopped'; ?></span></td>
-<td>0/<?php echo $gs->max_players ?? 0; ?></td>
+<td><?php echo (int)($gs->current_players ?? 0); ?>/<?php echo (int)($gs->max_players ?? 0); ?></td>
 <td style="display:flex;gap:3px">
-<a href="/user/games?start=<?php echo $gs->id; ?>" class="btn btn-sm btn-success">▶ Start</a>
-<a href="/user/games?stop=<?php echo $gs->id; ?>" class="btn btn-sm btn-warning">⏹ Stop</a>
+<a href="/user/games" class="btn btn-sm btn-success">Manage</a>
 </td></tr>
 <?php endforeach; ?></tbody></table>
 <?php endif; ?>
