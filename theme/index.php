@@ -28,12 +28,18 @@ $packagesByType = isset($packagesByType) ? $packagesByType : [];
 if (empty($packagesByType)) {
     try {
         $app = \Core\Application::getInstance();
-        $allProducts = $app->get('db')->pdo()->query("SELECT bp.*, hp.disk_space, hp.bandwidth, hp.email_accounts, hp.databases, hp.subdomains, hp.addon_domains, hp.features as pkg_features FROM billing_products bp LEFT JOIN hosting_packages hp ON bp.package_id = hp.id WHERE bp.is_active = 1 AND bp.is_visible = 1 ORDER BY bp.category ASC, bp.sort_order ASC, bp.price ASC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        $allProducts = $app->get('db')->pdo()->query("SELECT bp.*, hp.disk_space, hp.bandwidth, hp.email_accounts, hp.databases, hp.subdomains, hp.addon_domains, hp.features as pkg_features FROM billing_products bp LEFT JOIN hosting_packages hp ON bp.package_id = hp.id WHERE bp.is_active = 1 AND bp.is_visible = 1 ORDER BY bp.sort_order ASC, bp.price ASC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         foreach ($allProducts as $prod) {
             $cat = trim((string)($prod->category ?? '')) ?: ($prod->type ?? 'other');
             if (!isset($packagesByType[$cat])) $packagesByType[$cat] = [];
             $packagesByType[$cat][] = $prod;
         }
+        // Re-order categories by billing_categories.sort_order
+        $catOrder = $app->get('db')->table('billing_categories')->where('is_active', 1)->orderBy('sort_order', 'ASC')->get() ?: [];
+        $ordered = [];
+        foreach ($catOrder as $c) { if (isset($packagesByType[$c->name])) $ordered[$c->name] = $packagesByType[$c->name]; }
+        foreach ($packagesByType as $k => $v) { if (!isset($ordered[$k])) $ordered[$k] = $v; }
+        $packagesByType = $ordered;
     } catch (\Exception $e) {}
 }
 ?><!DOCTYPE html>
