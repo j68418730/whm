@@ -568,6 +568,9 @@ $router->get('/admin/automation/run', 'Admin\Controllers\AutomationController@ru
 $router->get('/admin/paypal/settings', 'Admin\Controllers\PaypalController@settings');
 $router->post('/admin/paypal/settings/save', 'Admin\Controllers\PaypalController@settingsSave');
 $router->get('/paypal/pay/{invoiceId}', 'Admin\Controllers\PaypalController@pay');
+$router->get('/paypal/pay', 'Admin\Controllers\PaypalController@pay');
+$router->get('/paypal/return', 'Admin\Controllers\PaypalController@returnFlow');
+$router->get('/paypal/cancel', 'Admin\Controllers\PaypalController@cancelFlow');
 $router->post('/paypal/ipn', 'Admin\Controllers\PaypalController@ipn');
 
 // -- Billing routes --
