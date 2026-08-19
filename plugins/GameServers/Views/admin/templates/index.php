@@ -85,6 +85,22 @@
 </div>
 <div class="form-group" style="margin-top:14px"><label>Description</label><textarea name="description" id="f_description" rows="2" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;font-size:12px;resize:vertical"></textarea></div>
 <div class="form-group"><label>Notes</label><textarea name="notes" id="f_notes" rows="2" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;font-size:12px;resize:vertical"></textarea></div>
+<h4 style="margin:14px 0 8px;color:var(--accent)"><i class="bi bi-terminal"></i> SteamCMD Commands</h4>
+<p style="color:#64748b;font-size:11px;margin:0 0 8px">Variables: {INSTALL_DIR}, {STEAMCMD_LOGIN}, {APPID}, {PORT}, {MAX_PLAYERS}, {MAP}, {SERVER_NAME}, {PASSWORD}, {RCON_PASSWORD}, {RCON_PORT}, {SERVER_BINARY}, {STOP_COMMAND}, {START_COMMAND}</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+<div class="form-group"><label>Install Script (SteamCMD)</label>
+<textarea name="install_script" id="f_install_script" rows="3" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#4ade80;font-family:monospace;font-size:12px;resize:vertical" placeholder="steamcmd +force_install_dir {INSTALL_DIR} +login {STEAMCMD_LOGIN} +app_update {APPID} validate +quit"></textarea></div>
+<div class="form-group"><label>Config Template</label>
+<textarea name="config_template" id="f_config_template" rows="3" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;font-family:monospace;font-size:12px;resize:vertical" placeholder="hostname &quot;{SERVER_NAME}&quot;&#10;maxplayers {MAX_PLAYERS}&#10;rcon_password &quot;{RCON_PASSWORD}&quot;"></textarea></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+<div class="form-group"><label>Start Command</label>
+<textarea name="start_command" id="f_start_command" rows="3" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#4ade80;font-family:monospace;font-size:12px;resize:vertical" placeholder="cd {INSTALL_DIR} && ./{SERVER_BINARY} -port {PORT} +maxplayers {MAX_PLAYERS} +map {MAP} +exec server.cfg"></textarea></div>
+<div class="form-group"><label>Stop Command</label>
+<textarea name="stop_command" id="f_stop_command" rows="3" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#f87171;font-family:monospace;font-size:12px;resize:vertical" placeholder="kill $(cat {INSTALL_DIR}/server.pid 2>/dev/null) 2>/dev/null || pkill -f {SERVER_BINARY}"></textarea></div>
+</div>
+<div class="form-group" style="margin-top:8px"><label>Restart Command</label>
+<textarea name="restart_command" id="f_restart_command" rows="2" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#4ade80;font-family:monospace;font-size:12px;resize:vertical" placeholder="{STOP_COMMAND}&#10;sleep 2&#10;{START_COMMAND}"></textarea></div>
 <button type="submit" class="btn primary" style="margin-top:14px"><i class="bi bi-floppy"></i> Save Template</button>
 </form>
 </div>
@@ -115,6 +131,10 @@ $cc = $catColors[$t->category] ?? '#64748b';
 <div>Slots: <?php echo (int)$t->min_slots; ?> - <?php echo (int)$t->max_slots; ?> (Default: <?php echo (int)$t->default_slots; ?>)</div>
 <?php if ($t->description): ?><div style="margin-top:4px;font-style:italic"><?php echo htmlspecialchars(mb_substr($t->description, 0, 100)); ?></div><?php endif; ?>
 </div>
+<div style="margin-bottom:10px">
+<div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">SteamCMD Install</div>
+<div style="font-family:monospace;font-size:10px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:7px 8px;color:#4ade80;white-space:pre-wrap;word-break:break-word;max-height:52px;overflow-y:auto"><?php echo htmlspecialchars($t->install_script ?: 'No install script set'); ?></div>
+</div>
 <div style="display:flex;gap:6px;flex-wrap:wrap">
 <a href="/admin/games/templates/preview/<?php echo $t->id; ?>" class="btn btn-sm primary"><i class="bi bi-eye"></i> Preview</a>
 <button class="btn btn-sm secondary" onclick="editTemplate(<?php echo $t->id; ?>)"><i class="bi bi-pencil"></i> Edit</button>
@@ -134,8 +154,7 @@ $cc = $catColors[$t->category] ?? '#64748b';
 
 <script>
 var templates = <?php
-$allT = $this->db->table('game_templates')->where('status', 'active')->get() ?: [];
-echo json_encode($allT);
+echo json_encode($allTemplates ?? []);
 ?>;
 
 function showCreatePanel() {
@@ -159,6 +178,11 @@ function showCreatePanel() {
     document.getElementById('f_supports_windows').checked = false;
     document.getElementById('f_description').value = '';
     document.getElementById('f_notes').value = '';
+    document.getElementById('f_install_script').value = 'steamcmd +force_install_dir {INSTALL_DIR} +login {STEAMCMD_LOGIN} +app_update {APPID} validate +quit';
+    document.getElementById('f_config_template').value = 'hostname \"{SERVER_NAME}\"\nmaxplayers {MAX_PLAYERS}\nrcon_password \"{RCON_PASSWORD}\"';
+    document.getElementById('f_start_command').value = 'cd {INSTALL_DIR} && ./{SERVER_BINARY} -port {PORT} +maxplayers {MAX_PLAYERS} +map {MAP} +exec server.cfg';
+    document.getElementById('f_stop_command').value = 'kill $(cat {INSTALL_DIR}/server.pid 2>/dev/null) 2>/dev/null || pkill -f {SERVER_BINARY}';
+    document.getElementById('f_restart_command').value = '{STOP_COMMAND}\nsleep 2\n{START_COMMAND}';
     document.getElementById('createPanel').style.display = 'block';
     document.getElementById('createPanel').scrollIntoView({behavior:'smooth'});
 }
@@ -186,6 +210,11 @@ function editTemplate(id) {
     document.getElementById('f_supports_windows').checked = t.supports_windows == 1;
     document.getElementById('f_description').value = t.description || '';
     document.getElementById('f_notes').value = t.notes || '';
+    document.getElementById('f_install_script').value = t.install_script || 'steamcmd +force_install_dir {INSTALL_DIR} +login {STEAMCMD_LOGIN} +app_update {APPID} validate +quit';
+    document.getElementById('f_config_template').value = t.config_template || '';
+    document.getElementById('f_start_command').value = t.start_command || 'cd {INSTALL_DIR} && ./{SERVER_BINARY} -port {PORT} +maxplayers {MAX_PLAYERS} +map {MAP} +exec server.cfg';
+    document.getElementById('f_stop_command').value = t.stop_command || 'kill $(cat {INSTALL_DIR}/server.pid 2>/dev/null) 2>/dev/null || pkill -f {SERVER_BINARY}';
+    document.getElementById('f_restart_command').value = t.restart_command || '{STOP_COMMAND}\nsleep 2\n{START_COMMAND}';
     document.getElementById('createPanel').style.display = 'block';
     document.getElementById('createPanel').scrollIntoView({behavior:'smooth'});
 }

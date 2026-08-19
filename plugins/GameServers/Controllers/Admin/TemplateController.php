@@ -45,6 +45,7 @@ class TemplateController extends Controller
         return $this->view('Plugins.GameServers.Views.admin.templates.index', [
             'user' => $user, 'templates' => $templates, 'categories' => $catList,
             'currentCategory' => $category, 'title' => 'Game Templates', 'stats' => $stats,
+            'allTemplates' => $allTemplates,
         ]);
     }
 
