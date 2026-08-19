@@ -251,7 +251,7 @@ $footerTypes = [];
 <div class="footer-col">
 <h4>Support</h4>
 <a href="/game-servers.php">Game Servers</a>
-<a href="?login">Client Login</a>
+<a href="/user_login.php">Client Login</a>
 <a href="/admin/support/tickets">Submit Ticket</a>
 <a href="/admin/support/kb">Knowledgebase</a>
 </div>

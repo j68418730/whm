@@ -183,7 +183,7 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
 <a href="/">Home</a>
 <a href="/hosting">Store</a>
 <a href="/hosting/Game+Servers">Game Servers</a>
-<a href="http://planet-hosts.com:2082/" class="btn-secondary" style="padding:8px 16px;font-size:13px"><i class="fa-solid fa-user"></i> Client Login</a>
+<a href="/user_login.php" class="btn-secondary" style="padding:8px 16px;font-size:13px"><i class="fa-solid fa-user"></i> Client Login</a>
 <a href="/cart.php" class="btn-primary btn-order" style="padding:8px 20px;font-size:13px"><i class="fa-solid fa-cart-shopping"></i> Cart</a>
 </nav>
 </div>

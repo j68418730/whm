@@ -66,7 +66,7 @@ footer{text-align:center;padding:30px 0;border-top:1px solid rgba(255,255,255,.0
 <div class="logo">PLANET-<span>HOSTS</span></div>
 <div class="nav">
 <a href="/">Home</a><a href="#pricing">Packages</a><a href="#features">Features</a>
-<a href="http://<?php echo $host; ?>:2082/">Client Login</a>
+<a href="/user_login.php">Client Login</a>
 <a href="http://<?php echo $host; ?>:2087/">Admin Login</a>
 <a href="http://<?php echo $host; ?>:2096/">Webmail</a>
 </div>
@@ -77,7 +77,7 @@ footer{text-align:center;padding:30px 0;border-top:1px solid rgba(255,255,255,.0
 <p>Planet Hosts delivers powerful web hosting, SHOUTcast/Icecast radio streaming, reseller solutions, and a complete WHM control panel. Built for performance, backed by 24/7 support.</p>
 <a href="#pricing" class="btn btn-primary">View Packages</a>
 <a href="/order" class="btn btn-outline">Order Hosting</a>
-<a href="http://<?php echo $host; ?>:2082/" class="btn btn-outline">Client Area</a>
+<a href="/user_login.php" class="btn btn-outline">Client Area</a>
 <div class="stats">
 <div class="stat"><div class="n">99.9%</div><div class="l">Uptime Guarantee</div></div>
 <div class="stat"><div class="n">24/7</div><div class="l">Expert Support</div></div>
@@ -155,7 +155,7 @@ echo "Free SSL<br>24/7 Support";
 <footer>
 <div class="flinks">
 <a href="/">Home</a><a href="#pricing">Pricing</a><a href="#features">Features</a>
-<a href="http://<?php echo $host; ?>:2082/">Client Login</a>
+<a href="/user_login.php">Client Login</a>
 <a href="http://<?php echo $host; ?>:2087/">Admin Login</a>
 <a href="http://<?php echo $host; ?>:2096/">Webmail</a>
 </div>
