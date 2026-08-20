@@ -16,7 +16,13 @@ const os = require('os');
 const { execSync, spawn, spawnSync } = require('child_process');
 
 const IS_WIN = process.platform === 'win32';
-const CONFIG_PATH = path.join(__dirname, 'agent-config.json');
+// Real folder the agent lives in. `node agent.js` runs from source so __dirname
+// is correct; a pkg-built exe snapshots __dirname, so use the exe's folder instead.
+const APP_DIR = process.pkg ? path.dirname(process.execPath) : __dirname;
+const CONFIG_PATH = path.join(APP_DIR, 'agent-config.json');
+const STATUS_PATH = path.join(APP_DIR, 'agent-status.json');
+const MAP_PATH = path.join(APP_DIR, 'install_map.json');
+const PID_PATH = path.join(APP_DIR, 'agent.pid');
 
 function loadConfig() {
   if (!fs.existsSync(CONFIG_PATH)) {
@@ -24,7 +30,19 @@ function loadConfig() {
     process.exit(1);
   }
   const c = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
-  c.base_dir = c.base_dir || (IS_WIN ? 'C:\\PlanetHostsGames' : '/var/gameservers');
+  // Multiple install locations (drives). Config may use the legacy single
+  // `base_dir`, a `locations` array, or a list of {path} objects.
+  if (!Array.isArray(c.locations)) c.locations = [];
+  c.locations = c.locations
+    .map(l => (typeof l === 'string' ? l : (l && l.path) || ''))
+    .filter(s => s && s.trim().length)
+    .map(p => path.resolve(String(p)));
+  // De-duplicate preserving order
+  c.locations = c.locations.filter((p, i) => c.locations.indexOf(p) === i);
+  if (c.locations.length === 0) {
+    c.locations = [path.resolve(c.base_dir || (IS_WIN ? 'C:\\PlanetHostsGames' : '/var/gameservers'))];
+  }
+  c.base_dir = c.locations[0];
   c.poll_interval_ms = c.poll_interval_ms || 10000;
   return c;
 }
@@ -33,8 +51,106 @@ const CFG = loadConfig();
 const BASE = CFG.base_dir;
 
 function slugify(name) { return String(name || 'server').toLowerCase().replace(/[^a-z0-9_-]/g, ''); }
-function dirFor(payload, server) { return path.join(BASE, slugify(payload.slug || (server && server.server_name) || 'server')); }
+
+function loadMap() { try { return JSON.parse(fs.readFileSync(MAP_PATH, 'utf8')); } catch (e) { return {}; } }
+function saveMap(m) { try { fs.writeFileSync(MAP_PATH, JSON.stringify(m)); } catch (e) {} }
+
+// Resolve which drive/root a server lives on. Panel may hint via payload.location;
+// otherwise fall back to the recorded root for that slug, then the default root.
+function rootFor(payload, server) {
+  const slug = slugify(payload.slug || (server && server.server_name) || 'server');
+  const map = loadMap();
+  if (map[slug] && CFG.locations.indexOf(map[slug]) !== -1) return map[slug];
+  const want = payload.location ? path.resolve(String(payload.location)) : '';
+  if (want && CFG.locations.indexOf(want) !== -1) return want;
+  return CFG.base_dir;
+}
+
+function dirFor(payload, server) {
+  return path.join(rootFor(payload, server), slugify(payload.slug || (server && server.server_name) || 'server'));
+}
+
+// Remember which root a slug was installed on so start/stop/status find it
+// even if a second drive is added later.
+function rememberLocation(dir, payload, server) {
+  const slug = slugify(payload.slug || (server && server.server_name) || 'server');
+  const root = CFG.locations.find(p => path.resolve(p) === path.dirname(path.resolve(dir))) || CFG.base_dir;
+  const map = loadMap();
+  if (map[slug] !== root) { map[slug] = root; saveMap(map); }
+}
+
 function readFileSafe(p) { try { return fs.readFileSync(p, 'utf8'); } catch (e) { return ''; } }
+
+// Single-instance guard: prevents double polling when the same agent is wired up
+// as both a scheduled task and a Windows service (or started manually twice).
+(function guard() {
+  try {
+    if (fs.existsSync(PID_PATH)) {
+      const pid = parseInt(fs.readFileSync(PID_PATH, 'utf8'), 10);
+      if (pid) {
+        try { process.kill(pid, 0); console.error('Another agent instance is running (pid ' + pid + '). Exiting.'); process.exit(0); }
+        catch (e) {}
+      }
+    }
+    fs.writeFileSync(PID_PATH, String(process.pid));
+    process.on('exit', function () { try { fs.unlinkSync(PID_PATH); } catch (e) {} });
+  } catch (e) {}
+})();
+
+// A tiny status file the Windows tray manager reads to show live status offline.
+function writeStatus() {
+  try {
+    fs.writeFileSync(STATUS_PATH, JSON.stringify({
+      online: true, pid: process.pid, panel_url: CFG.panel_url,
+      last_seen: new Date().toISOString(), locations: CFG.locations,
+    }));
+  } catch (e) {}
+}
+
+// Best-effort free/total disk space per location (Windows: wmic, POSIX: df).
+function diskFree(p) {
+  try {
+    if (IS_WIN) {
+      const drive = String(p).substr(0, 2);
+      const out = execSync('wmic logicaldisk where "DeviceID=\'' + drive + '\'" get FreeSpace,Size /value 2>nul').toString();
+      let free = null, total = null;
+      out.split(/\r?\n/).forEach(line => {
+        const mFree = /FreeSpace=(\d+)/.exec(line); if (mFree) free = parseInt(mFree[1], 10);
+        const mSize = /Size=(\d+)/.exec(line); if (mSize) total = parseInt(mSize[1], 10);
+      });
+      return { free: free, total: total };
+    }
+    const out = execSync('df -k ' + JSON.stringify(p) + ' 2>/dev/null').toString().trim().split(/\r?\n/);
+    const parts = out[out.length - 1].split(/\s+/);
+    return { free: parseInt(parts[3], 10) * 1024, total: parseInt(parts[1], 10) * 1024 };
+  } catch (e) { return { free: null, total: null }; }
+}
+
+// Report node environment + disk state to the panel (throttled to every 3rd poll).
+let envCounter = 0;
+async function reportEnv() {
+  envCounter++;
+  if (envCounter % 3 !== 0) return;
+  const locs = [];
+  for (const p of CFG.locations) {
+    const d = diskFree(p);
+    fs.mkdirSync(p, { recursive: true });
+    locs.push({ path: p, free: d.free, total: d.total });
+  }
+  const body = new URLSearchParams();
+  body.append('token', CFG.node_token);
+  body.append('locations', JSON.stringify(locs));
+  body.append('os', os.platform());
+  body.append('arch', os.arch());
+  body.append('version', '2.1.0');
+  try {
+    await fetch(CFG.panel_url + '/api/agent/env', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    });
+  } catch (e) {}
+}
 
 function writeStartScript(dir) {
   if (IS_WIN) {
@@ -79,8 +195,9 @@ function steamArgs(dir, appid) {
   return args;
 }
 
-function doInstall(dir, payload) {
+function doInstall(dir, payload, server) {
   fs.mkdirSync(dir, { recursive: true });
+  rememberLocation(dir, payload, server);
   const appid = payload.appid || 0;
   if (appid && appid > 0) {
     const log = path.join(dir, 'install.log');
@@ -91,11 +208,12 @@ function doInstall(dir, payload) {
     fs.writeFileSync(path.join(dir, 'readme.txt'), 'Demo server installed.\n');
   }
   writeStartScript(dir);
-  return { status: 'ok' };
+  return { status: 'ok', location: path.dirname(path.resolve(dir)) };
 }
 
-function doStart(dir) {
+function doStart(dir, payload, server) {
   fs.mkdirSync(dir, { recursive: true });
+  rememberLocation(dir, payload, server);
   writeStartScript(dir);
   const log = path.join(dir, 'server.log');
   const pidFile = path.join(dir, 'server.pid');
@@ -172,10 +290,10 @@ async function poll() {
     let resultJson = { status: 'failed', error: 'unknown' };
     try {
       switch (data.job.command) {
-        case 'install': resultJson = doInstall(dir, data.payload); break;
-        case 'start': resultJson = doStart(dir); break;
+        case 'install': resultJson = doInstall(dir, data.payload, data.server); break;
+        case 'start': resultJson = doStart(dir, data.payload, data.server); break;
         case 'stop': resultJson = doStop(dir); break;
-        case 'restart': doStop(dir); resultJson = doStart(dir); break;
+        case 'restart': doStop(dir); resultJson = doStart(dir, data.payload, data.server); break;
         case 'status': resultJson = doStatus(dir); break;
         case 'log': resultJson = doLog(dir); break;
         case 'delete': resultJson = doDelete(dir); break;
@@ -198,8 +316,11 @@ async function poll() {
   } catch (e) {
     /* network / parse errors — ignore and retry */
   }
+  writeStatus();
+  reportEnv();
 }
 
-console.log('PH Game Node Agent started. Polling ' + CFG.panel_url + ' every ' + CFG.poll_interval_ms + 'ms. Base dir: ' + BASE);
+console.log('PH Game Node Agent v2.1 started. Polling ' + CFG.panel_url + ' every ' + CFG.poll_interval_ms + 'ms.');
+console.log('Install locations: ' + CFG.locations.join(' | '));
 setInterval(poll, CFG.poll_interval_ms);
 poll();

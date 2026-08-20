@@ -69,6 +69,7 @@ class GameServersController extends Controller
 
         // Optional remote destination node
         $nodeId = (int)$this->request->post('node_id', 0);
+        $location = trim((string)$this->request->post('location', ''));
         $slug = preg_replace('/[^a-z0-9]/', '', strtolower($name));
         if ($nodeId > 0) {
             $node = $this->db->table('game_nodes')->where('id', $nodeId)->first();
@@ -100,6 +101,8 @@ class GameServersController extends Controller
         $serverId = (int)$this->db->lastInsertId();
 
         if ($nodeId > 0) {
+            // Location hint = which drive/root the agent should install on. The
+            // agent auto-picks its freest default if the panel doesn't specify.
             $this->enqueueRemoteJob($serverId, 'install', [
                 'slug' => $slug,
                 'server_name' => $name,
@@ -107,8 +110,8 @@ class GameServersController extends Controller
                 'port' => $port,
                 'max_players' => $maxPlayers,
                 'install_path' => $slug,
-            ]);
-            $_SESSION['success_message'] = "Server '{$name}' queued for install on remote node.";
+            ] + ($location !== '' ? ['location' => $location] : []));
+            $_SESSION['success_message'] = "Server '{$name}' queued for install on remote node" . ($location !== '' ? " (location: {$location})" : '') . '.';
         } else {
             @mkdir($installDir, 0755, true);
             if ($appId) {
@@ -355,7 +358,7 @@ class GameServersController extends Controller
                 $zip = new \ZipArchive();
                 $win = BASE_PATH . '/plugins/GameServers/agent/win';
                 if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
-                    foreach (['ph-agent-installer.exe' => 'ph-agent-installer.exe', 'install-agent.ps1' => 'install-agent.ps1', 'agent-config.example.json' => 'agent-config.example.json', 'README-windows.md' => 'README-windows.md'] as $file => $entry) {
+                    foreach (['ph-agent-installer.exe' => 'ph-agent-installer.exe', 'ph-agent-tray.exe' => 'ph-agent-tray.exe', 'install-agent.ps1' => 'install-agent.ps1', 'agent-config.example.json' => 'agent-config.example.json', 'README-windows.md' => 'README-windows.md'] as $file => $entry) {
                         $src = $win . '/' . $file;
                         if (is_file($src)) { $zip->addFile($src, $entry); }
                     }

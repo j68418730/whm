@@ -4,6 +4,7 @@ if (!isset($router)) {
 }
 // Agent API (remote node control — token-authed in the controller, no inbound ports)
 $router->get('/api/agent/commands', 'Plugins\GameServers\Controllers\Api\AgentController@commands');
+$router->post('/api/agent/env', 'Plugins\GameServers\Controllers\Api\AgentController@env');
 $router->post('/api/agent/result', 'Plugins\GameServers\Controllers\Api\AgentController@result');
 // Admin routes
 $router->get('/admin/games', 'Plugins\GameServers\Controllers\Admin\GameServersController@index');
