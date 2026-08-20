@@ -1,0 +1,13 @@
+[Unit]
+Description=Planet Hosts Game Node Agent
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/ph-agent
+ExecStart=/usr/bin/node /opt/ph-agent/agent.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -17,5 +17,6 @@
 <a href="/admin/games/pricing" class="section-card"><div class="icon">💵</div><div class="name">Slot Pricing</div><div class="desc">Per-slot pricing config</div></a>
 <a href="/admin/games/packages" class="section-card"><div class="icon">📦</div><div class="name">Packages</div><div class="desc">Game hosting packages</div></a>
 <a href="/admin/games/templates" class="section-card"><div class="icon">📄</div><div class="name">Game Templates</div><div class="desc">SteamCMD install recipes</div></a>
+<a href="/admin/games/nodes" class="section-card"><div class="icon">🖧</div><div class="name">Game Nodes</div><div class="desc">Remote node system & agent</div></a>
 <a href="/admin/games/settings" class="section-card"><div class="icon">⚙️</div><div class="name">Settings</div><div class="desc">Game module configuration</div></a>
 </div>
