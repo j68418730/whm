@@ -10,6 +10,7 @@
 <p style="color:#64748b;margin-bottom:20px">Manage your domains, subdomains, redirects, and DNS.</p>
 <div class="section-grid">
 <a href="/user/domains" class="section-card"><span class="icon">🌐</span><div class="name">My Domains</div><div class="desc">Domain overview</div></a>
+<a href="/user/domains/buy" class="section-card"><span class="icon">🛒</span><div class="name">Buy Domain</div><div class="desc">Register a new domain</div></a>
 <a href="/user/domains/add" class="section-card"><span class="icon">➕</span><div class="name">Add Domain</div><div class="desc">Register or add domain</div></a>
 <a href="/user/subdomains" class="section-card"><span class="icon">🔗</span><div class="name">Subdomains</div><div class="desc">Manage subdomains</div></a>
 <a href="/user/redirects" class="section-card"><span class="icon">↪️</span><div class="name">Redirects</div><div class="desc">URL redirection rules</div></a>

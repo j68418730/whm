@@ -92,11 +92,27 @@ if ($action === 'checkout' && $_POST) {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $method = $_POST['method'] ?? 'paypal';
+    $domainChoice = $_POST['domain_choice'] ?? 'own';
+    $ownDomain = strtolower(trim($_POST['domain'] ?? ''));
     $errors = [];
     if (!$name) $errors[] = 'Name is required';
     if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Valid email required';
     if (strlen($password) < 8) $errors[] = 'Password must be 8+ characters';
     if (empty($_SESSION['cart'])) $errors[] = 'Cart is empty';
+
+    // Hosting/reseller items require a domain decision (game servers do not)
+    $hasHostingItem = false;
+    foreach ($_SESSION['cart'] as $item) {
+        if (($item['type'] ?? '') !== 'game') { $hasHostingItem = true; break; }
+    }
+    if ($hasHostingItem) {
+        if ($domainChoice === 'register') {
+            $errors[] = 'Domain registration is not available yet — you can still use your own domain, or add one later from your panel.';
+        }
+        if ($domainChoice === 'own' && !preg_match('/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i', $ownDomain)) {
+            $errors[] = 'A valid domain is required (e.g. mywebsite.com) when you use your own domain.';
+        }
+    }
 
     if (empty($errors)) {
         // Check if user exists, if not create
@@ -108,19 +124,27 @@ if ($action === 'checkout' && $_POST) {
             $username = explode('@', $email)[0] . rand(100, 999);
             $defaultResellerId = $pdo->query("SELECT id FROM resellers WHERE is_active = 1 ORDER BY id ASC LIMIT 1")->fetchColumn();
             if (!$defaultResellerId) $defaultResellerId = 1;
-            $pdo->prepare("INSERT INTO hosting_users (username, email, password_hash, first_name, reseller_id, status, created_at)
-                VALUES (?, ?, ?, ?, ?, 'active', NOW())")->execute([$username, $email, password_hash($password, PASSWORD_DEFAULT), $name, $defaultResellerId]);
+            $pdo->prepare("INSERT INTO hosting_users (username, email, password_hash, first_name, reseller_id, domain, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, 'active', NOW())")
+                ->execute([$username, $email, password_hash($password, PASSWORD_DEFAULT), $name, $defaultResellerId, $hasHostingItem ? $ownDomain : null]);
             $userId = $pdo->lastInsertId();
         } else {
             $userId = $user->id;
         }
 
+        // Attach the chosen domain to every hosting item so provisioning uses it
+        if ($hasHostingItem && $ownDomain) {
+            foreach ($_SESSION['cart'] as &$item) {
+                if (($item['type'] ?? '') !== 'game') $item['domain'] = $ownDomain;
+            }
+            unset($item);
+            try {
+                $pdo->prepare("UPDATE hosting_users SET domain = ? WHERE id = ?")->execute([$ownDomain, $userId]);
+            } catch (\Exception $e) {}
+        }
+
         // Create order
         $total = array_sum(array_map(fn($i) => $i['price'] * $i['qty'], $_SESSION['cart']));
-        $hasGame = false;
-        foreach ($_SESSION['cart'] as $item) {
-            if (($item['type'] ?? '') === 'game') { $hasGame = true; break; }
-        }
         $itemsJson = json_encode($_SESSION['cart']);
         $pdo->prepare("INSERT INTO billing_orders (user_id, items, total, payment_method, status, created_at)
             VALUES (?, ?, ?, ?, 'pending', NOW())")->execute([$userId, $itemsJson, $total, $method]);
@@ -215,6 +239,7 @@ If you selected manual payment, an admin will review and activate your account.<
 </div>
 <?php else:
 $total = array_sum(array_map(fn($i) => $i['price'] * $i['qty'], $_SESSION['cart']));
+$ownDomain = isset($_POST['domain']) ? strtolower(trim($_POST['domain'])) : '';
 ?>
 <form method="POST" action="/cart.php?action=update">
 <table>
@@ -245,6 +270,16 @@ $total = array_sum(array_map(fn($i) => $i['price'] * $i['qty'], $_SESSION['cart'
 <div class="form-group"><label>Full Name</label><input name="name" required></div>
 <div class="form-group"><label>Email Address</label><input name="email" type="email" required></div>
 <div class="form-group"><label>Password (for your account)</label><input name="password" type="password" minlength="8" required></div>
+<?php $hasHostingCheckout = false; foreach ($_SESSION['cart'] as $cit) { if (($cit['type'] ?? '') !== 'game') { $hasHostingCheckout = true; break; } } ?>
+<?php if ($hasHostingCheckout): ?>
+<div class="form-group"><label>Domain for Hosting</label>
+<div style="display:flex;flex-direction:column;gap:8px;padding:10px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);border-radius:8px">
+<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin:0"><input type="radio" name="domain_choice" value="own" checked onchange="document.getElementById('ownDomainWrap').style.display=this.checked?'':'none';document.getElementById('regDomainWrap').style.display=this.checked?'none':''"> I have my own domain</label>
+<div id="ownDomainWrap" style="margin-left:22px"><input name="domain" placeholder="e.g. mywebsite.com" value="<?php echo htmlspecialchars($ownDomain ?? ''); ?>"></div>
+<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin:0"><input type="radio" name="domain_choice" value="register" onchange="document.getElementById('regDomainWrap').style.display=this.checked?'':'none';document.getElementById('ownDomainWrap').style.display=this.checked?'none':''"> Register a new domain for me</label>
+<div id="regDomainWrap" style="display:none;margin-left:22px;font-size:12px;color:#64748b">Domain registration is coming soon — for now, use your own domain or add one later from the client panel.</div>
+</div></div>
+<?php endif; ?>
 <div class="form-group"><label>Payment Method</label>
 <select name="method">
 <option value="paypal">PayPal</option>

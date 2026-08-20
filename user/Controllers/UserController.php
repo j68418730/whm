@@ -421,5 +421,48 @@ class UserController extends Controller
     }
     public function admins() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/admins.php'; exit; }
     public function djManager() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/dj-manager.php'; exit; }
-    public function phpSwitcher() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/php-switcher.php'; exit; }
+    public function phpSwitcher() {
+        $u = $this->loadUser();
+        $app = \Core\Application::getInstance();
+        $user = $app->get('auth')->user();
+        $pdo = $this->db->pdo();
+        $hosting = $this->hostingUser;
+        if (!$hosting) { echo 'No account'; exit; }
+
+        $versions = [];
+        $out = [];
+        exec('ls /usr/bin/php* 2>/dev/null', $out);
+        foreach ($out as $p) { if (preg_match('/php(\d+\.\d+)$/', $p, $m)) $versions[] = $m[1]; }
+        if (empty($versions)) $versions = ['8.2'];
+        $currentVersion = $hosting->php_version ?: '8.2';
+        $success = '';
+        $error = '';
+
+        if ($_POST && isset($_POST['version'])) {
+            $newVer = $_POST['version'];
+            if (in_array($newVer, $versions)) {
+                $pdo->prepare("UPDATE hosting_users SET php_version = ? WHERE id = ?")->execute([$newVer, $hosting->id]);
+                if ($hosting->domain) {
+                    $vhostFile = "/etc/apache2/sites-available/{$hosting->domain}.conf";
+                    if (file_exists($vhostFile)) {
+                        $content = file_get_contents($vhostFile);
+                        $content = preg_replace('/SetHandler .*php.*-fpm.*/', "SetHandler \"proxy:unix:/run/php/php{$newVer}-fpm.sock|fcgi://localhost\"", $content);
+                        file_put_contents($vhostFile, $content);
+                        exec("systemctl reload apache2 2>/dev/null");
+                    }
+                }
+                $success = "PHP version changed to {$newVer}.";
+                $currentVersion = $newVer;
+            } else {
+                $error = 'Invalid PHP version selected.';
+            }
+        }
+
+        return $this->view('user.php_switcher', [
+            'user' => $user, 'hosting' => $hosting,
+            'versions' => $versions, 'currentVersion' => $currentVersion,
+            'success' => $success, 'error' => $error,
+            'title' => 'PHP Version Selector',
+        ]);
+    }
 }

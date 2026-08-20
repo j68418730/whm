@@ -26,6 +26,7 @@ $router->get('/user/files/properties', 'User\Controllers\FileManagerController@p
 $router->get('/user/files/search', 'User\Controllers\FileManagerController@search');
 $router->get('/user/services/{type}', 'User\Controllers\UserController@manage');
 $router->get('/user/domains', 'User\Controllers\DomainsController@index');
+$router->get('/user/domains/buy', 'User\Controllers\DomainsController@buy');
 $router->get('/user/domains/add', 'User\Controllers\DomainsController@add');
 $router->post('/user/domains/add', 'User\Controllers\DomainsController@add');
 $router->get('/user/domains/zone/{id}', 'User\Controllers\DomainsController@zone');
@@ -75,6 +76,8 @@ $router->get('/user/billing/payment-methods/delete/{id}', 'User\Controllers\Bill
 $router->get('/user/billing/payment-methods/default/{id}', 'User\Controllers\BillingController@defaultMethod');
 $router->get('/user/invoices', 'User\Controllers\BillingController@invoices');
 $router->get('/user/billing/pay/{id}', 'User\Controllers\BillingController@pay');
+$router->post('/user/billing/credits/add', 'User\Controllers\BillingController@creditsAdd');
+$router->get('/user/billing/use-credits/{id}', 'User\Controllers\BillingController@useCredits');
 $router->get('/user/support', 'User\Controllers\UserController@support');
 $router->get('/user/tickets', 'User\Controllers\TicketsController@index');
 $router->post('/user/tickets/create', 'User\Controllers\TicketsController@create');
