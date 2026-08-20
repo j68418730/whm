@@ -42,6 +42,10 @@ namespace Installer
         [STAThread]
         public static void Main()
         {
+            // Modern panels refuse TLS <1.2; .NET Framework defaults to TLS 1.0.
+            try { System.Net.ServicePointManager.SecurityProtocol =
+                      System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls; }
+            catch { }
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Program());
