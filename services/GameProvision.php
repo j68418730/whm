@@ -45,9 +45,18 @@ function gameProvision($orderId, $userId, $item) {
     }
     if ($templateId) $template = $engine->getTemplateById($templateId);
     if (!$template && $game) {
-        $t = $pdo->prepare("SELECT * FROM game_templates WHERE status = 'active' AND (LOWER(name) = LOWER(?) OR appid = ?) LIMIT 1");
-        $t->execute([$gameName, $game->game_id ?? '0']);
+        // Name match first: deterministic even for zero-appid templates (Minecraft etc).
+        $t = $pdo->prepare("SELECT * FROM game_templates WHERE status = 'active' AND LOWER(name) = LOWER(?) LIMIT 1");
+        $t->execute([$gameName]);
         $template = $t->fetch(PDO::FETCH_OBJ);
+    }
+    if (!$template && $game) {
+        $appid = (string)($game->game_id ?? '');
+        if ($appid !== '' && $appid !== '0') {
+            $t = $pdo->prepare("SELECT * FROM game_templates WHERE status = 'active' AND appid = ? LIMIT 1");
+            $t->execute([$appid]);
+            $template = $t->fetch(PDO::FETCH_OBJ);
+        }
     }
     $appid = ($template && $template->appid && $template->appid !== '0') ? $template->appid : ($game->game_id ?? '0');
 
