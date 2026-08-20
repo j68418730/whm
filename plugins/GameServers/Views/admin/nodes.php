@@ -74,7 +74,14 @@
 <td><?php echo $n->last_seen ? htmlspecialchars($n->last_seen) : '—'; ?></td>
 <td><?php echo $n->last_ip ? htmlspecialchars($n->last_ip) : '—'; ?></td>
 <td><?php echo $loc ? $flag . ' ' . htmlspecialchars($loc) : '—'; ?></td>
-<td><code style="font-size:11px"><?php echo $n->token ? htmlspecialchars(substr($n->token, 0, 16)) . '…' : '<i style="color:#f87171">no token</i>'; ?></code></td>
+<td>
+<?php if ($n->token): ?>
+<code style="font-size:11px;word-break:break-all"><?php echo htmlspecialchars($n->token); ?></code><br>
+<button class="btn btn-sm primary" style="font-size:11px;margin-top:4px" onclick="navigator.clipboard.writeText('<?php echo htmlspecialchars($n->token); ?>').then(()=>this.textContent='Copied').catch(()=>alert('Copy blocked — select the token manually.'));">Copy</button>
+<?php else: ?>
+<i style="color:#f87171">no token</i> — <span style="color:#cbd5e1">press <b>Gen</b></span>
+<?php endif; ?>
+</td>
 <td style="white-space:nowrap">
 <div style="display:flex;gap:4px;flex-wrap:wrap">
 <form method="POST" action="/admin/games/nodes/test/<?php echo (int)$n->id; ?>" style="display:inline"><button class="btn btn-sm secondary" title="Test"><i class="bi bi-activity"></i></button></form>
