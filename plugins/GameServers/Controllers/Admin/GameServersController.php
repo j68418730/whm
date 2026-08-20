@@ -323,6 +323,28 @@ class GameServersController extends Controller
         $this->response->redirect('/admin/games/nodes');
     }
 
+    // ── Node token management (generate + delete only; tokens are stored, never re-used) ──
+    public function nodeTokenGen($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $node = $this->db->table('game_nodes')->where('id', (int)$id)->first();
+        if (!$node) { $_SESSION['error_message'] = 'Node not found.'; $this->response->redirect('/admin/games/nodes'); exit; }
+        $token = bin2hex(random_bytes(32));
+        $this->db->table('game_nodes')->where('id', (int)$id)->update(['token' => $token, 'status' => 'offline']);
+        $_SESSION['success_message'] = "New token for '{$node->name}': {$token} — update the agent's agent-config.json (node_token) and restart it.";
+        $this->response->redirect('/admin/games/nodes');
+    }
+
+    public function nodeTokenDel($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $node = $this->db->table('game_nodes')->where('id', (int)$id)->first();
+        if (!$node) { $_SESSION['error_message'] = 'Node not found.'; $this->response->redirect('/admin/games/nodes'); exit; }
+        $this->db->table('game_nodes')->where('id', (int)$id)->update(['token' => '', 'status' => 'offline']);
+        $_SESSION['success_message'] = "Token deleted for '{$node->name}'. The agent can no longer connect.";
+        $this->response->redirect('/admin/games/nodes');
+    }
+
     /** Serve a prebuilt Windows agent zip (admin only). */
     public function agentZip()
     {
@@ -333,9 +355,9 @@ class GameServersController extends Controller
                 $zip = new \ZipArchive();
                 $win = BASE_PATH . '/plugins/GameServers/agent/win';
                 if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
-                    foreach (['ph-agent.exe', 'install-agent.ps1', 'agent-config.example.json', 'README-windows.md'] as $f) {
-                        $src = $win . '/' . $f;
-                        if (is_file($src)) { $zip->addFile($src, $f); }
+                    foreach (['ph-agent-installer.exe' => 'ph-agent-installer.exe', 'install-agent.ps1' => 'install-agent.ps1', 'agent-config.example.json' => 'agent-config.example.json', 'README-windows.md' => 'README-windows.md'] as $file => $entry) {
+                        $src = $win . '/' . $file;
+                        if (is_file($src)) { $zip->addFile($src, $entry); }
                     }
                     $zip->close();
                 }
@@ -350,5 +372,82 @@ class GameServersController extends Controller
         }
         $_SESSION['error_message'] = 'Agent package not available.';
         $this->response->redirect('/admin/games/nodes');
+    }
+
+    /** Serve a packaged cross-platform agent bundle for the given OS (admin only). */
+    protected function agentPackage($os, $fileName)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $base = BASE_PATH . '/plugins/GameServers/agent';
+        $filesByOs = [
+            // shared core + per-OS scripts; installer wraps everything for the user
+            'linux' => ['agent.js', 'install-linux.sh', 'agent-config.example.json', 'ph-agent.service', 'README.md', 'README-LINUX.md'],
+            'macos' => ['agent.js', 'install-macos.sh', 'agent-config.example.json', 'README.md', 'README-MACOS.md'],
+        ];
+        $files = $filesByOs[$os] ?? [];
+        if (empty($files)) { $_SESSION['error_message'] = 'Unknown agent platform.'; $this->response->redirect('/admin/games/nodes'); exit; }
+
+        if (class_exists('ZipArchive')) {
+            $tmp = sys_get_temp_dir() . '/ph-agent-' . $os . '-' . time() . '.zip';
+            $zip = new \ZipArchive();
+            if ($zip->open($tmp, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+                foreach ($files as $f) {
+                    $src = $base . '/' . $f;
+                    if (is_file($src)) { $zip->addFile($src, $f); }
+                }
+                // Make scripts executable via a top-level install hint
+                if ($os === 'linux') {
+                    $zip->addFromString('INSTALL-LINUX.txt', "Run:  sudo bash install-linux.sh\n(optionally pass PANEL_URL / NODE_TOKEN / BASE_DIR to install non-interactively)\n");
+                } elseif ($os === 'macos') {
+                    $zip->addFromString('INSTALL-MACOS.txt', "Run:  bash install-macos.sh\n(optionally pass PANEL_URL / NODE_TOKEN / BASE_DIR to install non-interactively)\n");
+                }
+                $zip->close();
+            }
+            if (is_file($tmp)) {
+                header('Content-Type: application/zip');
+                header('Content-Disposition: attachment; filename="' . $fileName . '"');
+                header('Content-Length: ' . filesize($tmp));
+                readfile($tmp);
+                @unlink($tmp);
+                exit;
+            }
+        }
+        $_SESSION['error_message'] = 'Agent package could not be built (zip support required).';
+        $this->response->redirect('/admin/games/nodes');
+    }
+
+    public function agentLinux() { $this->agentPackage('linux', 'ph-agent-linux.zip'); }
+    public function agentMacos() { $this->agentPackage('macos', 'ph-agent-macos.zip'); }
+
+    /** Serve the Windows GUI installer exe directly (self-contained, embeds the agent). */
+    public function agentInstaller()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $path = BASE_PATH . '/plugins/GameServers/agent/win/ph-agent-installer.exe';
+        if (is_file($path)) {
+            header('Content-Type: application/octet-stream');
+            header('Content-Disposition: attachment; filename="ph-agent-installer.exe"');
+            header('Content-Length: ' . filesize($path));
+            readfile($path);
+            exit;
+        }
+        $_SESSION['error_message'] = 'Windows installer not built yet.';
+        $this->response->redirect('/admin/games/nodes');
+    }
+
+    /** Serve the raw agent.js so install scripts can pull it directly. */
+    public function agentSource()
+    {
+        $path = BASE_PATH . '/plugins/GameServers/agent/agent.js';
+        if (is_file($path)) {
+            header('Content-Type: text/javascript; charset=utf-8');
+            header('Content-Disposition: inline; filename="agent.js"');
+            header('Content-Length: ' . filesize($path));
+            readfile($path);
+            exit;
+        }
+        http_response_code(404);
+        echo 'agent.js not found.';
+        exit;
     }
 }

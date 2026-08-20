@@ -10,8 +10,14 @@ $router->get('/admin/games', 'Plugins\GameServers\Controllers\Admin\GameServersC
 $router->get('/admin/games/nodes', 'Plugins\GameServers\Controllers\Admin\GameServersController@nodes');
 $router->post('/admin/games/nodes/store', 'Plugins\GameServers\Controllers\Admin\GameServersController@nodeStore');
 $router->post('/admin/games/nodes/delete/{id}', 'Plugins\GameServers\Controllers\Admin\GameServersController@nodeDelete');
+$router->post('/admin/games/nodes/token-gen/{id}', 'Plugins\GameServers\Controllers\Admin\GameServersController@nodeTokenGen');
+$router->post('/admin/games/nodes/token-del/{id}', 'Plugins\GameServers\Controllers\Admin\GameServersController@nodeTokenDel');
 $router->post('/admin/games/nodes/test/{id}', 'Plugins\GameServers\Controllers\Admin\GameServersController@nodeTest');
 $router->get('/admin/games/nodes/agent-zip', 'Plugins\GameServers\Controllers\Admin\GameServersController@agentZip');
+$router->get('/admin/games/nodes/agent-installer', 'Plugins\GameServers\Controllers\Admin\GameServersController@agentInstaller');
+$router->get('/admin/games/nodes/agent-linux', 'Plugins\GameServers\Controllers\Admin\GameServersController@agentLinux');
+$router->get('/admin/games/nodes/agent-macos', 'Plugins\GameServers\Controllers\Admin\GameServersController@agentMacos');
+$router->get('/admin/games/nodes/agent-source', 'Plugins\GameServers\Controllers\Admin\GameServersController@agentSource');
 $router->get('/admin/games/show/{id}', 'Plugins\GameServers\Controllers\Admin\GameServersController@show');
 $router->post('/admin/games/create', 'Plugins\GameServers\Controllers\Admin\GameServersController@create');
 $router->get('/admin/games/start/{id}', 'Plugins\GameServers\Controllers\Admin\GameServersController@start');
