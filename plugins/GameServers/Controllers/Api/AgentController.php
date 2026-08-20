@@ -141,6 +141,47 @@ class AgentController
     }
 
     /**
+     * POST /api/agent/env?token=...
+     * body: locations (JSON [{path,free,total}]), os, arch, version
+     * The agent reports its install locations/drives + disk space and host meta.
+     */
+    public function env()
+    {
+        $node = $this->authorize();
+        if (!$node) {
+            return $this->json(['error' => 'Unauthorized'], 401);
+        }
+        $this->touchNode($node);
+
+        $upd = [
+            'status' => 'online',
+            'last_seen' => date('Y-m-d H:i:s'),
+        ];
+        $locationsRaw = trim((string)$this->request->post('locations', ''));
+        if ($locationsRaw !== '') {
+            $locs = json_decode($locationsRaw, true);
+            if (is_array($locs)) {
+                $clean = [];
+                foreach ($locs as $l) {
+                    if (!is_array($l) || empty($l['path'])) continue;
+                    $clean[] = [
+                        'path' => (string)$l['path'],
+                        'free' => isset($l['free']) ? (int)$l['free'] : null,
+                        'total' => isset($l['total']) ? (int)$l['total'] : null,
+                    ];
+                }
+                if ($clean) $upd['locations'] = json_encode($clean);
+            }
+        }
+        foreach (['os', 'arch', 'version'] as $k) {
+            $v = trim((string)$this->request->post($k, ''));
+            if ($v !== '') $upd[$k] = $k === 'version' ? $v : $v;
+        }
+        $this->db->table('game_nodes')->where('id', $node->id)->update($upd);
+        return $this->json(['ok' => true]);
+    }
+
+    /**
      * POST /api/agent/result?token=...
      * body: job_id, status (done|failed), result (JSON string)
      */

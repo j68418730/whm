@@ -1,4 +1,4 @@
-// Planet Hosts Game Node Agent — Windows Installer (GUI)
+// Planet Host Game Node Agent — Windows Installer (GUI)
 // Single-file installer: embeds ph-agent.exe + this UI. User fills in:
 //   • Panel URL           (e.g. https://planet-hosts.com)
 //   • Node token          (generated in Admin → Games → Game Nodes)
@@ -13,6 +13,7 @@
 // csc.exe /nologo /t:winexe /out:ph-agent-installer.exe /main:Installer.Program
         //     /win32manifest:installer.manifest
         //     /resource:<abs path>\ph-agent.exe,embedded_agent_exe
+        //     /resource:<abs path>\ph-agent-tray.exe,embedded_tray_exe
         //     /r:System.Windows.Forms.dll /r:System.Drawing.dll
         //     Installer.cs
 using System;
@@ -33,10 +34,13 @@ namespace Installer
         private TextBox      txtAgentDir, txtGamesDir;
         private Button       btnAgentDir, btnGamesDir, btnTest, btnInstall;
         private CheckBox     chkSteam;
+        private RadioButton  rbService, rbTask;
         private Label        lblStatus;
         private Panel        pnlSteam;
 
         private const string RES_AGENT = "embedded_agent_exe";
+        private const string RES_TRAY = "embedded_tray_exe";
+        private const string TRAY_EXE = "ph-agent-tray.exe";
         private const string TASK_NAME = "PlanetHostsAgent";
 
         [STAThread]
@@ -53,7 +57,7 @@ namespace Installer
 
         public Program()
         {
-            Text = "Planet Hosts — Game Node Agent Installer";
+            Text = "Planet Host — Game Node Agent Installer";
             Font = new Font("Segoe UI", 9.5f);
             ClientSize = new Size(560, 470);
             MinimumSize = new Size(560, 470);
@@ -63,7 +67,7 @@ namespace Installer
             StartPosition = FormStartPosition.CenterScreen;
 
             var y = 18;
-            AddHeader("Planet Hosts Game Node Agent", 18);
+            AddHeader("Planet Host Game Node Agent", 18);
 
             y = AddLabel("Panel URL (your hosting panel address)", y);
             txtPanel = AddTextBox("https://planet-hosts.com", y); y += 34;
@@ -76,6 +80,30 @@ namespace Installer
 
             y = AddLabel("Game install folder", y);
             txtGamesDir = AddDirRow(y, out btnGamesDir, "C:\\PlanetHostsGames"); y += 40;
+
+            var lblMode = new Label
+            {
+                Text = "How should the agent run?",
+                Location = new Point(28, y), AutoSize = true, BackColor = BackColor,
+                ForeColor = Color.FromArgb(15, 15, 15), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+            };
+            Controls.Add(lblMode); y += 22;
+
+            rbService = new RadioButton
+            {
+                Text = "Windows Service (recommended — stays online 24/7, runs before login)",
+                Location = new Point(28, y), AutoSize = true, Checked = true, BackColor = BackColor,
+                ForeColor = Color.FromArgb(60, 60, 60),
+            };
+            Controls.Add(rbService); y += 22;
+
+            rbTask = new RadioButton
+            {
+                Text = "Background task (only while a user is signed in)",
+                Location = new Point(28, y), AutoSize = true, BackColor = BackColor,
+                ForeColor = Color.FromArgb(60, 60, 60),
+            };
+            Controls.Add(rbTask); y += 30;
 
             y += 6;
             chkSteam = new CheckBox
@@ -266,21 +294,20 @@ namespace Installer
             catch (Exception ex) { SetStatus("Cannot create folders: " + ex.Message, false); return; }
 
             var exePath = Path.Combine(dir, "ph-agent.exe");
-            SetStatus("Extracting agent…", true);
+            var trayPath = Path.Combine(dir, TRAY_EXE);
+            SetStatus("Extracting agent + tray manager…", true);
             try
             {
-                using (var src = Assembly.GetExecutingAssembly().GetManifestResourceStream(RES_AGENT))
-                {
-                    if (src == null) { SetStatus("Agent binary missing from installer.", false); return; }
-                    using (var dst = File.Create(exePath)) { src.CopyTo(dst); }
-                }
+                ExtractResource(RES_AGENT, exePath);
+                ExtractResource(RES_TRAY, trayPath);
             }
-            catch (Exception ex) { SetStatus("Could not write agent: " + ex.Message, false); return; }
+            catch (Exception ex) { SetStatus("Could not write agent files: " + ex.Message, false); return; }
 
             var cfg = "{"
                 + "\"panel_url\":\"" + JsonStr(panel) + "\","
                 + "\"node_token\":\"" + JsonStr(token) + "\","
                 + "\"base_dir\":\"" + JsonStr(gdir) + "\","
+                + "\"locations\":[\"" + JsonStr(gdir) + "\"],"
                 + "\"poll_interval_ms\":10000,"
                 + "\"steamcmd\":\"steamcmd.exe\","
                 + "\"steam_user\":\"" + JsonStr(sUser) + "\","
@@ -289,13 +316,27 @@ namespace Installer
             try { File.WriteAllText(Path.Combine(dir, "agent-config.json"), cfg); }
             catch (Exception ex) { SetStatus("Cannot write config: " + ex.Message, false); return; }
 
-            // Register scheduled task (auto-start at boot, SYSTEM)
-            var ok = RegisterTask(dir, exePath);
-            if (ok)
+            // Let the tray manager finish the setup: it creates the desktop +
+            // start-menu + startup shortcuts and registers the chosen run mode
+            // (Windows service or scheduled task), then starts the agent.
+            SetStatus("Registering " + (rbService.Checked ? "Windows service…" : "auto-start task…") + " and creating shortcuts", true);
+            string modeArgs = rbService.Checked ? "--setup service" : "--setup task";
+            bool setupOk = false;
+            try
             {
-                try { Process.Start(new ProcessStartInfo { FileName = exePath, WorkingDirectory = dir, UseShellExecute = true, WindowStyle = ProcessWindowStyle.Hidden }); }
-                catch { }
-                SetStatus("Installed and started. Watch Admin → Games → Game Nodes — node should go ONLINE within ~10s.", true);
+                var psi = new ProcessStartInfo(trayPath, modeArgs);
+                psi.WorkingDirectory = dir;
+                psi.UseShellExecute = true;
+                var sp = Process.Start(psi);
+                sp.WaitForExit(25000);
+                setupOk = true;
+            }
+            catch { }
+
+            if (setupOk)
+            {
+                SetStatus("Installed and started. Watch Admin → Games → Game Nodes — node should go ONLINE within ~10s.\n"
+                    + "Tray icon + desktop shortcut added. Right-click the tray icon for Start/Stop/Locations/Service controls.", true);
             }
             else
             {
@@ -303,22 +344,13 @@ namespace Installer
             }
         }
 
-        private bool RegisterTask(string dir, string exePath)
+        private void ExtractResource(string res, string dest)
         {
-            try
+            using (var src = Assembly.GetExecutingAssembly().GetManifestResourceStream(res))
             {
-                var psi = new ProcessStartInfo("schtasks.exe");
-                psi.Arguments =
-                    "/Create /F /TN \"" + TASK_NAME + "\" "
-                    + "/TR \"\\\"" + exePath + "\\\"\" "
-                    + "/SC ONSTART /RL HIGHEST /RU SYSTEM";
-                psi.UseShellExecute = false;
-                psi.CreateNoWindow = true;
-                var p = Process.Start(psi);
-                p.WaitForExit(15000);
-                return p.ExitCode == 0 || p.ExitCode == 1;
+                if (src == null) throw new InvalidOperationException("Missing embedded resource: " + res);
+                using (var dst = File.Create(dest)) { src.CopyTo(dst); }
             }
-            catch { return false; }
         }
 
         private static string JsonStr(string s)

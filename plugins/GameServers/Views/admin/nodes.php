@@ -41,9 +41,9 @@
 <div class="card" style="padding:30px;text-align:center;color:#64748b">No nodes yet — add one above, then install the agent on the machine.</div>
 <?php else: ?>
 <div class="card" style="overflow:auto">
-<table class="table" style="margin-bottom:0;min-width:1100px">
+<table class="table" style="margin-bottom:0;min-width:1400px">
 <thead><tr>
-<th>Name</th><th>Type</th><th>Status</th><th>Last Seen</th><th>Connected IP</th><th>Location</th><th>Token</th><th>Actions</th>
+<th>Name</th><th>Type</th><th>Status</th><th>Last Seen</th><th>Connected IP</th><th>Location</th><th>Drives / Install Locations</th><th>Agent</th><th>Token</th><th>Actions</th>
 </tr></thead>
 <tbody>
 <?php foreach ($nodes as $n):
@@ -74,6 +74,17 @@
 <td><?php echo $n->last_seen ? htmlspecialchars($n->last_seen) : '—'; ?></td>
 <td><?php echo $n->last_ip ? htmlspecialchars($n->last_ip) : '—'; ?></td>
 <td><?php echo $loc ? $flag . ' ' . htmlspecialchars($loc) : '—'; ?></td>
+<td style="font-size:11px;line-height:1.5">
+<?php
+$nLocs = [];
+if (!empty($n->locations)) { $nLocs = json_decode($n->locations, true) ?: []; }
+if (empty($nLocs)): ?>
+<i style="color:#94a3b8">no drives reported yet</i>
+<?php else: foreach ($nLocs as $nl): $free = isset($nl['free']) && $nl['free'] !== null ? round($nl['free']/1073741824, 1) : null; $tot = isset($nl['total']) && $nl['total'] !== null ? round($nl['total']/1073741824, 1) : null; ?>
+<div style="font-family:monospace"><?php echo htmlspecialchars($nl['path']); ?><?php if ($free !== null): ?><br><span style="color:#64748b"><?php echo $free; ?> GB free / <?php echo $tot; ?> GB</span><?php endif; ?></div>
+<?php endforeach; endif; ?>
+</td>
+<td style="font-size:11px;white-space:nowrap"><?php echo $n->os ? htmlspecialchars($n->os . ($n->arch ? ' / ' . $n->arch : '')) : '—'; ?><?php if ($n->agent_version): ?><br><span style="color:#64748b">v<?php echo htmlspecialchars($n->agent_version); ?></span><?php endif; ?></td>
 <td>
 <?php if ($n->token): ?>
 <code style="font-size:11px;word-break:break-all"><?php echo htmlspecialchars($n->token); ?></code><br>
