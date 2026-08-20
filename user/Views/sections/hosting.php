@@ -16,6 +16,7 @@
 <a href="/pma_autologin.php" target="_blank" class="section-card"><span class="icon">🐘</span><div class="name">phpMyAdmin</div><div class="desc">Database manager</div></a>
 <a href="/user/ssl" class="section-card"><span class="icon">🔒</span><div class="name">SSL Certificates</div><div class="desc">SSL management</div></a>
 <a href="/user/usage" class="section-card"><span class="icon">📊</span><div class="name">Resource Usage</div><div class="desc">Disk & bandwidth</div></a>
+<a href="/user/php-switcher" class="section-card"><span class="icon">🐘</span><div class="name">PHP Switcher</div><div class="desc">Change PHP version</div></a>
 <a href="/user/apps/node" class="section-card"><span class="icon">🟢</span><div class="name">Node.js Apps</div><div class="desc">Node.js applications</div></a>
 <a href="/user/apps/python" class="section-card"><span class="icon">🐍</span><div class="name">Python Apps</div><div class="desc">Python applications</div></a>
 </div>

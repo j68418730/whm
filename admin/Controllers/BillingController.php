@@ -457,7 +457,7 @@ class BillingController extends Controller
         if ($applyCredit && $uid) {
             $totalCredits = (float)$this->db->pdo()->query("SELECT SUM(amount) as total FROM billing_credits WHERE user_id = {$uid}")->fetch(\PDO::FETCH_OBJ)->total ?? 0;
             $usedCredits = (float)$this->db->pdo()->query("SELECT SUM(amount) as total FROM billing_credit_usage WHERE user_id = {$uid}")->fetch(\PDO::FETCH_OBJ)->total ?? 0;
-            $available = $totalCredits - $usedCredits;
+            $available = max(0, $totalCredits + $usedCredits);
             if ($available > 0) {
                 $creditApplied = min($available, $total);
                 $this->db->table('billing_credit_usage')->insert([

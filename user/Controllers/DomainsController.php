@@ -40,6 +40,12 @@ class DomainsController extends Controller
         return $this->view('user.domains', ['user' => $u, 'hosting' => $this->hostingUser, 'domains' => $domains, 'subdomains' => $subdomains, 'title' => 'Domains']);
     }
 
+public function buy()
+    {
+        $u = $this->requireUser();
+        return $this->view('user.domain_buy', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Buy Domain']);
+    }
+
     public function add()
     {
         $u = $this->requireUser();

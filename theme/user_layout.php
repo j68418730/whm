@@ -10,21 +10,38 @@ $features = [];
 if ($package && $package->feature_list_id) {
     try { $fl = \Core\Application::getInstance()->get('db')->table('feature_lists')->where('id', $package->feature_list_id)->first(); if($fl) $features = (array)$fl; } catch(\Exception $e) {}
 }
-$hasWeb = stripos($pkgType, 'web') !== false || stripos($pkgType, 'hosting') !== false || !$pkgType;
-$hasRadio = stripos($pkgType, 'icecast') !== false || stripos($pkgType, 'radio') !== false;
+$db = \Core\Application::getInstance()->get('db');
+$uid = $hosting->id ?? 0;
+$hasWeb = stripos($pkgType, 'web') !== false || stripos($pkgType, 'hosting') !== false || stripos($pkgType, 'reseller') !== false || !$pkgType;
+$hasRadio = stripos($pkgType, 'icecast') !== false || stripos($pkgType, 'radio') !== false || stripos($pkgType, 'stream') !== false;
 $hasGame = stripos($pkgType, 'game') !== false;
 $hasBuilder = stripos($pkgType, 'builder') !== false || stripos($pkgType, 'website') !== false;
-// Merge package type flags into features array
-if (($features['radio'] ?? 0) || $hasRadio || ($package->icecast_enabled ?? 0)) $features['radio'] = 1;
-if (($features['game'] ?? 0) || $hasGame || ($package->game_enabled ?? 0)) $features['game'] = 1;
-if (($features['builder'] ?? 0) || $hasBuilder || class_exists('\\Plugins\\WebsiteBuilder\\WebsiteBuilderPlugin')) $features['builder'] = 1;
-if (($features['dj_panel'] ?? 0) || ($package->dj_panel_enabled ?? 0)) $features['dj_panel'] = 1;
-if (($features['livechat'] ?? ($features['chatbox'] ?? 0)) || ($package->live_chat_enabled ?? 0) || ($package->chatroom_enabled ?? 0)) $features['livechat'] = 1;
-$features['web'] = $hasWeb;
+$hasVps = stripos($pkgType, 'vps') !== false || stripos($pkgType, 'virtual') !== false;
+$hasDedicated = stripos($pkgType, 'dedicated') !== false;
+try { $ownedStations = $uid ? ($db->table('streaming_stations')->where('user_id', $uid)->first() ? true : false) : false; } catch(\Exception $e) { $ownedStations = false; }
+try { $ownedGames = $uid ? ($db->table('game_servers')->where('user_id', $uid)->first() ? true : false) : false; } catch(\Exception $e) { $ownedGames = false; }
+try { $ownedSites = $uid ? ($db->table('wb_sites')->where('user_id', $uid)->first() ? true : false) : false; } catch(\Exception $e) { $ownedSites = false; }
+try { $ownedChat = $uid ? ($db->table('chatbox_tenants')->where('hosting_user_id', $uid)->first() ? true : false) : false; } catch(\Exception $e) { $ownedChat = false; }
+$hasRadio = $hasRadio || $ownedStations;
+$hasGame = $hasGame || $ownedGames;
+$hasBuilder = $hasBuilder || $ownedSites;
+$hasEmail = (int)($package->email_accounts ?? 0) > 0;
+// Feature flags come ONLY from the account's actual package type + owned resources,
+// never from globally-installed code/plugins.
+$features['radio'] = $hasRadio ? 1 : 0;
+$features['game'] = $hasGame ? 1 : 0;
+$features['builder'] = $hasBuilder ? 1 : 0;
+$features['livechat'] = ($ownedChat && ($package->live_chat_enabled ?? 1)) ? 1 : 0;
+$features['dj_panel'] = ($features['dj_panel'] ?? 0) && $hasRadio ? 1 : 0;
+$features['web'] = $hasWeb ? 1 : 0;
+$features['hosting'] = ($hasWeb || $hasVps || $hasDedicated) ? 1 : 0;
+$features['vps'] = $hasVps ? 1 : 0;
+$features['email'] = ($hasWeb && $hasEmail) ? 1 : 0;
+$features['chat'] = ($features['livechat'] ?? 0) ? 1 : 0;
 // Load feature-aware menu
 require_once BASE_PATH . '/core/UserMenu.php';
 $currentUrl = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/user';
-$hasEmail = $features['email_accounts'] ?? -1;
+$hasEmail = $features['email_accounts'] ?? ($hasEmail ? 1 : -1);
 $hasDB = $features['databases'] ?? -1;
 $hasFTP = $features['ftp_accounts'] ?? -1;
 $hasSSL = $features['ssl_allowed'] ?? 1;
