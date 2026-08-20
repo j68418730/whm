@@ -203,6 +203,9 @@ class GameServersController extends Controller
         $ownerMap = [];
         foreach ($owners as $o) $ownerMap[$o->id] = $o->username . ($o->domain ? ' (' . $o->domain . ')' : '');
         $serverStatusMap = ['stopped' => 'Stopped', 'running' => 'Running', 'starting' => 'Starting', 'suspended' => 'Suspended', 'installing' => 'Installing'];
+        $nodes = $this->db->table('game_nodes')->orderBy('name', 'ASC')->get() ?: [];
+        $nodeMap = [];
+        foreach ($nodes as $n) $nodeMap[$n->id] = $n->name;
         // Sync migration flag: servers created before type_id existed carry game_type string
         $settings = [];
         $rows = $this->db->table('game_settings')->get() ?: [];
@@ -216,6 +219,8 @@ class GameServersController extends Controller
             'typeMap' => $typeMap,
             'ownerMap' => $ownerMap,
             'serverStatusMap' => $serverStatusMap,
+            'nodes' => $nodes,
+            'nodeMap' => $nodeMap,
             'settings' => $settings,
         ]);
     }
@@ -224,15 +229,32 @@ class GameServersController extends Controller
     {
         $this->guard();
         $id = (int)$this->request->post('id', 0);
+        $nodeId = (int)$this->request->post('node_id', 0);
+        $installPath = trim((string)$this->request->post('install_path', ''));
+        $configPath  = trim((string)$this->request->post('config_path', ''));
+
+        // Remote node selected → paths live on the node (slug-relative); the panel
+        // scrolls needs the install path only for identification.
+        if ($nodeId > 0) {
+            $node = $this->db->table('game_nodes')->where('id', $nodeId)->first();
+            if (!$node || $node->type === 'local') { $nodeId = 0; }
+            else {
+                $slug = preg_replace('/[^a-z0-9]/', '', strtolower((string)$this->request->post('name', 'server')));
+                if ($installPath === '') $installPath = $slug;
+                if ($configPath === '') $configPath = $slug . '/server.cfg';
+            }
+        }
+
         $data = [
             'user_id' => (int)$this->request->post('user_id', 0),
             'type_id' => (int)$this->request->post('type_id', 0),
             'name' => $this->request->post('name', ''),
             'game_type' => $this->request->post('game_type', ''),
+            'node_id' => $nodeId ?: null,
             'port' => (int)$this->request->post('port', 0),
             'status' => $this->request->post('status', 'stopped'),
-            'install_path' => $this->request->post('install_path', ''),
-            'config_path' => $this->request->post('config_path', ''),
+            'install_path' => $installPath,
+            'config_path' => $configPath,
             'is_active' => (int)$this->request->post('is_active', 1),
         ];
         if (!$data['name']) {

@@ -21,6 +21,13 @@
 <?php endforeach; ?>
 </select></div>
 </div>
+<div class="form-group"><label>Hosted On Node</label><select name="node_id" id="editNode">
+<option value="">This panel server (local) — I'll type paths below</option>
+<?php foreach ($nodes as $nd): ?>
+<option value="<?php echo (int)$nd->id; ?>"><?php echo htmlspecialchars($nd->name . ($nd->type === 'local' ? ' (local)' : '')); ?></option>
+<?php endforeach; ?>
+</select>
+<small style="color:#64748b;font-size:11px">Selecting a remote node runs the game on that machine via the agent — Install/Config paths are then derived from the node, not the panel.</small></div>
 <div class="form-group" style="display:flex;gap:8px">
 <div style="flex:1"><label>Port</label><input name="port" id="editPort" type="number" value="<?php echo (int)($settings['default_port'] ?? 27015); ?>"></div>
 <div style="flex:1"><label>Status</label><select name="status" id="editStatus">
@@ -36,13 +43,14 @@
 <a class="btn btn-sm" style="background:#333;color:#ccc;cursor:pointer" onclick="cancelEdit()">Cancel</a>
 </form></div>
 
-<table><tr><th>ID</th><th>Name</th><th>Owner</th><th>Game</th><th>Port</th><th>Status</th><th>State</th><th></th></tr>
+<table><tr><th>ID</th><th>Name</th><th>Owner</th><th>Game</th><th>Node</th><th>Port</th><th>Status</th><th>State</th><th></th></tr>
 <?php if (!empty($servers)): foreach ($servers as $s): ?>
 <tr>
 <td><?php echo $s->id; ?></td>
 <td><strong><?php echo htmlspecialchars($s->name); ?></strong></td>
 <td><?php echo htmlspecialchars($ownerMap[$s->user_id] ?? 'ID#'.$s->user_id); ?></td>
 <td><?php echo htmlspecialchars($s->game_type ?: ($typeMap[$s->type_id] ?? 'Unknown')); ?></td>
+<td><?php echo htmlspecialchars($nodeMap[$s->node_id] ?? 'Local'); ?></td>
 <td><?php echo $s->port ?: '-'; ?></td>
 <td><span class="status-badge status-<?php echo $s->status === 'running' ? 'active' : ($s->status === 'suspended' ? 'terminated' : 'pending'); ?>"><?php echo htmlspecialchars($serverStatusMap[$s->status] ?? $s->status); ?></span></td>
 <td><?php echo $s->is_active ? 'Active' : 'Inactive'; ?></td>
@@ -52,7 +60,7 @@
 <a href="/admin/games/servers/toggle/<?php echo $s->id; ?>" class="btn btn-sm" style="background:<?php echo $s->is_active ? 'rgba(250,204,21,.12)' : 'rgba(74,222,128,.12)'; ?>;color:<?php echo $s->is_active ? '#facc15' : '#4ade80'; ?>;text-decoration:none;border-radius:4px"><?php echo $s->is_active ? 'Suspend' : 'Unsuspend'; ?></a>
 <a href="/admin/games/servers/delete/<?php echo $s->id; ?>" class="btn btn-sm danger" onclick="return confirm('Delete this game server?')">Delete</a>
 </td></tr>
-<?php endforeach; else: ?><tr><td colspan="8" style="text-align:center;padding:20px;color:#64748b">No game servers yet.</td></tr>
+<?php endforeach; else: ?><tr><td colspan="9" style="text-align:center;padding:20px;color:#64748b">No game servers yet.</td></tr>
 <?php endif; ?></table>
 
 <script>
@@ -61,6 +69,7 @@ function editServer(s) {
     document.getElementById('editName').value = s.name;
     document.getElementById('editOwner').value = s.user_id;
     document.getElementById('editGame').value = s.type_id;
+    document.getElementById('editNode').value = s.node_id || '';
     document.getElementById('editPort').value = s.port;
     document.getElementById('editStatus').value = s.status || 'stopped';
     document.getElementById('editInstall').value = s.install_path || '';
