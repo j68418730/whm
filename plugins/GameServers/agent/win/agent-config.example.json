@@ -1,0 +1,9 @@
+{
+  "panel_url": "https://planet-hosts.com",
+  "node_token": "REPLACE_WITH_NODE_TOKEN_FROM_ADMIN",
+  "base_dir": "/var/gameservers",
+  "poll_interval_ms": 10000,
+  "steamcmd": "steamcmd",
+  "steam_user": "anonymous",
+  "steam_pass": ""
+}

@@ -23,9 +23,10 @@ class GameServersController extends Controller
         $servers = $this->db->table('game_servers')->orderBy('created_at', 'DESC')->get() ?: [];
         $gameTypes = $this->db->table('game_types')->where('is_active', 1)->orderBy('name', 'ASC')->get() ?: [];
         $hostingUsers = $this->db->table('hosting_users')->orderBy('username', 'ASC')->get() ?: [];
+        $nodes = $this->db->table('game_nodes')->orderBy('name', 'ASC')->get() ?: [];
         return $this->view('Plugins.GameServers.Views.admin.index', [
             'user' => $user, 'servers' => $servers, 'gameTypes' => $gameTypes,
-            'hostingUsers' => $hostingUsers, 'title' => 'Game Servers'
+            'hostingUsers' => $hostingUsers, 'nodes' => $nodes, 'title' => 'Game Servers'
         ]);
     }
 
@@ -66,6 +67,14 @@ class GameServersController extends Controller
             $this->response->redirect('/admin/games'); exit;
         }
 
+        // Optional remote destination node
+        $nodeId = (int)$this->request->post('node_id', 0);
+        $slug = preg_replace('/[^a-z0-9]/', '', strtolower($name));
+        if ($nodeId > 0) {
+            $node = $this->db->table('game_nodes')->where('id', $nodeId)->first();
+            if (!$node || $node->type === 'local') { $nodeId = 0; }
+        }
+
         // Auto-assign port if not specified
         if ($port <= 0) {
             require_once BASE_PATH . '/core/PortManager.php';
@@ -74,10 +83,12 @@ class GameServersController extends Controller
             $port = $alloc ?: 27015;
         }
 
-        $installDir = '/home/gameservers/' . preg_replace('/[^a-z0-9]/', '', strtolower($name)) . '_' . time();
+        // Remote nodes use a slug-relative path (agent resolves its own base dir)
+        $installDir = $nodeId > 0 ? $slug : '/home/gameservers/' . $slug . '_' . time();
 
         $this->db->table('game_servers')->insertGetId([
             'user_id' => $userId,
+            'node_id' => $nodeId ?: null,
             'game_type' => $gameTypeName ?: 'Custom',
             'server_name' => $name,
             'port' => $port,
@@ -86,13 +97,26 @@ class GameServersController extends Controller
             'install_path' => $installDir,
             'is_demo' => 0,
         ]);
+        $serverId = (int)$this->db->lastInsertId();
 
-        @mkdir($installDir, 0755, true);
-        if ($appId) {
-            $_SESSION['success_message'] = "Server '{$name}' created. Installing via SteamCMD (App {$appId}) on port {$port}.";
-            exec("cd {$installDir} && nohup steamcmd +login planet_hosts_dev Skylinehosting171 +force_install_dir {$installDir} +app_update {$appId} validate +quit > {$installDir}/install.log 2>&1 &");
+        if ($nodeId > 0) {
+            $this->enqueueRemoteJob($serverId, 'install', [
+                'slug' => $slug,
+                'server_name' => $name,
+                'appid' => $appId,
+                'port' => $port,
+                'max_players' => $maxPlayers,
+                'install_path' => $slug,
+            ]);
+            $_SESSION['success_message'] = "Server '{$name}' queued for install on remote node.";
         } else {
-            $_SESSION['success_message'] = "Server '{$name}' created on port {$port} with no Steam App ID.";
+            @mkdir($installDir, 0755, true);
+            if ($appId) {
+                $_SESSION['success_message'] = "Server '{$name}' created. Installing via SteamCMD (App {$appId}) on port {$port}.";
+                exec("cd {$installDir} && nohup steamcmd +login planet_hosts_dev Skylinehosting171 +force_install_dir {$installDir} +app_update {$appId} validate +quit > {$installDir}/install.log 2>&1 &");
+            } else {
+                $_SESSION['success_message'] = "Server '{$name}' created on port {$port} with no Steam App ID.";
+            }
         }
         $this->response->redirect('/admin/games');
     }
@@ -127,11 +151,17 @@ class GameServersController extends Controller
     public function start($id) { return $this->doAction($id, 'start'); }
     public function stop($id) { return $this->doAction($id, 'stop'); }
     public function restart($id) {
-        require_once BASE_PATH . '/plugins/GameServers/Services/GameServerManager.php';
-        $mg = new \GameServers\Services\GameServerManager();
-        $mg->stop((int)$id);
-        sleep(1);
-        $mg->start((int)$id);
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $server = $this->db->table('game_servers')->where('id', (int)$id)->first();
+        if ($server && $server->node_id) {
+            $this->enqueueRemoteJob((int)$id, 'restart', ['slug' => basename((string)$server->install_path), 'server_name' => $server->server_name]);
+        } else {
+            require_once BASE_PATH . '/plugins/GameServers/Services/GameServerManager.php';
+            $mg = new \GameServers\Services\GameServerManager();
+            $mg->stop((int)$id);
+            sleep(1);
+            $mg->start((int)$id);
+        }
         $this->response->redirect('/admin/games');
     }
 
@@ -206,9 +236,119 @@ class GameServersController extends Controller
 
     protected function doAction($id, $m) {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $server = $this->db->table('game_servers')->where('id', (int)$id)->first();
+        if ($server && $server->node_id) {
+            // Remote node → queue the job for the agent (poll mode, no inbound ports)
+            $cmd = $m === 'uninstall' ? 'delete' : $m;
+            $this->enqueueRemoteJob((int)$id, $cmd, [
+                'slug' => basename((string)$server->install_path),
+                'server_name' => $server->server_name,
+                'port' => $server->port,
+                'max_players' => $server->max_players,
+                'appid' => $server->appid ?? $server->type_id ?? 0,
+            ]);
+            $_SESSION['success_message'] = ucfirst($cmd) . ' queued on remote node.';
+            $this->response->redirect('/admin/games');
+            return;
+        }
         require_once BASE_PATH . '/plugins/GameServers/Services/GameServerManager.php';
         $mg = new \GameServers\Services\GameServerManager();
         $mg->$m((int)$id);
         $this->response->redirect('/admin/games');
+    }
+
+    // ── Remote Nodes ──
+    protected function enqueueRemoteJob($serverId, $command, $payload) {
+        $server = $this->db->table('game_servers')->where('id', (int)$serverId)->first();
+        if (!$server || !$server->node_id) return;
+        $this->db->table('node_jobs')->insertGetId([
+            'game_server_id' => (int)$serverId,
+            'node_id' => (int)$server->node_id,
+            'command' => $command,
+            'payload' => json_encode($payload ?: (object)[]),
+            'status' => 'pending',
+        ]);
+    }
+
+    public function nodes()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $nodes = $this->db->table('game_nodes')->orderBy('id', 'ASC')->get() ?: [];
+        return $this->view('Plugins.GameServers.Views.admin.nodes', [
+            'user' => $user, 'title' => 'Game Nodes', 'nodes' => $nodes,
+        ]);
+    }
+
+    public function nodeStore()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $name = trim($this->request->post('name', ''));
+        $type = $this->request->post('type', 'remote') === 'local' ? 'local' : 'remote';
+        $address = trim($this->request->post('address', ''));
+        if ($name === '') {
+            $_SESSION['error_message'] = 'Node name is required.';
+            $this->response->redirect('/admin/games/nodes'); exit;
+        }
+        $token = bin2hex(random_bytes(32));
+        $this->db->table('game_nodes')->insertGetId([
+            'name' => $name, 'address' => $address, 'type' => $type, 'token' => $token, 'status' => 'offline',
+        ]);
+        $_SESSION['success_message'] = "Node '{$name}' added. Agent token: {$token}";
+        $this->response->redirect('/admin/games/nodes');
+    }
+
+    public function nodeDelete($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $this->db->table('game_servers')->where('node_id', (int)$id)->update(['node_id' => null]);
+        $this->db->table('node_jobs')->where('node_id', (int)$id)->update(['status' => 'failed', 'result' => 'Node removed']);
+        $this->db->table('game_nodes')->where('id', (int)$id)->delete();
+        $_SESSION['success_message'] = 'Node removed.';
+        $this->response->redirect('/admin/games/nodes');
+    }
+
+    public function nodeTest($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $node = $this->db->table('game_nodes')->where('id', (int)$id)->first();
+        if ($node && $node->last_seen) {
+            $online = $node->status === 'online' && (time() - strtotime($node->last_seen)) < 120;
+            $_SESSION['success_message'] = $online
+                ? "Node online (last seen {$node->last_seen})."
+                : "Node appears offline (last seen {$node->last_seen}).";
+        } else {
+            $_SESSION['success_message'] = 'No activity yet — start the agent on the remote machine.';
+        }
+        $this->response->redirect('/admin/games/nodes');
+    }
+
+    /** Serve a prebuilt Windows agent zip (admin only). */
+    public function agentZip()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $zipPath = BASE_PATH . '/plugins/GameServers/agent/ph-agent-windows.zip';
+        if (!file_exists($zipPath)) {
+            if (class_exists('ZipArchive')) {
+                $zip = new \ZipArchive();
+                $win = BASE_PATH . '/plugins/GameServers/agent/win';
+                if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+                    foreach (['ph-agent.exe', 'install-agent.ps1', 'agent-config.example.json', 'README-windows.md'] as $f) {
+                        $src = $win . '/' . $f;
+                        if (is_file($src)) { $zip->addFile($src, $f); }
+                    }
+                    $zip->close();
+                }
+            }
+        }
+        if (file_exists($zipPath)) {
+            header('Content-Type: application/zip');
+            header('Content-Disposition: attachment; filename="ph-agent-windows.zip"');
+            header('Content-Length: ' . filesize($zipPath));
+            readfile($zipPath);
+            exit;
+        }
+        $_SESSION['error_message'] = 'Agent package not available.';
+        $this->response->redirect('/admin/games/nodes');
     }
 }

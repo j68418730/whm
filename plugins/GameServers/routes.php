@@ -2,8 +2,16 @@
 if (!isset($router)) {
     $router = \Core\Application::getInstance()->get('router');
 }
+// Agent API (remote node control — token-authed in the controller, no inbound ports)
+$router->get('/api/agent/commands', 'Plugins\GameServers\Controllers\Api\AgentController@commands');
+$router->post('/api/agent/result', 'Plugins\GameServers\Controllers\Api\AgentController@result');
 // Admin routes
 $router->get('/admin/games', 'Plugins\GameServers\Controllers\Admin\GameServersController@index');
+$router->get('/admin/games/nodes', 'Plugins\GameServers\Controllers\Admin\GameServersController@nodes');
+$router->post('/admin/games/nodes/store', 'Plugins\GameServers\Controllers\Admin\GameServersController@nodeStore');
+$router->post('/admin/games/nodes/delete/{id}', 'Plugins\GameServers\Controllers\Admin\GameServersController@nodeDelete');
+$router->post('/admin/games/nodes/test/{id}', 'Plugins\GameServers\Controllers\Admin\GameServersController@nodeTest');
+$router->get('/admin/games/nodes/agent-zip', 'Plugins\GameServers\Controllers\Admin\GameServersController@agentZip');
 $router->get('/admin/games/show/{id}', 'Plugins\GameServers\Controllers\Admin\GameServersController@show');
 $router->post('/admin/games/create', 'Plugins\GameServers\Controllers\Admin\GameServersController@create');
 $router->get('/admin/games/start/{id}', 'Plugins\GameServers\Controllers\Admin\GameServersController@start');
