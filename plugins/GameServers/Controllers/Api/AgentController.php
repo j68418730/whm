@@ -34,6 +34,72 @@ class AgentController
         return $node;
     }
 
+    /**
+     * Mark the node online, capture the connecting IP + geo location (cached
+     * per IP so we don't hammer the geo provider on every 10s poll).
+     */
+    protected function touchNode($node)
+    {
+        $ip = $this->clientIp();
+        $upd = [
+            'status' => 'online',
+            'last_seen' => date('Y-m-d H:i:s'),
+            'last_ip' => $ip,
+        ];
+
+        // Only re-geo when the source IP changes
+        if ($node->last_ip !== $ip) {
+            $geo = $this->geoLookup($ip);
+            foreach (['geo_city', 'geo_region', 'geo_country', 'geo_iso', 'geo_lat', 'geo_lon'] as $k) {
+                if (array_key_exists($k, $geo)) {
+                    $upd[$k] = $geo[$k];
+                }
+            }
+        }
+
+        $this->db->table('game_nodes')->where('id', $node->id)->update($upd);
+    }
+
+    protected function clientIp()
+    {
+        foreach (['HTTP_X_FORWARDED_FOR', 'HTTP_CF_CONNECTING_IP', 'REMOTE_ADDR'] as $h) {
+            $v = trim((string)($_SERVER[$h] ?? ''));
+            if ($v !== '') {
+                // X-Forwarded-For may be "client, proxy"
+                $first = explode(',', $v)[0];
+                $first = trim($first);
+                if (filter_var($first, FILTER_VALIDATE_IP)) return $first;
+                if ($h === 'REMOTE_ADDR' && $first !== '') return $first;
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Free geo lookup via ip-api.com (no API key, ~45 req/min, non-commercial).
+     * On any failure returns an empty array so the poll is never blocked.
+     */
+    protected function geoLookup($ip)
+    {
+        if (!filter_var($ip, FILTER_VALIDATE_IP) || filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE) === false) {
+            return [];
+        }
+        $base = 'http://ip-api.com/json/' . rawurlencode($ip) . '?fields=status,country,countryCode,regionName,city,lat,lon';
+        $ctx = stream_context_create(['http' => ['timeout' => 4]]);
+        $body = @file_get_contents($base, false, $ctx);
+        if (!$body) return [];
+        $d = json_decode($body, true);
+        if (!is_array($d) || ($d['status'] ?? '') !== 'success') return [];
+        return [
+            'geo_city'   => $d['city'] ?? '',
+            'geo_region' => $d['regionName'] ?? '',
+            'geo_country'=> $d['country'] ?? '',
+            'geo_iso'    => strtoupper($d['countryCode'] ?? ''),
+            'geo_lat'    => isset($d['lat']) ? (string)$d['lat'] : '',
+            'geo_lon'    => isset($d['lon']) ? (string)$d['lon'] : '',
+        ];
+    }
+
     protected function json($data, $code = 200)
     {
         http_response_code($code);
@@ -52,10 +118,7 @@ class AgentController
         if (!$node) {
             return $this->json(['error' => 'Unauthorized'], 401);
         }
-        $this->db->table('game_nodes')->where('id', $node->id)->update([
-            'status' => 'online',
-            'last_seen' => date('Y-m-d H:i:s'),
-        ]);
+        $this->touchNode($node);
 
         $job = $this->db->table('node_jobs')->where('node_id', $node->id)->where('status', 'pending')->orderBy('id', 'ASC')->first();
         if (!$job) {

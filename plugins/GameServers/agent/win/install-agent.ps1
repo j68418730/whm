@@ -19,13 +19,19 @@ $panel   = Read-Host "Panel URL (e.g. https://planet-hosts.com)"
 if ([string]::IsNullOrWhiteSpace($panel)) { $panel = 'https://planet-hosts.com' }
 $token   = Read-Host "Node token (from Admin -> Games -> Nodes)"
 if ([string]::IsNullOrWhiteSpace($token)) { Write-Host "Token is required." -ForegroundColor Red; exit 1 }
-$base    = Read-Host "Game install directory (default: C:\PlanetHostsGames)"
+$instDirPrompt = "Where to install the agent (default: $env:ProgramFiles\PlanetHostsAgent)"
+$instDir = Read-Host $instDirPrompt
+if ([string]::IsNullOrWhiteSpace($instDir)) { $instDir = Join-Path $env:ProgramFiles 'PlanetHostsAgent' }
+$instDir = [System.IO.Path]::GetFullPath($instDir)
+$base    = Read-Host "Where to install games (default: C:\PlanetHostsGames)"
 if ([string]::IsNullOrWhiteSpace($base)) { $base = 'C:\PlanetHostsGames' }
+$base    = [System.IO.Path]::GetFullPath($base)
 
 # ---- Install files ----
 Write-Host "Installing to $instDir ..."
 New-Item -ItemType Directory -Force -Path $instDir | Out-Null
 Copy-Item $exe (Join-Path $instDir 'ph-agent.exe') -Force
+$workDir = $instDir
 
 $config = @{
   panel_url        = $panel
@@ -43,7 +49,7 @@ $taskName = 'PlanetHostsAgent'
 if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
   Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
 }
-$action  = New-ScheduledTaskAction -Execute (Join-Path $instDir 'ph-agent.exe') -WorkingDirectory $instDir
+$action  = New-ScheduledTaskAction -Execute (Join-Path $workDir 'ph-agent.exe') -WorkingDirectory $workDir
 $trigger = New-ScheduledTaskTrigger -AtStartup
 $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
 Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Description 'Planet Hosts Game Node Agent' -Force | Out-Null
