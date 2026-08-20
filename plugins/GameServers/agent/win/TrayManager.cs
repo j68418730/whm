@@ -516,6 +516,8 @@ namespace TrayManager
     // ───────────────────────── Windows Service host ─────────────────────────
     public class AgentService : ServiceBase
     {
+        private Process _proc;
+
         public AgentService()
         {
             ServiceName = Program.ServiceName;
@@ -524,15 +526,31 @@ namespace TrayManager
             AutoLog = true;
         }
 
+        // In service mode we spawn ph-agent.exe directly. Program.StartAgent()
+        // would call `sc start` on ourselves (no-op recursion), so bypass it.
         protected override void OnStart(string[] args)
         {
-            Program.StartAgent();
+            try
+            {
+                _proc = new Process();
+                _proc.StartInfo.FileName = Program.AgentPath;
+                _proc.StartInfo.WorkingDirectory = Program.AppDir;
+                _proc.StartInfo.UseShellExecute = false;
+                _proc.StartInfo.CreateNoWindow = true;
+                _proc.Start();
+            }
+            catch { }
             base.OnStart(args);
         }
 
         protected override void OnStop()
         {
-            Program.StopAgent();
+            try
+            {
+                Process[] ps = Process.GetProcessesByName("ph-agent");
+                foreach (Process p in ps) { try { p.Kill(); } catch { } }
+            }
+            catch { }
             base.OnStop();
         }
 
