@@ -50,9 +50,36 @@ namespace Installer
             try { System.Net.ServicePointManager.SecurityProtocol =
                       System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls; }
             catch { }
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Program());
+            try { Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException); }
+            catch { }
+            Application.ThreadException += delegate(object s, System.Threading.ThreadExceptionEventArgs e)
+            {
+                CrashLog(e.Exception);
+            };
+            try
+            {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                Application.Run(new Program());
+            }
+            catch (Exception ex)
+            {
+                CrashLog(ex);
+                MessageBox.Show("Setup failed unexpectedly:\n\n" + ex.Message
+                    + "\n\nDetails were written to setup-error.log next to the installer.",
+                    "Planet Host — Game Node Agent Installer", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        static void CrashLog(Exception e)
+        {
+            try
+            {
+                string dir = AppDomain.CurrentDomain.BaseDirectory;
+                System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "setup-error.log"),
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " " + (e == null ? "null" : e.ToString()) + "\r\n");
+            }
+            catch { }
         }
 
         public Program()

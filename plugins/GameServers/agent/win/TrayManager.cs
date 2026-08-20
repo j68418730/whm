@@ -46,6 +46,19 @@ namespace TrayManager
         public static int Main(string[] args)
         {
             try { ServicePointManager2(); } catch { }
+            // Surface runtime errors instead of the tray icon silently vanishing.
+            try { Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException); }
+            catch { }
+            Application.ThreadException += delegate(object s, System.Threading.ThreadExceptionEventArgs e)
+            {
+                CrashLog("thread", e.Exception);
+            };
+            try { AppDomain.CurrentDomain.UnhandledException += delegate(object s, UnhandledExceptionEventArgs e)
+            {
+                if (e.ExceptionObject is Exception) CrashLog("domain", (Exception)e.ExceptionObject);
+            }; }
+            catch { }
+
             bool has = false;
             foreach (string a in args)
                 if (a == "--service" || a == "/service" || a == "-service") has = true;
@@ -60,6 +73,15 @@ namespace TrayManager
             if (un)
             {
                 SilentUninstall();
+                return 0;
+            }
+            // Only one tray instance — a second launch just exits immediately.
+            bool singleton = false;
+            Mutex mux = null;
+            try { mux = new Mutex(true, "PlanetHostsAgentTrayMutex", out singleton); } catch { }
+            if (!singleton)
+            {
+                // Already running (auto-start + manual launch again) — do nothing.
                 return 0;
             }
             // --setup [service|task]  used by the GUI installer after files +
@@ -86,13 +108,35 @@ namespace TrayManager
                 catch { }
                 return 0;
             }
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            using (TrayApp app = new TrayApp())
+            try
             {
-                Application.Run(app);
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                using (TrayApp app = new TrayApp())
+                {
+                    Application.Run(app);
+                }
+            }
+            catch (Exception ex)
+            {
+                CrashLog("main", ex);
+                MessageBox.Show("Planet Host Game Node Agent failed to start:\n\n" + ex.Message
+                    + "\n\nDetails were written to " + Path.Combine(AppDir, "agent-error.log"),
+                    "Planet Host Game Node Agent", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             return 0;
+        }
+
+        // Writes an error log next to the exe so a silent crash leaves a record.
+        private static void CrashLog(string where, Exception e)
+        {
+            try
+            {
+                File.AppendAllText(Path.Combine(AppDir, "agent-error.log"),
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " [" + where + "] "
+                    + (e == null ? "null" : (e.ToString())) + "\r\n");
+            }
+            catch { }
         }
 
         // Place after the namespace line so it compiles with the Math using above
