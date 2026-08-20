@@ -44,6 +44,14 @@
 <?php endforeach; ?>
 </select></div>
 <div class="form-group"><label>Max Players</label><input name="max_players" type="number" value="16" min="1"></div>
+<div class="form-group"><label>Hosted On Node</label>
+<select name="node_id">
+<option value="">This panel server (local)</option>
+<?php foreach ($nodes as $nd): ?>
+<option value="<?php echo (int)$nd->id; ?>"><?php echo htmlspecialchars($nd->name . ($nd->type === 'local' ? ' (local)' : ''), ENT_QUOTES, 'UTF-8'); ?></option>
+<?php endforeach; ?>
+</select>
+<small style="color:#64748b;font-size:11px;display:block">Remote nodes install & run the game on that machine via the agent.</small></div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
 <div class="form-group"><label>Port (leave 0 for auto-assign)</label><input name="port" type="number" value="0" min="0" max="65535" placeholder="0 = auto"></div>
