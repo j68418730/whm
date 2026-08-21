@@ -9,6 +9,10 @@ if (-not (Test-Path $csc)) { throw "csc.exe not found at $csc" }
 $agent = Join-Path $win 'ph-agent.exe'
 if (-not (Test-Path $agent)) { throw "Missing ph-agent.exe (pkg bundle of ../../agent/agent.js) next to this script." }
 
+# Patch the agent exe to GUI subsystem so no console window ever flashes
+Write-Host 'Patching ph-agent.exe to GUI subsystem...'
+& "$win\patch-gui.ps1" -ExePath $agent
+
 Push-Location $win
 try {
     Write-Host 'Building ph-agent-tray.exe ...'
