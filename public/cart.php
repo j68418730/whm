@@ -150,8 +150,8 @@ if ($action === 'checkout' && $_POST) {
             VALUES (?, ?, ?, ?, 'pending', NOW())")->execute([$userId, $itemsJson, $total, $method]);
         $orderId = $pdo->lastInsertId();
 
-        if ($method === 'paypal') {
-            // Redirect to PayPal
+        if (in_array($method, ['paypal', 'credit_card', 'stripe'])) {
+            // Redirect to PayPal for all card/stripe payments
             header('Location: /paypal/pay?order_id=' . $orderId);
             exit;
         } else {
@@ -283,6 +283,8 @@ $ownDomain = isset($_POST['domain']) ? strtolower(trim($_POST['domain'])) : '';
 <div class="form-group"><label>Payment Method</label>
 <select name="method">
 <option value="paypal">PayPal</option>
+<option value="credit_card">Credit / Debit Card</option>
+<option value="stripe">Stripe</option>
 <option value="manual">Bank Transfer / CashApp (Manual)</option>
 </select>
 </div>
