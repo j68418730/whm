@@ -16,20 +16,33 @@ class ChatController extends Controller
         $this->db = $app->get('db');
     }
 
-    public function start()
+public function start()
     {
         $name = $this->request->post('name', 'Visitor');
         $email = $this->request->post('email', '');
+        $subject = $this->request->post('subject', 'Chat');
+        $message = $this->request->post('message', '');
         $sessId = $_COOKIE['PHPSESSID'] ?? session_id();
         $visitor = $this->db->table('chat_visitors')->where('session_id', $sessId)->first();
         $visitorId = $visitor ? $visitor->id : null;
+        // If logged-in user, link to their hosting account
+        $hostingUserId = null;
+        $u = $this->auth->user();
+        if ($u) {
+            $hosting = $this->db->table('hosting_users')->where('email', $u->email)->first();
+            if ($hosting) $hostingUserId = $hosting->id;
+        }
         $sessionId = $this->db->table('chat_sessions')->insertGetId([
             'visitor_id' => $visitorId, 'visitor_name' => $name, 'visitor_email' => $email,
-            'status' => 'waiting', 'subject' => $this->request->post('subject', 'Chat'),
+            'status' => 'waiting', 'subject' => $subject,
         ]);
+        // Update visitor with hosting_user_id if available
+        if ($hostingUserId && $visitorId) {
+            $this->db->table('chat_visitors')->where('id', $visitorId)->update(['hosting_user_id' => $hostingUserId]);
+        }
         $this->db->table('chat_messages')->insertGetId([
             'session_id' => $sessionId, 'sender_type' => 'system',
-            'message' => "{$name} has started a chat.",
+            'message' => "{$name} has started a chat." . ($message ? "\n{$message}" : ''),
         ]);
         // Notify all admins about new chat
         $now = date('Y-m-d H:i:s');
