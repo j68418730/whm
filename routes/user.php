@@ -84,6 +84,7 @@ $router->post('/user/tickets/create', 'User\Controllers\TicketsController@create
 $router->get('/user/tickets/{id}', 'User\Controllers\TicketsController@show');
 $router->post('/user/tickets/reply/{id}', 'User\Controllers\TicketsController@reply');
 $router->get('/user/tickets/close/{id}', 'User\Controllers\TicketsController@close');
+$router->get('/user/livechat', 'User\Controllers\UserController@livechat');
 $router->get('/user/chat', 'User\Controllers\UserController@chat');
 $router->post('/user/chat', 'User\Controllers\UserController@chat');
 $router->get('/user/stats', 'User\Controllers\UserController@stats');

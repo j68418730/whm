@@ -12,5 +12,5 @@
 <a href="/user/tickets" class="section-card"><span class="icon">🎫</span><div class="name">Create Ticket</div><div class="desc">Submit a support request</div></a>
 <a href="/user/tickets" class="section-card"><span class="icon">📋</span><div class="name">My Tickets</div><div class="desc">View existing tickets</div></a>
 <a href="/user/support" class="section-card"><span class="icon">📚</span><div class="name">Knowledge Base</div><div class="desc">Guides and articles</div></a>
-<a href="/livechat" target="_blank" class="section-card"><span class="icon">💬</span><div class="name">Live Chat</div><div class="desc">Chat with support</div></a>
+<a href="/user/livechat" class="section-card"><span class="icon">💬</span><div class="name">Live Chat</div><div class="desc">Chat with support</div></a>
 </div>
