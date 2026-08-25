@@ -425,8 +425,15 @@ class UserController extends Controller
         $u = $this->loadUser();
         $hosting = $this->hostingUser;
         $sessions = [];
+        $chatboxTenantId = null;
         if ($hosting) {
             $pdo = $this->db->pdo();
+            // Get chatbox tenant for this user
+            $tenantStmt = $pdo->prepare("SELECT id FROM chatbox_tenants WHERE hosting_user_id = ? AND is_active = 1 ORDER BY id DESC LIMIT 1");
+            $tenantStmt->execute([$hosting->id]);
+            $tenantRow = $tenantStmt->fetch(\PDO::FETCH_OBJ);
+            $chatboxTenantId = $tenantRow ? (int)$tenantRow->id : null;
+
             // Find the visitor record for this user
             $visitor = $pdo->prepare("SELECT id FROM chat_visitors WHERE hosting_user_id = ? ORDER BY id DESC LIMIT 1");
             $visitor->execute([$hosting->id]);
@@ -438,7 +445,7 @@ class UserController extends Controller
                 $sessions = $stmt->fetchAll(\PDO::FETCH_OBJ);
             }
         }
-        return $this->view('user.livechat.index', ['user' => $u, 'hosting' => $hosting, 'sessions' => $sessions, 'title' => 'Live Chat Support']);
+        return $this->view('user.livechat.index', ['user' => $u, 'hosting' => $hosting, 'sessions' => $sessions, 'chatboxTenantId' => $chatboxTenantId, 'title' => 'Live Chat Support']);
     }
     public function admins() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/admins.php'; exit; }
     public function djManager() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/dj-manager.php'; exit; }
