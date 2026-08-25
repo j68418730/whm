@@ -32,7 +32,7 @@ class DashboardController extends Controller
 
         // Recent items (with error handling for missing tables)
         $recentAccounts = $this->db->table('hosting_users')->orderBy('created_at', 'DESC')->limit(5)->get() ?: [];
-        try { $recentTickets = $this->db->table('support_tickets')->where('status', 'open')->orderBy('created_at', 'DESC')->limit(5)->get() ?: []; } catch (\Exception $e) { $recentTickets = []; }
+        try { $recentTickets = $this->db->table('tickets')->where('status', 'open')->orderBy('created_at', 'DESC')->limit(5)->get() ?: []; } catch (\Exception $e) { $recentTickets = []; }
         try { $recentOrders = $this->db->table('orders')->orderBy('created_at', 'DESC')->limit(5)->get() ?: []; } catch (\Exception $e) { $recentOrders = []; }
 
         // Stats
