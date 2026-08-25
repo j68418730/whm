@@ -419,6 +419,27 @@ class UserController extends Controller
         $themes = ['default'=>'Default Dark','blue'=>'Blue','black'=>'Black','white'=>'White','gray'=>'Gray','neon'=>'Neon','gaming'=>'Gaming','hacker'=>'Hacker','matrix'=>'Matrix','discord'=>'Discord','twitch'=>'Twitch','retro'=>'Retro','purple'=>'Purple','red'=>'Red','gold'=>'Gold'];
         return $this->view('user.chat.index', ['user'=>$u, 'hosting'=>$hosting, 'tenant'=>$tenant, 'roomsList'=>$roomsList, 'themes'=>$themes, 'tokens'=>$tokens ?? [], 'chatUsers'=>$chatUsers ?? [], 'title'=>'My Chat Rooms']);
     }
+
+    public function livechat()
+    {
+        $u = $this->loadUser();
+        $hosting = $this->hostingUser;
+        $sessions = [];
+        if ($hosting) {
+            $pdo = $this->db->pdo();
+            // Find the visitor record for this user
+            $visitor = $pdo->prepare("SELECT id FROM chat_visitors WHERE hosting_user_id = ? ORDER BY id DESC LIMIT 1");
+            $visitor->execute([$hosting->id]);
+            $visitorRow = $visitor->fetch(\PDO::FETCH_OBJ);
+            if ($visitorRow) {
+                $stmt = $pdo->prepare("SELECT s.*, (SELECT COUNT(*) FROM chat_messages WHERE session_id = s.id AND sender_type = 'operator' AND is_read = 0) AS unread_op
+                    FROM chat_sessions s WHERE s.visitor_id = ? ORDER BY s.created_at DESC");
+                $stmt->execute([$visitorRow->id]);
+                $sessions = $stmt->fetchAll(\PDO::FETCH_OBJ);
+            }
+        }
+        return $this->view('user.livechat.index', ['user' => $u, 'hosting' => $hosting, 'sessions' => $sessions, 'title' => 'Live Chat Support']);
+    }
     public function admins() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/admins.php'; exit; }
     public function djManager() { $u = $this->loadUser(); $app = \Core\Application::getInstance(); $user = $app->get('auth')->user(); $pdo = $this->db->pdo(); $hosting = $this->hostingUser; require BASE_PATH . '/public/user/dj-manager.php'; exit; }
     public function phpSwitcher() {
