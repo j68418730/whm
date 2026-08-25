@@ -11,6 +11,7 @@ class ChatController extends Controller
     public function __construct()
     {
         $app = \Core\Application::getInstance();
+        $this->auth = $app->get('auth');
         $this->request = $app->get('request');
         $this->response = $app->get('response');
         $this->db = $app->get('db');
