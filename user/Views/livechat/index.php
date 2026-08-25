@@ -2,6 +2,7 @@
 $waiting = array_filter($sessions, fn($s) => $s->status === 'waiting');
 $active  = array_filter($sessions, fn($s) => $s->status === 'active');
 $closed  = array_filter($sessions, fn($s) => $s->status === 'closed');
+$tenantId = $chatboxTenantId ?? 0;
 ?>
 <div style="max-width:900px;margin:0 auto">
 <h1 style="margin-bottom:8px">💬 Live Chat Support</h1>
@@ -19,7 +20,7 @@ $closed  = array_filter($sessions, fn($s) => $s->status === 'closed');
 <?php if ($s->operator_name): ?><span style="color:#64748b;font-size:12px"> with <?php echo htmlspecialchars($s->operator_name); ?></span><?php endif; ?>
 <br><span style="font-size:12px;color:#94a3b8">Created <?php echo date('M j, Y g:i A', strtotime($s->created_at)); ?></span>
 </div>
-<a href="/chatbox/widget.js.php?tenant_id=0&session_id=<?php echo $s->id; ?>" target="_blank" class="btn btn-sm primary" style="padding:6px 14px;font-size:12px">Open Chat</a>
+<a href="/chatbox/widget.js.php?tenant_id=<?php echo $tenantId; ?>&session_id=<?php echo $s->id; ?>" target="_blank" class="btn btn-sm primary" style="padding:6px 14px;font-size:12px">Open Chat</a>
 </div>
 </div>
 <?php endforeach; ?>
@@ -34,7 +35,7 @@ $closed  = array_filter($sessions, fn($s) => $s->status === 'closed');
 <strong>#<?php echo $s->id; ?></strong> <?php echo htmlspecialchars($s->subject ?: 'Support'); ?>
 <br><span style="font-size:12px;color:#94a3b8">Requested <?php echo date('M j, Y g:i A', strtotime($s->created_at)); ?></span>
 </div>
-<a href="/chatbox/widget.js.php?tenant_id=0&session_id=<?php echo $s->id; ?>" target="_blank" class="btn btn-sm secondary" style="padding:6px 14px;font-size:12px">View Chat</a>
+<a href="/chatbox/widget.js.php?tenant_id=<?php echo $tenantId; ?>&session_id=<?php echo $s->id; ?>" target="_blank" class="btn btn-sm secondary" style="padding:6px 14px;font-size:12px">View Chat</a>
 </div>
 </div>
 <?php endforeach; ?>
@@ -49,7 +50,7 @@ $closed  = array_filter($sessions, fn($s) => $s->status === 'closed');
 <strong>#<?php echo $s->id; ?></strong> <?php echo htmlspecialchars($s->subject ?: 'Support'); ?>
 <br><span style="font-size:12px;color:#94a3b8">Closed <?php echo $s->closed_at ? date('M j, Y g:i A', strtotime($s->closed_at)) : date('M j, Y g:i A', strtotime($s->created_at)); ?></span>
 </div>
-<a href="/chatbox/widget.js.php?tenant_id=0&session_id=<?php echo $s->id; ?>" target="_blank" class="btn btn-sm" style="background:#333;color:#ccc;padding:6px 14px;font-size:12px">View Transcript</a>
+<a href="/chatbox/widget.js.php?tenant_id=<?php echo $tenantId; ?>&session_id=<?php echo $s->id; ?>" target="_blank" class="btn btn-sm" style="background:#333;color:#ccc;padding:6px 14px;font-size:12px">View Transcript</a>
 </div>
 </div>
 <?php endforeach; ?>
@@ -102,7 +103,7 @@ try {
 const res = await fetch('/chat/start', {method:'POST', body:fd});
 const data = await res.json();
 if (data.id) {
-window.open('/chatbox/widget.js.php?tenant_id=0&session_id=' + data.id, '_blank', 'width=400,height=600');
+window.open('/chatbox/widget.js.php?tenant_id=<?php echo $tenantId; ?>&session_id=' + data.id, '_blank', 'width=400,height=600');
 setTimeout(() => location.reload(), 1000);
 } else {
 alert('Failed to start chat: ' + (data.error || 'Unknown error'));
