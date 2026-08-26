@@ -423,6 +423,26 @@ class AccountController extends Controller
         exit;
     }
 
+    public function toggleNoAutoSuspend($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $account = $this->db->table('hosting_users')->where('id', $id)->first();
+        if (!$account) { $_SESSION['error_message'] = 'Account not found.'; $this->response->redirect('/admin/account'); exit; }
+        $flag = (int)$this->request->post('no_auto_suspend', 0);
+        $this->db->table('hosting_users')->where('id', $id)->update(['no_auto_suspend' => $flag ? 1 : 0]);
+        try {
+            $this->db->table('activity_logs')->insert([
+                'account_id' => $id, 'admin_id' => $this->auth->user()->id,
+                'action' => 'toggle_no_auto_suspend',
+                'details' => ($flag ? 'Enabled' : 'Disabled') . " no-auto-suspend for {$account->username}",
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
+            ]);
+        } catch (\Exception $e) {}
+        $_SESSION['success_message'] = "No-auto-suspend " . ($flag ? 'enabled' : 'disabled') . " for '{$account->username}'.";
+        $this->response->redirect('/admin/account/show/' . $id);
+        exit;
+    }
+
     public function unsuspend($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
