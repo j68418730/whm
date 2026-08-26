@@ -54,6 +54,19 @@
 <?php echo (($account->allow_suspension ?? 1) == 1) ? '🟢 This account CAN be auto-suspended when over quota.' : '🔴 Auto-suspension is DISABLED for this account (manual only).'; ?>
 </p>
 </div>
+<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)">
+<form method="POST" action="/admin/account/toggle-no-auto-suspend/<?php echo $account->id; ?>" style="display:flex;align-items:center;gap:10px">
+<span style="font-size:12px;color:var(--text_muted)">Prevent ALL auto-suspension (billing + cron):</span>
+<select name="no_auto_suspend" style="width:auto;padding:5px 10px;font-size:12px" onchange="this.form.submit()">
+<option value="1" <?php echo (($account->no_auto_suspend ?? 0) == 1) ? 'selected' : ''; ?>>Yes — Never auto-suspend</option>
+<option value="0" <?php echo (($account->no_auto_suspend ?? 0) == 0) ? 'selected' : ''; ?>>No — Follow normal rules</option>
+</select>
+<button class="btn btn-sm btn-secondary" style="padding:4px 10px">Save</button>
+</form>
+<p style="font-size:11px;color:<?php echo (($account->no_auto_suspend ?? 0) == 1) ? '#f87171' : '#4ade80'; ?>;margin-top:6px">
+<?php echo (($account->no_auto_suspend ?? 0) == 1) ? '🔴 This account will NEVER be auto-suspended (manual only).' : '🟢 Normal auto-suspension rules apply.'; ?>
+</p>
+</div>
 </div>
 
                 <div class="action-card">

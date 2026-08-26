@@ -330,6 +330,7 @@ $router->get('/admin/account/show/{id}', 'Admin\Controllers\AccountController@sh
 $router->get('/admin/account/suspend/{id}', 'Admin\Controllers\AccountController@suspend');
 $router->get('/admin/account/unsuspend/{id}', 'Admin\Controllers\AccountController@unsuspend');
 $router->post('/admin/account/allow-suspension/{id}', 'Admin\Controllers\AccountController@allowSuspension');
+$router->post('/admin/account/toggle-no-auto-suspend/{id}', 'Admin\Controllers\AccountController@toggleNoAutoSuspend');
 $router->get('/admin/account/terminate/{id}', 'Admin\Controllers\AccountController@terminate');
 $router->post('/admin/account/password/{id}', 'Admin\Controllers\AccountController@password');
 $router->get('/admin/account/search', 'Admin\Controllers\AccountController@index');

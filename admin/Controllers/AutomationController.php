@@ -94,6 +94,12 @@ class AutomationController extends Controller
             $overdue = $this->db->table('invoices')->where('status', 'overdue')->where('due_date', '<', $cutoff)->get() ?: [];
             $suspended = [];
             foreach ($overdue as $inv) {
+                // Skip users with no_auto_suspend flag
+                $user = $this->db->table('hosting_users')->where('id', $inv->user_id)->first();
+                if ($user && (int)$user->no_auto_suspend === 1) {
+                    $log[] = "Skipped suspend for user #{$inv->user_id} (no_auto_suspend enabled)";
+                    continue;
+                }
                 if (!in_array($inv->user_id, $suspended)) {
                     $this->db->table('hosting_users')->where('id', $inv->user_id)->update(['status' => 'suspended']);
                     $suspended[] = $inv->user_id;
