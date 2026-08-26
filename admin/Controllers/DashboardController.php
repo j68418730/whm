@@ -33,6 +33,8 @@ class DashboardController extends Controller
         // Recent items (with error handling for missing tables)
         $recentAccounts = $this->db->table('hosting_users')->orderBy('created_at', 'DESC')->limit(5)->get() ?: [];
         try { $recentTickets = $this->db->table('tickets')->where('status', 'open')->orderBy('created_at', 'DESC')->limit(5)->get() ?: []; } catch (\Exception $e) { $recentTickets = []; }
+        $openTicketCount = 0;
+        try { $openTicketCount = (int)$this->db->table('tickets')->where('status', 'open')->count(); } catch (\Exception $e) {}
         try { $recentOrders = $this->db->table('orders')->orderBy('created_at', 'DESC')->limit(5)->get() ?: []; } catch (\Exception $e) { $recentOrders = []; }
 
         // Stats
@@ -154,7 +156,7 @@ class DashboardController extends Controller
                 'total_packages' => count($packages),
                 'active_packages' => $activePackages,
                 'total_resellers' => count($resellers),
-                'open_tickets' => count($recentTickets),
+                'open_tickets' => $openTicketCount,
                 'revenue_month' => 0,
                 'pending_invoices' => 0,
                 'pending_invoice_total' => 0,
