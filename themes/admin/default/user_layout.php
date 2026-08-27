@@ -82,11 +82,19 @@ $pkg = isset($package) ? $package : null;
 if ($pkg && !empty($pkg->feature_list_id)) {
     try { $db = \Core\Application::getInstance()->get('db'); $fl = $db->table('feature_lists')->where('id', $pkg->feature_list_id)->first(); if($fl) $features = (array)$fl; } catch(\Exception $e) {}
 }
-if (($features['radio'] ?? 0) || ($pkg->icecast_enabled ?? 0)) $features['radio'] = 1;
+if (($features['radio'] ?? 0) || ($pkg->shoutcast_enabled ?? 0)) $features['radio'] = 1;
 if (($features['dj_panel'] ?? 0) || ($pkg->dj_panel_enabled ?? 0)) $features['dj_panel'] = 1;
 if (($features['livechat'] ?? ($features['chatbox'] ?? 0)) || ($pkg->live_chat_enabled ?? 0)) $features['livechat'] = 1;
 if (($features['game'] ?? 0) || ($pkg->game_enabled ?? 0)) $features['game'] = 1;
-if (($features['builder'] ?? 0) || class_exists('\\Plugins\\WebsiteBuilder\\WebsiteBuilderPlugin')) $features['builder'] = 1;
+if ($hosting) {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    // Radio: check for actual streams
+    try { $st = $pdo->prepare("SELECT id FROM streaming_stations WHERE hosting_user_id = ? AND status != 'deleted' LIMIT 1"); $st->execute([$hosting->id]); if ($st->fetch()) $features['radio'] = 1; } catch (\Exception $e) {}
+    // Chat: check for chatbox tenant
+    try { $st = $pdo->prepare("SELECT id FROM chatbox_tenants WHERE hosting_user_id = ? AND is_active = 1 LIMIT 1"); $st->execute([$hosting->id]); if ($st->fetch()) $features['livechat'] = 1; } catch (\Exception $e) {}
+    // DJ Panel: check if user has any DJs
+    try { $st = $pdo->prepare("SELECT id FROM radio_djs d JOIN streaming_stations s ON d.stream_id = s.id WHERE s.hosting_user_id = ? AND d.status = 'active' LIMIT 1"); $st->execute([$hosting->id]); if ($st->fetch()) $features['dj_panel'] = 1; } catch (\Exception $e) {}
+}
 $features['web'] = $isWeb;
 require_once BASE_PATH . '/core/UserMenu.php';
 echo render_user_sidebar($currentUrl, $features); ?>
