@@ -19,6 +19,25 @@
 </div>
 
 <div class="card">
+<h4 style="color:var(--accent);margin-bottom:12px">Reseller Package &amp; Type</h4>
+<div class="form-group"><label>Reseller Package *</label>
+<select name="package_id" required style="width:100%" onchange="var s=this.options[this.selectedIndex].text;var t=s.match(/Radio/i)?'icecast':'web';document.getElementById('typeLabel').textContent=t==='icecast'?'🎵 Radio Reseller':'🌐 Web Reseller'">
+<option value="">— Select package —</option>
+<?php if (!empty($pkgs)): foreach ($pkgs as $p): ?>
+<option value="<?php echo $p->id; ?>" <?php echo ($reseller->package_id ?? '') == $p->id ? 'selected' : ''; ?>><?php echo htmlspecialchars($p->name . ' (' . $p->type . ')'); ?></option>
+<?php endforeach; endif; ?>
+</select>
+<p style="font-size:11px;color:#64748b;margin-top:6px">Type: <b id="typeLabel"><?php echo ($reseller->type ?? 'web_reseller') === 'icecast_reseller' ? '🎵 Radio Reseller' : '🌐 Web Reseller'; ?></b></p>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<div class="form-group"><label>Monthly Fee ($)</label><input name="monthly_fee" type="number" step="0.01" value="<?php echo number_format((float)($reseller->monthly_fee ?? 0),2); ?>" style="width:100%"></div>
+<div class="form-group"><label>Billing Cycle</label>
+<select name="billing_cycle" style="width:100%"><option value="monthly" <?php echo ($reseller->billing_cycle ?? 'monthly')==='monthly'?'selected':''; ?>>Monthly</option><option value="quarterly" <?php echo ($reseller->billing_cycle ?? '')==='quarterly'?'selected':''; ?>>Quarterly</option><option value="semiannual" <?php echo ($reseller->billing_cycle ?? '')==='semiannual'?'selected':''; ?>>Semi-annual</option><option value="annual" <?php echo ($reseller->billing_cycle ?? '')==='annual'?'selected':''; ?>>Annual</option></select>
+</div>
+</div>
+</div>
+
+<div class="card">
 <h4 style="color:var(--accent);margin-bottom:12px">Feature List</h4>
 <select name="feature_list_id" style="width:100%">
 <option value="">— No feature list —</option>
