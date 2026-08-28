@@ -8,9 +8,13 @@
 <a href="/admin/reseller/create" class="btn primary"><i class="bi bi-plus-circle"></i> Create Reseller</a>
 </div>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px">
 <?php if (!empty($resellers)): foreach ($resellers as $r):
 $acctCount = $acctCounts[$r->id] ?? 0;
+$rType = $r->type ?? 'web_reseller';
+$typeLabel = $rType === 'icecast_reseller' ? '🎵 Radio Reseller' : '🌐 Web Reseller';
+$typeColor = $rType === 'icecast_reseller' ? '#a78bfa' : '#38bdf8';
+$pkg = !empty($r->package_id) ? ($pkgMap[$r->package_id] ?? null) : null;
 ?>
 <div class="card" style="padding:18px;margin-bottom:0">
 <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
@@ -20,14 +24,18 @@ $acctCount = $acctCounts[$r->id] ?? 0;
 </div>
 <span class="status-badge status-<?php echo $r->is_active ? 'active' : 'terminated'; ?>"><?php echo $r->is_active ? 'Active' : 'Inactive'; ?></span>
 </div>
+<div style="font-size:12px;margin-bottom:8px">
+<span style="font-weight:700;color:<?php echo $typeColor; ?>"><?php echo $typeLabel; ?></span>
+<?php if ($pkg): ?><span style="color:#94a3b8"> · <?php echo htmlspecialchars($pkg->name); ?></span><?php endif; ?>
+</div>
 <div style="font-size:12px;color:#94a3b8;margin-bottom:10px">
 <div>Contact: <?php echo htmlspecialchars($r->contact_name ?: '-'); ?></div>
-<div>Phone: <?php echo htmlspecialchars($r->phone ?: '-'); ?></div>
 <div>Website: <?php echo htmlspecialchars($r->website ?: '-'); ?></div>
+<?php if ((float)$r->monthly_fee > 0): ?><div>Fee: $<?php echo number_format((float)$r->monthly_fee, 2); ?>/<?php echo htmlspecialchars($r->billing_cycle ?? 'monthly'); ?></div><?php endif; ?>
 </div>
 <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px"><?php echo $acctCount; ?> account<?php echo $acctCount !== 1 ? 's' : ''; ?></div>
-<div style="display:flex;gap:6px">
-<a href="/admin/account?reseller_id=<?php echo $r->id; ?>" class="btn btn-sm primary" style="font-size:11px;padding:5px 12px"><i class="bi bi-eye"></i> View Accounts</a>
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<a href="/admin/reseller/show/<?php echo $r->id; ?>" class="btn btn-sm primary" style="font-size:11px;padding:5px 12px"><i class="bi bi-grid"></i> Manage</a>
 <a href="/admin/reseller/edit/<?php echo $r->id; ?>" class="btn btn-sm secondary" style="font-size:11px;padding:5px 12px"><i class="bi bi-pencil"></i> Edit</a>
 </div>
 </div>

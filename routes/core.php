@@ -451,6 +451,22 @@ $router->get('/admin/reseller/create', 'Admin\Controllers\ResellerController@cre
 $router->post('/admin/reseller/store', 'Admin\Controllers\ResellerController@store');
 $router->get('/admin/reseller/edit/{id}', 'Admin\Controllers\ResellerController@edit');
 $router->post('/admin/reseller/update/{id}', 'Admin\Controllers\ResellerController@update');
+$router->get('/admin/reseller/show/{id}', 'Admin\Controllers\ResellerController@show');
+$router->get('/admin/reseller/delete/{id}', 'Admin\Controllers\ResellerController@delete');
+$router->get('/admin/reseller/resources/{id}', 'Admin\Controllers\ResellerController@resources');
+$router->post('/admin/reseller/resources/save/{id}', 'Admin\Controllers\ResellerController@resourcesSave');
+$router->get('/admin/reseller/pricing/{id}', 'Admin\Controllers\ResellerController@pricing');
+$router->post('/admin/reseller/pricing/save/{id}', 'Admin\Controllers\ResellerController@pricingSave');
+$router->get('/admin/reseller/branding/{id}', 'Admin\Controllers\ResellerController@branding');
+$router->post('/admin/reseller/branding/save/{id}', 'Admin\Controllers\ResellerController@brandingSave');
+$router->get('/admin/reseller/products/{id}', 'Admin\Controllers\ResellerController@products');
+$router->get('/admin/reseller/audit/{id}', 'Admin\Controllers\ResellerController@auditLog');
+$router->post('/admin/reseller/staff/create/{id}', 'Admin\Controllers\ResellerController@staffCreate');
+$router->get('/admin/reseller/staff/toggle/{id}/{staffId}', 'Admin\Controllers\ResellerController@staffToggle');
+$router->get('/admin/reseller/staff/delete/{id}/{staffId}', 'Admin\Controllers\ResellerController@staffDelete');
+$router->post('/admin/reseller/api/create/{id}', 'Admin\Controllers\ResellerController@apiCreate');
+$router->get('/admin/reseller/api/toggle/{id}/{keyId}', 'Admin\Controllers\ResellerController@apiToggle');
+$router->get('/admin/reseller/api/delete/{id}/{keyId}', 'Admin\Controllers\ResellerController@apiDelete');
 
 // -- DNS sub-routes --
 $router->get('/admin/dns/create-zone', 'Admin\Controllers\DnsController@index');
