@@ -653,7 +653,7 @@ if ($action !== 'dashboard' && $action !== 'profile') {
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:transparent;color:#fff;font-family:'Inter',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh}
-.bg{position:fixed;inset:0;background:radial-gradient(900px 480px at 80% -10%,rgba(56,189,248,.16),transparent 60%),radial-gradient(700px 420px at 0% 110%,rgba(167,139,250,.13),transparent 60%),radial-gradient(700px 400px at 50% 120%,rgba(20,184,166,.08),transparent 60%),linear-gradient(160deg,#060a14,#0b1120);z-index:-2}
+.bg{position:fixed;inset:0;background:linear-gradient(rgba(4,6,12,.82),rgba(8,12,24,.88)),url(/mainbk.webp);background-size:cover;background-position:center;background-attachment:fixed;z-index:-2}
 .card{background:rgba(13,20,36,.78);border:1px solid rgba(56,189,248,.14);border-radius:20px;padding:40px 32px;max-width:400px;width:92%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5);backdrop-filter:blur(14px)}
 h1{font-size:23px;margin-bottom:6px;letter-spacing:.3px}h1 span{color:#38bdf8}
 p{color:#8ca0bf;font-size:13px;margin-bottom:22px}
@@ -697,11 +697,13 @@ p{color:#8ca0bf;font-size:13px;margin-bottom:22px}
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
 body{font-family:'Inter',system-ui,sans-serif;color:var(--txt);letter-spacing:.1px;background:transparent}
-.bg{position:fixed;inset:0;z-index:-2;background:
+.bg{position:fixed;inset:0;z-index:-2;background:linear-gradient(rgba(5,7,15,.82),rgba(10,16,31,.88)),url(/mainbk.webp);background-size:cover;background-position:center;background-attachment:fixed;
+  box-shadow:inset 0 0 0 999px rgba(0,0,0,0);
+}
+.bg::before{content:"";position:fixed;inset:0;z-index:-1;background:
   radial-gradient(1100px 560px at 85% -8%,rgba(56,189,248,.14),transparent 60%),
   radial-gradient(900px 480px at -8% 108%,rgba(167,139,250,.12),transparent 60%),
-  radial-gradient(700px 400px at 50% 120%,rgba(20,184,166,.07),transparent 60%),
-  linear-gradient(160deg,#05070f,#0a101f)}
+  radial-gradient(700px 400px at 50% 120%,rgba(20,184,166,.07),transparent 60%)}
 .container{max-width:1240px;margin:0 auto;padding:26px 24px 70px}
 
 .topbar{background:rgba(9,14,26,.7);backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px);
