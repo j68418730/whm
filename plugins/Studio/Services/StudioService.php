@@ -319,6 +319,28 @@ class StudioService
                 'played_at' => date('Y-m-d H:i:s'),
             ]);
 
+            // Auto-mark matching pending song requests as played so the DJ panel
+            // "Song Requests" tab drops them off after the song actually airs.
+            try {
+                $reqMatch = $this->db->table('radio_requests')
+                    ->where('stream_id', $stationId)
+                    ->where('status', 'pending');
+                $reqStmt = $reqMatch->get() ?: [];
+                foreach ($reqStmt as $rq) {
+                    $reqArtist = strtolower(trim($rq->artist ?? ''));
+                    $reqTitle  = strtolower(trim($rq->title ?? ''));
+                    $plArtist  = strtolower(trim($queueItem->artist ?? ''));
+                    $plTitle   = strtolower(trim($queueItem->title ?? ''));
+                    $titleOk = $reqTitle !== '' && ($plTitle === $reqTitle
+                        || str_contains($plTitle, $reqTitle) || str_contains($reqTitle, $plTitle));
+                    $artistOk = $reqArtist === '' || $plArtist === '' || $plArtist === $reqArtist
+                        || str_contains($plArtist, $reqArtist) || str_contains($reqArtist, $plArtist);
+                    if ($titleOk && $artistOk) {
+                        $this->db->table('radio_requests')->where('id', $rq->id)->update(['status' => 'played']);
+                    }
+                }
+            } catch (\Exception $e) {}
+
             $this->db->table('studio_queue')->where('id', $queueId)->delete();
         }
 
