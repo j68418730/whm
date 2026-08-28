@@ -652,8 +652,8 @@ if ($action !== 'dashboard' && $action !== 'profile') {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#060a14;color:#fff;font-family:'Inter',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh}
-.bg{position:fixed;inset:0;background:radial-gradient(900px 480px at 80% -10%,rgba(56,189,248,.12),transparent 60%),radial-gradient(700px 420px at 0% 110%,rgba(167,139,250,.1),transparent 60%),linear-gradient(160deg,#060a14,#0b1120);z-index:-2}
+body{background:transparent;color:#fff;font-family:'Inter',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh}
+.bg{position:fixed;inset:0;background:radial-gradient(900px 480px at 80% -10%,rgba(56,189,248,.16),transparent 60%),radial-gradient(700px 420px at 0% 110%,rgba(167,139,250,.13),transparent 60%),radial-gradient(700px 400px at 50% 120%,rgba(20,184,166,.08),transparent 60%),linear-gradient(160deg,#060a14,#0b1120);z-index:-2}
 .card{background:rgba(13,20,36,.78);border:1px solid rgba(56,189,248,.14);border-radius:20px;padding:40px 32px;max-width:400px;width:92%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5);backdrop-filter:blur(14px)}
 h1{font-size:23px;margin-bottom:6px;letter-spacing:.3px}h1 span{color:#38bdf8}
 p{color:#8ca0bf;font-size:13px;margin-bottom:22px}
@@ -696,7 +696,7 @@ p{color:#8ca0bf;font-size:13px;margin-bottom:22px}
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
-body{font-family:'Inter',system-ui,sans-serif;color:var(--txt);letter-spacing:.1px;background:var(--bg)}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--txt);letter-spacing:.1px;background:transparent}
 .bg{position:fixed;inset:0;z-index:-2;background:
   radial-gradient(1100px 560px at 85% -8%,rgba(56,189,248,.14),transparent 60%),
   radial-gradient(900px 480px at -8% 108%,rgba(167,139,250,.12),transparent 60%),
@@ -799,6 +799,9 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .dj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
 .dj-grid .card{margin-bottom:0}
 @media(min-width:1200px){.dj-grid{grid-template-columns:repeat(3,1fr)}}
+/* Requests + Downloads panels: full-width cards, not squeezed into one grid column */
+#pn-requests .dj-grid,#pn-downloads{grid-template-columns:1fr !important;display:grid;gap:14px}
+#pn-requests .card,#pn-downloads .card{margin-bottom:0}
 
 .conn-grid{display:flex;flex-direction:column;gap:8px}
 .conn-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
