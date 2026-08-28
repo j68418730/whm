@@ -204,29 +204,11 @@ class DjPortListener
                 $conn['dj'] = $dj;
                 $this->log("Auth OK: $djUser on station {$conn['station_id']} -> $dj->station_name");
 
-                // Kill any existing AutoDJ for this station before connecting to source port
-                try {
-                    // Find and kill the AutoDJ runner process for this specific station
-                    $stationId = (int)$conn['station_id'];
-                    $pidFile = "/home/" . ($dj->hosting_username ?? '') . "/radio/autodj/autodj_{$stationId}.pid";
-                    if (file_exists($pidFile)) {
-                        $pid = (int)trim(@file_get_contents($pidFile));
-                        if ($pid > 0) {
-                            @\posix_kill($pid, 15);
-                            usleep(300000);
-                            @\posix_kill($pid, 9);
-                        }
-                    }
-                    // Kill ffmpeg retry wrapper + its child ffmpeg so they don't hold the
-                    // icecast mount (killing only the wrapper pid leaves ffmpeg orphaned).
-                    @exec("pkill -f \"ffmpeg_retry_{$stationId}\" 2>/dev/null");
-                    @exec("pkill -f \"ffmpeg.*{$stationId}\" 2>/dev/null");
-                    $sport = (int)($dj->station_port ?? 0);
-                    if ($sport > 0) {
-                        @exec("pkill -f \"ffmpeg.*{$sport}\" 2>/dev/null");
-                    }
-                } catch (\Exception $e) {}
-                usleep(500000);
+                // Pause (SIGSTOP) the station's AutoDJ ffmpeg so it holds the mount
+                // but stops feeding — the DJ source takes over without killing the
+                // stream / restarting the station. Resumed (SIGCONT) on disconnect.
+                $this->pauseStationAutodj((int)$conn['station_id']);
+                usleep(300000);
 
                 // Update DB: mark DJ live, update metadata
                 try {
@@ -371,6 +353,87 @@ class DjPortListener
         return $dj;
     }
 
+    /**
+     * Find the station's AutoDJ ffmpeg PID(s) and SIGSTOP them (pause).
+     * The ffmpeg keeps its icecast/shoutcast mount open but stops feeding,
+     * so the DJ source seamlessly takes over — no stream stop/restart.
+     */
+    protected function pauseStationAutodj($stationId)
+    {
+        $pids = $this->findStationAutodjPids($stationId);
+        foreach ($pids as $pid) {
+            if ($pid > 0) @\posix_kill($pid, 19); // SIGSTOP
+        }
+        if (!empty($pids)) {
+            $this->log("Paused AutoDJ for station #{$stationId} (SIGSTOP pid " . implode(',', $pids) . ')');
+        } else {
+            $this->log("No AutoDJ process found to pause for station #{$stationId}");
+        }
+    }
+
+    /**
+     * SIGCONT the station's AutoDJ ffmpeg (resume). The mount never dropped,
+     * so the AutoDJ resumes instantly. If nothing paused is found, fall back
+     * to a normal AutoDJ restart via the panel API.
+     */
+    protected function resumeStationAutodj($stationId)
+    {
+        $pids = $this->findStationAutodjPids($stationId);
+        $resumed = false;
+        foreach ($pids as $pid) {
+            if ($pid > 0) {
+                @\posix_kill($pid, 18); // SIGCONT
+                $resumed = true;
+            }
+        }
+        if ($resumed) {
+            $this->log("Resumed AutoDJ for station #{$stationId} (SIGCONT pid " . implode(',', $pids) . ')');
+        } else {
+            $this->log("AutoDJ for station #{$stationId} was not paused — triggering restart fallback");
+            $this->triggerAutodjRestart($stationId);
+        }
+    }
+
+    /**
+     * Locate AutoDJ ffmpeg process(es) for a station. Matches by pid file,
+     * runner script name, and the station's source port.
+     */
+    protected function findStationAutodjPids($stationId)
+    {
+        $pids = [];
+        $stationId = (int)$stationId;
+
+        // 1) pid files written by the autodj runners
+        foreach (glob("/home/*/radio/autodj/autodj_{$stationId}.pid") as $pf) {
+            $pid = (int)trim(@file_get_contents($pf));
+            if ($pid > 0 && @\posix_kill($pid, 0)) {
+                $pids[$pid] = $pid;
+                // The pid file holds the runner (shell/php) PID; its child is ffmpeg.
+                $child = trim(@shell_exec("pgrep -P {$pid} 2>/dev/null"));
+                if ($child) foreach (preg_split('/\s+/', trim($child)) as $c) if ($c) $pids[(int)$c] = (int)$c;
+            }
+        }
+
+        // 2) any ffmpeg whose command references this station's runner/port
+        $port = 0;
+        try {
+            $q = $this->pdo->prepare("SELECT port, engine FROM streaming_stations WHERE id=?");
+            $q->execute([$stationId]);
+            $r = $q->fetch(PDO::FETCH_OBJ);
+            if ($r) $port = (int)$r->port;
+        } catch (\Exception $e) {}
+        $patterns = [];
+        $patterns[] = "runner_{$stationId}";
+        $patterns[] = "concat_{$stationId}";
+        $patterns[] = "ffmpeg_retry_{$stationId}";
+        if ($port > 0) $patterns[] = ":{$port}";
+        foreach ($patterns as $pat) {
+            $out = trim(@shell_exec("pgrep -f " . escapeshellarg($pat) . " 2>/dev/null"));
+            if ($out) foreach (preg_split('/\s+/', $out) as $pid) if ($pid > 0) $pids[(int)$pid] = (int)$pid;
+        }
+        return array_values($pids);
+    }
+
     protected function closeConnection($idx, $reason = 'unknown')
     {
         if (!isset($this->connections[$idx])) return;
@@ -386,9 +449,11 @@ class DjPortListener
                 // Log resume in song history
                 $this->pdo->prepare("INSERT INTO radio_song_history (stream_id, title, artist, played_at) VALUES (?,?,?,NOW())")
                     ->execute([$conn['station_id'], 'AutoDJ Resumed', "DJ {$conn['dj']->username} disconnected"]);
-                $this->triggerAutodjRestart((int)$conn['station_id']);
+                // Unpause (SIGCONT) the AutoDJ we paused on connect — the mount never
+                // dropped so the stream resumes instantly (no restart, no buffering).
+                $this->resumeStationAutodj((int)$conn['station_id']);
             } catch (\Exception $e) {
-                $this->log("AutoDJ restart exception: " . $e->getMessage());
+                $this->log("AutoDJ resume exception: " . $e->getMessage());
             }
         }
 

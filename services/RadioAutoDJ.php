@@ -30,8 +30,9 @@ class RadioAutoDJ
         $autodjRunning = $this->isAutodjProcessRunning($stream);
 
         if ($isDjConnected && $autodjRunning) {
-            // DJ connected while AutoDJ is running — stop AutoDJ
-            $this->stopAutodjProcess($stream);
+            // DJ connected while AutoDJ is running — PAUSE it (SIGSTOP) rather than
+            // killing/restarting so the mount stays live and the DJ takes over seamlessly.
+            $this->pauseAutodjProcess($stream);
             $this->db->table('radio_streams')->where('id', $stream->id)->update([
                 'autodj_enabled' => 0,
                 'autodj_active' => 0,
@@ -39,23 +40,26 @@ class RadioAutoDJ
             try { $this->db->table('radio_autodj_config')->where('station_id', $stream->id)->update(['autodj_enabled' => 0]); } catch (\Exception $e) {}
             $this->log("AutoDJ paused for {$stream->server_name} - DJ connected");
         } elseif (!$isDjConnected && !$autodjEnabled && !$autodjRunning) {
-            // DJ disconnected and AutoDJ is off — restart AutoDJ
-            $this->db->table('radio_streams')->where('id', $stream->id)->update([
-                'autodj_enabled' => 1,
-                'autodj_active' => 1,
-            ]);
-            try {
-                $ss = $this->db->table('streaming_stations')->where('id', $stream->id)->first();
-                if ($ss) {
-                    $hu = $this->db->table('hosting_users')->where('id', $ss->user_id)->first();
-                    if ($hu) {
-                        $cfg = $this->db->table('radio_autodj_config')->where('station_id', $stream->id + 10000)->first();
-                        $plIds = $cfg && $cfg->playlist_ids ? json_decode($cfg->playlist_ids, true) : [];
-                        $player = new RadioAutoDJPlayer($ss, $hu->username, $plIds);
-                        $player->start();
+            // DJ disconnected and AutoDJ is off — RESUME (SIGCONT) any paused process first;
+            // if nothing was paused, restart AutoDJ normally.
+            if (!$this->resumeAutodjProcess($stream)) {
+                $this->db->table('radio_streams')->where('id', $stream->id)->update([
+                    'autodj_enabled' => 1,
+                    'autodj_active' => 1,
+                ]);
+                try {
+                    $ss = $this->db->table('streaming_stations')->where('id', $stream->id)->first();
+                    if ($ss) {
+                        $hu = $this->db->table('hosting_users')->where('id', $ss->user_id)->first();
+                        if ($hu) {
+                            $cfg = $this->db->table('radio_autodj_config')->where('station_id', $stream->id + 10000)->first();
+                            $plIds = $cfg && $cfg->playlist_ids ? json_decode($cfg->playlist_ids, true) : [];
+                            $player = new RadioAutoDJPlayer($ss, $hu->username, $plIds);
+                            $player->start();
+                        }
                     }
-                }
-            } catch (\Exception $e) {}
+                } catch (\Exception $e) {}
+            }
             $this->log("AutoDJ resumed for {$stream->server_name} - DJ disconnected");
         }
     }
@@ -106,17 +110,43 @@ class RadioAutoDJ
         return !empty($pids);
     }
 
-    protected function stopAutodjProcess($stream)
+    protected function autodjPids($stream)
     {
         $streamId = $stream->id ?? 0;
-        $pidFile = '/home/' . ($stream->username ?? 'planethosts') . '/radio/autodj/autodj.pid';
-        if (file_exists($pidFile)) {
-            $pid = (int)trim(@file_get_contents($pidFile));
-            if ($pid > 0) { exec("kill {$pid} 2>/dev/null"); usleep(200000); exec("kill -0 {$pid} 2>/dev/null && kill -9 {$pid} 2>/dev/null"); }
-            @unlink($pidFile);
+        $port = (int)($stream->port ?? 0);
+        $pids = [];
+        foreach (glob("/home/*/radio/autodj/autodj_{$streamId}.pid") as $pf) {
+            $pid = (int)trim(@file_get_contents($pf));
+            if ($pid > 0 && @posix_kill($pid, 0)) {
+                $pids[$pid] = $pid;
+                $child = trim(@shell_exec("pgrep -P {$pid} 2>/dev/null"));
+                if ($child) foreach (preg_split('/\s+/', $child) as $c) if ($c) $pids[(int)$c] = (int)$c;
+            }
         }
-        exec("pkill -f \"runner_{$streamId}\" 2>/dev/null");
-        exec("pkill -f \"ffmpeg.*{$stream->port}\" 2>/dev/null");
+        foreach (["runner_{$streamId}", "concat_{$streamId}", "ffmpeg_retry_{$streamId}"] as $pat) {
+            $out = trim(@shell_exec("pgrep -f " . escapeshellarg($pat) . " 2>/dev/null"));
+            if ($out) foreach (preg_split('/\s+/', $out) as $pid) if ($pid > 0) $pids[(int)$pid] = (int)$pid;
+        }
+        if ($port > 0) {
+            $out = trim(@shell_exec("pgrep -f " . escapeshellarg(":{$port}") . " 2>/dev/null"));
+            if ($out) foreach (preg_split('/\s+/', $out) as $pid) if ($pid > 0) $pids[(int)$pid] = (int)$pid;
+        }
+        return array_values($pids);
+    }
+
+    protected function pauseAutodjProcess($stream)
+    {
+        $pids = $this->autodjPids($stream);
+        foreach ($pids as $pid) { if ($pid > 0) @posix_kill($pid, 19); } // SIGSTOP
+        return !empty($pids);
+    }
+
+    protected function resumeAutodjProcess($stream)
+    {
+        $pids = $this->autodjPids($stream);
+        $resumed = false;
+        foreach ($pids as $pid) { if ($pid > 0) { @posix_kill($pid, 18); $resumed = true; } } // SIGCONT
+        return $resumed;
     }
 
     protected function log($msg)
