@@ -132,6 +132,9 @@ $router->get('/radio/public/schedule', 'Plugins\Radio\Controllers\User\RadioCont
 $router->get('/radio/public/now-playing', 'Plugins\Radio\Controllers\User\RadioController@publicNowPlaying');
 $router->post('/radio/public/request', 'Plugins\Radio\Controllers\User\RadioController@publicRequest');
 
+// Connector API (used by public request page)
+$router->post('/connector/station/{slug}/requests', 'Plugins\Radio\Controllers\User\RadioController@connectorRequest');
+
 // Global Playlist Routes (Admin)
 $router->get('/admin/radio/global-playlists', 'Plugins\Radio\Controllers\Admin\GlobalPlaylistsController@index');
 $router->get('/admin/radio/global-playlists/create', 'Plugins\Radio\Controllers\Admin\GlobalPlaylistsController@create');
