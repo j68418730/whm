@@ -38,7 +38,8 @@ class RadioController extends Controller
         
         $pdo = $this->db->pdo();
         
-        // Resolve station by slug
+        // Resolve station by slug (generated same way as in requests.php)
+        $station = null;
         $st = $pdo->prepare("SELECT id, name FROM streaming_stations WHERE LOWER(name) LIKE ? ORDER BY id LIMIT 1");
         $st->execute(["%{$slug}%"]);
         $station = $st->fetch(\PDO::FETCH_OBJ);
@@ -49,6 +50,21 @@ class RadioController extends Controller
                 $st = $pdo->prepare("SELECT id, name FROM streaming_stations WHERE id = ?");
                 $st->execute([(int)$slug]);
                 $station = $st->fetch(\PDO::FETCH_OBJ);
+            } else {
+                // Try matching by slug logic: replace - with space and search
+                $search = str_replace('-', ' ', $slug);
+                $st = $pdo->prepare("SELECT id, name FROM streaming_stations WHERE LOWER(name) LIKE ? ORDER BY id LIMIT 1");
+                $st->execute(["%{$search}%"]);
+                $station = $st->fetch(\PDO::FETCH_OBJ);
+            }
+        }
+        
+        if (!$station) {
+            // Last resort: try all stations and compute slug
+            $all = $pdo->query("SELECT id, name FROM streaming_stations")->fetchAll(\PDO::FETCH_OBJ);
+            foreach ($all as $s) {
+                $sSlug = strtolower(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($s->name)), '-'));
+                if ($sSlug === $slug) { $station = $s; break; }
             }
         }
         
