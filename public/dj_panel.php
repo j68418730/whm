@@ -14,6 +14,121 @@ if (isset($_GET['stream_id']) && isset($_SESSION['dj_user'])) {
     $_SESSION['dj_user']['stream_id'] = (int)$_COOKIE['dj_stream_id'];
 }
 
+// ─── raw HTTP fetch over a TCP socket ───
+// Shoutcast v1 answers with HTTP/0.9, which PHP's http wrapper silently rejects,
+// so we read bytes directly. Works for Icecast / Shoutcast v1 / v2.
+function raw_http($port, $path, $extraHeader = '', $maxBytes = 98304) {
+    $fp = @fsockopen('127.0.0.1', (int)$port, $errno, $errstr, 3);
+    if (!$fp) return null;
+    stream_set_timeout($fp, 3);
+    @fwrite($fp, "GET {$path} HTTP/1.0\r\nHost: 127.0.0.1\r\nUser-Agent: PlanetHosts-DJ/1.0\r\n{$extraHeader}\r\n");
+    $buf = '';
+    while (strlen($buf) < $maxBytes) {
+        $c = @fread($fp, 8192);
+        if ($c === '' || $c === false) break;
+        $buf .= $c;
+    }
+    @fclose($fp);
+    return $buf;
+}
+
+// ─── Read the actual playing track from the stream's ICY metadata ───
+// Works for Shoutcast (v1/v2) and Icecast; SC1 7.html has NO title, so the
+// stream metadata is the authoritative live track source. Returns '' when none.
+function fetch_stream_title($port, $mount = '') {
+    if ($port <= 0) return '';
+    if ($mount !== '' && !str_starts_with($mount, '/')) $mount = '/' . $mount;
+    $paths = $mount !== '' ? [$mount, '/', '/;'] : ['/', '/stream', '/;'];
+    foreach ($paths as $m) {
+        $raw = raw_http($port, $m, "Icy-MetaData: 1\r\n", 65536 + 4081);
+        if (!$raw) continue;
+        $hdrEnd = strpos($raw, "\r\n\r\n");
+        if ($hdrEnd === false) continue;
+        $headers = substr($raw, 0, $hdrEnd);
+        $metaInterval = 0;
+        foreach (explode("\r\n", $headers) as $h) {
+            if (stripos($h, 'icy-metaint:') === 0) { $metaInterval = (int)trim(substr($h, 12)); break; }
+        }
+        if ($metaInterval <= 0) continue;
+        $at = $hdrEnd + 4 + $metaInterval;
+        if (strlen($raw) <= $at) continue;
+        $lb = ord($raw[$at]);
+        if ($lb <= 0) continue;
+        $md = substr($raw, $at + 1, $lb * 16);
+        if (preg_match("/StreamTitle='(.*?)';/is", $md, $mm)) {
+            $t = trim(html_entity_decode($mm[1], ENT_QUOTES));
+            if ($t !== '' && $t !== '-') return $t;
+        }
+    }
+    return '';
+}
+
+// ─── STREAM PROBE: ask the real Icecast/Shoutcast server if a source is ON AIR ───
+function probe_stream($pdo, $station) {
+    $engine = strtolower($station->engine ?? $station->server_type ?? 'icecast');
+    $port   = (int)($station->port ?? 0);
+    $out    = ['engine' => $engine, 'connected' => false, 'live' => false, 'source' => null,
+               'song' => '', 'artist' => '', 'listeners' => 0];
+    if ($port <= 0) return $out;
+    $ctx = stream_context_create(['http' => ['timeout' => 3]]);
+    if ($engine === 'icecast') {
+        $json = @file_get_contents("http://127.0.0.1:{$port}/status-json.xsl", false, $ctx);
+        if ($json !== false) {
+            $d = json_decode($json, true);
+            $out['connected'] = is_array($d);
+            $mount = ltrim((string)($station->mount_point ?? ''), '/');
+            $srcs  = $d['icestats']['source'] ?? [];
+            if (isset($srcs['mount'])) $srcs = [$srcs];   // single source object
+            foreach ($srcs as $s) {
+                $m = ltrim((string)($s['mount'] ?? ''), '/');
+                if ($mount !== '' && $m !== $mount && !str_ends_with($m, $mount)) continue;
+                $out['live']      = true;
+                $out['source']    = 'encoder';
+                $out['listeners'] = (int)($s['listeners'] ?? 0);
+                // Compose a clean song title from the source metadata (title / artist)
+                $tTitle  = trim((string)($s['title'] ?? ''));
+                $tArtist = trim((string)($s['artist'] ?? ''));
+                if ($tTitle === '-' || $tTitle === '') $tTitle = '';
+                if ($tArtist === '-' || $tArtist === '') $tArtist = '';
+                $out['artist'] = $tArtist;
+                if ($tTitle && $tArtist)      $out['song'] = $tArtist . ' - ' . $tTitle;
+                elseif ($tTitle)              $out['song'] = $tTitle;
+                elseif ($tArtist)             $out['song'] = $tArtist;
+                // Fallback: pull the exact track from ICY metadata when the server title is empty
+                if ($out['song'] === '') { $out['song'] = fetch_stream_title($port, $station->mount_point ?? ''); }
+                break;
+            }
+        }
+    } elseif (in_array($engine, ['shoutcast', 'shoutcast1', 'shoutcast2'])) {
+        // SC1: 7.html is often disabled and has no title anyway → probe the root mount.
+        // A connected source exposes an "icy-metaint:" header on a 200 response.
+        $raw = raw_http($port, '/', "Icy-MetaData: 1\r\n", 65536 + 4081);
+        $hdrEnd = $raw !== null ? strpos($raw, "\r\n\r\n") : false;
+        $hasMeta = false;
+        if ($hdrEnd !== false) {
+            foreach (explode("\r\n", substr($raw, 0, $hdrEnd)) as $h) {
+                if (stripos($h, 'icy-metaint:') === 0) { $hasMeta = true; break; }
+            }
+        }
+        if ($raw !== null && $hasMeta) {
+            $out['connected'] = true;
+            $out['live']      = true;
+            $out['source']    = 'encoder';
+            $out['song']      = fetch_stream_title($port, $station->mount_point ?? '');
+        } else {
+            // No source → try SC2 extended 7.html for at least a listener count
+            $b = raw_http($port, '/7.html', '', 8192);
+            if ($b !== null) {
+                $hb = stripos($b, '<body>');
+                $body = trim($hb !== false ? substr($b, $hb + 6) : $b);
+                $parts = explode(',', (string)$body);
+                if (count($parts) >= 7) $out['listeners'] = (int)trim($parts[0] ?? 0);
+            }
+        }
+    }
+    return $out;
+}
+
 // ─── AUTO-LOGIN for account owners ───
 if (!isset($_SESSION['dj_user']) && isset($_SESSION['user'])) {
     $user = $_SESSION['user'];
@@ -51,6 +166,44 @@ if (!isset($_SESSION['dj_user']) && isset($_SESSION['user'])) {
             if ($action === 'login') $action = 'dashboard';
         }
     }
+}
+
+// ─── LIVE STATUS (AJAX) ───
+if ($action === 'status' && isset($_SESSION['dj_user'])) {
+    header('Content-Type: application/json');
+    $streamId = (int)($_GET['stream_id'] ?? $_SESSION['dj_user']['stream_id'] ?? 0);
+    $sstmt = $pdo->prepare("SELECT * FROM streaming_stations WHERE id = ?");
+    $sstmt->execute([$streamId]);
+    $station = $sstmt->fetch(PDO::FETCH_OBJ);
+    if (!$station) { echo json_encode(['ok' => false, 'error' => 'station-not-found']); exit; }
+    $probe = probe_stream($pdo, $station);
+    $autoDj = (int)($station->autodj_enabled ?? 0);
+    $curDj  = $station->current_dj ?? null;
+    $state  = $autoDj ? 'autodj' : ($probe['live'] ? 'live' : 'offline');
+
+    // Auto-record the connected DJ (from the session) when a live source is detected,
+    // and clear the DJ when AutoDJ is back on — keeps the identity accurate live.
+    try {
+        if ($state === 'live' && (trim((string)$curDj) === '')) {
+            $djName = trim((string)($_SESSION['dj_user']['username'] ?? ''));
+            $pdo->prepare("UPDATE streaming_stations SET current_dj = ? WHERE id = ? AND (current_dj IS NULL OR current_dj = '')")->execute([$djName ?: 'Live DJ', $streamId]);
+            $curDj = $djName ?: 'Live DJ';
+        } elseif ($state === 'autodj' && trim((string)$curDj) !== '') {
+            $pdo->exec("UPDATE streaming_stations SET current_dj = NULL WHERE id = " . $streamId);
+            $curDj = null;
+        }
+    } catch (\Exception $e) {}
+
+    echo json_encode([
+        'ok' => true, 'stream_id' => $streamId,
+        'state' => $state, 'live' => $probe['live'], 'source' => $probe['source'],
+        'autoDJ' => $autoDj, 'current_dj' => $curDj,
+        'song' => $probe['song'] ?: ($station->current_song ?? ''),
+        'listeners' => $probe['listeners'] ?: (int)($station->listener_count ?? 0),
+        'status' => $station->status ?? 'stopped', 'engine' => $probe['engine'],
+        'stamp' => date('c'),
+    ]);
+    exit;
 }
 
 // ─── LOGIN ───
@@ -144,7 +297,7 @@ if ($action === 'takeover' && $_POST && isset($_SESSION['dj_user'])) {
         exec("pkill -f \"ShoutcastSource\" 2>/dev/null");
         // Update DB
         try {
-            $pdo->exec("UPDATE streaming_stations SET autodj_enabled=0 WHERE id=" . (int)$sid);
+            $pdo->exec("UPDATE streaming_stations SET autodj_enabled=0, current_dj=" . $pdo->quote($djUsername) . ", current_artist=" . $pdo->quote($djUsername) . " WHERE id=" . (int)$sid);
             $pdo->exec("UPDATE radio_autodj_config SET autodj_enabled=0 WHERE station_id=" . ((int)$sid + 10000));
             $pdo->exec("UPDATE radio_streams SET current_dj=" . $pdo->quote($djUsername) . " WHERE id=" . (int)$sid);
         } catch (\Exception $e) {}
@@ -309,9 +462,85 @@ if ($action === 'delete_gallery' && isset($_GET['idx']) && isset($_SESSION['dj_u
 // ─── REMOVE REQUEST ───
 if ($action === 'remove_request' && isset($_GET['req_id']) && isset($_SESSION['dj_user'])) {
     $reqId = (int)$_GET['req_id'];
-    $pdo->prepare("UPDATE radio_requests SET status = 'removed' WHERE id = ? AND stream_id = ?")
-        ->execute([$reqId, $_SESSION['dj_user']['stream_id']]);
-    header('Location: /dj_panel.php?action=dashboard');
+    $djId = (int)$_SESSION['dj_user']['id'];
+    // Remove only if the request belongs to a station THIS DJ can access
+    // (primary station or any via the radio_dj_streams junction).
+    $chk = $pdo->prepare("SELECT r.id FROM radio_requests r
+        WHERE r.id = ?
+          AND (r.stream_id = (SELECT stream_id FROM radio_djs WHERE id = ?)
+               OR r.stream_id IN (SELECT stream_id FROM radio_dj_streams WHERE dj_id = ? AND is_active = 'yes'))");
+    $chk->execute([$reqId, $djId, $djId]);
+    if ($chk->fetch()) {
+        $pdo->prepare("UPDATE radio_requests SET status = 'removed' WHERE id = ?")
+            ->execute([$reqId]);
+        $success = 'Request removed.';
+    } else {
+        $error = 'Request not found for your stations.';
+    }
+    header('Location: /dj_panel.php?action=dashboard&tab=requests');
+    exit;
+}
+
+// ─── REQUESTS REFRESH (AJAX) — returns just the request list HTML ───
+if ($action === 'requests_refresh' && isset($_SESSION['dj_user'])) {
+    header('Content-Type: text/html; charset=utf-8');
+    $djId = (int)$_SESSION['dj_user']['id'];
+    $q = $pdo->prepare("SELECT r.*, ss.name AS station_name, ss.engine AS station_engine,
+        rb.brand_logo, rb.brand_primary_color, rb.brand_slogan
+        FROM radio_requests r
+        JOIN streaming_stations ss ON ss.id = r.stream_id
+        LEFT JOIN radio_branding rb ON rb.station_id = ss.id
+        WHERE r.status = 'pending'
+          AND (r.stream_id = (SELECT stream_id FROM radio_djs WHERE id = ?)
+               OR r.stream_id IN (SELECT stream_id FROM radio_dj_streams WHERE dj_id = ?))
+        ORDER BY r.created_at ASC");
+    $q->execute([$djId, $djId]);
+    $reqs = $q->fetchAll(PDO::FETCH_OBJ);
+    if (empty($reqs)) {
+        echo '<p class="empty-text">No pending requests.</p>';
+        exit;
+    }
+    foreach ($reqs as $r) {
+        ?>
+<div class="req-item">
+<div style="display:flex;gap:8px;align-items:center;min-width:0">
+<?php if (!empty($r->brand_logo)): ?>
+  <img src="https://planet-hosts.com<?=htmlspecialchars($r->brand_logo)?>" alt="" style="width:34px;height:34px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,.08)">
+<?php endif; ?>
+<div style="min-width:0">
+<div class="req-title"><?php echo htmlspecialchars($r->artist . ' - ' . $r->title); ?></div>
+<?php if ($r->guest_name): ?><div class="req-meta">Requested by: <?php echo htmlspecialchars($r->guest_name); ?></div><?php endif; ?>
+<?php if ($r->station_name): ?><div class="req-meta" style="color:<?php echo htmlspecialchars($r->brand_primary_color ?? '#38bdf8'); ?>">📡 Station: <?php echo htmlspecialchars($r->station_name); ?></div><?php endif; ?>
+<?php if ($r->message): ?><div class="req-msg">"<?php echo htmlspecialchars($r->message); ?>"</div><?php endif; ?>
+</div>
+</div>
+<div style="display:flex;gap:6px;flex-shrink:0">
+<a href="/dj_panel.php?action=played_request&req_id=<?php echo $r->id; ?>" class="btn btn-success btn-xs" title="Mark as played"><i class="fas fa-check"></i> Played</a>
+<a href="/dj_panel.php?action=remove_request&req_id=<?php echo $r->id; ?>" class="btn btn-danger btn-xs">✕ Remove</a>
+</div>
+</div>
+<?php
+    }
+    exit;
+}
+
+// ─── MARK REQUEST PLAYED ───
+if ($action === 'played_request' && isset($_GET['req_id']) && isset($_SESSION['dj_user'])) {
+    $reqId = (int)$_GET['req_id'];
+    $djId = (int)$_SESSION['dj_user']['id'];
+    $chk = $pdo->prepare("SELECT r.id FROM radio_requests r
+        WHERE r.id = ?
+          AND (r.stream_id = (SELECT stream_id FROM radio_djs WHERE id = ?)
+               OR r.stream_id IN (SELECT stream_id FROM radio_dj_streams WHERE dj_id = ? AND is_active = 'yes'))");
+    $chk->execute([$reqId, $djId, $djId]);
+    if ($chk->fetch()) {
+        $pdo->prepare("UPDATE radio_requests SET status = 'played' WHERE id = ?")
+            ->execute([$reqId]);
+        $success = 'Request marked as played.';
+    } else {
+        $error = 'Request not found for your stations.';
+    }
+    header('Location: /dj_panel.php?action=dashboard&tab=requests');
     exit;
 }
 
@@ -423,19 +652,20 @@ if ($action !== 'dashboard' && $action !== 'profile') {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#02050e;color:#fff;font-family:'Inter',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh}
-.bg{position:fixed;inset:0;background:linear-gradient(rgba(2,8,23,.9),rgba(2,8,23,.97)),url(/theme/assets/img/background.png);background-size:cover;z-index:-2}
-.card{background:rgba(8,16,28,.95);border:1px solid rgba(0,191,255,.12);border-radius:16px;padding:36px 28px;max-width:400px;width:92%;text-align:center}
-h1{font-size:22px;margin-bottom:4px}h1 span{color:#008cff}
-p{color:#64748b;font-size:13px;margin-bottom:20px}
+body{background:#060a14;color:#fff;font-family:'Inter',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh}
+.bg{position:fixed;inset:0;background:radial-gradient(900px 480px at 80% -10%,rgba(56,189,248,.12),transparent 60%),radial-gradient(700px 420px at 0% 110%,rgba(167,139,250,.1),transparent 60%),linear-gradient(160deg,#060a14,#0b1120);z-index:-2}
+.card{background:rgba(13,20,36,.78);border:1px solid rgba(56,189,248,.14);border-radius:20px;padding:40px 32px;max-width:400px;width:92%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5);backdrop-filter:blur(14px)}
+h1{font-size:23px;margin-bottom:6px;letter-spacing:.3px}h1 span{color:#38bdf8}
+p{color:#8ca0bf;font-size:13px;margin-bottom:22px}
 .form-group{margin-bottom:14px;text-align:left}
-.form-group label{display:block;margin-bottom:4px;font-size:12px;color:#94a3b8;font-weight:600}
-.form-group input{width:100%;padding:11px 14px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:14px;outline:none;box-sizing:border-box}
-.form-group input:focus{border-color:#008cff}
-.btn{width:100%;padding:12px;background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer}
-.alert{padding:10px;border-radius:8px;margin-bottom:14px;font-size:13px}
-.alert-error{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);color:#f87171}
-.alert-success{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);color:#4ade80}
+.form-group label{display:block;margin-bottom:5px;font-size:11px;color:#8ca0bf;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.form-group input{width:100%;padding:12px 14px;background:rgba(0,0,0,.35);border:1px solid rgba(148,163,184,.18);border-radius:11px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;transition:border-color .2s,box-shadow .2s}
+.form-group input:focus{border-color:rgba(56,189,248,.5);box-shadow:0 0 0 3px rgba(56,189,248,.1)}
+.btn{width:100%;padding:13px;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;border:none;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(14,165,233,.25);transition:transform .15s}
+.btn:hover{transform:translateY(-1px)}
+.alert{padding:11px 14px;border-radius:11px;margin-bottom:14px;font-size:13px}
+.alert-error{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);color:#f87171}
+.alert-success{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);color:#4ade80}
 </style></head><body>
 <div class="bg"></div>
 <div class="card">
@@ -457,6 +687,75 @@ p{color:#64748b;font-size:13px;margin-bottom:20px}
 <title>DJ Panel - <?php echo htmlspecialchars($_SESSION['dj_user']['name'] ?? 'DJ'); ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style id="v2">
+:root{
+  --bg:#060a14; --panel:rgba(13,20,36,.72); --panel2:rgba(20,30,50,.6); --line:rgba(148,163,184,.09);
+  --line2:rgba(148,163,184,.16); --txt:#e6edf7; --mut:#8ca0bf; --acc:#38bdf8; --vio:#a78bfa;
+  --green:#34d399; --red:#f87171; --amber:#facc15; --ink:#0b1120;
+  --r:16px; --shadow:0 10px 30px rgba(0,0,0,.35);
+}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--txt);letter-spacing:.1px}
+.bg{background:radial-gradient(1200px 600px at 85% -10%,rgba(56,189,248,.10),transparent 60%),radial-gradient(1000px 500px at -10% 110%,rgba(167,139,250,.08),transparent 60%),linear-gradient(160deg,#060a14,#0b1120)}
+.topbar{background:rgba(9,15,28,.8);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--line);padding:14px 28px}
+.topbar h2{font-size:17px;letter-spacing:.3px}
+.container{max-width:1120px;padding:26px 28px 60px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;margin-bottom:16px;box-shadow:var(--shadow);backdrop-filter:blur(8px);transition:border-color .25s,transform .2s}
+.card:hover{border-color:var(--line2)}
+.card h3{color:var(--acc);font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:14px}
+.grid{gap:14px;margin-bottom:24px}
+.stat-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:22px 16px;box-shadow:var(--shadow);backdrop-filter:blur(8px)}
+.stat-card .num{font-size:32px;font-weight:800}
+.stat-card .label{color:var(--mut);font-size:10.5px}
+.dj-tabs{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;gap:4px;margin-bottom:24px;width:fit-content;max-width:100%;box-shadow:var(--shadow);backdrop-filter:blur(10px)}
+.dj-tab{padding:8px 16px;border-radius:10px;font-size:12.5px;color:var(--mut);background:transparent}
+.dj-tab:hover{background:rgba(56,189,248,.07);color:var(--txt)}
+.dj-tab.act{background:linear-gradient(135deg,rgba(56,189,248,.16),rgba(167,139,250,.12));color:#7dd3fc;border-color:rgba(56,189,248,.3)}
+.dj-tab.active-station.act{background:linear-gradient(135deg,rgba(167,139,250,.18),rgba(56,189,248,.14));color:#c4b5fd}
+input,textarea,select{background:rgba(0,0,0,.32);border:1px solid var(--line2);border-radius:10px;color:var(--txt);font-size:13px;transition:border-color .2s,box-shadow .2s}
+input:focus,textarea:focus,select:focus{border-color:rgba(56,189,248,.4);box-shadow:0 0 0 3px rgba(56,189,248,.08);background:rgba(0,0,0,.4)}
+.btn{border-radius:10px;font-size:13px;font-family:inherit}
+.btn-primary{background:linear-gradient(135deg,#0ea5e9,#6366f1);box-shadow:0 4px 16px rgba(14,165,233,.25)}
+.btn-danger{background:rgba(248,113,113,.12);color:var(--red)}
+.btn-warning{background:rgba(250,204,21,.1);color:var(--amber)}
+.btn-secondary{background:rgba(148,163,184,.1);color:#cbd5e1}
+.form-group label{color:var(--mut);font-size:10.5px;letter-spacing:.05em}
+.sam-notice{background:rgba(250,204,21,.05);border:1px solid rgba(250,204,21,.16);border-radius:10px}
+.sam-title{color:var(--amber)}
+.conn-box{background:rgba(0,0,0,.3);border-radius:12px}
+.conn-label{color:var(--mut)}
+.copy-btn{background:rgba(255,255,255,.05);color:var(--mut);border:1px solid rgba(255,255,255,.05)}
+.copy-btn:hover{background:rgba(255,255,255,.1);color:var(--txt)}
+.req-item{transition:background .2s}
+.req-item:hover{background:rgba(56,189,248,.04)}
+.sch-table th{color:var(--mut)}
+.gallery-del{background:rgba(248,113,113,.9)}
+.avatar-pic,.avatar-placeholder{border-color:var(--line2)}
+.alert{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);border-radius:12px;color:var(--green)}
+.alert-error{background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.22);color:var(--red)}
+.empty-text{color:var(--mut)}
+/* new pieces */
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.04em}
+.pill .livedot{width:9px;height:9px;border-radius:50%;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.75)}}
+.live{background:rgba(52,211,153,.12);color:var(--green);border:1px solid rgba(52,211,153,.35)}
+.live .livedot{background:var(--green);box-shadow:0 0 8px var(--green)}
+.autodj{background:rgba(250,204,21,.1);color:var(--amber);border:1px solid rgba(250,204,21,.3)}
+.autodj .livedot{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.off{background:rgba(148,163,184,.1);color:#9fb0cf;border:1px solid rgba(148,163,184,.28)}
+.off .livedot{background:#64748b;animation:none}
+.hero{background:linear-gradient(135deg,rgba(14,165,233,.12),rgba(167,139,250,.1)),var(--panel);border:1px solid rgba(56,189,248,.18);border-radius:20px;padding:22px 24px;margin-bottom:20px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;top:-80px;right:-80px;width:260px;height:260px;background:radial-gradient(circle,rgba(56,189,248,.14),transparent 70%)}
+.hero::before{content:"";position:absolute;bottom:-60px;left:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(167,139,250,.10),transparent 70%)}
+.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.np-title{font-size:20px;font-weight:800;color:#fff}
+.np-sub{font-size:13px;color:var(--mut)}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;position:relative;overflow:hidden}
+.tile .tnum{font-size:26px;font-weight:800;line-height:1.1}
+.tile .tlabel{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin-top:4px;font-weight:600}
+.tile .ticon{position:absolute;right:10px;top:10px;font-size:18px;opacity:.14}
+@media(max-width:760px){.topbar{padding:12px 16px}.container{padding:16px 14px}.dj-tabs{width:100%}.grid{grid-template-columns:1fr}.dj-grid{grid-template-columns:1fr}}
+</style>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#02050e;color:#e2e8f0;font-family:'Inter',sans-serif}
@@ -487,6 +786,8 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,140,255,.3)}
 .btn-danger{background:rgba(248,113,113,.12);color:#f87171}
 .btn-danger:hover{background:rgba(248,113,113,.2)}
+.btn-success{background:rgba(74,222,128,.12);color:#4ade80}
+.btn-success:hover{background:rgba(74,222,128,.2)}
 .btn-warning{background:rgba(250,204,21,.1);color:#facc15}
 .btn-warning:hover{background:rgba(250,204,21,.18)}
 .btn-sm{padding:6px 14px;font-size:11px;border-radius:8px}
@@ -645,6 +946,7 @@ if (!empty($allStations) && count($allStations) > 1): ?>
     ?>
     <div class="dj-tab" onclick="sw(event,'schedule')">Schedule</div>
     <div class="dj-tab" onclick="sw(event,'requests')">Requests</div>
+    <div class="dj-tab" onclick="sw(event,'downloads')">Downloads</div>
     <div class="dj-tab" onclick="sw(event,'profile')">Profile</div>
     <div class="dj-tab" onclick="sw(event,'gallery')">Gallery</div>
     <div class="dj-tab" onclick="sw(event,'api')">API</div>
@@ -748,6 +1050,14 @@ $ss = $pdo->prepare("SELECT * FROM streaming_stations WHERE id = ?");
 $ss->execute([$streamId]);
 $station = $ss->fetch(PDO::FETCH_OBJ);
 $djPort = $station->dj_port ?? $station->port ?? 8000;
+// Live-probe the actual Icecast/Shoutcast engine — authoritive ON AIR state
+$probe = probe_stream($pdo, $station);
+$autoDjOn   = (int)($station->autodj_enabled ?? 0);
+$liveNow    = !$autoDjOn && $probe['live'];
+$srcState   = $autoDjOn ? 'autodj' : ($probe['live'] ? 'live' : 'offline');
+$srcLabel   = ['autodj' => 'AutoDJ', 'live' => 'Live DJ', 'offline' => 'Offline'][$srcState] ?? 'Offline';
+$monSong    = $probe['song'] ?: ($station->current_song ?? '');
+$monListeners = $probe['listeners'] ?: (int)($station->listener_count ?? 0);
 // The DJ's own login password (radio_djs.plain_password), not the station source password
 $djPass = $pdo->prepare("SELECT plain_password FROM radio_djs WHERE id=?");
 $djPass->execute([$_SESSION['dj_user']['id'] ?? 0]);
@@ -766,24 +1076,29 @@ $userStreams->execute([$hostingId]);
 $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 ?>
 
-<!-- Status Bar -->
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
-  <div style="background:rgba(15,23,42,.5);border:1px solid rgba(56,189,248,.08);border-radius:14px;padding:16px;text-align:center">
-    <div style="font-size:26px;font-weight:800;color:#4ade80"><?php echo $djData->stream_status ?? 'N/A'; ?></div>
-    <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;font-weight:600">Status</div>
-  </div>
-  <div style="background:rgba(15,23,42,.5);border:1px solid rgba(56,189,248,.08);border-radius:14px;padding:16px;text-align:center">
-    <div style="font-size:26px;font-weight:800;color:#38bdf8"><?php echo $djData->listener_count ?? 0; ?></div>
-    <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;font-weight:600">Listeners</div>
-  </div>
-  <div style="background:rgba(15,23,42,.5);border:1px solid rgba(56,189,248,.08);border-radius:14px;padding:16px;text-align:center">
-    <div style="font-size:26px;font-weight:800;color:#facc15"><?php echo $djData->track_count ?? 0; ?></div>
-    <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;font-weight:600">Tracks</div>
-  </div>
-  <div style="background:rgba(15,23,42,.5);border:1px solid rgba(56,189,248,.08);border-radius:14px;padding:16px;text-align:center">
-    <div style="font-size:26px;font-weight:800;color:#a78bfa" id="dj-source-status"><?php echo $djData->autodj_active ? 'AutoDJ' : ($djData->current_dj ? 'Live DJ' : 'Offline'); ?></div>
-    <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;font-weight:600">Source</div>
-  </div>
+<!-- Live Monitor -->
+<div class="hero">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;position:relative">
+<div style="flex:1;min-width:200px">
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+<span class="pill <?php echo $srcState === 'live' ? 'live' : ($srcState === 'autodj' ? 'autodj' : 'off'); ?>" id="dj-source-status"><span class="livedot"></span><?php echo $srcLabel; ?></span>
+<span style="font-size:11px;color:#64748b"><?php echo htmlspecialchars($station->name ?? 'Stream'); ?> · <?php echo strtoupper($probe['engine']); ?><?php echo $probe['live'] ? ' · source connected' : ($station->status === 'running' ? ' · server running' : ' · server stopped'); ?></span>
+</div>
+<div class="np-title" id="dj-np-song" style="margin-top:10px"><?php echo htmlspecialchars($monSong ?: ($djData->current_dj ? 'Live with ' . $djData->current_dj : 'Station is idle — waiting for a source')); ?></div>
+<div class="np-sub" id="dj-np-sub" style="margin-top:3px"><?php echo $liveNow || $djData->current_dj ? ('On air with <b style="color:#a78bfa">' . htmlspecialchars($station->current_dj ?? $djData->current_dj ?? '') . '</b>') : ($autoDjOn ? 'AutoDJ is playing the playlist' : 'No source connected'); ?></div>
+</div>
+<div style="text-align:right">
+<div style="font-size:34px;font-weight:800;color:<?php echo $liveNow ? '#34d399' : '#38bdf8'; ?>" id="dj-live-listeners"><?php echo (int)$monListeners; ?></div>
+<div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Listeners now</div>
+</div>
+</div>
+</div>
+
+<div class="mgrid">
+  <div class="tile"><div class="ticon">🌐</div><div class="tnum" style="color:#4ade80"><?php echo htmlspecialchars($djData->stream_status ?? '—'); ?></div><div class="tlabel">Status</div></div>
+  <div class="tile"><div class="ticon">📻</div><div class="tnum" style="color:#38bdf8" id="dj-stat-listeners"><?php echo (int)$monListeners; ?></div><div class="tlabel">Listeners</div></div>
+  <div class="tile"><div class="ticon">🎵</div><div class="tnum" style="color:#facc15"><?php echo (int)($djData->track_count ?? 0); ?></div><div class="tlabel">Tracks</div></div>
+  <div class="tile"><div class="ticon">🎙️</div><div class="tnum" style="color:#a78bfa" id="src-tile"><?php echo $srcLabel; ?></div><div class="tlabel">Source</div></div>
 </div>
 
 <!-- Stream Player -->
@@ -892,18 +1207,16 @@ echo htmlspecialchars($samPass);
 </div>
 </div>
 
-<!-- Live Now Status -->
-<div style="background:rgba(15,23,42,.5);border:1px solid rgba(74,222,128,.1);border-radius:14px;padding:18px">
+<!-- Live Now Status (probe-based) -->
+<div style="background:var(--panel);border:1px solid rgba(74,222,128,.14);border-radius:14px;padding:18px">
 <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-<div style="width:32px;height:32px;border-radius:50%;background:<?php echo $djData->current_dj ? 'rgba(74,222,128,.15)' : 'rgba(100,116,139,.12)'; ?>;display:flex;align-items:center;justify-content:center;font-size:16px"><?php echo $djData->current_dj ? '🔴' : '⏹'; ?></div>
-<div><div style="font-size:14px;font-weight:700;color:#e0e0e0"><?php echo $djData->current_dj ? 'Live Now' : 'Offline'; ?></div><div style="font-size:10px;color:#64748b"><?php echo $djData->current_dj ? htmlspecialchars($djData->current_dj) : 'No DJ connected'; ?></div></div>
+<div style="width:32px;height:32px;border-radius:50%;background:<?php echo $liveNow ? 'rgba(74,222,128,.15)' : 'rgba(100,116,139,.12)'; ?>;display:flex;align-items:center;justify-content:center;font-size:16px"><?php echo $liveNow ? '🔴' : '⏹'; ?></div>
+<div><div style="font-size:14px;font-weight:700;color:#e0e0e0" id="live-now-title"><?php echo $liveNow ? 'Live Now' : ($autoDjOn ? 'AutoDJ on air' : 'Offline'); ?></div><div style="font-size:10px;color:#64748b" id="live-now-sub"><?php echo $liveNow ? htmlspecialchars($station->current_dj ?? $djData->current_dj ?? 'Live source') : ($autoDjOn ? 'Playlist is playing' : 'Connect your encoder to go live'); ?></div></div>
 </div>
-<?php if ($djData->current_dj): ?>
 <div style="background:rgba(0,0,0,.3);border-radius:8px;padding:10px;font-size:12px;line-height:1.6">
-<div><span style="color:#64748b">Song:</span> <span style="color:#e0e0e0"><?php echo htmlspecialchars($station->current_song ?? 'N/A'); ?></span></div>
-<div><span style="color:#64748b">Listeners:</span> <span style="color:#4ade80"><?php echo (int)($station->listener_count ?? 0); ?></span></div>
+<div><span style="color:#64748b">Song:</span> <span style="color:#e0e0e0" id="live-now-song"><?php echo htmlspecialchars($monSong ?: '—'); ?></span></div>
+<div><span style="color:#64748b">Listeners:</span> <span style="color:#4ade80" id="live-now-listeners"><?php echo (int)$monListeners; ?></span></div>
 </div>
-<?php endif; ?>
 </div>
 </div>
 
@@ -1115,7 +1428,8 @@ $requests = $reqStmt->fetchAll(PDO::FETCH_OBJ);
 ?>
 <div class="dj-grid">
 <div class="card">
-<h3><i class="fas fa-music"></i> Song Requests (<?php echo count($requests); ?>)</h3>
+<h3><i class="fas fa-music"></i> Song Requests (<span id="req-count"><?php echo count($requests); ?></span>)</h3>
+<div id="req-list">
 <?php if (empty($requests)): ?>
 <p class="empty-text">No pending requests.</p>
 <?php else: ?>
@@ -1132,20 +1446,29 @@ $requests = $reqStmt->fetchAll(PDO::FETCH_OBJ);
 <?php if ($r->message): ?><div class="req-msg">"<?php echo htmlspecialchars($r->message); ?>"</div><?php endif; ?>
 </div>
 </div>
+<div style="display:flex;gap:6px;flex-shrink:0">
+<a href="/dj_panel.php?action=played_request&req_id=<?php echo $r->id; ?>" class="btn btn-success btn-xs" title="Mark as played"><i class="fas fa-check"></i> Played</a>
 <a href="/dj_panel.php?action=remove_request&req_id=<?php echo $r->id; ?>" class="btn btn-danger btn-xs">✕ Remove</a>
+</div>
 </div>
 <?php endforeach; ?>
 <?php endif; ?>
 </div>
-<div class="card">
-<h3><i class="fas fa-download"></i> Downloads</h3>
+</div>
+</div>
+</div>
+
+<div class="dj-panel" id="pn-downloads">
 <?php
 try {
     $sid = $_SESSION['dj_user']['stream_id'] ?? 0;
-    $dlStmt = $pdo->prepare("SELECT * FROM radio_downloads WHERE station_id IS NULL OR station_id = ? ORDER BY created_at DESC");
-    $dlStmt->execute([$sid]);
+    $dlStmt = $pdo->prepare("SELECT * FROM radio_downloads WHERE station_id IS NULL OR station_id = ? OR station_id IN (SELECT stream_id FROM radio_dj_streams WHERE dj_id = ? AND is_active = 'yes') ORDER BY created_at DESC");
+    $dlStmt->execute([$sid, $_SESSION['dj_user']['id'] ?? 0]);
     $dls = $dlStmt->fetchAll(PDO::FETCH_OBJ);
-    if (!empty($dls)): ?>
+?>
+<div class="card">
+<h3><i class="fas fa-download"></i> Downloads</h3>
+<?php if (!empty($dls)): ?>
 <div style="display:flex;flex-direction:column;gap:6px">
 <?php foreach ($dls as $d): ?>
 <a href="/admin/radio/downloads/serve/<?=$d->id?>" class="btn btn-sm btn-primary" style="text-align:left;justify-content:flex-start;margin:0" target="_blank">
@@ -1156,12 +1479,12 @@ try {
 </div>
 <?php else: ?>
 <p class="empty-text">No downloads available.</p>
-<?php endif;
-} catch (\Exception $e) { ?>
-<p class="empty-text">No downloads available.</p>
-<?php } ?>
+<?php endif; ?>
 </div>
-</div>
+<?php
+} catch (\Exception $e) {
+    echo '<p class="empty-text">No downloads available.</p>';
+} ?>
 </div>
 
 <div class="dj-panel" id="pn-profile">
@@ -1414,7 +1737,7 @@ function updatePlayer(id){
   var pct = (a.currentTime / a.duration) * 100;
   document.getElementById(id+'-progress').style.width = pct + '%';
   document.getElementById(id+'-time').textContent = fmt(a.currentTime);
-  document.getElementById(id+'-duration').textContent = fmt(a.duration);
+  document.getElementById(id+'-duration').textContent = isFinite(a.duration) ? fmt(a.duration) : 'LIVE';
 }
 function seekPlayer(e, id){
   var bg = document.getElementById(id+'-progress-bg');
@@ -1442,6 +1765,76 @@ function fmt(s){
   var sc = Math.floor(s % 60);
   return m + ':' + (sc<10?'0':'') + sc;
 }
+</script>
+<script>
+// ─── LIVE MONITOR: probes the real stream engine every 8s ───
+(function(){
+  function refreshStatus(){
+    var x=new XMLHttpRequest();
+    x.open('GET','/dj_panel.php?action=status',true);
+    x.onload=function(){
+      try{
+        var r=JSON.parse(x.responseText);
+        if(!r || !r.ok) return;
+        var state=r.state||'offline';
+        var lbl=state==='live'?'Live DJ':(state==='autodj'?'AutoDJ':'Offline');
+        var stEl=document.getElementById('dj-source-status');
+        if(stEl){ stEl.className='pill '+(state==='live'?'live':(state==='autodj'?'autodj':'off')); stEl.innerHTML='<span class="livedot"></span>'+lbl; }
+        var lt=document.getElementById('live-now-title'); if(lt) lt.textContent=state==='live'?'Live Now':(state==='autodj'?'AutoDJ on air':'Offline');
+        var lsub=document.getElementById('live-now-sub'); if(lsub) lsub.textContent=state==='live'?(r.current_dj||'Live source'):(state==='autodj'?'Playlist is playing':'Connect your encoder to go live');
+        var song=(r.song||'').trim();
+        var ns=document.getElementById('dj-np-song');
+        if(ns) ns.textContent=song||(state==='live'?'Live with '+(r.current_dj||''):'Station is idle — waiting for a source');
+        var sub=document.getElementById('dj-np-sub');
+        if(sub){
+          if(state==='live') sub.innerHTML='On air with <b style="color:#a78bfa">'+((r.current_dj&&r.current_dj!=='Live DJ')?r.current_dj:'Live DJ')+'</b>';
+          else if(state==='autodj') sub.innerHTML='AutoDJ is playing the playlist';
+          else sub.innerHTML='No source connected';
+        }
+        var st=document.getElementById('src-tile');
+        if(st){ st.textContent=lbl; st.style.color=state==='live'?'#34d399':(state==='autodj'?'#facc15':'#64748b'); }
+        var npEl=document.querySelector('[id^="player-"][id$="-song"]');
+        if(npEl && song) npEl.textContent=song;
+        var npArt=document.querySelector('[id^="player-"][id$="-artist"]');
+        if(npArt && song && state==='live') npArt.textContent=r.current_dj||'';
+        var ln=document.getElementById('dj-live-listeners'); if(ln){ ln.textContent=r.listeners||0; ln.style.color=state==='live'?'#34d399':'#38bdf8'; }
+        var sl=document.getElementById('dj-stat-listeners'); if(sl) sl.textContent=r.listeners||0;
+        var lsn=document.getElementById('live-now-song'); if(lsn) lsn.textContent=song||'—';
+        var lln=document.getElementById('live-now-listeners'); if(lln) lln.textContent=r.listeners||0;
+      }catch(e){}
+    };
+    x.send();
+  }
+  refreshStatus();
+  setInterval(refreshStatus, 8000);
+})();
+
+// ─── Requests Auto-Refresh (every 10s) ───
+(function(){
+  var countEl = document.getElementById('req-count');
+  var listEl = document.getElementById('req-list');
+  if (!listEl) return;
+  var lastCount = null;
+  function refreshRequests(){
+    var x = new XMLHttpRequest();
+    x.open('GET','/dj_panel.php?action=requests_refresh', true);
+    x.onload = function(){
+      if (x.status !== 200) return;
+      var html = x.responseText;
+      var count = (html.match(/class="req-item"/g) || []).length;
+      if (lastCount !== null && count > lastCount) {
+        try { var beep = new Audio('data:audio/wav;base64,UklGRlwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoAAACAgICAPz8/PwAAAAAAAAA='); beep.play(); } catch(e){}
+      }
+      if (lastCount !== null && count !== lastCount) {
+        listEl.innerHTML = html;
+        if (countEl) countEl.textContent = count;
+      }
+      lastCount = count;
+    };
+    x.send();
+  }
+  setInterval(refreshRequests, 10000);
+})();
 </script>
 </body></html>
 
