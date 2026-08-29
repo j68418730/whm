@@ -8,8 +8,16 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-<?php $te = \Core\ThemeEngine::getInstance(); echo $te->getThemeCss('admin'); ?>
-:root{--bs-body-font-family:var(--font-body,'Inter',sans-serif);--bs-body-bg:var(--bg,#02050e);--bs-body-color:var(--text,#e0e0e0)}
+<?php
+$resellerTheme = require __DIR__ . '/reseller_theme.php';
+if (!empty($resellerTheme['colors'])) {
+    echo ':root{';
+    foreach ($resellerTheme['colors'] as $k => $v) echo "--{$k}:{$v};";
+    foreach (($resellerTheme['fonts'] ?? []) as $k => $v) echo "--font-{$k}:{$v};";
+    echo '}';
+}
+?>
+:root{--bs-body-font-family:var(--font-body,'Inter',sans-serif);--bs-body-bg:var(--bg,#02050e);--bs-body-color:var(--text,#e8edf5)}
 .sidebar{width:240px;background:var(--sidebar_bg,#0b1728);border-right:1px solid var(--border,rgba(0,191,255,.08));display:flex;flex-direction:column;height:100vh;position:sticky;top:0;overflow-y:auto;flex-shrink:0}
 .sidebar .logo{padding:16px 16px 12px;font-size:16px;font-weight:800;border-bottom:1px solid var(--border,rgba(0,191,255,.08));letter-spacing:1px}
 .sidebar .logo small{display:block;font-size:9px;color:#a78bfa;letter-spacing:2px;text-transform:uppercase;margin-top:3px}
@@ -41,9 +49,10 @@
 .form-control:focus,.form-select:focus{border-color:var(--primary,#008cff);box-shadow:0 0 0 2px rgba(0,140,255,.15);background:rgba(0,0,0,.4);color:var(--text)}
 .form-control::placeholder{color:var(--text_muted,#64748b)}
 .form-label{font-size:12px;color:var(--text_muted,#64748b);font-weight:600;margin-bottom:4px}
-.table{font-size:13px;color:var(--text,#e0e0e0);margin:0}
-.table>:not(caption)>*>th{color:var(--text_muted,#64748b);font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border,rgba(0,191,255,.04));background:transparent}
-.table>:not(caption)>*>td{border-bottom:1px solid var(--border,rgba(0,191,255,.04));padding:10px 8px;vertical-align:middle}
+.table{font-size:13px;color:var(--text,#e8edf5);margin:0;--bs-table-color:var(--text,#e8edf5);--bs-table-bg:transparent}
+.table>:not(caption)>*>th{color:var(--text_muted,#94a3b8);font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border,rgba(0,191,255,.04));background:transparent}
+.table>:not(caption)>*>td{border-bottom:1px solid var(--border,rgba(0,191,255,.04));padding:10px 8px;vertical-align:middle;color:var(--text,#e8edf5)}
+.table-hover>tbody>tr:hover>*{color:var(--text,#e8edf5);background-color:rgba(0,140,255,.05)}
 .alert{border-radius:8px;font-size:13px;padding:12px 16px;border:none}
 .alert-success{background:rgba(74,222,128,.1);color:var(--success,#4ade80);border:1px solid rgba(74,222,128,.15)}
 .alert-danger{background:rgba(248,113,113,.1);color:var(--danger,#f87171);border:1px solid rgba(248,113,113,.15)}
