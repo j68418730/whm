@@ -48,6 +48,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: /user/');
             exit;
         }
+        // 3) Reseller staff member (owner → role-based panel access, scoped to that reseller)
+        try {
+            $spdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", "radiouser", "Skylinehosting171");
+            $sstmt = $spdo->prepare("SELECT s.*, r.id AS reseller_record_id, r.email AS owner_email
+                FROM reseller_staff s
+                JOIN resellers r ON r.id = s.reseller_id
+                WHERE (s.email = ? OR s.name = ?) AND s.is_active = 1 AND r.is_active = 1
+                LIMIT 1");
+            $sstmt->execute([$email, $email]);
+            $staff = $sstmt->fetch(PDO::FETCH_OBJ);
+            if ($staff && password_verify($password, $staff->password_hash)) {
+                $_SESSION['reseller_staff'] = (object)[
+                    'id' => $staff->id, 'name' => $staff->name, 'email' => $staff->email,
+                    'reseller_id' => (int)$staff->reseller_record_id, 'role' => $staff->role,
+                    'permissions' => json_decode((string)($staff->permissions ?? '[]'), true) ?: [],
+                ];
+                header('Location: /reseller');
+                exit;
+            }
+        } catch (Exception $e) {}
         header('Location: /user_login.php?error=1');
         exit;
     } catch (Exception $e) {
