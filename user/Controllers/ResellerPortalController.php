@@ -132,6 +132,18 @@ class ResellerPortalController extends Controller
         return $q['low'];
     }
 
+    // Fail a creation/provision action when the reseller is over quota. Returns true if blocked.
+    protected function assertQuota($redirectUrl, $what)
+    {
+        if (!$this->quotaExceeded()) return false;
+        $q = $this->quotaStatus();
+        $_SESSION['error_message'] = "You have reached {$q['threshold']}% of your disk/bandwidth allocation (" .
+            number_format($q['disk_avail_gb'], 1) . ' GB disk, ' . number_format($q['bw_avail_gb'], 0) .
+            " GB bandwidth remaining). You cannot " . $what . ' until you upgrade your plan.';
+        $this->response->redirect($redirectUrl);
+        exit;
+    }
+
     public function dashboard()
     {
         $u = $this->requireReseller();
@@ -350,13 +362,8 @@ class ResellerPortalController extends Controller
             if (!$owned) { $_SESSION['error_message'] = 'That package is not yours.'; $this->response->redirect('/reseller/clients/create'); exit; }
         }
         // Cannot create accounts once committed quota is at/over the threshold — must upgrade first.
-        if ($this->quotaExceeded()) {
-            $q = $this->quotaStatus();
-            $_SESSION['error_message'] = 'You have reached ' . $q['threshold'] . '% of your disk/bandwidth allocation (' .
-                number_format($q['disk_avail_gb'], 1) . ' GB disk, ' . number_format($q['bw_avail_gb'], 0) .
-                ' GB bandwidth remaining). You must upgrade your plan before creating new accounts.';
-            $this->response->redirect('/reseller/clients/create'); exit;
-        }
+        if ($this->assertQuota('/reseller/clients/create', 'create new accounts')) { /* blocked */ }
+
         $nameserver1 = 'ns1.planet-hosts.com';
         $nameserver2 = 'ns2.planet-hosts.com';
         try {
@@ -495,13 +502,7 @@ class ResellerPortalController extends Controller
             'is_active' => $this->request->post('is_active', 1) ? 1 : 0,
         ];
         // Once committed quota is at/over the threshold, block adding new committed resources.
-        if ($this->quotaExceeded()) {
-            $q = $this->quotaStatus();
-            $_SESSION['error_message'] = 'You have reached ' . $q['threshold'] . '% of your disk/bandwidth allocation (' .
-                number_format($q['disk_avail_gb'], 1) . ' GB disk, ' . number_format($q['bw_avail_gb'], 0) .
-                ' GB bandwidth remaining). You must upgrade your plan before creating more or larger packages.';
-            $this->response->redirect('/reseller/packages'); exit;
-        }
+        if ($this->assertQuota('/reseller/packages', 'create new or larger packages')) { /* blocked */ }
         $this->db->table('reseller_packages')->insertGetId($data);
         $this->audit('package.created', 'reseller_package', null, ['name' => $name, 'slug' => $slug, 'type' => $type]);
         $_SESSION['success_message'] = "Package '{$name}' created (public: {$slug}).";
@@ -546,13 +547,7 @@ class ResellerPortalController extends Controller
         ];
         // Only block when the update would increase committed resources beyond capacity.
         $grows = ((int)$data['disk_space'] > (int)$pkg->disk_space) || ((int)$data['bandwidth'] > (int)$pkg->bandwidth);
-        if ($grows && $this->quotaExceeded()) {
-            $q = $this->quotaStatus();
-            $_SESSION['error_message'] = 'You have reached ' . $q['threshold'] . '% of your disk/bandwidth allocation (' .
-                number_format($q['disk_avail_gb'], 1) . ' GB disk, ' . number_format($q['bw_avail_gb'], 0) .
-                ' GB bandwidth remaining). You must upgrade your plan before enlarging this package.';
-            $this->response->redirect('/reseller/packages'); exit;
-        }
+        if ($grows && $this->assertQuota('/reseller/packages', 'enlarge this package')) { /* blocked */ }
         $this->db->table('reseller_packages')->where('id', (int)$id)->update($data);
         $this->audit('package.updated', 'reseller_package', (int)$id, ['name' => $name]);
         $_SESSION['success_message'] = 'Package updated.';
@@ -626,6 +621,8 @@ class ResellerPortalController extends Controller
         $rid = (int)$this->reseller->id;
         $client = $this->db->table('hosting_users')->where('id', (int)$clientId)->where('reseller_id', $rid)->first();
         if (!$client) { $_SESSION['error_message'] = 'Client not found.'; $this->response->redirect('/reseller/provisioning'); exit; }
+        // Activating creates the live account/radio/game resources — block when over quota.
+        if ($this->assertQuota('/reseller/provisioning', 'activate new accounts')) { /* blocked */ }
         try {
             // Planet Hosts backend provisioning pipeline creates the OS account, vhost, DNS, radio dirs.
             $pkgId = (int)$client->package_id;
@@ -668,6 +665,8 @@ class ResellerPortalController extends Controller
         if (!$order) { $_SESSION['error_message'] = 'Order not found.'; $this->response->redirect('/reseller/provisioning'); exit; }
         $owner = $this->db->table('hosting_users')->where('id', $order->user_id)->where('reseller_id', $this->reseller->id)->first();
         if (!$owner) { $_SESSION['error_message'] = 'This order is not linked to your reseller account.'; $this->response->redirect('/reseller/provisioning'); exit; }
+        // Provisioning spins up radio/game/hosting resources — block when over quota.
+        if ($this->assertQuota('/reseller/provisioning', 'provision new services')) { /* blocked */ }
         try {
             $order->{'items'} = $order->items ?? null;
             require_once BASE_PATH . '/services/AutoProvision.php';
@@ -864,6 +863,7 @@ class ResellerPortalController extends Controller
         $clientId = (int)$this->request->post('client_id', 0);
         $client = $this->db->table('hosting_users')->where('id', $clientId)->where('reseller_id', $rid)->first();
         if (!$client) { $_SESSION['error_message'] = 'Client not found.'; $this->response->redirect('/reseller/billing-system/credits'); exit; }
+        if ($this->assertQuota('/reseller/billing-system/credits', 'add credits')) { /* blocked */ }
         $this->db->table('billing_credits')->insertGetId([
             'user_id' => $clientId, 'amount' => (float)$this->request->post('amount', 0),
             'description' => $this->request->post('description', ''),
@@ -899,6 +899,7 @@ class ResellerPortalController extends Controller
         $desc = trim($this->request->post('description', ''));
         $amount = (float)$this->request->post('total', 0);
         if ($amount <= 0) { $_SESSION['error_message'] = 'Amount must be greater than zero.'; $this->response->redirect('/reseller/billing-system'); exit; }
+        if ($this->assertQuota('/reseller/billing-system', 'issue new invoices')) { /* blocked */ }
         $num = 'INV-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(4)));
         $id = $this->db->table('invoices')->insertGetId([
             'user_id' => $clientId, 'reseller_id' => $rid, 'invoice_number' => $num,
@@ -971,6 +972,7 @@ class ResellerPortalController extends Controller
         if (!$client) { $_SESSION['error_message'] = 'Client not found.'; $this->response->redirect('/reseller/chat-system'); exit; }
         $existing = $this->db->table('chatbox_tenants')->where('hosting_user_id', $clientId)->first();
         if ($existing) { $_SESSION['error_message'] = 'This client already has a chat tenant.'; $this->response->redirect('/reseller/chat-system'); exit; }
+        if ($this->assertQuota('/reseller/chat-system', 'create new chat boxes')) { /* blocked */ }
         $tid = $this->db->table('chatbox_tenants')->insertGetId([
             'hosting_user_id' => $clientId, 'name' => $client->username . '\'s Chat',
             'widget_title' => 'Live Chat', 'widget_color' => '#008cff', 'widget_bg' => '#0a0e1a',
