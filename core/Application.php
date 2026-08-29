@@ -46,6 +46,10 @@ class Application
         $this->services['session'] = new \Core\Session();
         $this->services['auth'] = new \Core\Auth($this->services['db'], $this->services['session']);
         $this->services['router'] = new \Core\Router($this->services['request'], $this->services['response']);
+        // Push service for real-time events
+        $pushConfig = $this->config['push'] ?? ['server_url' => 'http://127.0.0.1:8082', 'secret' => 'planet-hosts-push-secret-2026', 'enabled' => true];
+        \Core\Push::init($pushConfig['server_url'], $pushConfig['secret']);
+        \Core\Push::setEnabled($pushConfig['enabled']);
     }
 
     protected function registerPlugins()

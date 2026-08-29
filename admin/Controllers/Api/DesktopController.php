@@ -406,6 +406,16 @@ class DesktopController extends Controller
             'created_at' => date('Y-m-d H:i:s'),
         ]);
         $this->db->table('chat_sessions')->where('id', $sid)->update(['status' => 'active', 'last_activity' => date('Y-m-d H:i:s')]);
+        // Broadcast real-time event
+        if (class_exists('Core\Push') && method_exists('Core\Push', 'broadcast')) {
+            \Core\Push::broadcast('NEW_MESSAGE', [
+                'session_id' => $sid,
+                'sender_type' => 'operator',
+                'sender_name' => $this->currentApiKey->name ?? 'Staff',
+                'message' => $message,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
         $this->json(['success' => true, 'message' => 'Sent']);
     }
 
