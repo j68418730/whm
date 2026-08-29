@@ -22,6 +22,29 @@
 <div class="stat-card"><h3>Revenue (Month)</h3><div class="value" style="color:#4ade80">$<?php echo number_format($revenueMonth ?? 0, 2); ?></div><div class="label">$<?php echo number_format($totalCollected ?? 0, 2); ?> collected</div></div>
 </div>
 
+<!-- Quota cards -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+<div class="card">
+<h3 style="color:var(--text_muted,#64748b);font-size:12px;margin:0 0 10px"><i class="bi bi-hdd"></i> Disk Quota</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<div class="stat-card"><div class="label">Total</div><div class="value" style="font-size:20px"><?php echo number_format($quotas['disk_total_gb'] ?? 0, 1); ?> GB</div><div class="label">Your allocation (<?php echo number_format($quotas['disk_total_gb'] ?? 0, 0); ?> GB)</div></div>
+<div class="stat-card"><div class="label">Available</div><div class="value" style="font-size:20px;color:#4ade80"><?php echo number_format($quotas['disk_avail_gb'] ?? 0, 1); ?> GB</div><div class="label"><?php echo number_format($quotas['disk_sold_gb'] ?? 0, 1); ?> GB sold</div></div>
+</div>
+<div class="progress" style="height:8px;margin-top:10px"><div class="progress-bar" style="width:<?php echo $quotas['disk_pct'] ?? 0; ?>%;background:<?php echo ($quotas['disk_pct'] ?? 0) >= 90 ? '#f87171' : 'linear-gradient(90deg,#008cff,#3bb8ff)'; ?>"></div></div>
+<p style="font-size:11px;color:#64748b;margin-top:6px"><?php echo $quotas['disk_pct'] ?? 0; ?>% of your disk committed to retail packages.</p>
+</div>
+
+<div class="card">
+<h3 style="color:var(--text_muted,#64748b);font-size:12px;margin:0 0 10px"><i class="bi bi-arrow-left-right"></i> Bandwidth Quota</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<div class="stat-card"><div class="label">Total</div><div class="value" style="font-size:20px"><?php echo number_format($quotas['bw_total_gb'] ?? 0, 0); ?> GB</div><div class="label">Your allocation</div></div>
+<div class="stat-card"><div class="label">Available</div><div class="value" style="font-size:20px;color:#4ade80"><?php echo number_format($quotas['bw_avail_gb'] ?? 0, 0); ?> GB</div><div class="label"><?php echo number_format($quotas['bw_sold_gb'] ?? 0, 0); ?> GB sold</div></div>
+</div>
+<div class="progress" style="height:8px;margin-top:10px"><div class="progress-bar" style="width:<?php echo $quotas['bw_pct'] ?? 0; ?>%;background:<?php echo ($quotas['bw_pct'] ?? 0) >= 90 ? '#f87171' : 'linear-gradient(90deg,#008cff,#3bb8ff)'; ?>"></div></div>
+<p style="font-size:11px;color:#64748b;margin-top:6px"><?php echo $quotas['bw_pct'] ?? 0; ?>% of your bandwidth committed to retail packages.</p>
+</div>
+</div>
+
 <div class="card" style="margin-top:14px">
 <div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;padding:10px 14px">
 <div style="font-size:12px;color:var(--text_muted,#94a3b8)"><i class="bi bi-server"></i> <b style="color:var(--text,#e0e0e0)">Planet Hosts Infrastructure</b></div>
