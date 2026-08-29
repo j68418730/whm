@@ -1,6 +1,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px">
+<a href="/reseller/clients/create" class="btn btn-primary"><i class="bi bi-person-plus"></i> Create Client</a>
 <span style="color:var(--text_muted);font-size:13px"><span data-stat="total"><?php echo $stats['total'] ?? 0; ?></span> clients · <span data-stat="active"><?php echo $stats['active'] ?? 0; ?></span> active · <span data-stat="suspended"><?php echo $stats['suspended'] ?? 0; ?></span> suspended</span>
 <span style="flex:1"></span>
 <div style="display:flex;gap:6px;align-items:center">

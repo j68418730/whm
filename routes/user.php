@@ -253,6 +253,8 @@ $router->post('/chat/upload/{sessionId}', 'User\Controllers\ChatController@uploa
 // Reseller portal routes
 $router->get('/reseller', 'User\Controllers\ResellerPortalController@dashboard');
 $router->get('/reseller/clients', 'User\Controllers\ResellerPortalController@clients');
+$router->get('/reseller/clients/create', 'User\Controllers\ResellerPortalController@clientCreate');
+$router->post('/reseller/clients/store', 'User\Controllers\ResellerPortalController@clientStore');
 $router->get('/reseller/clients/suspend/{id}', 'User\Controllers\ResellerPortalController@clientSuspend');
 $router->get('/reseller/clients/unsuspend/{id}', 'User\Controllers\ResellerPortalController@clientUnsuspend');
 $router->get('/reseller/packages', 'User\Controllers\ResellerPortalController@packages');
@@ -263,6 +265,7 @@ $router->get('/reseller/branding', 'User\Controllers\ResellerPortalController@br
 $router->get('/reseller/billing', 'User\Controllers\ResellerPortalController@billing');
 $router->get('/reseller/provisioning', 'User\Controllers\ResellerPortalController@provisioning');
 $router->post('/reseller/provisioning/run/{orderId}', 'User\Controllers\ResellerPortalController@provisioningRun');
+$router->post('/reseller/provisioning/client/{clientId}', 'User\Controllers\ResellerPortalController@provisioningClientRun');
 $router->get('/reseller/billing-system', 'User\Controllers\ResellerPortalController@clientBilling');
 $router->get('/reseller/billing-system/orders', 'User\Controllers\ResellerPortalController@clientBillingOrders');
 $router->get('/reseller/billing-system/services', 'User\Controllers\ResellerPortalController@clientBillingServices');
@@ -276,6 +279,13 @@ $router->get('/reseller/chat-system', 'User\Controllers\ResellerPortalController
 $router->post('/reseller/chat-system/create', 'User\Controllers\ResellerPortalController@clientChatCreateTenant');
 $router->get('/reseller/chat-system/toggle/{tenantId}', 'User\Controllers\ResellerPortalController@clientChatToggle');
 $router->get('/reseller/support-system', 'User\Controllers\ResellerPortalController@clientSupport');
+$router->get('/reseller/roles', 'User\Controllers\ResellerPortalController@roles');
+$router->post('/reseller/roles/store', 'User\Controllers\ResellerPortalController@roleStore');
+$router->post('/reseller/roles/update/{id}', 'User\Controllers\ResellerPortalController@roleUpdate');
+$router->get('/reseller/roles/delete/{id}', 'User\Controllers\ResellerPortalController@roleDelete');
+$router->post('/reseller/staff/store', 'User\Controllers\ResellerPortalController@staffStore');
+$router->get('/reseller/staff/toggle/{id}', 'User\Controllers\ResellerPortalController@staffToggle');
+$router->get('/reseller/staff/delete/{id}', 'User\Controllers\ResellerPortalController@staffDelete');
 $router->get('/reseller/support', 'User\Controllers\ResellerPortalController@support');
 
 // Public Live DJ Widget API

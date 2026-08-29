@@ -33,4 +33,26 @@ Click <b>Run Provisioning</b> to create the account, allocate resources and star
 <tr><td colspan="8" style="text-align:center;padding:20px;color:#64748b">No orders from your clients yet.</td></tr>
 <?php endif; ?>
 </table>
+
+<?php if (!empty($pendingClients)): ?>
+<div class="card" style="margin-top:16px">
+<h4 style="color:var(--accent);margin-bottom:12px">🆕 Pending Client Accounts (Create Client)</h4>
+<table class="table">
+<tr><th>Client</th><th>Domain</th><th>Email</th><th>Created</th><th></th></tr>
+<?php foreach ($pendingClients as $c): ?>
+<tr>
+<td><?php echo htmlspecialchars($c->username); ?></td>
+<td><?php echo htmlspecialchars($c->domain ?: '-'); ?></td>
+<td style="font-size:12px"><?php echo htmlspecialchars($c->email); ?></td>
+<td><?php echo $c->created_at; ?></td>
+<td>
+<form method="POST" action="/reseller/provisioning/client/<?php echo (int)$c->id; ?>" onsubmit="return confirm('Activate account <?php echo htmlspecialchars($c->username); ?> through Planet Hosts backend?');">
+<button type="submit" class="btn btn-sm btn-primary">▶ Activate</button>
+</form>
+</td>
+</tr>
+<?php endforeach; ?>
+</table>
+</div>
+<?php endif; ?>
 <a href="/reseller" class="btn secondary" style="margin-top:12px">&larr; Back</a>
