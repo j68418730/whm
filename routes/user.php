@@ -265,6 +265,7 @@ $router->get('/reseller/packages', 'User\Controllers\ResellerPortalController@pa
 $router->post('/reseller/packages/store', 'User\Controllers\ResellerPortalController@packageStore');
 $router->post('/reseller/packages/update/{id}', 'User\Controllers\ResellerPortalController@packageUpdate');
 $router->get('/reseller/packages/delete/{id}', 'User\Controllers\ResellerPortalController@packageDelete');
+$router->get('/reseller/plan', 'User\Controllers\ResellerPortalController@plan');
 $router->get('/reseller/branding', 'User\Controllers\ResellerPortalController@branding');
 $router->get('/reseller/billing', 'User\Controllers\ResellerPortalController@billing');
 $router->get('/reseller/provisioning', 'User\Controllers\ResellerPortalController@provisioning');
