@@ -253,6 +253,8 @@ $router->post('/chat/upload/{sessionId}', 'User\Controllers\ChatController@uploa
 // Reseller portal routes
 $router->get('/reseller', 'User\Controllers\ResellerPortalController@dashboard');
 $router->get('/reseller-clients', 'User\Controllers\ResellerPortalController@clients');
+$router->get('/reseller-client/{id}', 'User\Controllers\ResellerPortalController@clientShow');
+$router->post('/reseller/clients/password/{id}', 'User\Controllers\ResellerPortalController@clientPassword');
 $router->get('/reseller/clients', 'User\Controllers\ResellerPortalController@clientsOverview');
 $router->get('/reseller/clients/list', 'User\Controllers\ResellerPortalController@clients');
 $router->get('/reseller/clients/create', 'User\Controllers\ResellerPortalController@clientCreate');
