@@ -1,16 +1,103 @@
-<div class="stats-grid" style="margin-bottom:20px">
-<div class="stat-card"><h3>Total Clients</h3><div class="value"><?php echo $totalAccounts ?? 0; ?></div></div>
-<div class="stat-card"><h3>Active</h3><div class="value"><?php echo $activeAccounts ?? 0; ?></div></div>
-<div class="stat-card"><h3>Company</h3><div class="value" style="font-size:16px"><?php echo htmlspecialchars($reseller->company_name); ?></div></div>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<div class="card" style="margin-bottom:12px;padding:10px 14px">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+<div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text_muted,#94a3b8)">
+<i class="bi bi-building"></i> <b style="color:var(--text,#e0e0e0)"><?php echo htmlspecialchars($reseller->company_name); ?></b>
+<span>·</span> <i class="bi bi-people"></i> <?php echo $totalAccounts ?? 0; ?> clients owned
 </div>
-<div class="page-grid">
-<a href="/reseller/clients" class="action-card"><div class="icon">👥</div><div class="name">Clients</div></a>
-<a href="/reseller/packages" class="action-card"><div class="icon">📦</div><div class="name">Packages</div></a>
-<?php if (!empty($addons['billing'])): ?><a href="/reseller/billing-system" class="action-card"><div class="icon">🧾</div><div class="name">Billing System</div></a><?php endif; ?>
-<?php if (!empty($addons['chat'])): ?><a href="/reseller/chat-system" class="action-card"><div class="icon">💬</div><div class="name">Chat System</div></a><?php endif; ?>
-<?php if (!empty($addons['support'])): ?><a href="/reseller/support-system" class="action-card"><div class="icon">🎧</div><div class="name">Support System</div></a><?php endif; ?>
-<a href="/reseller/provisioning" class="action-card"><div class="icon">⚙️</div><div class="name">Provisioning</div></a>
-<a href="/reseller/billing" class="action-card"><div class="icon">💰</div><div class="name">Billing</div></a>
-<a href="/reseller/support" class="action-card"><div class="icon">🎫</div><div class="name">Support</div></a>
-<a href="/reseller/branding" class="action-card"><div class="icon">🎨</div><div class="name">Branding</div></a>
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<a href="/reseller/clients" class="btn btn-sm btn-secondary" style="padding:5px 12px;font-size:12px"><i class="bi bi-person-plus"></i> Clients</a>
+<a href="/reseller/packages" class="btn btn-sm btn-secondary" style="padding:5px 12px;font-size:12px"><i class="bi bi-box-seam"></i> Packages</a>
+</div>
+</div>
+</div>
+
+<!-- Stats bar (mirrors admin stats_bar widget) -->
+<div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+<div class="stat-card"><h3>Clients</h3><div class="value"><?php echo $totalAccounts ?? 0; ?></div><div class="label"><?php echo $activeAccounts ?? 0; ?> active / <?php echo $suspendedAccounts ?? 0; ?> suspended</div></div>
+<div class="stat-card"><h3>Services</h3><div class="value"><?php echo $activeServices ?? 0; ?></div><div class="label">Active services</div></div>
+<div class="stat-card"><h3>Pending Orders</h3><div class="value" style="color:#facc15"><?php echo $pendingOrders ?? 0; ?></div><div class="label">Awaiting provisioning</div></div>
+<div class="stat-card"><h3>Tickets</h3><div class="value" style="color:#38bdf8"><?php echo $openTickets ?? 0; ?></div><div class="label">Open client tickets</div></div>
+<div class="stat-card"><h3>Revenue (Month)</h3><div class="value" style="color:#4ade80">$<?php echo number_format($revenueMonth ?? 0, 2); ?></div><div class="label">$<?php echo number_format($totalCollected ?? 0, 2); ?> collected</div></div>
+</div>
+
+<div class="card" style="margin-top:14px">
+<div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;padding:10px 14px">
+<div style="font-size:12px;color:var(--text_muted,#94a3b8)"><i class="bi bi-server"></i> <b style="color:var(--text,#e0e0e0)">Planet Hosts Infrastructure</b></div>
+<div style="font-size:11px;color:#64748b">Shared platform services</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px;padding:6px 14px 14px">
+<?php foreach ($services as $svc): ?>
+<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:4px;font-size:12px;background:rgba(255,255,255,.02)">
+<span style="width:8px;height:8px;border-radius:50%;background:<?php echo $svc['active'] ? '#4ade80' : '#64748b'; ?>;flex-shrink:0"></span>
+<span style="color:<?php echo $svc['active'] ? '#e0e0e0' : '#64748b'; ?>"><?php echo htmlspecialchars($svc['name']); ?></span>
+</div>
+<?php endforeach; ?>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-top:14px">
+<div>
+<div class="card" style="margin-bottom:14px">
+<h3 style="color:var(--text_muted,#64748b);font-size:12px;margin:0 0 10px">Recent Activity</h3>
+<?php if (!empty($recentOrders)): ?>
+<div style="font-size:12px;color:#64748b;margin-bottom:6px">Recent Orders</div>
+<?php foreach ($recentOrders as $ord): ?>
+<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px">
+<span>#<?php echo (int)$ord->id; ?> — <?php echo htmlspecialchars($ord->client ?? ''); ?> — $<?php echo number_format($ord->total ?? 0, 2); ?></span>
+<span style="color:#64748b;font-size:11px"><?php echo htmlspecialchars($ord->status ?? ''); ?></span>
+</div>
+<?php endforeach; endif; ?>
+<?php if (!empty($recentAccounts)): ?>
+<div style="font-size:12px;color:#64748b;margin-top:10px;margin-bottom:6px">New Clients</div>
+<?php foreach ($recentAccounts as $a): ?>
+<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px">
+<span><?php echo htmlspecialchars($a->username ?? $a->email ?? ''); ?></span>
+<span style="color:#64748b;font-size:11px"><?php echo htmlspecialchars($a->status ?? ''); ?></span>
+</div>
+<?php endforeach; endif; ?>
+<?php if (!empty($recentTickets)): ?>
+<div style="font-size:12px;color:#64748b;margin-top:10px;margin-bottom:6px">Client Tickets</div>
+<?php foreach ($recentTickets as $t): ?>
+<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px">
+<span>#<?php echo (int)$t->id; ?> — <?php echo htmlspecialchars(substr($t->subject ?? '', 0, 40)); ?></span>
+<span style="color:#64748b;font-size:11px"><?php echo htmlspecialchars($t->status ?? ''); ?></span>
+</div>
+<?php endforeach; endif; ?>
+<?php if (empty($recentOrders) && empty($recentAccounts) && empty($recentTickets)): ?>
+<p style="color:#64748b;font-size:13px">No recent activity yet.</p>
+<?php endif; ?>
+</div>
+</div>
+
+<div>
+<div class="card" style="margin-bottom:14px">
+<h3 style="color:var(--text_muted,#64748b);font-size:12px;margin:0 0 10px">Revenue Overview</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr">
+<div class="stat-card"><div class="label">Total Collected</div><div class="value" style="font-size:20px">$<?php echo number_format($totalCollected ?? 0, 2); ?></div></div>
+<div class="stat-card"><div class="label">This Month</div><div class="value" style="font-size:20px">$<?php echo number_format($revenueMonth ?? 0, 2); ?></div></div>
+<div class="stat-card"><div class="label">Outstanding</div><div class="value" style="font-size:20px;color:#f87171">$<?php echo number_format($outstanding ?? 0, 2); ?></div></div>
+</div>
+</div>
+
+<div class="card">
+<h3 style="color:var(--text_muted,#64748b);font-size:12px;margin:0 0 10px">Quick Actions</h3>
+<div style="display:grid;grid-template-columns:1fr;gap:6px">
+<a href="/reseller/clients" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-people"></i> View Clients</a>
+<a href="/reseller/packages" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-box-seam"></i> Packages</a>
+<?php if (!empty($addons['billing'])): ?>
+<a href="/reseller/billing-system" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-credit-card"></i> Billing System</a>
+<?php endif; ?>
+<?php if (!empty($addons['chat'])): ?>
+<a href="/reseller/chat-system" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-chat-dots"></i> Chat System</a>
+<?php endif; ?>
+<?php if (!empty($addons['support'])): ?>
+<a href="/reseller/support-system" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-headset"></i> Support System</a>
+<?php endif; ?>
+<a href="/reseller/provisioning" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-hdd-network"></i> Provisioning</a>
+<a href="/reseller/branding" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-palette"></i> Branding</a>
+</div>
+</div>
+</div>
 </div>
