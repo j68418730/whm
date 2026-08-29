@@ -69,6 +69,9 @@ class View
 
         // Explicit layout override (e.g. reseller views use the admin-style reseller layout)
         $layoutOverride = $this->data['layout'] ?? null;
+        if ($layoutOverride && str_contains($viewFile, 'reseller')) {
+            @file_put_contents('/tmp/view_debug.log', date('H:i:s') . " override=" . var_export($layoutOverride, true) . " file=$viewFile\n", FILE_APPEND);
+        }
         if ($layoutOverride) {
             require_once BASE_PATH . '/core/ThemeEngine.php';
             $te = \Core\ThemeEngine::getInstance();
