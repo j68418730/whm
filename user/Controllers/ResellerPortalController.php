@@ -98,10 +98,18 @@ class ResellerPortalController extends Controller
         // Global quota status for every reseller page (drives the persistent low-resource banner).
         $data['quota'] = $this->quotaStatus();
 
-        // Unread admin-message count for the topbar bell badge.
+        // Full alerts list for the top-of-page strip on every reseller page.
+        $data['alerts'] = [];
         $data['alert_unread'] = 0;
         try {
-            $data['alert_unread'] = (int)($this->db->pdo()->query("SELECT COUNT(*) FROM reseller_alerts WHERE reseller_id=" . (int)$this->reseller->id . " AND is_read=0")->fetchColumn() ?? 0);
+            if (!empty($this->reseller) && !empty($this->reseller->id)) {
+                $alertsList = $this->buildAlerts();
+                $data['alerts'] = $alertsList;
+                $data['alert_unread'] = 0;
+                foreach ($alertsList as $al) {
+                    if (in_array($al['source'] ?? '', ['admin', 'admin_client']) && empty($al['is_read'])) $data['alert_unread']++;
+                }
+            }
         } catch (\Exception $e) {}
 
         return parent::view($view, $data);
@@ -1199,6 +1207,13 @@ class ResellerPortalController extends Controller
         $alerts = [];
         $now = time();
 
+        // Which alerts the reseller has dismissed (persistent, stored in DB).
+        $dismissed = [];
+        try {
+            $rows = $pdo->query("SELECT alert_key FROM reseller_alert_dismissals WHERE reseller_id = {$rid}")->fetchAll(\PDO::FETCH_COLUMN) ?: [];
+            $dismissed = array_flip($rows);
+        } catch (\Exception $e) {}
+
         // Low-quota alert (from commit usage) — always present while low.
         $quota = $this->quotaStatus();
         if ($quota['low']) {
@@ -1207,6 +1222,7 @@ class ResellerPortalController extends Controller
                 'title' => 'Low Resource Warning — ' . ($quota['disk_pct'] >= $quota['bw_pct'] ? 'Disk' : 'Bandwidth') . ' Quota Reached',
                 'message' => 'You have reached ' . $quota['threshold'] . '% of your allocation (' . number_format($quota['disk_avail_gb'], 1) . ' GB disk, ' . number_format($quota['bw_avail_gb'], 0) . ' GB bandwidth left). Upgrade to create new clients/packages.',
                 'created_at' => date('Y-m-d H:i:s', $now), 'link' => '/reseller/plan', 'severity' => 2, 'source' => 'quota',
+                'key' => 'quota', 'dismissible' => false,
             ];
         }
 
@@ -1222,6 +1238,7 @@ class ResellerPortalController extends Controller
                     'title' => ($overdue ? 'Past Due Invoice' : 'Due Invoice') . ' #' . htmlspecialchars($r->invoice_number),
                     'message' => ($overdue ? 'Invoice is past due' : 'Invoice is due') . ' — $' . number_format((float)$r->total, 2) . ' for ' . htmlspecialchars($r->client) . ($r->due_date ? ' (due ' . date('M j', strtotime($r->due_date)) . ')' : ''),
                     'created_at' => $r->created_at, 'link' => '/reseller/billing-system', 'severity' => $overdue ? 2 : 1, 'source' => 'invoice',
+                    'key' => 'inv-' . (int)$r->id, 'dismissible' => !$overdue,
                 ];
             }
         } catch (\Exception $e) {}
@@ -1235,6 +1252,7 @@ class ResellerPortalController extends Controller
                     'title' => 'New Client: ' . htmlspecialchars($c->username),
                     'message' => 'A new client account was created.',
                     'created_at' => $c->created_at, 'link' => '/reseller-client/' . (int)$c->id, 'severity' => 0, 'source' => 'client',
+                    'key' => 'client-' . (int)$c->id, 'dismissible' => true,
                 ];
             }
         } catch (\Exception $e) {}
@@ -1251,6 +1269,7 @@ class ResellerPortalController extends Controller
                     'title' => 'New Order #' . (int)$o->id . ' (' . htmlspecialchars($o->type) . ')',
                     'message' => '$' . number_format((float)$o->total, 2) . ' — ' . htmlspecialchars($o->client) . ' (' . htmlspecialchars($o->status) . ')',
                     'created_at' => $o->created_at, 'link' => '/reseller/billing-system/orders', 'severity' => 0, 'source' => 'order',
+                    'key' => 'order-' . (int)$o->id, 'dismissible' => true,
                 ];
             }
         } catch (\Exception $e) {}
@@ -1265,9 +1284,34 @@ class ResellerPortalController extends Controller
                     'message' => $m->message ?? '',
                     'created_at' => $m->created_at, 'link' => null, 'severity' => 2, 'source' => 'admin',
                     'is_read' => (int)($m->is_read ?? 0),
+                    'key' => 'admin-' . (int)$m->id, 'dismissible' => true,
                 ];
             }
         } catch (\Exception $e) {}
+
+        // Admin -> client alerts for this reseller's clients (user_alerts)
+        try {
+            $userAlerts = $pdo->query("SELECT ua.id, ua.hosting_user_id, ua.title, ua.message, ua.type, ua.is_read, ua.can_delete, ua.created_at, hu.username AS client
+                FROM user_alerts ua JOIN hosting_users hu ON hu.id = ua.hosting_user_id
+                WHERE hu.reseller_id = {$rid}
+                ORDER BY ua.created_at DESC LIMIT 50")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            foreach ($userAlerts as $ua) {
+                $alerts[] = [
+                    'id' => 'uac-' . (int)$ua->id, 'type' => $ua->type ?? 'info',
+                    'title' => ($ua->title ?? 'Alert from Planet Hosts') . ($ua->client ? ' — ' . $ua->client : ''),
+                    'message' => $ua->message ?? '',
+                    'created_at' => $ua->created_at, 'link' => null, 'severity' => 2, 'source' => 'admin_client',
+                    'is_read' => (int)($ua->is_read ?? 0), 'user_alert_id' => (int)$ua->id,
+                    'key' => 'uac-' . (int)$ua->id, 'dismissible' => true,
+                ];
+            }
+        } catch (\Exception $e) {}
+
+        // Remove dismissed alerts (quota + past-due invoices are never dismissible).
+        $alerts = array_values(array_filter($alerts, function ($al) use ($dismissed) {
+            if (empty($al['dismissible'])) return true;
+            return !isset($dismissed[$al['key'] ?? $al['id']]);
+        }));
 
         // Sort newest first (quota banner stays on top via severity tie-break is enough).
         usort($alerts, function ($a, $b) {
@@ -1286,6 +1330,7 @@ class ResellerPortalController extends Controller
         // Unread count for badge = unread admin messages.
         $unread = 0;
         try { $unread = (int)($pdo->query("SELECT COUNT(*) FROM reseller_alerts WHERE reseller_id = {$rid} AND is_read = 0")->fetchColumn() ?? 0); } catch (\Exception $e) {}
+        try { $unread += (int)($pdo->query("SELECT COUNT(*) FROM user_alerts ua JOIN hosting_users hu ON hu.id = ua.hosting_user_id WHERE hu.reseller_id = {$rid} AND ua.is_read = 0")->fetchColumn() ?? 0); } catch (\Exception $e) {}
 
         return $this->view('user.reseller.alerts', [
             'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Alerts',
@@ -1310,6 +1355,32 @@ class ResellerPortalController extends Controller
         $u = $this->requireReseller();
         $rid = (int)$this->reseller->id;
         try { $this->db->pdo()->exec("UPDATE reseller_alerts SET is_read = 1 WHERE reseller_id = {$rid}"); } catch (\Exception $e) {}
+        try { $this->db->pdo()->exec("UPDATE user_alerts ua JOIN hosting_users hu ON hu.id = ua.hosting_user_id SET ua.is_read = 1 WHERE hu.reseller_id = {$rid}"); } catch (\Exception $e) {}
+        $this->response->redirect('/reseller/alerts');
+    }
+
+    // Mark one admin->client alert read (user_alerts) belonging to this reseller's clients.
+    public function alertReadUser($id)
+    {
+        $u = $this->requireReseller();
+        $rid = (int)$this->reseller->id;
+        try {
+            $this->db->pdo()->prepare("UPDATE user_alerts ua JOIN hosting_users hu ON hu.id = ua.hosting_user_id
+                SET ua.is_read = 1 WHERE ua.id = ? AND hu.reseller_id = ?")->execute([(int)$id, $rid]);
+        } catch (\Exception $e) {}
+        $this->response->redirect('/reseller/alerts');
+    }
+
+    // Dismiss an alert permanently (stored in DB). Quota + past-due are never dismissible.
+    public function dismissAlert($key)
+    {
+        $u = $this->requireReseller();
+        $rid = (int)$this->reseller->id;
+        if (preg_match('/^[a-zA-Z0-9_\-]{1,64}$/', $key)) {
+            try {
+                $this->db->pdo()->prepare("INSERT IGNORE INTO reseller_alert_dismissals (reseller_id, alert_key) VALUES (?, ?)")->execute([$rid, $key]);
+            } catch (\Exception $e) {}
+        }
         $this->response->redirect('/reseller/alerts');
     }
 
