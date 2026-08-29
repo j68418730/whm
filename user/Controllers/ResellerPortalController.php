@@ -46,13 +46,49 @@ class ResellerPortalController extends Controller
     public function dashboard()
     {
         $u = $this->requireReseller();
-        $accounts = $this->db->table('hosting_users')->where('reseller_id', $this->reseller->id)->get() ?: [];
+        $pdo = $this->db->pdo();
+        $rid = (int)$this->reseller->id;
+
+        $accounts = $this->db->table('hosting_users')->where('reseller_id', $rid)->get() ?: [];
         $totalAccounts = count($accounts);
-        $activeAccounts = 0;
-        foreach ($accounts as $a) { if ($a->status === 'active') $activeAccounts++; }
+        $activeAccounts = 0; $suspendedAccounts = 0;
+        foreach ($accounts as $a) {
+            if ($a->status === 'active') $activeAccounts++;
+            elseif ($a->status === 'suspended') $suspendedAccounts++;
+        }
+
+        // Open tickets from their own clients
+        $openTickets = 0;
+        try { $openTickets = (int)$pdo->query("SELECT COUNT(*) FROM tickets t JOIN hosting_users hu ON hu.id=t.user_id WHERE hu.reseller_id={$rid} AND t.status='open'")->fetchColumn() ?? 0; } catch (\Exception $e) {}
+
+        // Billing scoped to their clients
+        $revenueMonth = (float)($pdo->query("SELECT COALESCE(SUM(bp.amount),0) FROM billing_payments bp JOIN hosting_users hu ON hu.id=bp.user_id WHERE bp.status='completed' AND hu.reseller_id={$rid} AND bp.created_at >= '" . date('Y-m-01') . "'")->fetchColumn() ?? 0);
+        $totalCollected = (float)($pdo->query("SELECT COALESCE(SUM(bp.amount),0) FROM billing_payments bp JOIN hosting_users hu ON hu.id=bp.user_id WHERE bp.status='completed' AND hu.reseller_id={$rid}")->fetchColumn() ?? 0);
+        $outstanding = (float)($pdo->query("SELECT COALESCE(SUM(i.total),0) FROM invoices i JOIN hosting_users hu ON hu.id=i.user_id WHERE i.status IN ('sent','overdue','pending') AND hu.reseller_id={$rid}")->fetchColumn() ?? 0);
+        $pendingOrders = (int)($pdo->query("SELECT COUNT(*) FROM billing_orders o JOIN hosting_users hu ON hu.id=o.user_id WHERE hu.reseller_id={$rid} AND o.status='pending'")->fetchColumn() ?? 0);
+        $activeServices = (int)($pdo->query("SELECT COUNT(*) FROM billing_services s JOIN hosting_users hu ON hu.id=s.user_id WHERE s.status='active' AND hu.reseller_id={$rid}")->fetchColumn() ?? 0);
+
+        // Recent activity (own scope)
+        $recentAccounts = $this->db->table('hosting_users')->where('reseller_id', $rid)->orderBy('created_at', 'DESC')->limit(5)->get() ?: [];
+        $recentOrders = $pdo->query("SELECT o.*, hu.username AS client FROM billing_orders o JOIN hosting_users hu ON hu.id=o.user_id WHERE hu.reseller_id={$rid} ORDER BY o.created_at DESC LIMIT 5")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        $recentTickets = $pdo->query("SELECT t.id, t.subject, t.status, hu.username AS client FROM tickets t JOIN hosting_users hu ON hu.id=t.user_id WHERE hu.reseller_id={$rid} ORDER BY t.created_at DESC LIMIT 5")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+
+        // Server/health strip (infrastructure status — shared, not admin-specific)
+        $serviceNames = ['apache2' => 'Apache', 'mariadb' => 'MariaDB', 'icecast2' => 'Icecast', 'postfix' => 'Postfix', 'dovecot' => 'Dovecot', 'nginx' => 'Nginx'];
+        $services = [];
+        foreach ($serviceNames as $sName => $sLabel) {
+            $active = trim(shell_exec("systemctl is-active {$sName} 2>/dev/null") ?: '') === 'active';
+            $services[] = ['name' => $sLabel, 'active' => $active];
+        }
+
         return $this->view('user.reseller.dashboard', [
             'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Reseller Dashboard',
-            'totalAccounts' => $totalAccounts, 'activeAccounts' => $activeAccounts,
+            'addons' => $this->addons,
+            'totalAccounts' => $totalAccounts, 'activeAccounts' => $activeAccounts, 'suspendedAccounts' => $suspendedAccounts,
+            'openTickets' => $openTickets, 'revenueMonth' => $revenueMonth, 'totalCollected' => $totalCollected,
+            'outstanding' => $outstanding, 'pendingOrders' => $pendingOrders, 'activeServices' => $activeServices,
+            'recentAccounts' => $recentAccounts, 'recentOrders' => $recentOrders, 'recentTickets' => $recentTickets,
+            'services' => $services,
         ]);
     }
 
