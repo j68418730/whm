@@ -13,6 +13,34 @@
 </div>
 </div>
 
+<?php if (isset($quotas['low']) && $quotas['low']): ?>
+<?php
+    $warn = [];
+    if ($quotas['disk_low']) $warn[] = 'disk (' . number_format($quotas['disk_avail_gb'] ?? 0, 1) . ' GB left of ' . number_format($quotas['disk_total_gb'] ?? 0, 1) . ' GB)';
+    if ($quotas['bw_low']) $warn[] = 'bandwidth (' . number_format($quotas['bw_avail_gb'] ?? 0, 0) . ' GB left of ' . number_format($quotas['bw_total_gb'] ?? 0, 0) . ' GB)';
+?>
+<div class="card" style="margin-bottom:12px;padding:14px 16px;border:1px solid #f87171;background:rgba(248,113,113,.08)">
+<div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+<div style="font-size:20px;line-height:1"><i class="bi bi-exclamation-triangle-fill" style="color:#f87171"></i></div>
+<div style="flex:1;min-width:220px">
+<div style="color:#f87171;font-weight:700;font-size:14px">Low Resource Warning — <?php echo $quotas['disk_pct'] >= $quotas['bw_pct'] ? 'Disk' : 'Bandwidth'; ?> Quota Reached</div>
+<div style="color:#e2e8f0;font-size:13px;margin-top:4px">
+You are running low on <?php echo htmlspecialchars(implode(' and ', $warn)); ?>.
+<?php if (($quotas['disk_pct'] ?? 0) < 100 && ($quotas['bw_pct'] ?? 0) < 100): ?>
+You have reached <b><?php echo $quotas['threshold']; ?>%</b> of your allocation. <b>You cannot create new clients or retail packages</b> until you upgrade your plan.
+<?php else: ?>
+Your allocation is <b>fully committed</b>. <b>You cannot create new clients or retail packages</b> until you upgrade your plan.
+<?php endif; ?>
+</div>
+<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+<a href="/reseller/branding" class="btn btn-sm btn-danger" style="padding:5px 14px;font-size:12px"><i class="bi bi-upc-scan"></i> Upgrade Plan</a>
+<a href="/reseller/packages" class="btn btn-sm btn-secondary" style="padding:5px 14px;font-size:12px"><i class="bi bi-box-seam"></i> Review Packages</a>
+</div>
+</div>
+</div>
+</div>
+<?php endif; ?>
+
 <!-- Stats bar (mirrors admin stats_bar widget) -->
 <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
 <div class="stat-card"><h3>Clients</h3><div class="value"><?php echo $totalAccounts ?? 0; ?></div><div class="label"><?php echo $activeAccounts ?? 0; ?> active / <?php echo $suspendedAccounts ?? 0; ?> suspended</div></div>
