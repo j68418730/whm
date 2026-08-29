@@ -81,6 +81,7 @@ if (!empty($resellerTheme['colors'])) {
     <div class="nav">
       <div class="nav-label">Management</div>
       <a href="/reseller" class="nav-link <?php echo str_contains($title ?? '', 'Dashboard') ? 'active' : ''; ?>"><i class="bi bi-speedometer2"></i> Dashboard</a>
+      <a href="/reseller/alerts" class="nav-link <?php echo str_contains($title ?? '', 'Alerts') ? 'active' : ''; ?>"><i class="bi bi-bell"></i> Alerts<?php if (!empty($alert_unread)): ?> <span style="margin-left:auto;background:#f87171;color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 4px"><?php echo (int)$alert_unread; ?></span><?php endif; ?></a>
       <?php if ($staff === null || $can('clients')): ?>
       <a href="/reseller/clients" class="nav-link <?php echo str_contains($title ?? '', 'Clients') ? 'active' : ''; ?>"><i class="bi bi-people"></i> Clients</a>
       <?php endif; ?>
@@ -119,6 +120,10 @@ if (!empty($resellerTheme['colors'])) {
         <h1><?php echo htmlspecialchars($title ?? 'Reseller Panel'); ?></h1>
       </div>
       <div class="user-info">
+        <a href="/reseller/alerts" title="Alerts" style="position:relative;color:var(--text_muted,#94a3b8);text-decoration:none;font-size:18px;margin-right:4px">
+          <i class="bi bi-bell"></i>
+          <?php if (!empty($alert_unread)): ?><span style="position:absolute;top:-6px;right:-8px;background:#f87171;color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 4px"><?php echo (int)$alert_unread; ?></span><?php endif; ?>
+        </a>
         <i class="bi bi-person-circle"></i> <?php echo htmlspecialchars($user->name ?? $user->email ?? ''); ?>
         <a href="/user/logout" class="btn btn-sm" style="border:1px solid rgba(248,113,113,.2);background:rgba(248,113,113,.08);color:#f87171;padding:4px 12px;font-size:12px;text-decoration:none"><i class="bi bi-box-arrow-right"></i> Logout</a>
       </div>
