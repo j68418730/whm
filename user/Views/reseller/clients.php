@@ -38,6 +38,7 @@ $vhostExists = file_exists($vhostFile);
 <?php endif; ?>
 </td>
 <td style="white-space:nowrap">
+<a href="/reseller-client/<?php echo (int)$a->id; ?>" class="btn btn-sm btn-secondary"><i class="bi bi-eye"></i> View</a>
 <?php if ($a->status === 'active'): ?>
 <a href="/reseller/clients/suspend/<?php echo (int)$a->id; ?>" class="btn btn-sm btn-secondary" style="background:rgba(250,204,21,.1);color:#facc15;border-color:rgba(250,204,21,.2)" onclick="return confirm('Suspend <?php echo htmlspecialchars($a->username); ?>?')"><i class="bi bi-pause-circle"></i> Suspend</a>
 <?php elseif ($a->status === 'suspended'): ?>
@@ -53,7 +54,7 @@ $vhostExists = file_exists($vhostFile);
 </table>
 <div id="clientNoResults" style="display:none;text-align:center;padding:2rem;color:var(--text_muted)">No clients match your search.</div>
 
-<a href="/reseller-clients" class="btn secondary" style="margin-top:12px">&larr; Back</a>
+<a href="/reseller/clients" class="btn secondary" style="margin-top:12px">&larr; Back</a>
 
 <script>
 function applyClientFilter() {

@@ -253,6 +253,8 @@ $router->post('/chat/upload/{sessionId}', 'User\Controllers\ChatController@uploa
 // Reseller portal routes
 $router->get('/reseller', 'User\Controllers\ResellerPortalController@dashboard');
 $router->get('/reseller-clients', 'User\Controllers\ResellerPortalController@clients');
+$router->get('/reseller-client/{id}', 'User\Controllers\ResellerPortalController@clientShow');
+$router->post('/reseller/clients/password/{id}', 'User\Controllers\ResellerPortalController@clientPassword');
 $router->get('/reseller/clients', 'User\Controllers\ResellerPortalController@clientsOverview');
 $router->get('/reseller/clients/list', 'User\Controllers\ResellerPortalController@clients');
 $router->get('/reseller/clients/create', 'User\Controllers\ResellerPortalController@clientCreate');
@@ -263,6 +265,7 @@ $router->get('/reseller/packages', 'User\Controllers\ResellerPortalController@pa
 $router->post('/reseller/packages/store', 'User\Controllers\ResellerPortalController@packageStore');
 $router->post('/reseller/packages/update/{id}', 'User\Controllers\ResellerPortalController@packageUpdate');
 $router->get('/reseller/packages/delete/{id}', 'User\Controllers\ResellerPortalController@packageDelete');
+$router->get('/reseller/plan', 'User\Controllers\ResellerPortalController@plan');
 $router->get('/reseller/branding', 'User\Controllers\ResellerPortalController@branding');
 $router->get('/reseller/billing', 'User\Controllers\ResellerPortalController@billing');
 $router->get('/reseller/provisioning', 'User\Controllers\ResellerPortalController@provisioning');
@@ -289,6 +292,11 @@ $router->post('/reseller/staff/store', 'User\Controllers\ResellerPortalControlle
 $router->get('/reseller/staff/toggle/{id}', 'User\Controllers\ResellerPortalController@staffToggle');
 $router->get('/reseller/staff/delete/{id}', 'User\Controllers\ResellerPortalController@staffDelete');
 $router->get('/reseller/support', 'User\Controllers\ResellerPortalController@support');
+$router->get('/reseller/alerts', 'User\Controllers\ResellerPortalController@alerts');
+$router->get('/reseller/alerts/read/{id}', 'User\Controllers\ResellerPortalController@alertRead');
+$router->get('/reseller/alerts/read-user/{id}', 'User\Controllers\ResellerPortalController@alertReadUser');
+$router->get('/reseller/alerts/read-all', 'User\Controllers\ResellerPortalController@alertReadAll');
+$router->get('/reseller/alerts/dismiss/{key}', 'User\Controllers\ResellerPortalController@dismissAlert');
 
 // Public Live DJ Widget API
 $router->get('/api/radio/live-dj/{stationId}', 'User\Controllers\RadioController@liveDjStatus');

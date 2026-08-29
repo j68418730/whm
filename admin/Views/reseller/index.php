@@ -6,6 +6,7 @@
 
 <div style="display:flex;gap:8px;margin-bottom:16px">
 <a href="/admin/reseller/create" class="btn primary"><i class="bi bi-plus-circle"></i> Create Reseller</a>
+<a href="/admin/reseller/alerts" class="btn secondary"><i class="bi bi-bell"></i> Alerts Feed</a>
 </div>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px">
