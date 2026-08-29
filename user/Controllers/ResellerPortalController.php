@@ -180,6 +180,57 @@ class ResellerPortalController extends Controller
         ]);
     }
 
+    public function clientShow($id)
+    {
+        $u = $this->requireReseller();
+        $this->requirePerm('clients');
+        $rid = (int)$this->reseller->id;
+        $account = $this->db->table('hosting_users')->where('id', (int)$id)->where('reseller_id', $rid)->first();
+        if (!$account) { $_SESSION['error_message'] = 'Client not found.'; $this->response->redirect('/reseller-clients'); exit; }
+        $package = $account->package_id ? $this->db->table('hosting_packages')->where('id', (int)$account->package_id)->first() : null;
+        $retailPkg = $account->reseller_package_id ? $this->db->table('reseller_packages')->where('id', (int)$account->reseller_package_id)->first() : null;
+        try { $domains = $this->db->table('domains')->where('account_id', (int)$id)->get() ?: []; } catch (\Exception $e) { $domains = []; }
+        $homeDir = '/home/' . $account->username;
+        $diskUsage = '-'; $backupFiles = [];
+        if (is_dir($homeDir)) {
+            $diskOut = @shell_exec("du -sk " . escapeshellarg($homeDir) . " 2>/dev/null");
+            $diskUsage = $diskOut ? round((int)trim(explode("\t", $diskOut)[0]) / 1024, 2) . ' MB' : '-';
+            $backupFiles = array_merge(glob("{$homeDir}/backup_*.tar.gz") ?: [], glob("{$homeDir}/backup_*.zip") ?: []);
+            rsort($backupFiles);
+        }
+        $vhostContent = @file_get_contents("/etc/apache2/sites-available/{$account->username}.conf");
+        $vhostSslContent = @file_get_contents("/etc/apache2/sites-available/{$account->username}-ssl.conf");
+        // History scoped to this reseller's own activity on this client
+        try {
+            $history = $this->db->table('reseller_audit_logs')
+                ->where('reseller_id', $rid)
+                ->where('resource_type', 'hosting_user')
+                ->where('resource_id', (int)$id)
+                ->orderBy('created_at', 'DESC')->limit(10)->get() ?: [];
+        } catch (\Exception $e) { $history = []; }
+        return $this->view('user.reseller.client_show', [
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Client Details',
+            'account' => $account, 'package' => $package, 'retailPkg' => $retailPkg, 'domains' => $domains,
+            'disk_usage' => $diskUsage, 'backup_files' => $backupFiles,
+            'vhost_content' => $vhostContent, 'vhost_ssl_content' => $vhostSslContent, 'history' => $history,
+        ]);
+    }
+
+    public function clientPassword($id)
+    {
+        $u = $this->requireReseller();
+        $this->requirePerm('clients');
+        $rid = (int)$this->reseller->id;
+        $a = $this->db->table('hosting_users')->where('id', (int)$id)->where('reseller_id', $rid)->first();
+        if (!$a) { $_SESSION['error_message'] = 'Client not found.'; $this->response->redirect('/reseller-clients'); exit; }
+        $password = $this->request->post('password', '');
+        if (strlen($password) < 8) { $_SESSION['error_message'] = 'Password must be 8+ characters.'; $this->response->redirect('/reseller-client/' . (int)$id); exit; }
+        $this->db->table('hosting_users')->where('id', (int)$id)->update(['password_hash' => password_hash($password, PASSWORD_DEFAULT)]);
+        $this->audit('client.password_reset', 'hosting_user', (int)$id, ['username' => $a->username]);
+        $_SESSION['success_message'] = "Password updated for '{$a->username}'.";
+        $this->response->redirect('/reseller-client/' . (int)$id);
+    }
+
     public function clientSuspend($id)
     {
         $u = $this->requireReseller();
