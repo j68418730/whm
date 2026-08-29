@@ -129,33 +129,54 @@ if (!empty($resellerTheme['colors'])) {
       </div>
     </div>
     <div class="content">
-<?php if (isset($quota['low']) && $quota['low']): ?>
 <?php
-    $warn = [];
-    if ($quota['disk_low']) $warn[] = 'disk (' . number_format($quota['disk_avail_gb'] ?? 0, 1) . ' GB left of ' . number_format($quota['disk_total_gb'] ?? 0, 1) . ' GB)';
-    if ($quota['bw_low']) $warn[] = 'bandwidth (' . number_format($quota['bw_avail_gb'] ?? 0, 0) . ' GB left of ' . number_format($quota['bw_total_gb'] ?? 0, 0) . ' GB)';
+$typeIcon = ['info' => 'ℹ️', 'warning' => '⚠️', 'success' => '✅', 'danger' => '⛔'];
+$typeColor = ['info' => '#38bdf8', 'warning' => '#facc15', 'success' => '#4ade80', 'danger' => '#f87171'];
+$srcLabel = ['quota' => 'Quota', 'invoice' => 'Invoice', 'client' => 'Client', 'order' => 'Order', 'admin' => 'Support', 'admin_client' => 'Support'];
+// Show top strips for every alert (quota included, but only when actually low).
+if (!empty($alerts)):
+foreach ($alerts as $al):
+$at = $al['type'] ?? 'info';
+$asrc = $al['source'] ?? '';
+$isQ = $asrc === 'quota';
+$isMsg = ($asrc === 'admin' || $asrc === 'admin_client') && empty($al['is_read']);
+$color = $typeColor[$at] ?? '#94a3b8';
+$dismissible = !empty($al['dismissible']);
+$akey = $al['key'] ?? $al['id'];
 ?>
-<div class="card" style="margin-bottom:12px;padding:14px 16px;border:1px solid #f87171;background:rgba(248,113,113,.08)">
+<div class="card" style="margin-bottom:10px;padding:12px 16px;border:1px solid <?php echo $isQ ? '#f87171' : 'rgba(56,189,248,.15)'; ?>;background:<?php echo $isQ ? 'rgba(248,113,113,.08)' : 'rgba(8,16,28,.6)'; ?>;<?php echo $isMsg ? 'border-left:3px solid ' . $color . ';' : ''; ?>">
 <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
-<div style="font-size:20px;line-height:1"><i class="bi bi-exclamation-triangle-fill" style="color:#f87171"></i></div>
+<div style="font-size:20px;line-height:1"><?php echo $typeIcon[$at] ?? 'ℹ️'; ?></div>
 <div style="flex:1;min-width:220px">
-<div style="color:#f87171;font-weight:700;font-size:14px">Low Resource Warning — <?php echo $quota['disk_pct'] >= $quota['bw_pct'] ? 'Disk' : 'Bandwidth'; ?> Quota Reached</div>
-<div style="color:#e2e8f0;font-size:13px;margin-top:4px">
-You are running low on <?php echo htmlspecialchars(implode(' and ', $warn)); ?>.
-<?php if (($quota['disk_pct'] ?? 0) < 100 && ($quota['bw_pct'] ?? 0) < 100): ?>
-You have reached <b><?php echo $quota['threshold']; ?>%</b> of your allocation. <b>You cannot create new clients or retail packages</b> until you upgrade your plan.
+<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+<span style="color:<?php echo $isQ ? '#f87171' : $color; ?>;font-weight:700;font-size:13px"><?php echo htmlspecialchars($al['title'] ?? ''); ?></span>
+<?php if ($isMsg): ?><span style="font-size:9px;background:rgba(56,189,248,.15);color:#38bdf8;padding:1px 7px;border-radius:99px">NEW</span><?php endif; ?>
+<?php if ($asrc): ?><span style="font-size:10px;color:#64748b;background:rgba(255,255,255,.05);padding:2px 8px;border-radius:99px"><?php echo $srcLabel[$asrc] ?? ucfirst($asrc); ?></span><?php endif; ?>
+</div>
+<?php if (!empty($al['message'])): ?>
+<div style="color:<?php echo $isQ ? '#e2e8f0' : '#94a3b8'; ?>;font-size:13px;margin-top:3px"><?php echo $al['message']; ?></div>
+<?php endif; ?>
+<?php if (!empty($al['link'])): ?>
+<div style="margin-top:6px"><a href="<?php echo $al['link']; ?>" style="font-size:12px;color:var(--primary,#008cff);text-decoration:none">View →</a></div>
+<?php endif; ?>
+</div>
+<?php if ($isMsg || $dismissible): ?>
+<div style="align-self:center;display:flex;align-items:center;gap:10px">
+<?php if ($isMsg): ?>
+<?php if ($asrc === 'admin'): ?>
+<a href="/reseller/alerts/read/<?php echo preg_replace('/[^0-9]/', '', $al['id']); ?>" style="font-size:12px;color:#94a3b8;text-decoration:none">Mark read</a>
 <?php else: ?>
-Your allocation is <b>fully committed</b>. <b>You cannot create new clients or retail packages</b> until you upgrade your plan.
+<a href="/reseller/alerts/read-user/<?php echo (int)$al['user_alert_id']; ?>" style="font-size:12px;color:#94a3b8;text-decoration:none">Mark read</a>
+<?php endif; ?>
+<?php endif; ?>
+<?php if ($dismissible): ?>
+<a href="/reseller/alerts/dismiss/<?php echo rawurlencode($akey); ?>" title="Dismiss" onclick="return confirm('Dismiss this alert?')" style="color:#94a3b8;text-decoration:none;font-size:16px;line-height:1;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,.12)">&times;</a>
 <?php endif; ?>
 </div>
-<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-<a href="https://planet-hosts.com/store" target="_blank" rel="noopener" class="btn btn-sm btn-danger" style="padding:5px 14px;font-size:12px"><i class="bi bi-upc-scan"></i> Upgrade Plan</a>
-<a href="/reseller/plan" class="btn btn-sm btn-secondary" style="padding:5px 14px;font-size:12px"><i class="bi bi-box-seam"></i> Review Packages</a>
-</div>
-</div>
-</div>
-</div>
 <?php endif; ?>
+</div>
+</div>
+<?php endforeach; endif; ?>
 <?php if (isset($_SESSION['success_message'])): ?><div class="alert alert-success"><?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?></div><?php endif; ?>
 <?php if (isset($_SESSION['error_message'])): ?><div class="alert alert-danger"><?php echo htmlspecialchars($_SESSION['error_message']); unset($_SESSION['error_message']); ?></div><?php endif; ?>
 <?php echo $content ?? ''; ?>

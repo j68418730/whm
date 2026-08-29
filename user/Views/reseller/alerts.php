@@ -30,7 +30,7 @@ Notifications for your reseller account — invoices, new clients/orders, quota 
 </div>
 <?php else: ?>
 <div style="display:flex;flex-direction:column;gap:10px">
-<?php foreach ($alerts as $a): $t = $a['type'] ?? 'info'; $unread = ($a['source'] ?? '') === 'admin' && empty($a['is_read']); ?>
+<?php foreach ($alerts as $a): $t = $a['type'] ?? 'info'; $src = $a['source'] ?? ''; $unread = (($src === 'admin' || $src === 'admin_client') && empty($a['is_read'])); ?>
 <div class="card" style="margin:0;padding:14px 16px;display:flex;align-items:flex-start;gap:12px;<?php echo ($a['source'] ?? '') === 'quota' ? 'border:1px solid ' . ($typeColor[$t] ?? '#999') . ';background:rgba(248,113,113,.06);' : ''; ?><?php echo $unread ? 'border-left:3px solid ' . ($typeColor[$t] ?? '#999') . ';' : ''; ?>">
 <div style="font-size:20px;line-height:1"><?php echo $typeIcon[$t] ?? 'ℹ️'; ?></div>
 <div style="flex:1;min-width:0">
@@ -46,8 +46,10 @@ Notifications for your reseller account — invoices, new clients/orders, quota 
 <?php if (!empty($a['link'])): ?>
 <a href="<?php echo $a['link']; ?>" style="font-size:12px;color:var(--primary,#008cff);text-decoration:none">View →</a>
 <?php endif; ?>
-<?php if (($a['source'] ?? '') === 'admin' && $unread): ?>
+<?php if ($src === 'admin' && $unread): ?>
 <a href="/reseller/alerts/read/<?php echo preg_replace('/[^0-9]/', '', $a['id']); ?>" style="font-size:12px;color:var(--text_muted,#94a3b8);text-decoration:none">Mark read</a>
+<?php elseif ($src === 'admin_client' && $unread): ?>
+<a href="/reseller/alerts/read-user/<?php echo (int)$a['user_alert_id']; ?>" style="font-size:12px;color:var(--text_muted,#94a3b8);text-decoration:none">Mark read</a>
 <?php endif; ?>
 </div>
 </div>

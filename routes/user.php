@@ -294,7 +294,9 @@ $router->get('/reseller/staff/delete/{id}', 'User\Controllers\ResellerPortalCont
 $router->get('/reseller/support', 'User\Controllers\ResellerPortalController@support');
 $router->get('/reseller/alerts', 'User\Controllers\ResellerPortalController@alerts');
 $router->get('/reseller/alerts/read/{id}', 'User\Controllers\ResellerPortalController@alertRead');
+$router->get('/reseller/alerts/read-user/{id}', 'User\Controllers\ResellerPortalController@alertReadUser');
 $router->get('/reseller/alerts/read-all', 'User\Controllers\ResellerPortalController@alertReadAll');
+$router->get('/reseller/alerts/dismiss/{key}', 'User\Controllers\ResellerPortalController@dismissAlert');
 
 // Public Live DJ Widget API
 $router->get('/api/radio/live-dj/{stationId}', 'User\Controllers\RadioController@liveDjStatus');
