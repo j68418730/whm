@@ -11,6 +11,10 @@ class ResellerPortalController extends Controller
     protected $staff = null;   // reseller_staff row when logged in as staff
     protected $addons = ['billing' => false, 'chat' => false, 'support' => false];
 
+    // When committed disk/bandwidth hits this % of the reseller's allocation,
+    // show a persistent low-resource alert and block creating new accounts/packages.
+    const QUOTA_THRESHOLD_PCT = 90;
+
     public function __construct()
     {
         $app = \Core\Application::getInstance();
@@ -93,6 +97,41 @@ class ResellerPortalController extends Controller
         return parent::view($view, $data);
     }
 
+    // Compute committed vs available disk/bandwidth for the active reseller.
+    // resellers.storage_limit / bandwidth_limit are bytes (2TB / 20TB defaults).
+    // reseller_packages.disk_space is MB, bandwidth is GB (0 = unlimited, ignored in sold).
+    protected function quotaStatus()
+    {
+        $pdo = $this->db->pdo();
+        $rid = (int)$this->reseller->id;
+        $pkgSold = $pdo->query("SELECT COALESCE(SUM(disk_space),0) AS disk_mb, COALESCE(SUM(bandwidth),0) AS bw_gb, COUNT(*) AS cnt
+            FROM reseller_packages WHERE reseller_id={$rid} AND is_active=1 AND disk_space > 0 AND bandwidth > 0")->fetch(\PDO::FETCH_OBJ) ?: null;
+        $soldDiskGb = $pkgSold ? (float)$pkgSold->disk_mb / 1024 : 0;
+        $soldBwGb = $pkgSold ? (float)$pkgSold->bw_gb : 0;
+        $diskTotalGb = (float)(($res = $this->reseller) ? ($res->storage_limit ?: 2199023255552) : 2199023255552) / 1073741824;
+        $bwTotalGb = (float)(($res = $this->reseller) ? ($res->bandwidth_limit ?: 21990232555520) : 21990232555520) / 1073741824;
+        $diskAvailGb = max(0, $diskTotalGb - $soldDiskGb);
+        $bwAvailGb = max(0, $bwTotalGb - $soldBwGb);
+        $diskPct = $diskTotalGb > 0 ? min(100, round(($soldDiskGb / $diskTotalGb) * 100, 1)) : 0;
+        $bwPct = $bwTotalGb > 0 ? min(100, round(($soldBwGb / $bwTotalGb) * 100, 1)) : 0;
+        $th = self::QUOTA_THRESHOLD_PCT;
+        $diskLow = $diskPct >= $th;
+        $bwLow = $bwPct >= $th;
+        return [
+            'disk_total_gb' => $diskTotalGb, 'disk_sold_gb' => $soldDiskGb, 'disk_avail_gb' => $diskAvailGb, 'disk_pct' => $diskPct,
+            'bw_total_gb' => $bwTotalGb, 'bw_sold_gb' => $soldBwGb, 'bw_avail_gb' => $bwAvailGb, 'bw_pct' => $bwPct,
+            'disk_low' => $diskLow, 'bw_low' => $bwLow, 'low' => $diskLow || $bwLow,
+            'threshold' => $th,
+        ];
+    }
+
+    // True when the reseller has hit their committed quota limit — blocks new accounts/packages.
+    protected function quotaExceeded()
+    {
+        $q = $this->quotaStatus();
+        return $q['low'];
+    }
+
     public function dashboard()
     {
         $u = $this->requireReseller();
@@ -124,22 +163,7 @@ class ResellerPortalController extends Controller
         $recentTickets = $pdo->query("SELECT t.id, t.subject, t.status, hu.username AS client FROM tickets t JOIN hosting_users hu ON hu.id=t.user_id WHERE hu.reseller_id={$rid} ORDER BY t.created_at DESC LIMIT 5")->fetchAll(\PDO::FETCH_OBJ) ?: [];
 
         // ── Quota: what the reseller owns minus what they've committed in retail packages ──
-        // resellers.storage_limit / bandwidth_limit are bytes (2TB / 20TB defaults).
-        // reseller_packages.disk_space is MB, bandwidth is GB (0 = unlimited, ignored in sold).
-        $pkgSold = $pdo->query("SELECT COALESCE(SUM(disk_space),0) AS disk_mb, COALESCE(SUM(bandwidth),0) AS bw_gb, COUNT(*) AS cnt
-            FROM reseller_packages WHERE reseller_id={$rid} AND is_active=1 AND disk_space > 0 AND bandwidth > 0")->fetch(\PDO::FETCH_OBJ) ?: null;
-        $soldDiskGb = $pkgSold ? (float)$pkgSold->disk_mb / 1024 : 0;
-        $soldBwGb = $pkgSold ? (float)$pkgSold->bw_gb : 0;
-        $diskTotalGb = (float)(($res = $this->reseller) ? ($res->storage_limit ?: 2199023255552) : 2199023255552) / 1073741824;
-        $bwTotalGb = (float)(($res = $this->reseller) ? ($res->bandwidth_limit ?: 21990232555520) : 21990232555520) / 1073741824;
-        $diskAvailGb = max(0, $diskTotalGb - $soldDiskGb);
-        $bwAvailGb = max(0, $bwTotalGb - $soldBwGb);
-        $diskPct = $diskTotalGb > 0 ? min(100, round(($soldDiskGb / $diskTotalGb) * 100, 1)) : 0;
-        $bwPct = $bwTotalGb > 0 ? min(100, round(($soldBwGb / $bwTotalGb) * 100, 1)) : 0;
-        $quotas = [
-            'disk_total_gb' => $diskTotalGb, 'disk_sold_gb' => $soldDiskGb, 'disk_avail_gb' => $diskAvailGb, 'disk_pct' => $diskPct,
-            'bw_total_gb' => $bwTotalGb, 'bw_sold_gb' => $soldBwGb, 'bw_avail_gb' => $bwAvailGb, 'bw_pct' => $bwPct,
-        ];
+        $quotas = $this->quotaStatus();
 
         // Server/health strip (infrastructure status — shared, not admin-specific)
         $serviceNames = ['apache2' => 'Apache', 'mariadb' => 'MariaDB', 'icecast2' => 'Icecast', 'postfix' => 'Postfix', 'dovecot' => 'Dovecot', 'nginx' => 'Nginx'];
@@ -325,6 +349,14 @@ class ResellerPortalController extends Controller
             $owned = $this->db->table('reseller_packages')->where('id', $pkgId)->where('reseller_id', $rid)->first();
             if (!$owned) { $_SESSION['error_message'] = 'That package is not yours.'; $this->response->redirect('/reseller/clients/create'); exit; }
         }
+        // Cannot create accounts once committed quota is at/over the threshold — must upgrade first.
+        if ($this->quotaExceeded()) {
+            $q = $this->quotaStatus();
+            $_SESSION['error_message'] = 'You have reached ' . $q['threshold'] . '% of your disk/bandwidth allocation (' .
+                number_format($q['disk_avail_gb'], 1) . ' GB disk, ' . number_format($q['bw_avail_gb'], 0) .
+                ' GB bandwidth remaining). You must upgrade your plan before creating new accounts.';
+            $this->response->redirect('/reseller/clients/create'); exit;
+        }
         $nameserver1 = 'ns1.planet-hosts.com';
         $nameserver2 = 'ns2.planet-hosts.com';
         try {
@@ -462,6 +494,14 @@ class ResellerPortalController extends Controller
             'allowed_games' => json_encode($this->parseGamesParam()) ?: null,
             'is_active' => $this->request->post('is_active', 1) ? 1 : 0,
         ];
+        // Once committed quota is at/over the threshold, block adding new committed resources.
+        if ($this->quotaExceeded()) {
+            $q = $this->quotaStatus();
+            $_SESSION['error_message'] = 'You have reached ' . $q['threshold'] . '% of your disk/bandwidth allocation (' .
+                number_format($q['disk_avail_gb'], 1) . ' GB disk, ' . number_format($q['bw_avail_gb'], 0) .
+                ' GB bandwidth remaining). You must upgrade your plan before creating more or larger packages.';
+            $this->response->redirect('/reseller/packages'); exit;
+        }
         $this->db->table('reseller_packages')->insertGetId($data);
         $this->audit('package.created', 'reseller_package', null, ['name' => $name, 'slug' => $slug, 'type' => $type]);
         $_SESSION['success_message'] = "Package '{$name}' created (public: {$slug}).";
@@ -504,6 +544,15 @@ class ResellerPortalController extends Controller
             'allowed_games' => json_encode($this->parseGamesParam()) ?: null,
             'is_active' => $this->request->post('is_active', 1) ? 1 : 0,
         ];
+        // Only block when the update would increase committed resources beyond capacity.
+        $grows = ((int)$data['disk_space'] > (int)$pkg->disk_space) || ((int)$data['bandwidth'] > (int)$pkg->bandwidth);
+        if ($grows && $this->quotaExceeded()) {
+            $q = $this->quotaStatus();
+            $_SESSION['error_message'] = 'You have reached ' . $q['threshold'] . '% of your disk/bandwidth allocation (' .
+                number_format($q['disk_avail_gb'], 1) . ' GB disk, ' . number_format($q['bw_avail_gb'], 0) .
+                ' GB bandwidth remaining). You must upgrade your plan before enlarging this package.';
+            $this->response->redirect('/reseller/packages'); exit;
+        }
         $this->db->table('reseller_packages')->where('id', (int)$id)->update($data);
         $this->audit('package.updated', 'reseller_package', (int)$id, ['name' => $name]);
         $_SESSION['success_message'] = 'Package updated.';
