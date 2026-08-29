@@ -84,6 +84,9 @@ class View
                 $layoutFile = BASE_PATH . '/theme/' . $layoutOverride . '.php';
             }
             if (is_file($layoutFile)) {
+                if (str_contains($viewFile, 'reseller')) {
+                    @file_put_contents('/tmp/view_debug.log', date('H:i:s') . "   >> WILL LOAD layoutFile=$layoutFile\n", FILE_APPEND);
+                }
                 $bodyContent = $content;
                 if (preg_match('/<body[^>]*>(.*)<\/body>/si', $content, $m)) $bodyContent = $m[1];
                 elseif (preg_match('/<main[^>]*>(.*)<\/main>/si', $content, $m)) $bodyContent = $m[1];
