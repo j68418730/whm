@@ -20,7 +20,7 @@ class ResellerPortalController extends Controller
 
     protected function requireReseller()
     {
-        if (!$this->auth->check()) { $this->response->redirect('/user_login.php'); exit; }
+        if (!$this->auth->check()) { $this->response->redirect('https://planet-hosts.com:2089/user_login.php'); exit; }
         $user = $this->auth->user();
         // Admins / super admins hitting /reseller should go back to their admin dashboard
         if (isset($user->is_admin) && $user->is_admin) { $this->response->redirect('/admin'); exit; }
