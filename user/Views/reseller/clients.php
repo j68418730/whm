@@ -18,15 +18,25 @@
 
 <table class="table table-hover" style="color:#fff" id="clientTable">
 <thead><tr>
-<th>Username</th><th>Domain</th><th>Email</th><th>Package</th><th>Actions</th><th>Status</th>
+<th>Username</th><th>Domain</th><th>Email</th><th>Package</th><th>Vhost</th><th>Actions</th><th>Status</th>
 </tr></thead>
 <tbody>
-<?php if (!empty($accounts)): foreach ($accounts as $a): $pn = $pkgNames[$a->id] ?? '-'; ?>
+<?php if (!empty($accounts)): foreach ($accounts as $a): $pn = $pkgNames[$a->id] ?? '-';
+$vhostFile = "/etc/apache2/sites-available/{$a->username}.conf";
+$vhostExists = file_exists($vhostFile);
+?>
 <tr data-username="<?php echo htmlspecialchars(strtolower($a->username)); ?>" data-domain="<?php echo htmlspecialchars(strtolower($a->domain ?? '')); ?>" data-email="<?php echo htmlspecialchars(strtolower($a->email ?? '')); ?>" data-status="<?php echo $a->status; ?>">
 <td><strong><?php echo htmlspecialchars($a->username); ?></strong></td>
 <td><?php echo htmlspecialchars($a->domain ?? '-'); ?></td>
 <td style="font-size:12px"><?php echo htmlspecialchars($a->email ?? '-'); ?></td>
 <td><?php echo htmlspecialchars($pn); ?></td>
+<td style="font-size:12px">
+<?php if ($vhostExists): ?>
+<span style="color:#4ade80">&#9679; Active</span>
+<?php else: ?>
+<span style="color:#f87171">&#9679; Missing</span>
+<?php endif; ?>
+</td>
 <td style="white-space:nowrap">
 <?php if ($a->status === 'active'): ?>
 <a href="/reseller/clients/suspend/<?php echo (int)$a->id; ?>" class="btn btn-sm btn-secondary" style="background:rgba(250,204,21,.1);color:#facc15;border-color:rgba(250,204,21,.2)" onclick="return confirm('Suspend <?php echo htmlspecialchars($a->username); ?>?')"><i class="bi bi-pause-circle"></i> Suspend</a>
@@ -37,7 +47,7 @@
 <td><span class="badge bg-<?php echo $a->status === 'active' ? 'success' : ($a->status === 'suspended' ? 'warning' : ($a->status === 'pending' ? 'info' : 'danger')); ?>"><?php echo ucfirst($a->status); ?></span></td>
 </tr>
 <?php endforeach; else: ?>
-<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text_muted)">No clients yet.</td></tr>
+<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text_muted)">No clients yet.</td></tr>
 <?php endif; ?>
 </tbody>
 </table>
