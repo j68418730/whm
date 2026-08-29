@@ -10,6 +10,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     try {
         $pdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", "radiouser", "Skylinehosting171");
+        // 1) Admin / super-admin
+        $astmt = $pdo->prepare("SELECT * FROM admins WHERE (email = ? OR username = ?) AND status = 'active' LIMIT 1");
+        $astmt->execute([$email, $email]);
+        $admin = $astmt->fetch(PDO::FETCH_OBJ);
+        if ($admin && password_verify($password, $admin->password_hash)) {
+            $_SESSION['user'] = (object)[
+                'id' => $admin->id, 'email' => $admin->email,
+                'name' => $admin->name ?: $admin->username,
+                'role' => $admin->role ?? 'admin',
+                'theme_settings' => $admin->theme_settings ?? '{}',
+                'is_admin' => true,
+            ];
+            $_SESSION['is_admin'] = true;
+            header('Location: /admin');
+            exit;
+        }
+        // 2) Customer hosting account (client or reseller)
         $stmt = $pdo->prepare("SELECT * FROM hosting_users WHERE (email = ? OR username = ?) AND status = 'active' LIMIT 1");
         $stmt->execute([$email, $email]);
         $user = $stmt->fetch(PDO::FETCH_OBJ);
@@ -18,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'id' => $user->id, 'email' => $user->email,
                 'name' => $user->username, 'is_admin' => false,
             ];
+            $_SESSION['is_admin'] = false;
             $_SESSION['user_id'] = $user->id;
             $_SESSION['username'] = $user->username;
             // Reseller owners/staff land on their reseller portal

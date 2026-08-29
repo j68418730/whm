@@ -241,6 +241,28 @@ class UserController extends Controller
     {
         $username = $_POST['email'] ?? $_POST['username'] ?? '';
         $password = $_POST['password'] ?? '';
+
+        // 1) Admin / super-admin (role: super | admin) → /admin dashboard
+        $admin = $this->db->table('admins')->where('email', $username)->first();
+        if (!$admin) $admin = $this->db->table('admins')->where('username', $username)->first();
+        if ($admin && password_verify($password, $admin->password_hash)) {
+            if ($admin->status !== 'active') {
+                header('Location: /?login=error');
+                exit;
+            }
+            $_SESSION['user'] = (object)[
+                'id' => $admin->id, 'email' => $admin->email,
+                'name' => $admin->name ?: $admin->username,
+                'role' => $admin->role ?? 'admin',
+                'theme_settings' => $admin->theme_settings ?? '{}',
+                'is_admin' => true,
+            ];
+            $_SESSION['is_admin'] = true;
+            header('Location: /admin');
+            exit;
+        }
+
+        // 2) Customer hosting account (client or reseller)
         $user = $this->db->table('hosting_users')->where('username', $username)->first();
         if (!$user) $user = $this->db->table('hosting_users')->where('email', $username)->first();
 
