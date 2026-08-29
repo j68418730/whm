@@ -259,6 +259,15 @@ $router->post('/reseller/packages/update/{id}', 'User\Controllers\ResellerPortal
 $router->get('/reseller/packages/delete/{id}', 'User\Controllers\ResellerPortalController@packageDelete');
 $router->get('/reseller/branding', 'User\Controllers\ResellerPortalController@branding');
 $router->get('/reseller/billing', 'User\Controllers\ResellerPortalController@billing');
+$router->get('/reseller/provisioning', 'User\Controllers\ResellerPortalController@provisioning');
+$router->post('/reseller/provisioning/run/{orderId}', 'User\Controllers\ResellerPortalController@provisioningRun');
+$router->get('/reseller/billing-system', 'User\Controllers\ResellerPortalController@clientBilling');
+$router->post('/reseller/billing-system/create', 'User\Controllers\ResellerPortalController@clientBillingCreate');
+$router->get('/reseller/billing-system/paid/{id}', 'User\Controllers\ResellerPortalController@clientBillingMarkPaid');
+$router->get('/reseller/chat-system', 'User\Controllers\ResellerPortalController@clientChat');
+$router->post('/reseller/chat-system/create', 'User\Controllers\ResellerPortalController@clientChatCreateTenant');
+$router->get('/reseller/chat-system/toggle/{tenantId}', 'User\Controllers\ResellerPortalController@clientChatToggle');
+$router->get('/reseller/support-system', 'User\Controllers\ResellerPortalController@clientSupport');
 $router->get('/reseller/support', 'User\Controllers\ResellerPortalController@support');
 
 // Public Live DJ Widget API
