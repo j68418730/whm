@@ -124,6 +124,33 @@ if (!empty($resellerTheme['colors'])) {
       </div>
     </div>
     <div class="content">
+<?php if (isset($quota['low']) && $quota['low']): ?>
+<?php
+    $warn = [];
+    if ($quota['disk_low']) $warn[] = 'disk (' . number_format($quota['disk_avail_gb'] ?? 0, 1) . ' GB left of ' . number_format($quota['disk_total_gb'] ?? 0, 1) . ' GB)';
+    if ($quota['bw_low']) $warn[] = 'bandwidth (' . number_format($quota['bw_avail_gb'] ?? 0, 0) . ' GB left of ' . number_format($quota['bw_total_gb'] ?? 0, 0) . ' GB)';
+?>
+<div class="card" style="margin-bottom:12px;padding:14px 16px;border:1px solid #f87171;background:rgba(248,113,113,.08)">
+<div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+<div style="font-size:20px;line-height:1"><i class="bi bi-exclamation-triangle-fill" style="color:#f87171"></i></div>
+<div style="flex:1;min-width:220px">
+<div style="color:#f87171;font-weight:700;font-size:14px">Low Resource Warning — <?php echo $quota['disk_pct'] >= $quota['bw_pct'] ? 'Disk' : 'Bandwidth'; ?> Quota Reached</div>
+<div style="color:#e2e8f0;font-size:13px;margin-top:4px">
+You are running low on <?php echo htmlspecialchars(implode(' and ', $warn)); ?>.
+<?php if (($quota['disk_pct'] ?? 0) < 100 && ($quota['bw_pct'] ?? 0) < 100): ?>
+You have reached <b><?php echo $quota['threshold']; ?>%</b> of your allocation. <b>You cannot create new clients or retail packages</b> until you upgrade your plan.
+<?php else: ?>
+Your allocation is <b>fully committed</b>. <b>You cannot create new clients or retail packages</b> until you upgrade your plan.
+<?php endif; ?>
+</div>
+<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+<a href="https://planet-hosts.com/store" target="_blank" rel="noopener" class="btn btn-sm btn-danger" style="padding:5px 14px;font-size:12px"><i class="bi bi-upc-scan"></i> Upgrade Plan</a>
+<a href="/reseller/plan" class="btn btn-sm btn-secondary" style="padding:5px 14px;font-size:12px"><i class="bi bi-box-seam"></i> Review Packages</a>
+</div>
+</div>
+</div>
+</div>
+<?php endif; ?>
 <?php if (isset($_SESSION['success_message'])): ?><div class="alert alert-success"><?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?></div><?php endif; ?>
 <?php if (isset($_SESSION['error_message'])): ?><div class="alert alert-danger"><?php echo htmlspecialchars($_SESSION['error_message']); unset($_SESSION['error_message']); ?></div><?php endif; ?>
 <?php echo $content ?? ''; ?>
