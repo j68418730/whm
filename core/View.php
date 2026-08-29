@@ -67,6 +67,35 @@ class View
         $isAdmin = str_contains($viewFile, '/admin/') || str_contains($viewFile, '\admin\\');
         $isUser = str_contains($viewFile, '/user/') || str_contains($viewFile, '\user\\');
 
+        // Explicit layout override (e.g. reseller views use the admin-style reseller layout)
+        $layoutOverride = $this->data['layout'] ?? null;
+        if ($layoutOverride) {
+            require_once BASE_PATH . '/core/ThemeEngine.php';
+            $te = \Core\ThemeEngine::getInstance();
+            $theme = $te->getAdminTheme();
+            $layoutFile = null;
+            if ($theme && isset($theme['dir'])) {
+                $layoutFile = $theme['dir'] . '/' . $layoutOverride . '.php';
+            }
+            if (!$layoutFile || !is_file($layoutFile)) {
+                $layoutFile = BASE_PATH . '/theme/' . $layoutOverride . '.php';
+            }
+            if (is_file($layoutFile)) {
+                $bodyContent = $content;
+                if (preg_match('/<body[^>]*>(.*)<\/body>/si', $content, $m)) $bodyContent = $m[1];
+                elseif (preg_match('/<main[^>]*>(.*)<\/main>/si', $content, $m)) $bodyContent = $m[1];
+                $title = $this->data['title'] ?? 'Dashboard';
+                $user = $this->data['user'] ?? null;
+                $hosting = $this->data['hosting'] ?? null;
+                $reseller = $this->data['reseller'] ?? null;
+                $package = $this->data['package'] ?? null;
+                $theme_settings = $this->data['theme_settings'] ?? [];
+                ob_start();
+                require $layoutFile;
+                return ob_get_clean();
+            }
+        }
+
         // Try theme engine for admin AND user views
         if ($isAdmin || $isUser) {
             require_once BASE_PATH . '/core/ThemeEngine.php';
