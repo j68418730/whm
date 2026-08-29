@@ -20,6 +20,9 @@ class ResellerPortalController extends Controller
 
     protected function requireReseller()
     {
+        // Resellers always use their dedicated port 2089
+        $serverPort = (int)($_SERVER['SERVER_PORT'] ?? 0);
+        if ($serverPort !== 2089) { $this->response->redirect('https://planet-hosts.com:2089/reseller'); exit; }
         if (!$this->auth->check()) { $this->response->redirect('https://planet-hosts.com:2089/user_login.php'); exit; }
         $user = $this->auth->user();
         // Admins / super admins hitting /reseller should go back to their admin dashboard
