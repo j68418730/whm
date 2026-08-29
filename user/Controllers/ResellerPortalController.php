@@ -65,13 +65,95 @@ class ResellerPortalController extends Controller
     public function packages()
     {
         $u = $this->requireReseller();
-        // Only packages matching the reseller's type (web_reseller or icecast_reseller)
-        $type = $this->reseller->type ?? 'web_reseller';
-        $stmt = $this->db->pdo()->query("SELECT * FROM hosting_packages WHERE is_active = 1 AND type IN ('web_hosting','icecast','web_reseller','icecast_reseller') ORDER BY type ASC") ?: [];
-        $packages = $stmt ? $stmt->fetchAll(\PDO::FETCH_OBJ) : [];
+        // The reseller creates/manages their OWN retail packages. They never use server packages.
+        $pkgs = $this->db->table('reseller_packages')->where('reseller_id', $this->reseller->id)->orderBy('created_at', 'DESC')->get() ?: [];
         return $this->view('user.reseller.packages', [
-            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Packages', 'packages' => $packages,
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Packages', 'packages' => $pkgs,
         ]);
+    }
+
+    public function packageStore()
+    {
+        $u = $this->requireReseller();
+        $name = trim($this->request->post('name', ''));
+        if ($name === '') { $_SESSION['error_message'] = 'Package name required.'; $this->response->redirect('/reseller/packages'); exit; }
+        $type = $this->request->post('type', 'hosting');
+        $userName = (string)($u->name ?? 'reseller');
+        // public id: {username}_{name} — unique per reseller (the real public identifier)
+        $slugBase = strtolower(preg_replace('/[^a-z0-9]+/','', strtolower($userName))) . '_' . strtolower(preg_replace('/[^a-z0-9]+/','_', strtolower($name)));
+        $slug = $slugBase;
+        $i = 1;
+        while ($this->db->table('reseller_packages')->where('slug', $slug)->first()) { $slug = $slugBase . '_' . ($i++); }
+        $data = [
+            'reseller_id' => $this->reseller->id, 'name' => $name, 'slug' => $slug, 'type' => $type,
+            'description' => $this->request->post('description', ''),
+            'price' => (float)$this->request->post('price', 0),
+            'setup_fee' => (float)$this->request->post('setup_fee', 0),
+            'billing_cycle' => $this->request->post('billing_cycle', 'monthly'),
+            'slots' => (int)$this->request->post('slots', 10),
+            'disk_space' => (int)$this->request->post('disk_space', 0),
+            'bandwidth' => (int)$this->request->post('bandwidth', 0),
+            'storage_limit' => (int)$this->request->post('storage_limit', 0),
+            'backup_limit' => (int)$this->request->post('backup_limit', 0),
+            'database_limit' => (int)$this->request->post('database_limit', 0),
+            'port_limit' => (int)$this->request->post('port_limit', 0),
+            'player_slots' => (int)$this->request->post('player_slots', 0),
+            'max_stations' => (int)$this->request->post('max_stations', 0),
+            'max_djs' => (int)$this->request->post('max_djs', 0),
+            'max_listeners' => (int)$this->request->post('max_listeners', 0),
+            'max_bitrate' => (int)$this->request->post('max_bitrate', 0),
+            'features' => json_encode($this->request->post('features', [])) ?: null,
+            'allowed_games' => json_encode($this->request->post('allowed_games', [])) ?: null,
+            'is_active' => $this->request->post('is_active', 1) ? 1 : 0,
+        ];
+        $this->db->table('reseller_packages')->insertGetId($data);
+        $this->audit('package.created', 'reseller_package', null, ['name' => $name, 'slug' => $slug, 'type' => $type]);
+        $_SESSION['success_message'] = "Package '{$name}' created (public: {$slug}).";
+        $this->response->redirect('/reseller/packages');
+    }
+
+    public function packageUpdate($id)
+    {
+        $u = $this->requireReseller();
+        $pkg = $this->db->table('reseller_packages')->where('id', (int)$id)->where('reseller_id', $this->reseller->id)->first();
+        if (!$pkg) { $_SESSION['error_message'] = 'Package not found.'; $this->response->redirect('/reseller/packages'); exit; }
+        $name = trim($this->request->post('name', $pkg->name));
+        $data = [
+            'name' => $name,
+            'type' => $this->request->post('type', $pkg->type),
+            'description' => $this->request->post('description', $pkg->description),
+            'price' => (float)$this->request->post('price', 0),
+            'setup_fee' => (float)$this->request->post('setup_fee', 0),
+            'billing_cycle' => $this->request->post('billing_cycle', $pkg->billing_cycle),
+            'slots' => (int)$this->request->post('slots', 10),
+            'disk_space' => (int)$this->request->post('disk_space', 0),
+            'bandwidth' => (int)$this->request->post('bandwidth', 0),
+            'storage_limit' => (int)$this->request->post('storage_limit', 0),
+            'backup_limit' => (int)$this->request->post('backup_limit', 0),
+            'database_limit' => (int)$this->request->post('database_limit', 0),
+            'port_limit' => (int)$this->request->post('port_limit', 0),
+            'player_slots' => (int)$this->request->post('player_slots', 0),
+            'max_stations' => (int)$this->request->post('max_stations', 0),
+            'max_djs' => (int)$this->request->post('max_djs', 0),
+            'max_listeners' => (int)$this->request->post('max_listeners', 0),
+            'max_bitrate' => (int)$this->request->post('max_bitrate', 0),
+            'features' => json_encode($this->request->post('features', [])) ?: null,
+            'allowed_games' => json_encode($this->request->post('allowed_games', [])) ?: null,
+            'is_active' => $this->request->post('is_active', 1) ? 1 : 0,
+        ];
+        $this->db->table('reseller_packages')->where('id', (int)$id)->update($data);
+        $this->audit('package.updated', 'reseller_package', (int)$id, ['name' => $name]);
+        $_SESSION['success_message'] = 'Package updated.';
+        $this->response->redirect('/reseller/packages');
+    }
+
+    public function packageDelete($id)
+    {
+        $u = $this->requireReseller();
+        $this->db->table('reseller_packages')->where('id', (int)$id)->where('reseller_id', $this->reseller->id)->delete();
+        $this->audit('package.deleted', 'reseller_package', (int)$id);
+        $_SESSION['success_message'] = 'Package deleted.';
+        $this->response->redirect('/reseller/packages');
     }
 
     public function branding()
@@ -108,5 +190,21 @@ class ResellerPortalController extends Controller
         return $this->view('user.reseller.support', [
             'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Support', 'tickets' => $tickets,
         ]);
+    }
+
+    protected function audit($action = 'action', $resourceType = null, $resourceId = null, $details = null)
+    {
+        try {
+            $u = $this->auth->user();
+            $this->db->table('reseller_audit_logs')->insertGetId([
+                'reseller_id' => $this->reseller->id ?? 0,
+                'staff_email' => $u->email ?? '$reseller',
+                'action' => $action,
+                'resource_type' => $resourceType,
+                'resource_id' => $resourceId ? (int)$resourceId : null,
+                'details' => $details ? json_encode($details) : null,
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
+            ]);
+        } catch (\Exception $e) {}
     }
 }
