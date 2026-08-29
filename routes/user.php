@@ -252,7 +252,8 @@ $router->post('/chat/send', 'User\Controllers\ChatController@send');
 $router->post('/chat/upload/{sessionId}', 'User\Controllers\ChatController@upload');
 // Reseller portal routes
 $router->get('/reseller', 'User\Controllers\ResellerPortalController@dashboard');
-$router->get('/reseller/clients', 'User\Controllers\ResellerPortalController@clients');
+$router->get('/reseller/clients', 'User\Controllers\ResellerPortalController@clientsOverview');
+$router->get('/reseller/clients/list', 'User\Controllers\ResellerPortalController@clients');
 $router->get('/reseller/clients/create', 'User\Controllers\ResellerPortalController@clientCreate');
 $router->post('/reseller/clients/store', 'User\Controllers\ResellerPortalController@clientStore');
 $router->get('/reseller/clients/suspend/{id}', 'User\Controllers\ResellerPortalController@clientSuspend');
