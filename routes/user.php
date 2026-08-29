@@ -253,6 +253,8 @@ $router->post('/chat/upload/{sessionId}', 'User\Controllers\ChatController@uploa
 // Reseller portal routes
 $router->get('/reseller', 'User\Controllers\ResellerPortalController@dashboard');
 $router->get('/reseller/clients', 'User\Controllers\ResellerPortalController@clients');
+$router->get('/reseller/clients/suspend/{id}', 'User\Controllers\ResellerPortalController@clientSuspend');
+$router->get('/reseller/clients/unsuspend/{id}', 'User\Controllers\ResellerPortalController@clientUnsuspend');
 $router->get('/reseller/packages', 'User\Controllers\ResellerPortalController@packages');
 $router->post('/reseller/packages/store', 'User\Controllers\ResellerPortalController@packageStore');
 $router->post('/reseller/packages/update/{id}', 'User\Controllers\ResellerPortalController@packageUpdate');

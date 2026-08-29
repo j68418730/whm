@@ -95,15 +95,49 @@ class ResellerPortalController extends Controller
     public function clients()
     {
         $u = $this->requireReseller();
-        $accounts = $this->db->table('hosting_users')->where('reseller_id', $this->reseller->id)->get() ?: [];
+        $rid = (int)$this->reseller->id;
+        $accounts = $this->db->table('hosting_users')->where('reseller_id', $rid)->orderBy('created_at', 'DESC')->get() ?: [];
         $pkgNames = [];
         foreach ($accounts as $a) {
             $pkg = $this->db->table('hosting_packages')->where('id', $a->package_id)->first();
             $pkgNames[$a->id] = $pkg ? $pkg->name : '-';
         }
+        $stats = [
+            'total' => count($accounts),
+            'active' => count(array_filter($accounts, fn($a) => $a->status === 'active')),
+            'suspended' => count(array_filter($accounts, fn($a) => $a->status === 'suspended')),
+            'terminated' => count(array_filter($accounts, fn($a) => $a->status === 'terminated')),
+        ];
         return $this->view('user.reseller.clients', [
-            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Clients', 'accounts' => $accounts, 'pkgNames' => $pkgNames,
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Clients',
+            'accounts' => $accounts, 'pkgNames' => $pkgNames, 'stats' => $stats,
         ]);
+    }
+
+    public function clientSuspend($id)
+    {
+        $u = $this->requireReseller();
+        $rid = (int)$this->reseller->id;
+        $a = $this->db->table('hosting_users')->where('id', (int)$id)->where('reseller_id', $rid)->first();
+        if (!$a) { $_SESSION['error_message'] = 'Client not found.'; $this->response->redirect('/reseller/clients'); exit; }
+        $this->db->table('hosting_users')->where('id', (int)$id)->update([
+            'status' => 'suspended', 'suspended_at' => date('Y-m-d H:i:s'),
+        ]);
+        $this->audit('client.suspended', 'hosting_user', (int)$id, ['username' => $a->username]);
+        $_SESSION['success_message'] = "Client '{$a->username}' suspended.";
+        $this->response->redirect('/reseller/clients');
+    }
+
+    public function clientUnsuspend($id)
+    {
+        $u = $this->requireReseller();
+        $rid = (int)$this->reseller->id;
+        $a = $this->db->table('hosting_users')->where('id', (int)$id)->where('reseller_id', $rid)->first();
+        if (!$a) { $_SESSION['error_message'] = 'Client not found.'; $this->response->redirect('/reseller/clients'); exit; }
+        $this->db->table('hosting_users')->where('id', (int)$id)->update(['status' => 'active']);
+        $this->audit('client.unsuspended', 'hosting_user', (int)$id, ['username' => $a->username]);
+        $_SESSION['success_message'] = "Client '{$a->username}' reactivated.";
+        $this->response->redirect('/reseller/clients');
     }
 
     public function packages()
