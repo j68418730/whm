@@ -81,8 +81,9 @@ if (!empty($resellerTheme['colors'])) {
     <div class="nav">
       <div class="nav-label">Management</div>
       <a href="/reseller" class="nav-link <?php echo str_contains($title ?? '', 'Dashboard') ? 'active' : ''; ?>"><i class="bi bi-speedometer2"></i> Dashboard</a>
+      <a href="/reseller/alerts" class="nav-link <?php echo str_contains($title ?? '', 'Alerts') ? 'active' : ''; ?>"><i class="bi bi-bell"></i> Alerts<?php if (!empty($alert_unread)): ?> <span style="margin-left:auto;background:#f87171;color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 4px"><?php echo (int)$alert_unread; ?></span><?php endif; ?></a>
       <?php if ($staff === null || $can('clients')): ?>
-      <a href="/reseller-clients" class="nav-link <?php echo str_contains($title ?? '', 'Clients') ? 'active' : ''; ?>"><i class="bi bi-people"></i> Clients</a>
+      <a href="/reseller/clients" class="nav-link <?php echo str_contains($title ?? '', 'Clients') ? 'active' : ''; ?>"><i class="bi bi-people"></i> Clients</a>
       <?php endif; ?>
       <?php if ($staff === null || $can('packages')): ?>
       <a href="/reseller/packages" class="nav-link <?php echo str_contains($title ?? '', 'Packages') ? 'active' : ''; ?>"><i class="bi bi-box-seam"></i> Packages</a>
@@ -119,11 +120,63 @@ if (!empty($resellerTheme['colors'])) {
         <h1><?php echo htmlspecialchars($title ?? 'Reseller Panel'); ?></h1>
       </div>
       <div class="user-info">
+        <a href="/reseller/alerts" title="Alerts" style="position:relative;color:var(--text_muted,#94a3b8);text-decoration:none;font-size:18px;margin-right:4px">
+          <i class="bi bi-bell"></i>
+          <?php if (!empty($alert_unread)): ?><span style="position:absolute;top:-6px;right:-8px;background:#f87171;color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 4px"><?php echo (int)$alert_unread; ?></span><?php endif; ?>
+        </a>
         <i class="bi bi-person-circle"></i> <?php echo htmlspecialchars($user->name ?? $user->email ?? ''); ?>
         <a href="/user/logout" class="btn btn-sm" style="border:1px solid rgba(248,113,113,.2);background:rgba(248,113,113,.08);color:#f87171;padding:4px 12px;font-size:12px;text-decoration:none"><i class="bi bi-box-arrow-right"></i> Logout</a>
       </div>
     </div>
     <div class="content">
+<?php
+$typeIcon = ['info' => 'ℹ️', 'warning' => '⚠️', 'success' => '✅', 'danger' => '⛔'];
+$typeColor = ['info' => '#38bdf8', 'warning' => '#facc15', 'success' => '#4ade80', 'danger' => '#f87171'];
+$srcLabel = ['quota' => 'Quota', 'invoice' => 'Invoice', 'client' => 'Client', 'order' => 'Order', 'admin' => 'Support', 'admin_client' => 'Support'];
+// Show top strips for every alert (quota included, but only when actually low).
+if (!empty($alerts)):
+foreach ($alerts as $al):
+$at = $al['type'] ?? 'info';
+$asrc = $al['source'] ?? '';
+$isQ = $asrc === 'quota';
+$isMsg = ($asrc === 'admin' || $asrc === 'admin_client') && empty($al['is_read']);
+$color = $typeColor[$at] ?? '#94a3b8';
+$dismissible = !empty($al['dismissible']);
+$akey = $al['key'] ?? $al['id'];
+?>
+<div class="card" style="margin-bottom:10px;padding:12px 16px;border:1px solid <?php echo $isQ ? '#f87171' : 'rgba(56,189,248,.15)'; ?>;background:<?php echo $isQ ? 'rgba(248,113,113,.08)' : 'rgba(8,16,28,.6)'; ?>;<?php echo $isMsg ? 'border-left:3px solid ' . $color . ';' : ''; ?>">
+<div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+<div style="font-size:20px;line-height:1"><?php echo $typeIcon[$at] ?? 'ℹ️'; ?></div>
+<div style="flex:1;min-width:220px">
+<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+<span style="color:<?php echo $isQ ? '#f87171' : $color; ?>;font-weight:700;font-size:13px"><?php echo htmlspecialchars($al['title'] ?? ''); ?></span>
+<?php if ($isMsg): ?><span style="font-size:9px;background:rgba(56,189,248,.15);color:#38bdf8;padding:1px 7px;border-radius:99px">NEW</span><?php endif; ?>
+<?php if ($asrc): ?><span style="font-size:10px;color:#64748b;background:rgba(255,255,255,.05);padding:2px 8px;border-radius:99px"><?php echo $srcLabel[$asrc] ?? ucfirst($asrc); ?></span><?php endif; ?>
+</div>
+<?php if (!empty($al['message'])): ?>
+<div style="color:<?php echo $isQ ? '#e2e8f0' : '#94a3b8'; ?>;font-size:13px;margin-top:3px"><?php echo $al['message']; ?></div>
+<?php endif; ?>
+<?php if (!empty($al['link'])): ?>
+<div style="margin-top:6px"><a href="<?php echo $al['link']; ?>" style="font-size:12px;color:var(--primary,#008cff);text-decoration:none">View →</a></div>
+<?php endif; ?>
+</div>
+<?php if ($isMsg || $dismissible): ?>
+<div style="align-self:center;display:flex;align-items:center;gap:10px">
+<?php if ($isMsg): ?>
+<?php if ($asrc === 'admin'): ?>
+<a href="/reseller/alerts/read/<?php echo preg_replace('/[^0-9]/', '', $al['id']); ?>" style="font-size:12px;color:#94a3b8;text-decoration:none">Mark read</a>
+<?php else: ?>
+<a href="/reseller/alerts/read-user/<?php echo (int)$al['user_alert_id']; ?>" style="font-size:12px;color:#94a3b8;text-decoration:none">Mark read</a>
+<?php endif; ?>
+<?php endif; ?>
+<?php if ($dismissible): ?>
+<a href="/reseller/alerts/dismiss/<?php echo rawurlencode($akey); ?>" title="Dismiss" onclick="return confirm('Dismiss this alert?')" style="color:#94a3b8;text-decoration:none;font-size:16px;line-height:1;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,.12)">&times;</a>
+<?php endif; ?>
+</div>
+<?php endif; ?>
+</div>
+</div>
+<?php endforeach; endif; ?>
 <?php if (isset($_SESSION['success_message'])): ?><div class="alert alert-success"><?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?></div><?php endif; ?>
 <?php if (isset($_SESSION['error_message'])): ?><div class="alert alert-danger"><?php echo htmlspecialchars($_SESSION['error_message']); unset($_SESSION['error_message']); ?></div><?php endif; ?>
 <?php echo $content ?? ''; ?>

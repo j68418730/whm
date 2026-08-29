@@ -29,7 +29,6 @@ $typeColor = $rType === 'icecast_reseller' ? '#a78bfa' : '#38bdf8';
 <a href="/admin/reseller/branding/<?php echo $r->id; ?>" class="btn btn-sm secondary" style="font-size:11px"><i class="bi bi-palette"></i> Branding</a>
 <a href="/admin/reseller/audit/<?php echo $r->id; ?>" class="btn btn-sm secondary" style="font-size:11px"><i class="bi bi-clock-history"></i> Audit Log</a>
 </div>
-
 <div class="stats-grid" style="margin-bottom:18px">
 <div class="stat-card"><h3>Customers</h3><div class="value"><?php echo count($accounts); ?></div></div>
 <div class="stat-card"><h3>Active Services</h3><div class="value"><?php echo (int)$services; ?></div></div>
@@ -106,6 +105,34 @@ $typeColor = $rType === 'icecast_reseller' ? '#a78bfa' : '#38bdf8';
 <?php endforeach; ?>
 </table>
 <?php else: ?><p style="color:#64748b;font-size:13px">No API keys.</p><?php endif; ?>
+</div>
+
+<!-- Alerts (admin -> reseller) -->
+<div class="card">
+<h4 style="color:var(--accent);margin-bottom:12px"><i class="bi bi-bell"></i> Send Alert to Reseller</h4>
+<form method="POST" action="/admin/reseller/alert/send/<?php echo $r->id; ?>" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+<input name="alert_title" placeholder="Alert title (required)" required style="flex:2;min-width:180px">
+<input name="alert_message" placeholder="Message (optional)" style="flex:3;min-width:220px">
+<select name="alert_type" style="flex:0 0 110px">
+<option value="info">ℹ️ Info</option><option value="warning">⚠️ Warning</option>
+<option value="success">✅ Success</option><option value="danger">⛔ Danger</option>
+</select>
+<button class="btn btn-sm primary"><i class="bi bi-send"></i> Send</button>
+</form>
+<?php if (!empty($alerts)): ?>
+<table style="font-size:13px"><tr><th>Title</th><th>Message</th><th>Type</th><th>Read</th><th>When</th><th></th></tr>
+<?php foreach ($alerts as $a): ?>
+<tr>
+<td><?php echo htmlspecialchars($a->title); ?></td>
+<td><?php echo htmlspecialchars($a->message ?? '-'); ?></td>
+<td><?php echo htmlspecialchars($a->type ?? 'info'); ?></td>
+<td><?php echo $a->is_read ? '✅' : '🆕'; ?></td>
+<td><?php echo htmlspecialchars($a->created_at ?? ''); ?></td>
+<td><a href="/admin/reseller/alert/delete/<?php echo $r->id; ?>/<?php echo (int)$a->id; ?>" class="btn btn-xs danger" onclick="return confirm('Delete this alert?')">Delete</a></td>
+</tr>
+<?php endforeach; ?>
+</table>
+<?php else: ?><p style="color:#64748b;font-size:13px">No alerts sent yet.</p><?php endif; ?>
 </div>
 
 <!-- Recent audit -->

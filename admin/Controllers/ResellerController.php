@@ -181,10 +181,12 @@ class ResellerController extends Controller
             try { $serviceCount = (int)$pdo->query("SELECT COUNT(*) FROM billing_services WHERE user_id IN ($in)")->fetchColumn(); } catch (\Exception $e) {}
         }
         $products = $this->db->table('billing_products')->where('is_active', 1)->orderBy('type', 'ASC')->get() ?: [];
+        $alerts = $this->db->table('reseller_alerts')->where('reseller_id', $id)->orderBy('created_at', 'DESC')->limit(20)->get() ?: [];
         return $this->view('admin.reseller.show', [
             'user' => $user, 'title' => $reseller->company_name,
             'reseller' => $reseller, 'pkg' => $pkg, 'accounts' => $accounts, 'customers' => $customers,
             'staff' => $staff, 'keys' => $keys, 'audit' => $audit, 'services' => $serviceCount, 'products' => $products,
+            'alerts' => $alerts,
             'theme_settings' => json_decode($user->theme_settings ?? '{}', true),
         ]);
     }
@@ -415,6 +417,106 @@ class ResellerController extends Controller
                 'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
             ]);
         } catch (\Exception $e) {}
+    }
+
+    // Alert a reseller (admin -> reseller message shown in their unified alerts feed).
+    public function sendAlert($id)
+    {
+        $this->guard();
+        $reseller = $this->loadReseller($id);
+        $title = trim($this->request->post('alert_title', ''));
+        $message = trim($this->request->post('alert_message', ''));
+        $type = in_array($this->request->post('alert_type', '') , ['info','warning','success','danger']) ? $this->request->post('alert_type', '') : 'info';
+        if ($title === '') { $_SESSION['error_message'] = 'Alert title is required.'; $this->response->redirect('/admin/reseller/show/' . $id); exit; }
+        $this->db->table('reseller_alerts')->insertGetId([
+            'reseller_id' => (int)$id, 'admin_id' => $this->auth->user()->id,
+            'title' => $title, 'message' => $message, 'type' => $type,
+        ]);
+        $this->audit((int)$id, 'alert.sent', 'reseller_alert', null, ['title' => $title]);
+        $_SESSION['success_message'] = "Alert sent to reseller '{$reseller->company_name}'.";
+        $this->response->redirect('/admin/reseller/show/' . $id);
+    }
+
+    public function deleteAlert($id, $alertId)
+    {
+        $this->guard();
+        $this->loadReseller($id);
+        $this->db->table('reseller_alerts')->where('id', (int)$alertId)->where('reseller_id', (int)$id)->delete();
+        $this->audit((int)$id, 'alert.deleted', 'reseller_alert', (int)$alertId);
+        $this->response->redirect('/admin/reseller/show/' . $id);
+    }
+
+    // ── Admin unified alerts feed (across all resellers) ──
+    public function alerts()
+    {
+        $this->guard();
+        $user = $this->auth->user();
+        $pdo = $this->db->pdo();
+        $items = [];
+
+        // Due + past-due invoices under any reseller
+        try {
+            $rows = $pdo->query("SELECT i.id, i.invoice_number, i.total, i.status, i.due_date, hu.username AS client, hu.reseller_id, r.company_name AS reseller
+                FROM invoices i JOIN hosting_users hu ON hu.id = i.user_id JOIN resellers r ON r.id = hu.reseller_id
+                WHERE i.status IN ('sent','overdue') ORDER BY i.due_date ASC LIMIT 200")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            foreach ($rows as $x) {
+                $overdue = $x->status === 'overdue';
+                $items[] = ['icon' => $overdue ? '⛔' : '⚠️', 'color' => $overdue ? '#f87171' : '#facc15',
+                    'title' => ($overdue ? 'Past Due Invoice' : 'Due Invoice') . ' #' . $x->invoice_number,
+                    'detail' => '$' . number_format((float)$x->total,2) . ' — ' . $x->client . ' (' . $x->reseller . ')' . ($x->due_date ? ' · due ' . date('M j', strtotime($x->due_date)) : ''),
+                    'time' => $x->due_date, 'link' => '/admin/reseller/show/' . (int)$x->reseller_id];
+            }
+        } catch (\Exception $e) {}
+
+        // New clients in last 7 days
+        try {
+            $rows = $pdo->query("SELECT hu.id, hu.username, hu.created_at, r.company_name AS reseller, hu.reseller_id
+                FROM hosting_users hu JOIN resellers r ON r.id = hu.reseller_id
+                WHERE hu.reseller_id IS NOT NULL AND hu.created_at >= '" . date('Y-m-d', strtotime('-7 days')) . "' ORDER BY hu.created_at DESC LIMIT 100")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            foreach ($rows as $x) {
+                $items[] = ['icon' => '✅', 'color' => '#4ade80', 'title' => 'New Client: ' . $x->username,
+                    'detail' => $x->reseller, 'time' => $x->created_at, 'link' => '/admin/account/show/' . (int)$x->id];
+            }
+        } catch (\Exception $e) {}
+
+        // New orders last 7 days
+        try {
+            $orders = $pdo->query("SELECT o.id, o.total, o.type, o.status, o.created_at, hu.username AS client, r.company_name AS reseller
+                FROM billing_orders o JOIN hosting_users hu ON hu.id = o.user_id JOIN resellers r ON r.id = hu.reseller_id
+                WHERE hu.reseller_id IS NOT NULL AND o.created_at >= '" . date('Y-m-d', strtotime('-7 days')) . "' ORDER BY o.created_at DESC LIMIT 100")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            foreach ($orders as $x) {
+                $items[] = ['icon' => '🛒', 'color' => '#38bdf8', 'title' => 'New Order #' . (int)$x->id,
+                    'detail' => '$' . number_format((float)$x->total,2) . ' — ' . $x->client . ' (' . $x->reseller . ')', 'time' => $x->created_at, 'link' => '/admin/billing/orders'];
+            }
+        } catch (\Exception $e) {}
+
+        // Resellers over quota
+        try {
+            $resellers = $this->db->table('resellers')->where('is_active', 1)->get() ?: [];
+            foreach ($resellers as $rr) {
+                $soldDisk = (float)($pdo->query("SELECT COALESCE(SUM(disk_space),0) FROM reseller_packages WHERE reseller_id=" . (int)$rr->id . " AND is_active=1")->fetchColumn() ?? 0) / 1024;
+                $diskTotal = (float)($rr->storage_limit ?: 2199023255552) / 1073741824;
+                if ($diskTotal > 0 && (($soldDisk / $diskTotal) * 100) >= 90) {
+                    $pct = round(($soldDisk / $diskTotal) * 100, 1);
+                    $items[] = ['icon' => '🔴', 'color' => '#f87171', 'title' => $rr->company_name . ' — Low Disk', 'detail' => $pct . '% of allocation committed', 'time' => null, 'link' => '/admin/reseller/resources/' . (int)$rr->id];
+                }
+            }
+        } catch (\Exception $e) {}
+
+        // Admin->reseller messages
+        try {
+            $msgs = $pdo->query("SELECT a.*, r.company_name AS reseller FROM reseller_alerts a JOIN resellers r ON r.id = a.reseller_id ORDER BY a.created_at DESC LIMIT 100")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            foreach ($msgs as $x) {
+                $items[] = ['icon' => '💬', 'color' => '#' . ($x->type === 'danger' ? 'f87171' : ($x->type === 'warning' ? 'facc15' : ($x->type === 'success' ? '4ade80' : '38bdf8'))),
+                    'title' => $x->title . ' → ' . $x->reseller, 'detail' => $x->message ?? '', 'time' => $x->created_at, 'link' => '/admin/reseller/show/' . (int)$x->reseller_id, 'unread' => empty($x->is_read)];
+            }
+        } catch (\Exception $e) {}
+
+        usort($items, function ($a, $b) { return strtotime((string)$b['time']) <=> strtotime((string)$a['time']); });
+        return $this->view('admin.reseller.alerts', [
+            'user' => $user, 'title' => 'Alerts — Resellers', 'items' => $items,
+            'theme_settings' => json_decode($user->theme_settings ?? '{}', true),
+        ]);
     }
 
     // ── Products available to a reseller type ──

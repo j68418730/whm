@@ -461,12 +461,15 @@ $router->get('/admin/reseller/branding/{id}', 'Admin\Controllers\ResellerControl
 $router->post('/admin/reseller/branding/save/{id}', 'Admin\Controllers\ResellerController@brandingSave');
 $router->get('/admin/reseller/products/{id}', 'Admin\Controllers\ResellerController@products');
 $router->get('/admin/reseller/audit/{id}', 'Admin\Controllers\ResellerController@auditLog');
+$router->get('/admin/reseller/alerts', 'Admin\Controllers\ResellerController@alerts');
 $router->post('/admin/reseller/staff/create/{id}', 'Admin\Controllers\ResellerController@staffCreate');
 $router->get('/admin/reseller/staff/toggle/{id}/{staffId}', 'Admin\Controllers\ResellerController@staffToggle');
 $router->get('/admin/reseller/staff/delete/{id}/{staffId}', 'Admin\Controllers\ResellerController@staffDelete');
 $router->post('/admin/reseller/api/create/{id}', 'Admin\Controllers\ResellerController@apiCreate');
 $router->get('/admin/reseller/api/toggle/{id}/{keyId}', 'Admin\Controllers\ResellerController@apiToggle');
 $router->get('/admin/reseller/api/delete/{id}/{keyId}', 'Admin\Controllers\ResellerController@apiDelete');
+$router->post('/admin/reseller/alert/send/{id}', 'Admin\Controllers\ResellerController@sendAlert');
+$router->get('/admin/reseller/alert/delete/{id}/{alertId}', 'Admin\Controllers\ResellerController@deleteAlert');
 
 // -- DNS sub-routes --
 $router->get('/admin/dns/create-zone', 'Admin\Controllers\DnsController@index');

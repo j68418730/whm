@@ -11,6 +11,10 @@ class ResellerPortalController extends Controller
     protected $staff = null;   // reseller_staff row when logged in as staff
     protected $addons = ['billing' => false, 'chat' => false, 'support' => false];
 
+    // When committed disk/bandwidth hits this % of the reseller's allocation,
+    // show a persistent low-resource alert and block creating new accounts/packages.
+    const QUOTA_THRESHOLD_PCT = 90;
+
     public function __construct()
     {
         $app = \Core\Application::getInstance();
@@ -90,7 +94,72 @@ class ResellerPortalController extends Controller
         $data['addons'] = $this->addons;
         $data['staff'] = $this->staff;
         $data['can'] = function ($perm) { return $this->can($perm); };
+
+        // Global quota status for every reseller page (drives the persistent low-resource banner).
+        $data['quota'] = $this->quotaStatus();
+
+        // Full alerts list for the top-of-page strip on every reseller page.
+        $data['alerts'] = [];
+        $data['alert_unread'] = 0;
+        try {
+            if (!empty($this->reseller) && !empty($this->reseller->id)) {
+                $alertsList = $this->buildAlerts();
+                $data['alerts'] = $alertsList;
+                $data['alert_unread'] = 0;
+                foreach ($alertsList as $al) {
+                    if (in_array($al['source'] ?? '', ['admin', 'admin_client']) && empty($al['is_read'])) $data['alert_unread']++;
+                }
+            }
+        } catch (\Exception $e) {}
+
         return parent::view($view, $data);
+    }
+
+    // Compute committed vs available disk/bandwidth for the active reseller.
+    // resellers.storage_limit / bandwidth_limit are bytes (2TB / 20TB defaults).
+    // reseller_packages.disk_space is MB, bandwidth is GB (0 = unlimited, ignored in sold).
+    protected function quotaStatus()
+    {
+        $pdo = $this->db->pdo();
+        $rid = (int)$this->reseller->id;
+        $pkgSold = $pdo->query("SELECT COALESCE(SUM(disk_space),0) AS disk_mb, COALESCE(SUM(bandwidth),0) AS bw_gb, COUNT(*) AS cnt
+            FROM reseller_packages WHERE reseller_id={$rid} AND is_active=1 AND disk_space > 0 AND bandwidth > 0")->fetch(\PDO::FETCH_OBJ) ?: null;
+        $soldDiskGb = $pkgSold ? (float)$pkgSold->disk_mb / 1024 : 0;
+        $soldBwGb = $pkgSold ? (float)$pkgSold->bw_gb : 0;
+        $diskTotalGb = (float)(($res = $this->reseller) ? ($res->storage_limit ?: 2199023255552) : 2199023255552) / 1073741824;
+        $bwTotalGb = (float)(($res = $this->reseller) ? ($res->bandwidth_limit ?: 21990232555520) : 21990232555520) / 1073741824;
+        $diskAvailGb = max(0, $diskTotalGb - $soldDiskGb);
+        $bwAvailGb = max(0, $bwTotalGb - $soldBwGb);
+        $diskPct = $diskTotalGb > 0 ? min(100, round(($soldDiskGb / $diskTotalGb) * 100, 1)) : 0;
+        $bwPct = $bwTotalGb > 0 ? min(100, round(($soldBwGb / $bwTotalGb) * 100, 1)) : 0;
+        $th = self::QUOTA_THRESHOLD_PCT;
+        $diskLow = $diskPct >= $th;
+        $bwLow = $bwPct >= $th;
+        return [
+            'disk_total_gb' => $diskTotalGb, 'disk_sold_gb' => $soldDiskGb, 'disk_avail_gb' => $diskAvailGb, 'disk_pct' => $diskPct,
+            'bw_total_gb' => $bwTotalGb, 'bw_sold_gb' => $soldBwGb, 'bw_avail_gb' => $bwAvailGb, 'bw_pct' => $bwPct,
+            'disk_low' => $diskLow, 'bw_low' => $bwLow, 'low' => $diskLow || $bwLow,
+            'threshold' => $th,
+        ];
+    }
+
+    // True when the reseller has hit their committed quota limit — blocks new accounts/packages.
+    protected function quotaExceeded()
+    {
+        $q = $this->quotaStatus();
+        return $q['low'];
+    }
+
+    // Fail a creation/provision action when the reseller is over quota. Returns true if blocked.
+    protected function assertQuota($redirectUrl, $what)
+    {
+        if (!$this->quotaExceeded()) return false;
+        $q = $this->quotaStatus();
+        $_SESSION['error_message'] = "You have reached {$q['threshold']}% of your disk/bandwidth allocation (" .
+            number_format($q['disk_avail_gb'], 1) . ' GB disk, ' . number_format($q['bw_avail_gb'], 0) .
+            " GB bandwidth remaining). You cannot " . $what . ' until you upgrade your plan.';
+        $this->response->redirect($redirectUrl);
+        exit;
     }
 
     public function dashboard()
@@ -123,6 +192,9 @@ class ResellerPortalController extends Controller
         $recentOrders = $pdo->query("SELECT o.*, hu.username AS client FROM billing_orders o JOIN hosting_users hu ON hu.id=o.user_id WHERE hu.reseller_id={$rid} ORDER BY o.created_at DESC LIMIT 5")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         $recentTickets = $pdo->query("SELECT t.id, t.subject, t.status, hu.username AS client FROM tickets t JOIN hosting_users hu ON hu.id=t.user_id WHERE hu.reseller_id={$rid} ORDER BY t.created_at DESC LIMIT 5")->fetchAll(\PDO::FETCH_OBJ) ?: [];
 
+        // ── Quota: what the reseller owns minus what they've committed in retail packages ──
+        $quotas = $this->quotaStatus();
+
         // Server/health strip (infrastructure status — shared, not admin-specific)
         $serviceNames = ['apache2' => 'Apache', 'mariadb' => 'MariaDB', 'icecast2' => 'Icecast', 'postfix' => 'Postfix', 'dovecot' => 'Dovecot', 'nginx' => 'Nginx'];
         $services = [];
@@ -138,6 +210,7 @@ class ResellerPortalController extends Controller
             'openTickets' => $openTickets, 'revenueMonth' => $revenueMonth, 'totalCollected' => $totalCollected,
             'outstanding' => $outstanding, 'pendingOrders' => $pendingOrders, 'activeServices' => $activeServices,
             'recentAccounts' => $recentAccounts, 'recentOrders' => $recentOrders, 'recentTickets' => $recentTickets,
+            'quotas' => $quotas,
             'services' => $services,
         ]);
     }
@@ -178,6 +251,57 @@ class ResellerPortalController extends Controller
             'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Clients',
             'accounts' => $accounts, 'pkgNames' => $pkgNames, 'stats' => $stats,
         ]);
+    }
+
+    public function clientShow($id)
+    {
+        $u = $this->requireReseller();
+        $this->requirePerm('clients');
+        $rid = (int)$this->reseller->id;
+        $account = $this->db->table('hosting_users')->where('id', (int)$id)->where('reseller_id', $rid)->first();
+        if (!$account) { $_SESSION['error_message'] = 'Client not found.'; $this->response->redirect('/reseller-clients'); exit; }
+        $package = $account->package_id ? $this->db->table('hosting_packages')->where('id', (int)$account->package_id)->first() : null;
+        $retailPkg = $account->reseller_package_id ? $this->db->table('reseller_packages')->where('id', (int)$account->reseller_package_id)->first() : null;
+        try { $domains = $this->db->table('domains')->where('account_id', (int)$id)->get() ?: []; } catch (\Exception $e) { $domains = []; }
+        $homeDir = '/home/' . $account->username;
+        $diskUsage = '-'; $backupFiles = [];
+        if (is_dir($homeDir)) {
+            $diskOut = @shell_exec("du -sk " . escapeshellarg($homeDir) . " 2>/dev/null");
+            $diskUsage = $diskOut ? round((int)trim(explode("\t", $diskOut)[0]) / 1024, 2) . ' MB' : '-';
+            $backupFiles = array_merge(glob("{$homeDir}/backup_*.tar.gz") ?: [], glob("{$homeDir}/backup_*.zip") ?: []);
+            rsort($backupFiles);
+        }
+        $vhostContent = @file_get_contents("/etc/apache2/sites-available/{$account->username}.conf");
+        $vhostSslContent = @file_get_contents("/etc/apache2/sites-available/{$account->username}-ssl.conf");
+        // History scoped to this reseller's own activity on this client
+        try {
+            $history = $this->db->table('reseller_audit_logs')
+                ->where('reseller_id', $rid)
+                ->where('resource_type', 'hosting_user')
+                ->where('resource_id', (int)$id)
+                ->orderBy('created_at', 'DESC')->limit(10)->get() ?: [];
+        } catch (\Exception $e) { $history = []; }
+        return $this->view('user.reseller.client_show', [
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Client Details',
+            'account' => $account, 'package' => $package, 'retailPkg' => $retailPkg, 'domains' => $domains,
+            'disk_usage' => $diskUsage, 'backup_files' => $backupFiles,
+            'vhost_content' => $vhostContent, 'vhost_ssl_content' => $vhostSslContent, 'history' => $history,
+        ]);
+    }
+
+    public function clientPassword($id)
+    {
+        $u = $this->requireReseller();
+        $this->requirePerm('clients');
+        $rid = (int)$this->reseller->id;
+        $a = $this->db->table('hosting_users')->where('id', (int)$id)->where('reseller_id', $rid)->first();
+        if (!$a) { $_SESSION['error_message'] = 'Client not found.'; $this->response->redirect('/reseller-clients'); exit; }
+        $password = $this->request->post('password', '');
+        if (strlen($password) < 8) { $_SESSION['error_message'] = 'Password must be 8+ characters.'; $this->response->redirect('/reseller-client/' . (int)$id); exit; }
+        $this->db->table('hosting_users')->where('id', (int)$id)->update(['password_hash' => password_hash($password, PASSWORD_DEFAULT)]);
+        $this->audit('client.password_reset', 'hosting_user', (int)$id, ['username' => $a->username]);
+        $_SESSION['success_message'] = "Password updated for '{$a->username}'.";
+        $this->response->redirect('/reseller-client/' . (int)$id);
     }
 
     public function clientSuspend($id)
@@ -255,6 +379,9 @@ class ResellerPortalController extends Controller
             $owned = $this->db->table('reseller_packages')->where('id', $pkgId)->where('reseller_id', $rid)->first();
             if (!$owned) { $_SESSION['error_message'] = 'That package is not yours.'; $this->response->redirect('/reseller/clients/create'); exit; }
         }
+        // Cannot create accounts once committed quota is at/over the threshold — must upgrade first.
+        if ($this->assertQuota('/reseller/clients/create', 'create new accounts')) { /* blocked */ }
+
         $nameserver1 = 'ns1.planet-hosts.com';
         $nameserver2 = 'ns2.planet-hosts.com';
         try {
@@ -279,14 +406,76 @@ class ResellerPortalController extends Controller
         $this->response->redirect('/reseller/clients');
     }
 
+    // The type choices a reseller may sell are locked to what their own reseller
+    // package allows (web_reseller vs icecast_reseller).
+    protected function allowedPackageTypes()
+    {
+        $rType = $this->reseller->type ?? 'web_reseller';
+        if ($rType === 'icecast_reseller') {
+            return ['music' => 'Radio / Music', 'game' => 'Game Server', 'hosting' => 'Hosting', 'custom' => 'Custom'];
+        }
+        return ['hosting' => 'Hosting', 'vps' => 'VPS', 'domain' => 'Domain', 'email' => 'Email', 'custom' => 'Custom'];
+    }
+
+    protected function packageTypeLabel($type)
+    {
+        $labels = ['hosting' => 'Hosting', 'vps' => 'VPS', 'domain' => 'Domain', 'email' => 'Email',
+            'game' => 'Game Server', 'music' => 'Radio / Music', 'billing' => 'Billing', 'chat' => 'Chat',
+            'support' => 'Support', 'custom' => 'Custom'];
+        return $labels[$type] ?? ucfirst($type);
+    }
+
+    // Feature/module checkboxes a reseller may grant are locked to their own reseller type too.
+    protected function allowedFeatures()
+    {
+        if (($this->reseller->type ?? 'web_reseller') === 'icecast_reseller') {
+            return ['billing' => 'Billing','chat' => 'Chat','support' => 'Support','game' => 'Game Servers',
+                'music' => 'Radio/Music','dj_panel' => 'DJ Panel','databases' => 'Databases','ssl' => 'SSL',
+                'backups' => 'Backups'];
+        }
+        return ['billing' => 'Billing','chat' => 'Chat','support' => 'Support','email' => 'Email',
+            'databases' => 'Databases','ssl' => 'SSL','backups' => 'Backups','vps' => 'VPS','domains' => 'Domains'];
+    }
+
+    protected function sanitizeFeatures($raw)
+    {
+        $allowed = array_keys($this->allowedFeatures());
+        $clean = [];
+        foreach ((array)$raw as $f) { if (in_array($f, $allowed, true)) $clean[] = $f; }
+        return $clean;
+    }
+
+    protected function parseGamesParam()
+    {
+        $raw = trim((string)$this->request->post('allowed_games_raw', $this->request->post('allowed_games', '')));
+        if ($raw === '') return [];
+        $items = preg_split('/[\s,]+/', $raw);
+        $items = array_values(array_filter(array_map('trim', $items)));
+        $out = [];
+        foreach ($items as $g) {
+            if ($g === '') continue;
+            $out[] = is_numeric($g) ? (int)$g : $g;
+        }
+        return $out;
+    }
+
     public function packages()
     {
         $u = $this->requireReseller();
         if ($this->staff && !$this->can('packages')) { $_SESSION['error_message'] = 'No permission.'; $this->response->redirect('/reseller'); exit; }
         // The reseller creates/manages their OWN retail packages. They never use server packages.
         $pkgs = $this->db->table('reseller_packages')->where('reseller_id', $this->reseller->id)->orderBy('created_at', 'DESC')->get() ?: [];
+        $clientCounts = [];
+        try {
+            foreach ($this->db->pdo()->query("SELECT reseller_package_id, COUNT(*) c FROM hosting_users WHERE reseller_id = " . (int)$this->reseller->id . " AND reseller_package_id IS NOT NULL GROUP BY reseller_package_id")->fetchAll(\PDO::FETCH_OBJ) as $r) {
+                $clientCounts[(int)$r->reseller_package_id] = (int)$r->c;
+            }
+        } catch (\Exception $e) {}
         return $this->view('user.reseller.packages', [
-            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Packages', 'packages' => $pkgs,
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Packages',
+            'packages' => $pkgs, 'clientCounts' => $clientCounts, 'allowedTypes' => $this->allowedPackageTypes(),
+            'allowedFeatures' => $this->allowedFeatures(),
+            'typeLabel' => function ($t) { return $this->packageTypeLabel($t); },
         ]);
     }
 
@@ -297,6 +486,11 @@ class ResellerPortalController extends Controller
         $name = trim($this->request->post('name', ''));
         if ($name === '') { $_SESSION['error_message'] = 'Package name required.'; $this->response->redirect('/reseller/packages'); exit; }
         $type = $this->request->post('type', 'hosting');
+        $allowedTypes = $this->allowedPackageTypes();
+        if (!isset($allowedTypes[$type])) {
+            $_SESSION['error_message'] = 'That package type is not allowed for your reseller type.';
+            $this->response->redirect('/reseller/packages'); exit;
+        }
         $userName = (string)($u->name ?? 'reseller');
         // public id: {username}_{name} — unique per reseller (the real public identifier)
         $slugBase = strtolower(preg_replace('/[^a-z0-9]+/','', strtolower($userName))) . '_' . strtolower(preg_replace('/[^a-z0-9]+/','_', strtolower($name)));
@@ -321,10 +515,12 @@ class ResellerPortalController extends Controller
             'max_djs' => (int)$this->request->post('max_djs', 0),
             'max_listeners' => (int)$this->request->post('max_listeners', 0),
             'max_bitrate' => (int)$this->request->post('max_bitrate', 0),
-            'features' => json_encode($this->request->post('features', [])) ?: null,
-            'allowed_games' => json_encode($this->request->post('allowed_games', [])) ?: null,
+            'features' => json_encode($this->sanitizeFeatures($this->request->post('features', []))) ?: null,
+            'allowed_games' => json_encode($this->parseGamesParam()) ?: null,
             'is_active' => $this->request->post('is_active', 1) ? 1 : 0,
         ];
+        // Once committed quota is at/over the threshold, block adding new committed resources.
+        if ($this->assertQuota('/reseller/packages', 'create new or larger packages')) { /* blocked */ }
         $this->db->table('reseller_packages')->insertGetId($data);
         $this->audit('package.created', 'reseller_package', null, ['name' => $name, 'slug' => $slug, 'type' => $type]);
         $_SESSION['success_message'] = "Package '{$name}' created (public: {$slug}).";
@@ -338,9 +534,15 @@ class ResellerPortalController extends Controller
         $pkg = $this->db->table('reseller_packages')->where('id', (int)$id)->where('reseller_id', $this->reseller->id)->first();
         if (!$pkg) { $_SESSION['error_message'] = 'Package not found.'; $this->response->redirect('/reseller/packages'); exit; }
         $name = trim($this->request->post('name', $pkg->name));
+        $type = $this->request->post('type', $pkg->type);
+        $allowedTypes = $this->allowedPackageTypes();
+        if (!isset($allowedTypes[$type])) {
+            $_SESSION['error_message'] = 'That package type is not allowed for your reseller type.';
+            $this->response->redirect('/reseller/packages'); exit;
+        }
         $data = [
             'name' => $name,
-            'type' => $this->request->post('type', $pkg->type),
+            'type' => $type,
             'description' => $this->request->post('description', $pkg->description),
             'price' => (float)$this->request->post('price', 0),
             'setup_fee' => (float)$this->request->post('setup_fee', 0),
@@ -357,10 +559,13 @@ class ResellerPortalController extends Controller
             'max_djs' => (int)$this->request->post('max_djs', 0),
             'max_listeners' => (int)$this->request->post('max_listeners', 0),
             'max_bitrate' => (int)$this->request->post('max_bitrate', 0),
-            'features' => json_encode($this->request->post('features', [])) ?: null,
-            'allowed_games' => json_encode($this->request->post('allowed_games', [])) ?: null,
+            'features' => json_encode($this->sanitizeFeatures($this->request->post('features', []))) ?: null,
+            'allowed_games' => json_encode($this->parseGamesParam()) ?: null,
             'is_active' => $this->request->post('is_active', 1) ? 1 : 0,
         ];
+        // Only block when the update would increase committed resources beyond capacity.
+        $grows = ((int)$data['disk_space'] > (int)$pkg->disk_space) || ((int)$data['bandwidth'] > (int)$pkg->bandwidth);
+        if ($grows && $this->assertQuota('/reseller/packages', 'enlarge this package')) { /* blocked */ }
         $this->db->table('reseller_packages')->where('id', (int)$id)->update($data);
         $this->audit('package.updated', 'reseller_package', (int)$id, ['name' => $name]);
         $_SESSION['success_message'] = 'Package updated.';
@@ -375,6 +580,25 @@ class ResellerPortalController extends Controller
         $this->audit('package.deleted', 'reseller_package', (int)$id);
         $_SESSION['success_message'] = 'Package deleted.';
         $this->response->redirect('/reseller/packages');
+    }
+
+    // The reseller's OWN current plan — the reseller package they bought (hosting_packages via resellers.package_id),
+    // plus their resource limits and current committed usage. Distinct from the retail packages they sell.
+    public function plan()
+    {
+        $u = $this->requireReseller();
+        $rid = (int)$this->reseller->id;
+        $plan = null;
+        if ($this->reseller->package_id) {
+            $plan = $this->db->table('hosting_packages')->where('id', (int)$this->reseller->package_id)->first();
+        }
+        $quotas = $this->quotaStatus();
+        $retailCount = (int)($this->db->table('reseller_packages')->where('reseller_id', $rid)->count() ?? 0);
+        $clientCount = (int)($this->db->table('hosting_users')->where('reseller_id', $rid)->count() ?? 0);
+        return $this->view('user.reseller.plan', [
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'My Plan',
+            'plan' => $plan, 'quotas' => $quotas, 'retailCount' => $retailCount, 'clientCount' => $clientCount,
+        ]);
     }
 
     public function branding()
@@ -434,6 +658,8 @@ class ResellerPortalController extends Controller
         $rid = (int)$this->reseller->id;
         $client = $this->db->table('hosting_users')->where('id', (int)$clientId)->where('reseller_id', $rid)->first();
         if (!$client) { $_SESSION['error_message'] = 'Client not found.'; $this->response->redirect('/reseller/provisioning'); exit; }
+        // Activating creates the live account/radio/game resources — block when over quota.
+        if ($this->assertQuota('/reseller/provisioning', 'activate new accounts')) { /* blocked */ }
         try {
             // Planet Hosts backend provisioning pipeline creates the OS account, vhost, DNS, radio dirs.
             $pkgId = (int)$client->package_id;
@@ -476,6 +702,8 @@ class ResellerPortalController extends Controller
         if (!$order) { $_SESSION['error_message'] = 'Order not found.'; $this->response->redirect('/reseller/provisioning'); exit; }
         $owner = $this->db->table('hosting_users')->where('id', $order->user_id)->where('reseller_id', $this->reseller->id)->first();
         if (!$owner) { $_SESSION['error_message'] = 'This order is not linked to your reseller account.'; $this->response->redirect('/reseller/provisioning'); exit; }
+        // Provisioning spins up radio/game/hosting resources — block when over quota.
+        if ($this->assertQuota('/reseller/provisioning', 'provision new services')) { /* blocked */ }
         try {
             $order->{'items'} = $order->items ?? null;
             require_once BASE_PATH . '/services/AutoProvision.php';
@@ -672,6 +900,7 @@ class ResellerPortalController extends Controller
         $clientId = (int)$this->request->post('client_id', 0);
         $client = $this->db->table('hosting_users')->where('id', $clientId)->where('reseller_id', $rid)->first();
         if (!$client) { $_SESSION['error_message'] = 'Client not found.'; $this->response->redirect('/reseller/billing-system/credits'); exit; }
+        if ($this->assertQuota('/reseller/billing-system/credits', 'add credits')) { /* blocked */ }
         $this->db->table('billing_credits')->insertGetId([
             'user_id' => $clientId, 'amount' => (float)$this->request->post('amount', 0),
             'description' => $this->request->post('description', ''),
@@ -707,6 +936,7 @@ class ResellerPortalController extends Controller
         $desc = trim($this->request->post('description', ''));
         $amount = (float)$this->request->post('total', 0);
         if ($amount <= 0) { $_SESSION['error_message'] = 'Amount must be greater than zero.'; $this->response->redirect('/reseller/billing-system'); exit; }
+        if ($this->assertQuota('/reseller/billing-system', 'issue new invoices')) { /* blocked */ }
         $num = 'INV-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(4)));
         $id = $this->db->table('invoices')->insertGetId([
             'user_id' => $clientId, 'reseller_id' => $rid, 'invoice_number' => $num,
@@ -779,6 +1009,7 @@ class ResellerPortalController extends Controller
         if (!$client) { $_SESSION['error_message'] = 'Client not found.'; $this->response->redirect('/reseller/chat-system'); exit; }
         $existing = $this->db->table('chatbox_tenants')->where('hosting_user_id', $clientId)->first();
         if ($existing) { $_SESSION['error_message'] = 'This client already has a chat tenant.'; $this->response->redirect('/reseller/chat-system'); exit; }
+        if ($this->assertQuota('/reseller/chat-system', 'create new chat boxes')) { /* blocked */ }
         $tid = $this->db->table('chatbox_tenants')->insertGetId([
             'hosting_user_id' => $clientId, 'name' => $client->username . '\'s Chat',
             'widget_title' => 'Live Chat', 'widget_color' => '#008cff', 'widget_bg' => '#0a0e1a',
@@ -965,6 +1196,192 @@ class ResellerPortalController extends Controller
             $_SESSION['success_message'] = 'Staff member removed.';
         }
         $this->response->redirect('/reseller/roles');
+    }
+
+    // ── Unified Alerts feed (reseller): due/past-due invoices, new clients, new orders,
+    // ── low-quota warning, and admin messages to this reseller. Returns sorted list + unread count.
+    protected function buildAlerts()
+    {
+        $pdo = $this->db->pdo();
+        $rid = (int)$this->reseller->id;
+        $alerts = [];
+        $now = time();
+
+        // Which alerts the reseller has dismissed (persistent, stored in DB).
+        $dismissed = [];
+        try {
+            $rows = $pdo->query("SELECT alert_key FROM reseller_alert_dismissals WHERE reseller_id = {$rid}")->fetchAll(\PDO::FETCH_COLUMN) ?: [];
+            $dismissed = array_flip($rows);
+        } catch (\Exception $e) {}
+
+        // Low-quota alert (from commit usage) — always present while low.
+        $quota = $this->quotaStatus();
+        if ($quota['low']) {
+            $alerts[] = [
+                'id' => 'quota', 'type' => $quota['disk_pct'] >= 100 || $quota['bw_pct'] >= 100 ? 'danger' : 'warning',
+                'title' => 'Low Resource Warning — ' . ($quota['disk_pct'] >= $quota['bw_pct'] ? 'Disk' : 'Bandwidth') . ' Quota Reached',
+                'message' => 'You have reached ' . $quota['threshold'] . '% of your allocation (' . number_format($quota['disk_avail_gb'], 1) . ' GB disk, ' . number_format($quota['bw_avail_gb'], 0) . ' GB bandwidth left). Upgrade to create new clients/packages.',
+                'created_at' => date('Y-m-d H:i:s', $now), 'link' => '/reseller/plan', 'severity' => 2, 'source' => 'quota',
+                'key' => 'quota', 'dismissible' => false,
+            ];
+        }
+
+        // Due + past-due invoices from their clients
+        try {
+            $rows = $pdo->query("SELECT i.id, i.invoice_number, i.total, i.status, i.due_date, i.created_at, hu.username AS client
+                FROM invoices i JOIN hosting_users hu ON hu.id = i.user_id
+                WHERE hu.reseller_id = {$rid} AND i.status IN ('sent','overdue') ORDER BY i.due_date ASC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            foreach ($rows as $r) {
+                $overdue = $r->status === 'overdue' || ($r->due_date && strtotime($r->due_date) < $now);
+                $alerts[] = [
+                    'id' => 'inv-' . (int)$r->id, 'type' => $overdue ? 'danger' : 'warning',
+                    'title' => ($overdue ? 'Past Due Invoice' : 'Due Invoice') . ' #' . htmlspecialchars($r->invoice_number),
+                    'message' => ($overdue ? 'Invoice is past due' : 'Invoice is due') . ' — $' . number_format((float)$r->total, 2) . ' for ' . htmlspecialchars($r->client) . ($r->due_date ? ' (due ' . date('M j', strtotime($r->due_date)) . ')' : ''),
+                    'created_at' => $r->created_at, 'link' => '/reseller/billing-system', 'severity' => $overdue ? 2 : 1, 'source' => 'invoice',
+                    'key' => 'inv-' . (int)$r->id, 'dismissible' => !$overdue,
+                ];
+            }
+        } catch (\Exception $e) {}
+
+        // New clients (their own) in the last 7 days
+        try {
+            $clients = $pdo->query("SELECT id, username, created_at FROM hosting_users WHERE reseller_id = {$rid} AND created_at >= '" . date('Y-m-d', strtotime('-7 days')) . "' ORDER BY created_at DESC LIMIT 10")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            foreach ($clients as $c) {
+                $alerts[] = [
+                    'id' => 'client-' . (int)$c->id, 'type' => 'success',
+                    'title' => 'New Client: ' . htmlspecialchars($c->username),
+                    'message' => 'A new client account was created.',
+                    'created_at' => $c->created_at, 'link' => '/reseller-client/' . (int)$c->id, 'severity' => 0, 'source' => 'client',
+                    'key' => 'client-' . (int)$c->id, 'dismissible' => true,
+                ];
+            }
+        } catch (\Exception $e) {}
+
+        // New orders from their clients in the last 7 days
+        try {
+            $orders = $pdo->query("SELECT o.id, o.total, o.status, o.type, o.created_at, hu.username AS client
+                FROM billing_orders o JOIN hosting_users hu ON hu.id = o.user_id
+                WHERE hu.reseller_id = {$rid} AND o.created_at >= '" . date('Y-m-d', strtotime('-7 days')) . "'
+                ORDER BY o.created_at DESC LIMIT 10")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            foreach ($orders as $o) {
+                $alerts[] = [
+                    'id' => 'order-' . (int)$o->id, 'type' => 'info',
+                    'title' => 'New Order #' . (int)$o->id . ' (' . htmlspecialchars($o->type) . ')',
+                    'message' => '$' . number_format((float)$o->total, 2) . ' — ' . htmlspecialchars($o->client) . ' (' . htmlspecialchars($o->status) . ')',
+                    'created_at' => $o->created_at, 'link' => '/reseller/billing-system/orders', 'severity' => 0, 'source' => 'order',
+                    'key' => 'order-' . (int)$o->id, 'dismissible' => true,
+                ];
+            }
+        } catch (\Exception $e) {}
+
+        // Admin messages to this reseller
+        try {
+            $msgs = $this->db->table('reseller_alerts')->where('reseller_id', $rid)->orderBy('created_at', 'DESC')->get() ?: [];
+            foreach ($msgs as $m) {
+                $alerts[] = [
+                    'id' => 'admin-' . (int)$m->id, 'type' => $m->type ?? 'info',
+                    'title' => ($m->title ?? 'Alert from Planet Hosts'),
+                    'message' => $m->message ?? '',
+                    'created_at' => $m->created_at, 'link' => null, 'severity' => 2, 'source' => 'admin',
+                    'is_read' => (int)($m->is_read ?? 0),
+                    'key' => 'admin-' . (int)$m->id, 'dismissible' => true,
+                ];
+            }
+        } catch (\Exception $e) {}
+
+        // Admin -> client alerts for this reseller's clients (user_alerts)
+        try {
+            $userAlerts = $pdo->query("SELECT ua.id, ua.hosting_user_id, ua.title, ua.message, ua.type, ua.is_read, ua.can_delete, ua.created_at, hu.username AS client
+                FROM user_alerts ua JOIN hosting_users hu ON hu.id = ua.hosting_user_id
+                WHERE hu.reseller_id = {$rid}
+                ORDER BY ua.created_at DESC LIMIT 50")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            foreach ($userAlerts as $ua) {
+                $alerts[] = [
+                    'id' => 'uac-' . (int)$ua->id, 'type' => $ua->type ?? 'info',
+                    'title' => ($ua->title ?? 'Alert from Planet Hosts') . ($ua->client ? ' — ' . $ua->client : ''),
+                    'message' => $ua->message ?? '',
+                    'created_at' => $ua->created_at, 'link' => null, 'severity' => 2, 'source' => 'admin_client',
+                    'is_read' => (int)($ua->is_read ?? 0), 'user_alert_id' => (int)$ua->id,
+                    'key' => 'uac-' . (int)$ua->id, 'dismissible' => true,
+                ];
+            }
+        } catch (\Exception $e) {}
+
+        // Remove dismissed alerts (quota + past-due invoices are never dismissible).
+        $alerts = array_values(array_filter($alerts, function ($al) use ($dismissed) {
+            if (empty($al['dismissible'])) return true;
+            return !isset($dismissed[$al['key'] ?? $al['id']]);
+        }));
+
+        // Sort newest first (quota banner stays on top via severity tie-break is enough).
+        usort($alerts, function ($a, $b) {
+            return strtotime($b['created_at']) <=> strtotime($a['created_at']);
+        });
+        return $alerts;
+    }
+
+    public function alerts()
+    {
+        $u = $this->requireReseller();
+        $pdo = $this->db->pdo();
+        $rid = (int)$this->reseller->id;
+        $alerts = $this->buildAlerts();
+
+        // Unread count for badge = unread admin messages.
+        $unread = 0;
+        try { $unread = (int)($pdo->query("SELECT COUNT(*) FROM reseller_alerts WHERE reseller_id = {$rid} AND is_read = 0")->fetchColumn() ?? 0); } catch (\Exception $e) {}
+        try { $unread += (int)($pdo->query("SELECT COUNT(*) FROM user_alerts ua JOIN hosting_users hu ON hu.id = ua.hosting_user_id WHERE hu.reseller_id = {$rid} AND ua.is_read = 0")->fetchColumn() ?? 0); } catch (\Exception $e) {}
+
+        return $this->view('user.reseller.alerts', [
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Alerts',
+            'alerts' => $alerts, 'unread' => $unread,
+        ]);
+    }
+
+    // Mark one admin message as read.
+    public function alertRead($id)
+    {
+        $u = $this->requireReseller();
+        $rid = (int)$this->reseller->id;
+        try {
+            $this->db->table('reseller_alerts')->where('id', (int)$id)->where('reseller_id', $rid)->update(['is_read' => 1]);
+        } catch (\Exception $e) {}
+        $this->response->redirect('/reseller/alerts');
+    }
+
+    // Mark all admin messages read.
+    public function alertReadAll()
+    {
+        $u = $this->requireReseller();
+        $rid = (int)$this->reseller->id;
+        try { $this->db->pdo()->exec("UPDATE reseller_alerts SET is_read = 1 WHERE reseller_id = {$rid}"); } catch (\Exception $e) {}
+        try { $this->db->pdo()->exec("UPDATE user_alerts ua JOIN hosting_users hu ON hu.id = ua.hosting_user_id SET ua.is_read = 1 WHERE hu.reseller_id = {$rid}"); } catch (\Exception $e) {}
+        $this->response->redirect('/reseller/alerts');
+    }
+
+    // Mark one admin->client alert read (user_alerts) belonging to this reseller's clients.
+    public function alertReadUser($id)
+    {
+        $u = $this->requireReseller();
+        $rid = (int)$this->reseller->id;
+        try {
+            $this->db->pdo()->prepare("UPDATE user_alerts ua JOIN hosting_users hu ON hu.id = ua.hosting_user_id
+                SET ua.is_read = 1 WHERE ua.id = ? AND hu.reseller_id = ?")->execute([(int)$id, $rid]);
+        } catch (\Exception $e) {}
+        $this->response->redirect('/reseller/alerts');
+    }
+
+    // Dismiss an alert permanently (stored in DB). Quota + past-due are never dismissible.
+    public function dismissAlert($key)
+    {
+        $u = $this->requireReseller();
+        $rid = (int)$this->reseller->id;
+        if (preg_match('/^[a-zA-Z0-9_\-]{1,64}$/', $key)) {
+            try {
+                $this->db->pdo()->prepare("INSERT IGNORE INTO reseller_alert_dismissals (reseller_id, alert_key) VALUES (?, ?)")->execute([$rid, $key]);
+            } catch (\Exception $e) {}
+        }
+        $this->response->redirect('/reseller/alerts');
     }
 
     protected function audit($action = 'action', $resourceType = null, $resourceId = null, $details = null)
