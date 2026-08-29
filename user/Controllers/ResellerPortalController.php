@@ -22,6 +22,8 @@ class ResellerPortalController extends Controller
     {
         if (!$this->auth->check()) { $this->response->redirect('/?login'); exit; }
         $user = $this->auth->user();
+        // Admins / super admins hitting /reseller should go back to their admin dashboard
+        if (isset($user->is_admin) && $user->is_admin) { $this->response->redirect('/admin'); exit; }
         $this->reseller = $this->db->table('resellers')->where('email', $user->email)->where('is_active', 1)->first();
         if (!$this->reseller) { $this->response->redirect('/user'); exit; }
         return $user;
