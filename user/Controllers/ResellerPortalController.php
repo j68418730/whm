@@ -43,7 +43,7 @@ class ResellerPortalController extends Controller
         $activeAccounts = 0;
         foreach ($accounts as $a) { if ($a->status === 'active') $activeAccounts++; }
         return $this->view('user.reseller.dashboard', [
-            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller', 'title' => 'Reseller Dashboard',
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Reseller Dashboard',
             'totalAccounts' => $totalAccounts, 'activeAccounts' => $activeAccounts,
         ]);
     }
@@ -58,7 +58,7 @@ class ResellerPortalController extends Controller
             $pkgNames[$a->id] = $pkg ? $pkg->name : '-';
         }
         return $this->view('user.reseller.clients', [
-            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller', 'title' => 'Clients', 'accounts' => $accounts, 'pkgNames' => $pkgNames,
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Clients', 'accounts' => $accounts, 'pkgNames' => $pkgNames,
         ]);
     }
 
@@ -70,7 +70,7 @@ class ResellerPortalController extends Controller
         $stmt = $this->db->pdo()->query("SELECT * FROM hosting_packages WHERE is_active = 1 AND type IN ('web_hosting','icecast','web_reseller','icecast_reseller') ORDER BY type ASC") ?: [];
         $packages = $stmt ? $stmt->fetchAll(\PDO::FETCH_OBJ) : [];
         return $this->view('user.reseller.packages', [
-            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller', 'title' => 'Packages', 'packages' => $packages,
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Packages', 'packages' => $packages,
         ]);
     }
 
@@ -78,7 +78,7 @@ class ResellerPortalController extends Controller
     {
         $u = $this->requireReseller();
         return $this->view('user.reseller.branding', [
-            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller', 'title' => 'Branding',
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Branding',
         ]);
     }
 
@@ -89,7 +89,7 @@ class ResellerPortalController extends Controller
         $totalOwed = 0;
         foreach ($invoices as $inv) { if ($inv->status === 'sent' || $inv->status === 'overdue') $totalOwed += $inv->total; }
         return $this->view('user.reseller.billing', [
-            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller', 'title' => 'Billing', 'invoices' => $invoices, 'totalOwed' => $totalOwed,
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Billing', 'invoices' => $invoices, 'totalOwed' => $totalOwed,
         ]);
     }
 
@@ -106,7 +106,7 @@ class ResellerPortalController extends Controller
             $tickets = [];
         }
         return $this->view('user.reseller.support', [
-            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller', 'title' => 'Support', 'tickets' => $tickets,
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Support', 'tickets' => $tickets,
         ]);
     }
 }
