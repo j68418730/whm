@@ -29,31 +29,6 @@ To reinstall: `sudo tar xzf sc_serv2_linux_x64-latest.tar.gz -C /usr/local/shout
 
 ## Project Status
 
-### Done
-- Multi-station DJ assignment (radio_dj_streams junction table)
-- DJ list query fixed with LEFT JOIN for junction table
-- Missing streaming_stations columns added (pid_file, last_stopped, last_started, backups, ssl_mode)
-- radio_streams synced from streaming_stations
-- dj_panel.php schedule fix (radio_dj_schedule table)
-- Media upload: onclick fix, $_FILES key fix, position column removed
-- upload_max_filesize/post_max_size increased to 128M
-- Per-file progress bars for media upload
-- Duplicate file detection on upload
-- Music database directory auto-created during provisioning
-- Global playlist system: admin CRUD (table, controller, views, routes)
-- Global Music tab for users with download-to-station
-- File Manager: tree view, file list, code editor, visual HTML editor (Code/Split/Design), double-click open, permissions editor
-- Admin file manager: user selection, file browsing
-- Subdomain system: DNS + Apache vhost + auto-directory creation
-- FTP account creation with reserved name/duplicate/directory traversal checks
-- ToDo list admin page
-- DnsManager syncZoneToBind writes Bind9 zone files
-- Global playlist upload FIXED (root cause was broken 99-radio-uploads.ini; verified curl upload works on 2087 + 443)
-- AutoDJ wizard: engine auto-detect + override (step 3), inline media upload (step 6), finish starts AutoDJ player
-- Game DB tables: game_types aligned with controller, game_settings added, 6 games + pricing + packages seeded
-- DNS glue records CONFIRMED at .com TLD (ns1/ns2 → 15.204.114.226 in ADDITIONAL section)
-- Added chatbox/api/dj/autodj A records to Bind9 zone db.planet-hosts.com (serial 2026080601)
-
 ### Needs Work
 - **Chat System (paused)**: widget embed still blank (DOM timing), moderation UI, message history limits, Cbox parity features (emoji/GIF picker, SSO, webhooks), room permissions system, product-based auto-join rooms, file uploads, voice/video
 
