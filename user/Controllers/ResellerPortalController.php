@@ -330,14 +330,76 @@ class ResellerPortalController extends Controller
         $this->response->redirect('/reseller/clients');
     }
 
+    // The type choices a reseller may sell are locked to what their own reseller
+    // package allows (web_reseller vs icecast_reseller).
+    protected function allowedPackageTypes()
+    {
+        $rType = $this->reseller->type ?? 'web_reseller';
+        if ($rType === 'icecast_reseller') {
+            return ['music' => 'Radio / Music', 'game' => 'Game Server', 'hosting' => 'Hosting', 'custom' => 'Custom'];
+        }
+        return ['hosting' => 'Hosting', 'vps' => 'VPS', 'domain' => 'Domain', 'email' => 'Email', 'custom' => 'Custom'];
+    }
+
+    protected function packageTypeLabel($type)
+    {
+        $labels = ['hosting' => 'Hosting', 'vps' => 'VPS', 'domain' => 'Domain', 'email' => 'Email',
+            'game' => 'Game Server', 'music' => 'Radio / Music', 'billing' => 'Billing', 'chat' => 'Chat',
+            'support' => 'Support', 'custom' => 'Custom'];
+        return $labels[$type] ?? ucfirst($type);
+    }
+
+    // Feature/module checkboxes a reseller may grant are locked to their own reseller type too.
+    protected function allowedFeatures()
+    {
+        if (($this->reseller->type ?? 'web_reseller') === 'icecast_reseller') {
+            return ['billing' => 'Billing','chat' => 'Chat','support' => 'Support','game' => 'Game Servers',
+                'music' => 'Radio/Music','dj_panel' => 'DJ Panel','databases' => 'Databases','ssl' => 'SSL',
+                'backups' => 'Backups'];
+        }
+        return ['billing' => 'Billing','chat' => 'Chat','support' => 'Support','email' => 'Email',
+            'databases' => 'Databases','ssl' => 'SSL','backups' => 'Backups','vps' => 'VPS','domains' => 'Domains'];
+    }
+
+    protected function sanitizeFeatures($raw)
+    {
+        $allowed = array_keys($this->allowedFeatures());
+        $clean = [];
+        foreach ((array)$raw as $f) { if (in_array($f, $allowed, true)) $clean[] = $f; }
+        return $clean;
+    }
+
+    protected function parseGamesParam()
+    {
+        $raw = trim((string)$this->request->post('allowed_games_raw', $this->request->post('allowed_games', '')));
+        if ($raw === '') return [];
+        $items = preg_split('/[\s,]+/', $raw);
+        $items = array_values(array_filter(array_map('trim', $items)));
+        $out = [];
+        foreach ($items as $g) {
+            if ($g === '') continue;
+            $out[] = is_numeric($g) ? (int)$g : $g;
+        }
+        return $out;
+    }
+
     public function packages()
     {
         $u = $this->requireReseller();
         if ($this->staff && !$this->can('packages')) { $_SESSION['error_message'] = 'No permission.'; $this->response->redirect('/reseller'); exit; }
         // The reseller creates/manages their OWN retail packages. They never use server packages.
         $pkgs = $this->db->table('reseller_packages')->where('reseller_id', $this->reseller->id)->orderBy('created_at', 'DESC')->get() ?: [];
+        $clientCounts = [];
+        try {
+            foreach ($this->db->pdo()->query("SELECT reseller_package_id, COUNT(*) c FROM hosting_users WHERE reseller_id = " . (int)$this->reseller->id . " AND reseller_package_id IS NOT NULL GROUP BY reseller_package_id")->fetchAll(\PDO::FETCH_OBJ) as $r) {
+                $clientCounts[(int)$r->reseller_package_id] = (int)$r->c;
+            }
+        } catch (\Exception $e) {}
         return $this->view('user.reseller.packages', [
-            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Packages', 'packages' => $pkgs,
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Packages',
+            'packages' => $pkgs, 'clientCounts' => $clientCounts, 'allowedTypes' => $this->allowedPackageTypes(),
+            'allowedFeatures' => $this->allowedFeatures(),
+            'typeLabel' => function ($t) { return $this->packageTypeLabel($t); },
         ]);
     }
 
@@ -348,6 +410,11 @@ class ResellerPortalController extends Controller
         $name = trim($this->request->post('name', ''));
         if ($name === '') { $_SESSION['error_message'] = 'Package name required.'; $this->response->redirect('/reseller/packages'); exit; }
         $type = $this->request->post('type', 'hosting');
+        $allowedTypes = $this->allowedPackageTypes();
+        if (!isset($allowedTypes[$type])) {
+            $_SESSION['error_message'] = 'That package type is not allowed for your reseller type.';
+            $this->response->redirect('/reseller/packages'); exit;
+        }
         $userName = (string)($u->name ?? 'reseller');
         // public id: {username}_{name} — unique per reseller (the real public identifier)
         $slugBase = strtolower(preg_replace('/[^a-z0-9]+/','', strtolower($userName))) . '_' . strtolower(preg_replace('/[^a-z0-9]+/','_', strtolower($name)));
@@ -372,8 +439,8 @@ class ResellerPortalController extends Controller
             'max_djs' => (int)$this->request->post('max_djs', 0),
             'max_listeners' => (int)$this->request->post('max_listeners', 0),
             'max_bitrate' => (int)$this->request->post('max_bitrate', 0),
-            'features' => json_encode($this->request->post('features', [])) ?: null,
-            'allowed_games' => json_encode($this->request->post('allowed_games', [])) ?: null,
+            'features' => json_encode($this->sanitizeFeatures($this->request->post('features', []))) ?: null,
+            'allowed_games' => json_encode($this->parseGamesParam()) ?: null,
             'is_active' => $this->request->post('is_active', 1) ? 1 : 0,
         ];
         $this->db->table('reseller_packages')->insertGetId($data);
@@ -389,9 +456,15 @@ class ResellerPortalController extends Controller
         $pkg = $this->db->table('reseller_packages')->where('id', (int)$id)->where('reseller_id', $this->reseller->id)->first();
         if (!$pkg) { $_SESSION['error_message'] = 'Package not found.'; $this->response->redirect('/reseller/packages'); exit; }
         $name = trim($this->request->post('name', $pkg->name));
+        $type = $this->request->post('type', $pkg->type);
+        $allowedTypes = $this->allowedPackageTypes();
+        if (!isset($allowedTypes[$type])) {
+            $_SESSION['error_message'] = 'That package type is not allowed for your reseller type.';
+            $this->response->redirect('/reseller/packages'); exit;
+        }
         $data = [
             'name' => $name,
-            'type' => $this->request->post('type', $pkg->type),
+            'type' => $type,
             'description' => $this->request->post('description', $pkg->description),
             'price' => (float)$this->request->post('price', 0),
             'setup_fee' => (float)$this->request->post('setup_fee', 0),
@@ -408,8 +481,8 @@ class ResellerPortalController extends Controller
             'max_djs' => (int)$this->request->post('max_djs', 0),
             'max_listeners' => (int)$this->request->post('max_listeners', 0),
             'max_bitrate' => (int)$this->request->post('max_bitrate', 0),
-            'features' => json_encode($this->request->post('features', [])) ?: null,
-            'allowed_games' => json_encode($this->request->post('allowed_games', [])) ?: null,
+            'features' => json_encode($this->sanitizeFeatures($this->request->post('features', []))) ?: null,
+            'allowed_games' => json_encode($this->parseGamesParam()) ?: null,
             'is_active' => $this->request->post('is_active', 1) ? 1 : 0,
         ];
         $this->db->table('reseller_packages')->where('id', (int)$id)->update($data);
