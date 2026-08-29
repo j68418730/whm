@@ -14,9 +14,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$email, $email]);
         $user = $stmt->fetch(PDO::FETCH_OBJ);
         if ($user && password_verify($password, $user->password_hash)) {
-            $_SESSION['user'] = $user;
+            $_SESSION['user'] = (object)[
+                'id' => $user->id, 'email' => $user->email,
+                'name' => $user->username, 'is_admin' => false,
+            ];
             $_SESSION['user_id'] = $user->id;
             $_SESSION['username'] = $user->username;
+            // Reseller owners/staff land on their reseller portal
+            try {
+                $rpdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", "radiouser", "Skylinehosting171");
+                $rs = $rpdo->prepare("SELECT id FROM resellers WHERE email = ? AND is_active = 1 LIMIT 1");
+                $rs->execute([$user->email]);
+                if ($rs->fetchColumn()) { header('Location: /reseller'); exit; }
+            } catch (Exception $e) {}
             header('Location: /user/');
             exit;
         }

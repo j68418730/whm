@@ -271,6 +271,11 @@ class UserController extends Controller
             ];
             $_SESSION['is_admin'] = false;
             try { $sec->touchSession($customerId, session_id()); } catch (\Exception $e) {}
+            // Reseller owners/staff land on their reseller portal instead of the customer dashboard
+            try {
+                $res = $this->db->table('resellers')->where('email', $user->email)->where('is_active', 1)->first();
+                if ($res) { header('Location: /reseller'); exit; }
+            } catch (\Exception $e) {}
             header('Location: /user');
         } else {
             if ($customerId > 0) $sec->recordLoginAttempt($customerId, $username, false);
