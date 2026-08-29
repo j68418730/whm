@@ -31,23 +31,35 @@ WHERE u.status IN ('completed','active');
     VIOLATIONS=""
     SHOULD_SUSPEND=0
 
-    # === Disk quota enforcement ===
-    if [ "$max_disk" -gt 0 ] && [ "$disk_used" -gt "$max_disk" ]; then
-        VIOLATIONS="${VIOLATIONS} disk(${disk_used}/${max_disk}KB)"
+    # ------------------------------------------------------------------
+    # hosting_packages.disk_space and .bandwidth are stored in GB (see
+    # database/seed_packages.sql and admin/Views/account/show.php where
+    # disk_used_MB / (disk_space * 1024) is computed).
+    # This script's live measurements are in KB (du -sk) and bytes, so we
+    # convert the package limits to match before comparing.
+    #   1 GB disk  = 1024 * 1024 KB  (1,048,576)
+    #   1 GB bw    = 1024^3 bytes    (1,073,741,824)
+    # ------------------------------------------------------------------
+    MAX_DISK_KB=$(( max_disk * 1024 * 1024 ))
+    MAX_BW_BYTES=$(( max_bw * 1024 * 1024 * 1024 ))
+
+    # === Disk quota enforcement (disk_used in KB) ===
+    if [ "$max_disk" -gt 0 ] && [ "$disk_used" -gt "$MAX_DISK_KB" ]; then
+        VIOLATIONS="${VIOLATIONS} disk(${disk_used}/${MAX_DISK_KB}KB)"
         SHOULD_SUSPEND=1
     fi
 
-    # === Bandwidth enforcement ===
-    if [ "$max_bw" -gt 0 ] && [ "$bw_used" -gt "$max_bw" ]; then
-        VIOLATIONS="${VIOLATIONS} bw(${bw_used}/${max_bw}bytes)"
+    # === Bandwidth enforcement (bw_used in bytes) ===
+    if [ "$max_bw" -gt 0 ] && [ "$bw_used" -gt "$MAX_BW_BYTES" ]; then
+        VIOLATIONS="${VIOLATIONS} bw(${bw_used}/${MAX_BW_BYTES}bytes)"
         SHOULD_SUSPEND=1
     fi
 
-    # === Actual disk usage check (live) ===
+    # === Actual disk usage check (live, du -sk = KB) ===
     if [ -d "$HOMEDIR" ]; then
         LIVE_DISK=$(du -sk "$HOMEDIR" 2>/dev/null | awk '{print $1}' || echo 0)
-        if [ "$max_disk" -gt 0 ] && [ "$LIVE_DISK" -gt "$max_disk" ]; then
-            VIOLATIONS="${VIOLATIONS} live_disk(${LIVE_DISK}/${max_disk}KB)"
+        if [ "$max_disk" -gt 0 ] && [ "$LIVE_DISK" -gt "$MAX_DISK_KB" ]; then
+            VIOLATIONS="${VIOLATIONS} live_disk(${LIVE_DISK}/${MAX_DISK_KB}KB)"
             SHOULD_SUSPEND=1
         fi
         # Update stored value
