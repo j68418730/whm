@@ -123,6 +123,24 @@ class ResellerPortalController extends Controller
         $recentOrders = $pdo->query("SELECT o.*, hu.username AS client FROM billing_orders o JOIN hosting_users hu ON hu.id=o.user_id WHERE hu.reseller_id={$rid} ORDER BY o.created_at DESC LIMIT 5")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         $recentTickets = $pdo->query("SELECT t.id, t.subject, t.status, hu.username AS client FROM tickets t JOIN hosting_users hu ON hu.id=t.user_id WHERE hu.reseller_id={$rid} ORDER BY t.created_at DESC LIMIT 5")->fetchAll(\PDO::FETCH_OBJ) ?: [];
 
+        // ── Quota: what the reseller owns minus what they've committed in retail packages ──
+        // resellers.storage_limit / bandwidth_limit are bytes (2TB / 20TB defaults).
+        // reseller_packages.disk_space is MB, bandwidth is GB (0 = unlimited, ignored in sold).
+        $pkgSold = $pdo->query("SELECT COALESCE(SUM(disk_space),0) AS disk_mb, COALESCE(SUM(bandwidth),0) AS bw_gb, COUNT(*) AS cnt
+            FROM reseller_packages WHERE reseller_id={$rid} AND is_active=1 AND disk_space > 0 AND bandwidth > 0")->fetch(\PDO::FETCH_OBJ) ?: null;
+        $soldDiskGb = $pkgSold ? (float)$pkgSold->disk_mb / 1024 : 0;
+        $soldBwGb = $pkgSold ? (float)$pkgSold->bw_gb : 0;
+        $diskTotalGb = (float)(($res = $this->reseller) ? ($res->storage_limit ?: 2199023255552) : 2199023255552) / 1073741824;
+        $bwTotalGb = (float)(($res = $this->reseller) ? ($res->bandwidth_limit ?: 21990232555520) : 21990232555520) / 1073741824;
+        $diskAvailGb = max(0, $diskTotalGb - $soldDiskGb);
+        $bwAvailGb = max(0, $bwTotalGb - $soldBwGb);
+        $diskPct = $diskTotalGb > 0 ? min(100, round(($soldDiskGb / $diskTotalGb) * 100, 1)) : 0;
+        $bwPct = $bwTotalGb > 0 ? min(100, round(($soldBwGb / $bwTotalGb) * 100, 1)) : 0;
+        $quotas = [
+            'disk_total_gb' => $diskTotalGb, 'disk_sold_gb' => $soldDiskGb, 'disk_avail_gb' => $diskAvailGb, 'disk_pct' => $diskPct,
+            'bw_total_gb' => $bwTotalGb, 'bw_sold_gb' => $soldBwGb, 'bw_avail_gb' => $bwAvailGb, 'bw_pct' => $bwPct,
+        ];
+
         // Server/health strip (infrastructure status — shared, not admin-specific)
         $serviceNames = ['apache2' => 'Apache', 'mariadb' => 'MariaDB', 'icecast2' => 'Icecast', 'postfix' => 'Postfix', 'dovecot' => 'Dovecot', 'nginx' => 'Nginx'];
         $services = [];
@@ -138,6 +156,7 @@ class ResellerPortalController extends Controller
             'openTickets' => $openTickets, 'revenueMonth' => $revenueMonth, 'totalCollected' => $totalCollected,
             'outstanding' => $outstanding, 'pendingOrders' => $pendingOrders, 'activeServices' => $activeServices,
             'recentAccounts' => $recentAccounts, 'recentOrders' => $recentOrders, 'recentTickets' => $recentTickets,
+            'quotas' => $quotas,
             'services' => $services,
         ]);
     }
