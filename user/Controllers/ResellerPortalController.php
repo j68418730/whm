@@ -301,6 +301,8 @@ class ResellerPortalController extends Controller
     }
 
     // ── Addon: Billing system (reseller bills THEIR clients) ──
+    // Mirrors the master admin billing dashboard layout, but every query is scoped
+    // to this reseller's own clients (hosting_users.reseller_id = theirs).
     public function clientBilling()
     {
         $u = $this->requireReseller();
@@ -308,16 +310,118 @@ class ResellerPortalController extends Controller
         if (!$addons['billing']) { $_SESSION['error_message'] = 'The Billing addon is not enabled on your packages.'; $this->response->redirect('/reseller'); exit; }
         $pdo = $this->db->pdo();
         $rid = (int)$this->reseller->id;
+        $ids = $this->clientIds();
+        $in = $ids ? implode(',', $ids) : '0';
+
+        $totalCollected = (float)($pdo->query("SELECT COALESCE(SUM(bp.amount),0) FROM billing_payments bp JOIN hosting_users hu ON hu.id=bp.user_id WHERE bp.status='completed' AND hu.reseller_id={$rid}")->fetchColumn() ?? 0);
+        $outstanding = (float)($pdo->query("SELECT COALESCE(SUM(i.total),0) FROM invoices i JOIN hosting_users hu ON hu.id=i.user_id WHERE i.status IN ('sent','overdue','pending') AND hu.reseller_id={$rid}")->fetchColumn() ?? 0);
+        $mrr = (float)($pdo->query("SELECT COALESCE(SUM(s.price),0) FROM billing_services s JOIN hosting_users hu ON hu.id=s.user_id WHERE s.status='active' AND hu.reseller_id={$rid}")->fetchColumn() ?? 0);
+        $activeServices = (int)($pdo->query("SELECT COUNT(*) FROM billing_services s JOIN hosting_users hu ON hu.id=s.user_id WHERE s.status='active' AND hu.reseller_id={$rid}")->fetchColumn() ?? 0);
+
+        $counts = [
+            'orders' => (int)($pdo->query("SELECT COUNT(*) FROM billing_orders o JOIN hosting_users hu ON hu.id=o.user_id WHERE hu.reseller_id={$rid}")->fetchColumn() ?? 0),
+            'services' => (int)($pdo->query("SELECT COUNT(*) FROM billing_services s JOIN hosting_users hu ON hu.id=s.user_id WHERE hu.reseller_id={$rid}")->fetchColumn() ?? 0),
+            'invoices' => (int)($pdo->query("SELECT COUNT(*) FROM invoices i JOIN hosting_users hu ON hu.id=i.user_id WHERE hu.reseller_id={$rid}")->fetchColumn() ?? 0),
+            'payments' => (int)($pdo->query("SELECT COUNT(*) FROM billing_payments bp JOIN hosting_users hu ON hu.id=bp.user_id WHERE hu.reseller_id={$rid}")->fetchColumn() ?? 0),
+            'credits' => (int)($pdo->query("SELECT COUNT(*) FROM billing_credits c JOIN hosting_users hu ON hu.id=c.user_id WHERE hu.reseller_id={$rid}")->fetchColumn() ?? 0),
+            'refunds' => (int)($pdo->query("SELECT COUNT(*) FROM billing_refunds r JOIN hosting_users hu ON hu.id=r.user_id WHERE hu.reseller_id={$rid}")->fetchColumn() ?? 0),
+        ];
+
         $invoices = $pdo->query("SELECT i.*, hu.username AS client FROM invoices i
             JOIN hosting_users hu ON hu.id = i.user_id
             WHERE hu.reseller_id = {$rid} ORDER BY i.created_at DESC LIMIT 200")->fetchAll(\PDO::FETCH_OBJ) ?: [];
-        $totalOutstanding = 0;
-        foreach ($invoices as $inv) { if (in_array($inv->status, ['sent','overdue','pending'])) $totalOutstanding += $inv->total; }
-        // Clients for the issue-invoice form
         $clients = $this->db->table('hosting_users')->where('reseller_id', $rid)->get() ?: [];
         return $this->view('user.reseller.client_billing', [
             'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Billing System',
-            'addons' => $addons, 'invoices' => $invoices, 'totalOutstanding' => $totalOutstanding, 'clients' => $clients,
+            'addons' => $addons, 'invoices' => $invoices, 'clients' => $clients,
+            'totalCollected' => $totalCollected, 'outstanding' => $outstanding, 'mrr' => $mrr, 'activeServices' => $activeServices,
+            'counts' => $counts,
+        ]);
+    }
+
+    protected function clientIds()
+    {
+        $ids = [];
+        foreach ($this->db->table('hosting_users')->where('reseller_id', $this->reseller->id)->get() ?: [] as $c) { $ids[] = (int)$c->id; }
+        return $ids;
+    }
+
+    public function clientBillingOrders()
+    {
+        $u = $this->requireReseller();
+        $addons = $this->enabledAddons();
+        if (!$addons['billing']) { $this->response->redirect('/reseller'); exit; }
+        $rid = (int)$this->reseller->id;
+        $orders = $this->db->pdo()->query("SELECT o.*, hu.username AS client FROM billing_orders o JOIN hosting_users hu ON hu.id=o.user_id WHERE hu.reseller_id={$rid} ORDER BY o.created_at DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        return $this->view('user.reseller.client_billing_orders', [
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Billing System', 'addons' => $addons, 'orders' => $orders,
+        ]);
+    }
+
+    public function clientBillingServices()
+    {
+        $u = $this->requireReseller();
+        $addons = $this->enabledAddons();
+        if (!$addons['billing']) { $this->response->redirect('/reseller'); exit; }
+        $rid = (int)$this->reseller->id;
+        $services = $this->db->pdo()->query("SELECT s.*, hu.username AS client, bp.name AS product_name FROM billing_services s LEFT JOIN hosting_users hu ON hu.id=s.user_id LEFT JOIN billing_products bp ON s.product_id=bp.id WHERE hu.reseller_id={$rid} ORDER BY s.id DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        return $this->view('user.reseller.client_billing_services', [
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Billing System', 'addons' => $addons, 'services' => $services,
+        ]);
+    }
+
+    public function clientBillingPayments()
+    {
+        $u = $this->requireReseller();
+        $addons = $this->enabledAddons();
+        if (!$addons['billing']) { $this->response->redirect('/reseller'); exit; }
+        $rid = (int)$this->reseller->id;
+        $payments = $this->db->pdo()->query("SELECT bp.*, hu.username AS client FROM billing_payments bp JOIN hosting_users hu ON hu.id=bp.user_id WHERE hu.reseller_id={$rid} ORDER BY bp.id DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        return $this->view('user.reseller.client_billing_payments', [
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Billing System', 'addons' => $addons, 'payments' => $payments,
+        ]);
+    }
+
+    public function clientBillingCredits()
+    {
+        $u = $this->requireReseller();
+        $addons = $this->enabledAddons();
+        if (!$addons['billing']) { $this->response->redirect('/reseller'); exit; }
+        $rid = (int)$this->reseller->id;
+        $credits = $this->db->pdo()->query("SELECT c.*, hu.username AS client FROM billing_credits c JOIN hosting_users hu ON hu.id=c.user_id WHERE hu.reseller_id={$rid} ORDER BY c.id DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        $clients = $this->db->table('hosting_users')->where('reseller_id', $rid)->get() ?: [];
+        return $this->view('user.reseller.client_billing_credits', [
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Billing System', 'addons' => $addons, 'credits' => $credits, 'clients' => $clients,
+        ]);
+    }
+
+    public function clientBillingCreditStore()
+    {
+        $u = $this->requireReseller();
+        $addons = $this->enabledAddons();
+        if (!$addons['billing']) { $this->response->redirect('/reseller'); exit; }
+        $rid = (int)$this->reseller->id;
+        $clientId = (int)$this->request->post('client_id', 0);
+        $client = $this->db->table('hosting_users')->where('id', $clientId)->where('reseller_id', $rid)->first();
+        if (!$client) { $_SESSION['error_message'] = 'Client not found.'; $this->response->redirect('/reseller/billing-system/credits'); exit; }
+        $this->db->table('billing_credits')->insertGetId([
+            'user_id' => $clientId, 'amount' => (float)$this->request->post('amount', 0),
+            'description' => $this->request->post('description', ''),
+        ]);
+        $this->audit('billing.credit_added', 'billing_credit', $this->db->lastInsertId(), ['client' => $clientId]);
+        $_SESSION['success_message'] = "Credit added to {$client->username}.";
+        $this->response->redirect('/reseller/billing-system/credits');
+    }
+
+    public function clientBillingRefunds()
+    {
+        $u = $this->requireReseller();
+        $addons = $this->enabledAddons();
+        if (!$addons['billing']) { $this->response->redirect('/reseller'); exit; }
+        $rid = (int)$this->reseller->id;
+        $refunds = $this->db->pdo()->query("SELECT r.*, hu.username AS client FROM billing_refunds r JOIN hosting_users hu ON hu.id=r.user_id WHERE hu.reseller_id={$rid} ORDER BY r.id DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        return $this->view('user.reseller.client_billing_refunds', [
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Billing System', 'addons' => $addons, 'refunds' => $refunds,
         ]);
     }
 
@@ -358,6 +462,20 @@ class ResellerPortalController extends Controller
             $_SESSION['success_message'] = "Invoice #{$inv->invoice_number} marked paid.";
         }
         $this->response->redirect('/reseller/billing-system');
+    }
+
+    // ── Admin shared billing tabs helper ──
+    protected function billingTabs()
+    {
+        return [
+            ['url' => '/reseller/billing-system', 'label' => '📊 Dashboard'],
+            ['url' => '/reseller/billing-system/orders', 'label' => '📋 Orders'],
+            ['url' => '/reseller/billing-system/services', 'label' => '🖥 Services'],
+            ['url' => '/reseller/billing-system', 'label' => '💰 Invoices'],
+            ['url' => '/reseller/billing-system/payments', 'label' => '💳 Payments'],
+            ['url' => '/reseller/billing-system/credits', 'label' => '🏦 Credits'],
+            ['url' => '/reseller/billing-system/refunds', 'label' => '↩️ Refunds'],
+        ];
     }
 
     // ── Addon: Chat system (reseller manages their clients' chatbox tenants) ──

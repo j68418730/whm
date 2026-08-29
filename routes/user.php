@@ -262,6 +262,12 @@ $router->get('/reseller/billing', 'User\Controllers\ResellerPortalController@bil
 $router->get('/reseller/provisioning', 'User\Controllers\ResellerPortalController@provisioning');
 $router->post('/reseller/provisioning/run/{orderId}', 'User\Controllers\ResellerPortalController@provisioningRun');
 $router->get('/reseller/billing-system', 'User\Controllers\ResellerPortalController@clientBilling');
+$router->get('/reseller/billing-system/orders', 'User\Controllers\ResellerPortalController@clientBillingOrders');
+$router->get('/reseller/billing-system/services', 'User\Controllers\ResellerPortalController@clientBillingServices');
+$router->get('/reseller/billing-system/payments', 'User\Controllers\ResellerPortalController@clientBillingPayments');
+$router->get('/reseller/billing-system/credits', 'User\Controllers\ResellerPortalController@clientBillingCredits');
+$router->post('/reseller/billing-system/credits/store', 'User\Controllers\ResellerPortalController@clientBillingCreditStore');
+$router->get('/reseller/billing-system/refunds', 'User\Controllers\ResellerPortalController@clientBillingRefunds');
 $router->post('/reseller/billing-system/create', 'User\Controllers\ResellerPortalController@clientBillingCreate');
 $router->get('/reseller/billing-system/paid/{id}', 'User\Controllers\ResellerPortalController@clientBillingMarkPaid');
 $router->get('/reseller/chat-system', 'User\Controllers\ResellerPortalController@clientChat');
