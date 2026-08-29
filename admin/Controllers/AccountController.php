@@ -385,20 +385,8 @@ class AccountController extends Controller
         $d = escapeshellarg($account->domain);
         $h = escapeshellarg("/home/{$account->username}");
         @exec("sudo /var/www/radiohosting/provision.sh suspend {$u} {$d} {$h} 2>/dev/null >/dev/null &");
-        $this->db->table('hosting_users')->where('id', $id)->update([
-            'status' => 'suspended',
-            'suspended_at' => date('Y-m-d H:i:s'),
-            'suspended_by' => $adminId,
-        ]);
-        try {
-            $this->db->table('activity_logs')->insert([
-                'account_id' => $id, 'admin_id' => $adminId,
-                'action' => 'suspended',
-                'details' => "Account {$account->username} suspended",
-                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
-            ]);
-        } catch (\Exception $e) {}
-        $_SESSION['success_message'] = "Account '{$account->username}' suspended.";
+        $done = $this->cascadeSuspend((int)$id, $adminId, 'suspended');
+        $_SESSION['success_message'] = "Account '{$account->username}' suspended. " . $done;
         $this->response->redirect('/admin/account');
         exit;
     }
@@ -453,22 +441,145 @@ class AccountController extends Controller
         $d = escapeshellarg($account->domain);
         $h = escapeshellarg("/home/{$account->username}");
         @exec("sudo /var/www/radiohosting/provision.sh unsuspend {$u} {$d} {$h} 2>/dev/null >/dev/null &");
-        $this->db->table('hosting_users')->where('id', $id)->update([
-            'status' => 'active',
-            'suspended_at' => null,
-            'suspended_by' => null,
+        $done = $this->cascadeSuspend((int)$id, $adminId, 'active');
+        $_SESSION['success_message'] = "Account '{$account->username}' unsuspended. " . $done;
+        $this->response->redirect('/admin/account');
+        exit;
+    }
+
+    /**
+     * Cascade suspend/unsuspend across every dependency of an account:
+     *  - the account itself (hosting_users.status)
+     *  - its streaming stations (+ their DJs), chatbox tenant, game servers,
+     *    domains, email, billing services, and open tickets
+     *  - if the account is a RESELLER owner, also ALL of their clients
+     *    (hosting_users.reseller_id = their reseller row) — recursively.
+     * Returns a human-readable summary string.
+     */
+    protected function cascadeSuspend($userId, $adminId, $state)
+    {
+        $suspending = ($state === 'suspended');
+        $statusVal = $suspending ? 'suspended' : 'active';
+        $done = [];
+        $seen = [];
+        $this->cascadeSuspendRecursive((int)$userId, $adminId, $state, $statusVal, $seen, $done);
+        return implode(' ', $done);
+    }
+
+    protected function cascadeSuspendRecursive($userId, $adminId, $state, $statusVal, &$seen, &$done)
+    {
+        if (isset($seen[$userId])) return;
+        $seen[$userId] = true;
+        $suspending = ($state === 'suspended');
+        $account = $this->db->table('hosting_users')->where('id', $userId)->first();
+        if (!$account) return;
+
+        // Marks DB rows as suspended/active without re-calling provision (done once above).
+        $this->db->table('hosting_users')->where('id', $userId)->update([
+            'status' => $statusVal,
+            'suspended_at' => $state === 'suspended' ? date('Y-m-d H:i:s') : null,
+            'suspended_by' => $state === 'suspended' ? $adminId : null,
         ]);
+        $done[] = "{$account->username}";
+        // Suspend/resume the actual Linux home (idempotent, backgrounded)
+        $hu = escapeshellarg($account->username);
+        $hd = escapeshellarg($account->domain ?? '');
+        $hh = escapeshellarg("/home/{$account->username}");
+        @exec("sudo /var/www/radiohosting/provision.sh " . ($suspending ? 'suspend' : 'unsuspend') . " {$hu} {$hd} {$hh} 2>/dev/null >/dev/null &");
+
+        // Streaming stations + their DJs
+        try {
+            $st = $this->db->table('streaming_stations')->where('user_id', $userId)->get() ?: [];
+            foreach ($st as $s) {
+                $this->db->table('streaming_stations')->where('id', $s->id)->update(['status' => $statusVal]);
+                // stop/start engine
+                if ($state === 'suspended') {
+                    $engine = strtolower($s->engine ?? 'icecast');
+                    $port = (int)($s->port ?? 0);
+                    if ($engine === 'shoutcast' || $engine === 'shoutcast1' || $engine === 'shoutcast2') {
+                        @exec("pkill -f \"sc_serv.*{$port}\" 2>/dev/null >/dev/null &");
+                    } else {
+                        @exec("sudo systemctl stop icecast2 2>/dev/null >/dev/null &");
+                    }
+                }
+                // DJs on this station
+                $djs = $this->db->table('radio_djs')->where('stream_id', $s->id)->get() ?: [];
+                foreach ($djs as $dj) {
+                    $this->db->table('radio_djs')->where('id', $dj->id)->update(['status' => $suspending ? 'suspended' : 'active']);
+                }
+            }
+            if (!empty($st)) $done[] = "streaming";
+        } catch (\Exception $e) {}
+
+        // Chatbox tenant
+        try {
+            $t = $this->db->table('chatbox_tenants')->where('hosting_user_id', $userId)->first();
+            if ($t) {
+                $this->db->table('chatbox_tenants')->where('id', $t->id)->update(['is_active' => $suspending ? 0 : 1]);
+                $done[] = "chatbox";
+            }
+        } catch (\Exception $e) {}
+
+        // Game servers
+        try {
+            $gs = $this->db->table('game_servers')->where('user_id', $userId)->get() ?: [];
+            foreach ($gs as $g) {
+                $this->db->table('game_servers')->where('id', $g->id)->update([
+                    'status' => $statusVal, 'is_active' => $suspending ? 0 : 1,
+                ]);
+            }
+            if (!empty($gs)) $done[] = "games";
+        } catch (\Exception $e) {}
+
+        // Domains
+        try {
+            $dm = $this->db->table('domains')->where('account_id', $userId)->get() ?: [];
+            foreach ($dm as $d) {
+                $this->db->table('domains')->where('id', $d->id)->update(['status' => $statusVal]);
+            }
+            if (!empty($dm)) $done[] = "domains";
+        } catch (\Exception $e) {}
+
+        // Billing services
+        try {
+            $svc = $this->db->table('billing_services')->where('user_id', $userId)->get() ?: [];
+            foreach ($svc as $s) {
+                if ($s->status === 'active' || $s->status === 'pending' || $s->status === 'suspended') {
+                    $this->db->table('billing_services')->where('id', $s->id)->update(['status' => $statusVal]);
+                }
+            }
+            if (!empty($svc)) $done[] = "billing";
+        } catch (\Exception $e) {}
+
+        // Open tickets for this user
+        try {
+            $tk = $this->db->table('tickets')->where('user_id', $userId)->where('status', 'open')->get() ?: [];
+            foreach ($tk as $t) {
+                $this->db->table('tickets')->where('id', $t->id)->update(['status' => $suspending ? 'closed' : 'open']);
+            }
+        } catch (\Exception $e) {}
+
+        // Activity log
         try {
             $this->db->table('activity_logs')->insert([
-                'account_id' => $id, 'admin_id' => $adminId,
-                'action' => 'unsuspended',
-                'details' => "Account {$account->username} unsuspended",
+                'account_id' => $userId, 'admin_id' => $adminId,
+                'action' => $suspending ? 'suspended' : 'unsuspended',
+                'details' => ($suspending ? 'Cascade suspended' : 'Cascade unsuspended') . " {$account->username}",
                 'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
             ]);
         } catch (\Exception $e) {}
-        $_SESSION['success_message'] = "Account '{$account->username}' unsuspended.";
-        $this->response->redirect('/admin/account');
-        exit;
+
+        // If this user owns a reseller (email matches resellers), cascade to their clients
+        try {
+            $res = $this->db->table('resellers')->where('email', $account->email)->first();
+            if ($res) {
+                $clients = $this->db->table('hosting_users')->where('reseller_id', $res->id)->get() ?: [];
+                foreach ($clients as $c) {
+                    $this->cascadeSuspendRecursive((int)$c->id, $adminId, $state, $statusVal, $seen, $done);
+                }
+                if (!empty($clients)) $done[] = "+clients";
+            }
+        } catch (\Exception $e) {}
     }
 
     public function edit($id)
