@@ -17,6 +17,13 @@ class LiveChatController extends Controller
         $this->db = $app->get('db');
     }
 
+    protected function broadcastChatEvent(string $event, array $data, array $targetAdminIds = [])
+    {
+        if (class_exists('Core\Push') && method_exists('Core\Push', 'broadcast')) {
+            \Core\Push::broadcast($event, $data, $targetAdminIds);
+        }
+    }
+
     public function portal()
     {
         if (!$this->auth->check()) { $this->response->redirect('/admin/login'); exit; }
@@ -89,6 +96,15 @@ class LiveChatController extends Controller
                 'message' => $msg, 'created_at' => date('Y-m-d H:i:s'),
             ]);
             $this->db->table('chat_sessions')->where('id', $sessionId)->update(['status' => 'active']);
+            // Broadcast real-time event
+            $this->broadcastChatEvent('NEW_MESSAGE', [
+                'session_id' => $sessionId,
+                'message_id' => $id,
+                'sender_type' => 'operator',
+                'sender_name' => $this->auth->user()->name ?? 'Staff',
+                'message' => $msg,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
         }
         $this->response->json(['ok'=>true, 'id'=>$id]);
         $this->response->send();
@@ -140,6 +156,11 @@ class LiveChatController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $groupId = (int)$this->request->post('group_id', 0);
         $this->db->table('chat_sessions')->where('id', $id)->update(['department' => $groupId ? "Group #{$groupId}" : 'General']);
+        // Broadcast transfer event
+        $this->broadcastChatEvent('CHAT_TRANSFERRED', [
+            'session_id' => (int)$id,
+            'department' => $groupId ? "Group #{$groupId}" : 'General',
+        ]);
         $_SESSION['success_message'] = 'Chat transferred.';
         $this->response->redirect('/admin/livechat');
     }
@@ -152,6 +173,8 @@ class LiveChatController extends Controller
         foreach ($msgs as $m) $transcript .= "[{$m->created_at}] {$m->sender_name}: {$m->message}\n";
         $this->db->table('chat_transcripts')->insertGetId(['session_id' => $id, 'transcript' => $transcript]);
         $this->db->table('chat_sessions')->where('id', $id)->update(['status' => 'closed', 'closed_at' => date('Y-m-d H:i:s')]);
+        // Broadcast close event
+        $this->broadcastChatEvent('CHAT_CLOSED', ['session_id' => (int)$id]);
         $this->response->redirect('/admin/livechat');
     }
 
