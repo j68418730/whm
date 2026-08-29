@@ -33,8 +33,8 @@ Your allocation is <b>fully committed</b>. <b>You cannot create new clients or r
 <?php endif; ?>
 </div>
 <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-<a href="/reseller/branding" class="btn btn-sm btn-danger" style="padding:5px 14px;font-size:12px"><i class="bi bi-upc-scan"></i> Upgrade Plan</a>
-<a href="/reseller/packages" class="btn btn-sm btn-secondary" style="padding:5px 14px;font-size:12px"><i class="bi bi-box-seam"></i> Review Packages</a>
+<a href="https://planet-hosts.com/store" target="_blank" rel="noopener" class="btn btn-sm btn-danger" style="padding:5px 14px;font-size:12px"><i class="bi bi-upc-scan"></i> Upgrade Plan</a>
+<a href="/reseller/plan" class="btn btn-sm btn-secondary" style="padding:5px 14px;font-size:12px"><i class="bi bi-box-seam"></i> Review Packages</a>
 </div>
 </div>
 </div>

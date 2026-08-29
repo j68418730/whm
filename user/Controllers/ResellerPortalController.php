@@ -570,6 +570,25 @@ class ResellerPortalController extends Controller
         $this->response->redirect('/reseller/packages');
     }
 
+    // The reseller's OWN current plan — the reseller package they bought (hosting_packages via resellers.package_id),
+    // plus their resource limits and current committed usage. Distinct from the retail packages they sell.
+    public function plan()
+    {
+        $u = $this->requireReseller();
+        $rid = (int)$this->reseller->id;
+        $plan = null;
+        if ($this->reseller->package_id) {
+            $plan = $this->db->table('hosting_packages')->where('id', (int)$this->reseller->package_id)->first();
+        }
+        $quotas = $this->quotaStatus();
+        $retailCount = (int)($this->db->table('reseller_packages')->where('reseller_id', $rid)->count() ?? 0);
+        $clientCount = (int)($this->db->table('hosting_users')->where('reseller_id', $rid)->count() ?? 0);
+        return $this->view('user.reseller.plan', [
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'My Plan',
+            'plan' => $plan, 'quotas' => $quotas, 'retailCount' => $retailCount, 'clientCount' => $clientCount,
+        ]);
+    }
+
     public function branding()
     {
         $u = $this->requireReseller();
