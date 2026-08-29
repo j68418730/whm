@@ -142,6 +142,21 @@ class ResellerPortalController extends Controller
         ]);
     }
 
+    public function clientsOverview()
+    {
+        $u = $this->requireReseller();
+        if ($this->staff && !$this->can('clients')) { $_SESSION['error_message'] = 'You do not have permission to view clients.'; $this->response->redirect('/reseller'); exit; }
+        $pdo = $this->db->pdo();
+        $rid = (int)$this->reseller->id;
+        $totalClients = (int)($pdo->query("SELECT COUNT(*) FROM hosting_users WHERE reseller_id = {$rid}")->fetchColumn() ?? 0);
+        $pendingClients = (int)($pdo->query("SELECT COUNT(*) FROM hosting_users WHERE reseller_id = {$rid} AND status = 'pending'")->fetchColumn() ?? 0);
+        $outstanding = (float)($pdo->query("SELECT COALESCE(SUM(i.total),0) FROM invoices i JOIN hosting_users hu ON hu.id=i.user_id WHERE i.status IN ('sent','overdue','pending') AND hu.reseller_id={$rid}")->fetchColumn() ?? 0);
+        return $this->view('user.reseller.clients_overview', [
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Clients',
+            'total_clients' => $totalClients, 'pending_clients' => $pendingClients, 'total_outstanding' => $outstanding,
+        ]);
+    }
+
     public function clients()
     {
         $u = $this->requireReseller();
