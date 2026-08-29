@@ -177,6 +177,12 @@ class ResellerPortalController extends Controller
         // ── Quota: what the reseller owns minus what they've committed in retail packages ──
         $quotas = $this->quotaStatus();
 
+        // ⚠️ TEMP TEST ALERT — force the low-quota banner to show. REMOVE THIS BLOCK when done testing.
+        $quotas['disk_total_gb'] = 2000; $quotas['disk_sold_gb'] = 1920; $quotas['disk_avail_gb'] = 80; $quotas['disk_pct'] = 96; $quotas['disk_low'] = true;
+        $quotas['bw_total_gb'] = 20000; $quotas['bw_sold_gb'] = 18800; $quotas['bw_avail_gb'] = 1200; $quotas['bw_pct'] = 94; $quotas['bw_low'] = true;
+        $quotas['low'] = true; $quotas['threshold'] = 90;
+        // ⚠️ END TEMP TEST ALERT
+
         // Server/health strip (infrastructure status — shared, not admin-specific)
         $serviceNames = ['apache2' => 'Apache', 'mariadb' => 'MariaDB', 'icecast2' => 'Icecast', 'postfix' => 'Postfix', 'dovecot' => 'Dovecot', 'nginx' => 'Nginx'];
         $services = [];
