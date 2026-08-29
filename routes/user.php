@@ -292,6 +292,9 @@ $router->post('/reseller/staff/store', 'User\Controllers\ResellerPortalControlle
 $router->get('/reseller/staff/toggle/{id}', 'User\Controllers\ResellerPortalController@staffToggle');
 $router->get('/reseller/staff/delete/{id}', 'User\Controllers\ResellerPortalController@staffDelete');
 $router->get('/reseller/support', 'User\Controllers\ResellerPortalController@support');
+$router->get('/reseller/alerts', 'User\Controllers\ResellerPortalController@alerts');
+$router->get('/reseller/alerts/read/{id}', 'User\Controllers\ResellerPortalController@alertRead');
+$router->get('/reseller/alerts/read-all', 'User\Controllers\ResellerPortalController@alertReadAll');
 
 // Public Live DJ Widget API
 $router->get('/api/radio/live-dj/{stationId}', 'User\Controllers\RadioController@liveDjStatus');

@@ -98,11 +98,11 @@ class ResellerPortalController extends Controller
         // Global quota status for every reseller page (drives the persistent low-resource banner).
         $data['quota'] = $this->quotaStatus();
 
-        // ⚠️ TEMP TEST ALERT — force the low-quota banner on every page. REMOVE THIS BLOCK when done testing.
-        $data['quota']['disk_total_gb'] = 2000; $data['quota']['disk_sold_gb'] = 1920; $data['quota']['disk_avail_gb'] = 80; $data['quota']['disk_pct'] = 96; $data['quota']['disk_low'] = true;
-        $data['quota']['bw_total_gb'] = 20000; $data['quota']['bw_sold_gb'] = 18800; $data['quota']['bw_avail_gb'] = 1200; $data['quota']['bw_pct'] = 94; $data['quota']['bw_low'] = true;
-        $data['quota']['low'] = true; $data['quota']['threshold'] = 90;
-        // ⚠️ END TEMP TEST ALERT
+        // Unread admin-message count for the topbar bell badge.
+        $data['alert_unread'] = 0;
+        try {
+            $data['alert_unread'] = (int)($this->db->pdo()->query("SELECT COUNT(*) FROM reseller_alerts WHERE reseller_id=" . (int)$this->reseller->id . " AND is_read=0")->fetchColumn() ?? 0);
+        } catch (\Exception $e) {}
 
         return parent::view($view, $data);
     }
@@ -1188,6 +1188,129 @@ class ResellerPortalController extends Controller
             $_SESSION['success_message'] = 'Staff member removed.';
         }
         $this->response->redirect('/reseller/roles');
+    }
+
+    // ── Unified Alerts feed (reseller): due/past-due invoices, new clients, new orders,
+    // ── low-quota warning, and admin messages to this reseller. Returns sorted list + unread count.
+    protected function buildAlerts()
+    {
+        $pdo = $this->db->pdo();
+        $rid = (int)$this->reseller->id;
+        $alerts = [];
+        $now = time();
+
+        // Low-quota alert (from commit usage) — always present while low.
+        $quota = $this->quotaStatus();
+        if ($quota['low']) {
+            $alerts[] = [
+                'id' => 'quota', 'type' => $quota['disk_pct'] >= 100 || $quota['bw_pct'] >= 100 ? 'danger' : 'warning',
+                'title' => 'Low Resource Warning — ' . ($quota['disk_pct'] >= $quota['bw_pct'] ? 'Disk' : 'Bandwidth') . ' Quota Reached',
+                'message' => 'You have reached ' . $quota['threshold'] . '% of your allocation (' . number_format($quota['disk_avail_gb'], 1) . ' GB disk, ' . number_format($quota['bw_avail_gb'], 0) . ' GB bandwidth left). Upgrade to create new clients/packages.',
+                'created_at' => date('Y-m-d H:i:s', $now), 'link' => '/reseller/plan', 'severity' => 2, 'source' => 'quota',
+            ];
+        }
+
+        // Due + past-due invoices from their clients
+        try {
+            $rows = $pdo->query("SELECT i.id, i.invoice_number, i.total, i.status, i.due_date, i.created_at, hu.username AS client
+                FROM invoices i JOIN hosting_users hu ON hu.id = i.user_id
+                WHERE hu.reseller_id = {$rid} AND i.status IN ('sent','overdue') ORDER BY i.due_date ASC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            foreach ($rows as $r) {
+                $overdue = $r->status === 'overdue' || ($r->due_date && strtotime($r->due_date) < $now);
+                $alerts[] = [
+                    'id' => 'inv-' . (int)$r->id, 'type' => $overdue ? 'danger' : 'warning',
+                    'title' => ($overdue ? 'Past Due Invoice' : 'Due Invoice') . ' #' . htmlspecialchars($r->invoice_number),
+                    'message' => ($overdue ? 'Invoice is past due' : 'Invoice is due') . ' — $' . number_format((float)$r->total, 2) . ' for ' . htmlspecialchars($r->client) . ($r->due_date ? ' (due ' . date('M j', strtotime($r->due_date)) . ')' : ''),
+                    'created_at' => $r->created_at, 'link' => '/reseller/billing-system', 'severity' => $overdue ? 2 : 1, 'source' => 'invoice',
+                ];
+            }
+        } catch (\Exception $e) {}
+
+        // New clients (their own) in the last 7 days
+        try {
+            $clients = $pdo->query("SELECT id, username, created_at FROM hosting_users WHERE reseller_id = {$rid} AND created_at >= '" . date('Y-m-d', strtotime('-7 days')) . "' ORDER BY created_at DESC LIMIT 10")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            foreach ($clients as $c) {
+                $alerts[] = [
+                    'id' => 'client-' . (int)$c->id, 'type' => 'success',
+                    'title' => 'New Client: ' . htmlspecialchars($c->username),
+                    'message' => 'A new client account was created.',
+                    'created_at' => $c->created_at, 'link' => '/reseller-client/' . (int)$c->id, 'severity' => 0, 'source' => 'client',
+                ];
+            }
+        } catch (\Exception $e) {}
+
+        // New orders from their clients in the last 7 days
+        try {
+            $orders = $pdo->query("SELECT o.id, o.total, o.status, o.type, o.created_at, hu.username AS client
+                FROM billing_orders o JOIN hosting_users hu ON hu.id = o.user_id
+                WHERE hu.reseller_id = {$rid} AND o.created_at >= '" . date('Y-m-d', strtotime('-7 days')) . "'
+                ORDER BY o.created_at DESC LIMIT 10")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+            foreach ($orders as $o) {
+                $alerts[] = [
+                    'id' => 'order-' . (int)$o->id, 'type' => 'info',
+                    'title' => 'New Order #' . (int)$o->id . ' (' . htmlspecialchars($o->type) . ')',
+                    'message' => '$' . number_format((float)$o->total, 2) . ' — ' . htmlspecialchars($o->client) . ' (' . htmlspecialchars($o->status) . ')',
+                    'created_at' => $o->created_at, 'link' => '/reseller/billing-system/orders', 'severity' => 0, 'source' => 'order',
+                ];
+            }
+        } catch (\Exception $e) {}
+
+        // Admin messages to this reseller
+        try {
+            $msgs = $this->db->table('reseller_alerts')->where('reseller_id', $rid)->orderBy('created_at', 'DESC')->get() ?: [];
+            foreach ($msgs as $m) {
+                $alerts[] = [
+                    'id' => 'admin-' . (int)$m->id, 'type' => $m->type ?? 'info',
+                    'title' => ($m->title ?? 'Alert from Planet Hosts'),
+                    'message' => $m->message ?? '',
+                    'created_at' => $m->created_at, 'link' => null, 'severity' => 2, 'source' => 'admin',
+                    'is_read' => (int)($m->is_read ?? 0),
+                ];
+            }
+        } catch (\Exception $e) {}
+
+        // Sort newest first (quota banner stays on top via severity tie-break is enough).
+        usort($alerts, function ($a, $b) {
+            return strtotime($b['created_at']) <=> strtotime($a['created_at']);
+        });
+        return $alerts;
+    }
+
+    public function alerts()
+    {
+        $u = $this->requireReseller();
+        $pdo = $this->db->pdo();
+        $rid = (int)$this->reseller->id;
+        $alerts = $this->buildAlerts();
+
+        // Unread count for badge = unread admin messages.
+        $unread = 0;
+        try { $unread = (int)($pdo->query("SELECT COUNT(*) FROM reseller_alerts WHERE reseller_id = {$rid} AND is_read = 0")->fetchColumn() ?? 0); } catch (\Exception $e) {}
+
+        return $this->view('user.reseller.alerts', [
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Alerts',
+            'alerts' => $alerts, 'unread' => $unread,
+        ]);
+    }
+
+    // Mark one admin message as read.
+    public function alertRead($id)
+    {
+        $u = $this->requireReseller();
+        $rid = (int)$this->reseller->id;
+        try {
+            $this->db->table('reseller_alerts')->where('id', (int)$id)->where('reseller_id', $rid)->update(['is_read' => 1]);
+        } catch (\Exception $e) {}
+        $this->response->redirect('/reseller/alerts');
+    }
+
+    // Mark all admin messages read.
+    public function alertReadAll()
+    {
+        $u = $this->requireReseller();
+        $rid = (int)$this->reseller->id;
+        try { $this->db->pdo()->exec("UPDATE reseller_alerts SET is_read = 1 WHERE reseller_id = {$rid}"); } catch (\Exception $e) {}
+        $this->response->redirect('/reseller/alerts');
     }
 
     protected function audit($action = 'action', $resourceType = null, $resourceId = null, $details = null)
