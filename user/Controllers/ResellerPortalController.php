@@ -94,6 +94,16 @@ class ResellerPortalController extends Controller
         $data['addons'] = $this->addons;
         $data['staff'] = $this->staff;
         $data['can'] = function ($perm) { return $this->can($perm); };
+
+        // Global quota status for every reseller page (drives the persistent low-resource banner).
+        $data['quota'] = $this->quotaStatus();
+
+        // ⚠️ TEMP TEST ALERT — force the low-quota banner on every page. REMOVE THIS BLOCK when done testing.
+        $data['quota']['disk_total_gb'] = 2000; $data['quota']['disk_sold_gb'] = 1920; $data['quota']['disk_avail_gb'] = 80; $data['quota']['disk_pct'] = 96; $data['quota']['disk_low'] = true;
+        $data['quota']['bw_total_gb'] = 20000; $data['quota']['bw_sold_gb'] = 18800; $data['quota']['bw_avail_gb'] = 1200; $data['quota']['bw_pct'] = 94; $data['quota']['bw_low'] = true;
+        $data['quota']['low'] = true; $data['quota']['threshold'] = 90;
+        // ⚠️ END TEMP TEST ALERT
+
         return parent::view($view, $data);
     }
 
@@ -176,12 +186,6 @@ class ResellerPortalController extends Controller
 
         // ── Quota: what the reseller owns minus what they've committed in retail packages ──
         $quotas = $this->quotaStatus();
-
-        // ⚠️ TEMP TEST ALERT — force the low-quota banner to show. REMOVE THIS BLOCK when done testing.
-        $quotas['disk_total_gb'] = 2000; $quotas['disk_sold_gb'] = 1920; $quotas['disk_avail_gb'] = 80; $quotas['disk_pct'] = 96; $quotas['disk_low'] = true;
-        $quotas['bw_total_gb'] = 20000; $quotas['bw_sold_gb'] = 18800; $quotas['bw_avail_gb'] = 1200; $quotas['bw_pct'] = 94; $quotas['bw_low'] = true;
-        $quotas['low'] = true; $quotas['threshold'] = 90;
-        // ⚠️ END TEMP TEST ALERT
 
         // Server/health strip (infrastructure status — shared, not admin-specific)
         $serviceNames = ['apache2' => 'Apache', 'mariadb' => 'MariaDB', 'icecast2' => 'Icecast', 'postfix' => 'Postfix', 'dovecot' => 'Dovecot', 'nginx' => 'Nginx'];
