@@ -612,4 +612,231 @@ class DesktopController extends Controller
             ]
         ]);
     }
+
+    // ─────────────── Agent Presence ───────────────
+
+    public function agentStatus()
+    {
+        $this->apiKeyAuth();
+        $input = $this->getJsonInput();
+        $status = $input['status'] ?? null;
+        $message = $input['status_message'] ?? '';
+        $adminId = (int)($this->currentApiKey->user_id ?? 0);
+        if ($adminId && $status && in_array($status, ['online','away','busy','offline'], true)) {
+            $this->db->table('agent_presence')->insertGetId([
+                'admin_id' => $adminId,
+                'status' => $status,
+                'status_message' => $message,
+                'last_heartbeat' => date('Y-m-d H:i:s'),
+            ]);
+        }
+        $this->json(['success' => true, 'message' => 'Status updated']);
+    }
+
+    public function agentHeartbeat()
+    {
+        $this->apiKeyAuth();
+        $adminId = (int)($this->currentApiKey->user_id ?? 0);
+        if ($adminId) {
+            $this->db->table('agent_presence')->where('admin_id', $adminId)->update([
+                'last_heartbeat' => date('Y-m-d H:i:s'),
+            ]);
+        }
+        $this->json(['success' => true]);
+    }
+
+    public function listAgentStatus()
+    {
+        $this->apiKeyAuth();
+        $rows = $this->db->table('agent_presence')->get() ?: [];
+        $this->json(['success' => true, 'data' => $rows]);
+    }
+
+    // ─────────────── Chat Notes (Private Agent Notes) ───────────────
+
+    public function getChatNotes($sessionId)
+    {
+        $this->apiKeyAuth();
+        $notes = $this->db->table('chat_notes')->where('session_id', (int)$sessionId)->orderBy('created_at', 'DESC')->get() ?: [];
+        $this->json(['success' => true, 'data' => $notes]);
+    }
+
+    public function addChatNote($sessionId)
+    {
+        $this->apiKeyAuth();
+        $input = $this->getJsonInput();
+        $note = $input['note'] ?? '';
+        $isPrivate = isset($input['is_private']) ? (int)$input['is_private'] : 1;
+        $adminId = (int)($this->currentApiKey->user_id ?? 0);
+        if (empty($note)) $this->json(['success' => false, 'error' => 'Note required'], 400);
+        $nid = $this->db->table('chat_notes')->insertGetId([
+            'session_id' => (int)$sessionId,
+            'admin_id' => $adminId,
+            'note' => $note,
+            'is_private' => $isPrivate,
+        ]);
+        $this->json(['success' => true, 'data' => ['id' => $nid]]);
+    }
+
+    // ─────────────── Message Receipts ───────────────
+
+    public function markDelivered($sessionId)
+    {
+        $this->apiKeyAuth();
+        $input = $this->getJsonInput();
+        $messageIds = $input['message_ids'] ?? [];
+        if (!empty($messageIds)) {
+            $placeholders = implode(',', array_fill(0, count($messageIds), '?'));
+            $this->db->pdo()->prepare("UPDATE chat_messages SET delivered_at = NOW() WHERE id IN ($placeholders)")->execute($messageIds);
+        }
+        $this->json(['success' => true]);
+    }
+
+    public function markRead($sessionId)
+    {
+        $this->apiKeyAuth();
+        $input = $this->getJsonInput();
+        $messageIds = $input['message_ids'] ?? [];
+        $lastId = (int)($input['last_message_id'] ?? 0);
+        $adminId = (int)($this->currentApiKey->user_id ?? 0);
+        if (!empty($messageIds)) {
+            $placeholders = implode(',', array_fill(0, count($messageIds), '?'));
+            $this->db->pdo()->prepare("UPDATE chat_messages SET read_at = NOW() WHERE id IN ($placeholders)")->execute($messageIds);
+        } elseif ($lastId > 0) {
+            $this->db->table('chat_messages')->where('session_id', (int)$sessionId)->where('id', '<=', $lastId)->where('sender_type', '!=', 'operator')->update(['read_at' => date('Y-m-d H:i:s')]);
+        }
+        $this->json(['success' => true]);
+    }
+
+    // ─────────────── Typing Indicators ───────────────
+
+    public function typing($sessionId)
+    {
+        $this->apiKeyAuth();
+        $input = $this->getJsonInput();
+        $isTyping = (bool)($input['typing'] ?? false);
+        $adminId = (int)($this->currentApiKey->user_id ?? 0);
+        $adminName = $this->currentApiKey->name ?? 'Staff';
+        // Broadcast via Push service (WebSocket) - see core/Push.php
+        // For now, store a temporary marker
+        $this->db->table('chat_messages')->insertGetId([
+            'session_id' => (int)$sessionId,
+            'sender_type' => 'typing',
+            'sender_name' => $adminName,
+            'message' => $isTyping ? 'typing' : 'stopped_typing',
+            'message_type' => 'typing',
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        $this->json(['success' => true]);
+    }
+
+    // ─────────────── Internal Staff Chat ───────────────
+
+    public function internalMessages($type = 'direct')
+    {
+        $this->apiKeyAuth();
+        $input = $this->getJsonInput();
+        $channel = $input['channel'] ?? null;
+        $recipientId = $input['recipient_id'] ?? null;
+        $adminId = (int)($this->currentApiKey->user_id ?? 0);
+        $limit = (int)($input['limit'] ?? 50);
+        $offset = (int)($input['offset'] ?? 0);
+
+        if ($type === 'channel' && $channel) {
+            $stm = $this->db->pdo()->prepare("SELECT * FROM internal_messages WHERE conversation_type='channel' AND channel_name=? ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
+            $stm->execute([$channel]);
+        } elseif ($type === 'direct' && $recipientId) {
+            $stm = $this->db->pdo()->prepare("SELECT * FROM internal_messages WHERE conversation_type='direct' AND ((sender_id=? AND recipient_id=?) OR (sender_id=? AND recipient_id=?)) ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
+            $stm->execute([$adminId, $recipientId, $recipientId, $adminId]);
+        } else {
+            $stm = $this->db->pdo()->prepare("SELECT * FROM internal_messages WHERE conversation_type='direct' AND (sender_id=? OR recipient_id=?) ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
+            $stm->execute([$adminId, $adminId]);
+        }
+        $this->json(['success' => true, 'data' => $stm->fetchAll(\PDO::FETCH_OBJ)]);
+    }
+
+    public function sendInternalMessage()
+    {
+        $this->apiKeyAuth();
+        $input = $this->getJsonInput();
+        $message = $input['message'] ?? '';
+        $conversationType = $input['conversation_type'] ?? 'direct';
+        $channel = $input['channel'] ?? null;
+        $recipientId = $input['recipient_id'] ?? null;
+        $adminId = (int)($this->currentApiKey->user_id ?? 0);
+        $adminName = $this->currentApiKey->name ?? 'Staff';
+        if (empty($message)) $this->json(['success' => false, 'error' => 'Message required'], 400);
+
+        $mid = $this->db->table('internal_messages')->insertGetId([
+            'conversation_type' => $conversationType,
+            'channel_name' => $channel,
+            'sender_id' => $adminId,
+            'recipient_id' => $recipientId,
+            'message' => $message,
+            'message_type' => 'text',
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        // Update conversation unread counts
+        if ($conversationType === 'direct' && $recipientId) {
+            $this->db->pdo()->prepare("INSERT INTO internal_conversations (user1_id, user2_id, last_message_id, last_message_at, unread_count_1, unread_count_2) VALUES (?, ?, ?, NOW(), 0, 1) ON DUPLICATE KEY UPDATE last_message_id=?, last_message_at=NOW(), unread_count_2=unread_count_2+1")
+                ->execute([$adminId, $recipientId, $mid, $mid]);
+        }
+
+        $this->json(['success' => true, 'data' => ['id' => $mid]]);
+    }
+
+    public function internalConversations()
+    {
+        $this->apiKeyAuth();
+        $adminId = (int)($this->currentApiKey->user_id ?? 0);
+        $stm = $this->db->pdo()->prepare("SELECT ic.*, u1.username as user1_name, u2.username as user2_name FROM internal_conversations ic LEFT JOIN admins u1 ON u1.id=ic.user1_id LEFT JOIN admins u2 ON u2.id=ic.user2_id WHERE ic.user1_id=? OR ic.user2_id=? ORDER BY ic.last_message_at DESC");
+        $stm->execute([$adminId, $adminId]);
+        $this->json(['success' => true, 'data' => $stm->fetchAll(\PDO::FETCH_OBJ)]);
+    }
+
+    public function markInternalRead($conversationId)
+    {
+        $this->apiKeyAuth();
+        $adminId = (int)($this->currentApiKey->user_id ?? 0);
+        $this->db->pdo()->prepare("UPDATE internal_conversations SET unread_count_1=0, unread_count_2=0 WHERE id=? AND (user1_id=? OR user2_id=?)")->execute([$conversationId, $adminId, $adminId]);
+        $this->db->pdo()->prepare("UPDATE internal_messages SET read_at=NOW() WHERE (sender_id=? OR recipient_id=?) AND conversation_type='direct' AND read_at IS NULL")->execute([$adminId, $adminId]);
+        $this->json(['success' => true]);
+    }
+
+    // ─────────────── Agent Notification Preferences ───────────────
+
+    public function getNotificationPrefs()
+    {
+        $this->apiKeyAuth();
+        $adminId = (int)($this->currentApiKey->user_id ?? 0);
+        $prefs = $this->db->table('agent_notification_prefs')->where('admin_id', $adminId)->first();
+        if (!$prefs) {
+            $prefs = [
+                'sound_new_chat' => 1, 'sound_new_message' => 1, 'sound_mention' => 1, 'sound_transfer' => 1,
+                'sound_custom' => 'default', 'flash_taskbar' => 1, 'show_popup' => 1, 'badge_count' => 1,
+                'push_desktop' => 1, 'push_web' => 1, 'push_mobile' => 0,
+                'dnd_enabled' => 0, 'dnd_start' => null, 'dnd_end' => null, 'dnd_timezone' => 'UTC',
+                'overrides' => null,
+            ];
+        }
+        $this->json(['success' => true, 'data' => $prefs]);
+    }
+
+    public function updateNotificationPrefs()
+    {
+        $this->apiKeyAuth();
+        $input = $this->getJsonInput();
+        $adminId = (int)($this->currentApiKey->user_id ?? 0);
+        $allowed = ['sound_new_chat','sound_new_message','sound_mention','sound_transfer','sound_custom','flash_taskbar','show_popup','badge_count','push_desktop','push_web','push_mobile','dnd_enabled','dnd_start','dnd_end','dnd_timezone','overrides'];
+        $data = array_intersect_key($input, array_flip($allowed));
+        $existing = $this->db->table('agent_notification_prefs')->where('admin_id', $adminId)->first();
+        if ($existing) {
+            $this->db->table('agent_notification_prefs')->where('admin_id', $adminId)->update($data);
+        } else {
+            $data['admin_id'] = $adminId;
+            $this->db->table('agent_notification_prefs')->insertGetId($data);
+        }
+        $this->json(['success' => true, 'message' => 'Preferences updated']);
+    }
 }

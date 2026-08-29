@@ -407,6 +407,27 @@ $router->post('/api/remote/request', 'Admin\Controllers\Api\DesktopController@re
 $router->get('/api/reports/{type}', 'Admin\Controllers\Api\DesktopController@getReport');
 $router->get('/api/desktop/version', 'Admin\Controllers\Api\DesktopController@version');
 
+// ── New Support Chat Desktop API Routes ──
+$router->post('/api/agent/status', 'Admin\Controllers\Api\DesktopController@agentStatus');
+$router->post('/api/agent/heartbeat', 'Admin\Controllers\Api\DesktopController@agentHeartbeat');
+$router->get('/api/agents/status', 'Admin\Controllers\Api\DesktopController@listAgentStatus');
+
+$router->get('/api/chats/{id}/notes', 'Admin\Controllers\Api\DesktopController@getChatNotes');
+$router->post('/api/chats/{id}/notes', 'Admin\Controllers\Api\DesktopController@addChatNote');
+
+$router->post('/api/chats/{id}/delivered', 'Admin\Controllers\Api\DesktopController@markDelivered');
+$router->post('/api/chats/{id}/read', 'Admin\Controllers\Api\DesktopController@markRead');
+
+$router->post('/api/chats/{id}/typing', 'Admin\Controllers\Api\DesktopController@typing');
+
+$router->get('/api/internal/messages', 'Admin\Controllers\Api\DesktopController@internalMessages');
+$router->post('/api/internal/message', 'Admin\Controllers\Api\DesktopController@sendInternalMessage');
+$router->get('/api/internal/conversations', 'Admin\Controllers\Api\DesktopController@internalConversations');
+$router->post('/api/internal/conversations/{id}/read', 'Admin\Controllers\Api\DesktopController@markInternalRead');
+
+$router->get('/api/agent/notification-prefs', 'Admin\Controllers\Api\DesktopController@getNotificationPrefs');
+$router->post('/api/agent/notification-prefs', 'Admin\Controllers\Api\DesktopController@updateNotificationPrefs');
+
 // PlanetStudio Desktop App API
 $router->post('/api/login', 'Admin\Controllers\Api\PlanetStudioController@login');
 $router->get('/api/stations', 'Admin\Controllers\Api\PlanetStudioController@stations');
