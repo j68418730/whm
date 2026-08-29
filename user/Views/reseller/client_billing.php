@@ -1,8 +1,34 @@
+<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;border-bottom:1px solid var(--border,rgba(0,191,255,.08));padding-bottom:8px">
+<a href="/reseller/billing-system" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff">📊 Dashboard</a>
+<a href="/reseller/billing-system/orders" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text_muted,#94a3b8)">📋 Orders</a>
+<a href="/reseller/billing-system/services" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text_muted,#94a3b8)">🖥 Services</a>
+<a href="/reseller/billing-system" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text_muted,#94a3b8)">💰 Invoices</a>
+<a href="/reseller/billing-system/payments" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text_muted,#94a3b8)">💳 Payments</a>
+<a href="/reseller/billing-system/credits" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text_muted,#94a3b8)">🏦 Credits</a>
+<a href="/reseller/billing-system/refunds" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text_muted,#94a3b8)">↩️ Refunds</a>
+</div>
 <h3 style="color:var(--accent);margin-bottom:12px">Billing System</h3>
-<p style="color:var(--text_muted,#94a3b8);font-size:13px;margin-bottom:16px">Invoice <b>your own clients</b> from here. These are your retail invoices — completely separate from the invoices Planet Hosts sends you.</p>
-<div class="stats-grid" style="margin-bottom:16px">
-<div class="stat-card"><h3>Outstanding</h3><div class="value">$<?php echo number_format($totalOutstanding ?? 0, 2); ?></div></div>
-<div class="stat-card"><h3>Invoices</h3><div class="value"><?php echo count($invoices ?? []); ?></div></div>
+<p style="color:var(--text_muted,#94a3b8);font-size:13px;margin-bottom:16px">Billing for <b>your own clients</b>. Reuses the Planet Hosts billing engine scoped to your clients — separate from the invoices Planet Hosts sends you.</p>
+<div class="stats-grid" style="margin-bottom:20px">
+<div class="stat-card"><h3>Total Collected</h3><div class="value">$<?php echo number_format($totalCollected ?? 0, 2); ?></div></div>
+<div class="stat-card"><h3>Outstanding</h3><div class="value" style="color:#f87171">$<?php echo number_format($outstanding ?? 0, 2); ?></div></div>
+<div class="stat-card"><h3>Monthly Recurring</h3><div class="value" style="color:#4ade80">$<?php echo number_format($mrr ?? 0, 2); ?></div></div>
+<div class="stat-card"><h3>Active Services</h3><div class="value"><?php echo $activeServices ?? 0; ?></div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:20px">
+<a href="/reseller/billing-system/orders" class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 16px;text-align:center;text-decoration:none;gap:6px;transition:.15s">
+<div style="font-size:30px">📋</div><div style="font-size:14px;font-weight:600">Orders</div><div style="font-size:22px;font-weight:700;color:var(--accent)"><?php echo (int)($counts['orders'] ?? 0); ?></div></a>
+<a href="/reseller/billing-system/services" class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 16px;text-align:center;text-decoration:none;gap:6px;transition:.15s">
+<div style="font-size:30px">🖥</div><div style="font-size:14px;font-weight:600">Services</div><div style="font-size:22px;font-weight:700;color:var(--accent)"><?php echo (int)($counts['services'] ?? 0); ?></div></a>
+<a href="/reseller/billing-system" class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 16px;text-align:center;text-decoration:none;gap:6px;transition:.15s">
+<div style="font-size:30px">💰</div><div style="font-size:14px;font-weight:600">Invoices</div><div style="font-size:22px;font-weight:700;color:var(--accent)"><?php echo (int)($counts['invoices'] ?? 0); ?></div></a>
+<a href="/reseller/billing-system/payments" class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 16px;text-align:center;text-decoration:none;gap:6px;transition:.15s">
+<div style="font-size:30px">💳</div><div style="font-size:14px;font-weight:600">Payments</div><div style="font-size:22px;font-weight:700;color:var(--accent)"><?php echo (int)($counts['payments'] ?? 0); ?></div></a>
+<a href="/reseller/billing-system/credits" class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 16px;text-align:center;text-decoration:none;gap:6px;transition:.15s">
+<div style="font-size:30px">🏦</div><div style="font-size:14px;font-weight:600">Credits</div><div style="font-size:22px;font-weight:700;color:var(--accent)"><?php echo (int)($counts['credits'] ?? 0); ?></div></a>
+<a href="/reseller/billing-system/refunds" class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 16px;text-align:center;text-decoration:none;gap:6px;transition:.15s">
+<div style="font-size:30px">↩️</div><div style="font-size:14px;font-weight:600">Refunds</div><div style="font-size:22px;font-weight:700;color:var(--accent)"><?php echo (int)($counts['refunds'] ?? 0); ?></div></a>
 </div>
 
 <div class="card">
@@ -23,7 +49,7 @@
 </div>
 
 <div class="card">
-<h4 style="color:var(--accent);margin-bottom:12px">Client Invoices</h4>
+<h4 style="color:var(--accent);margin-bottom:12px">Recent Client Invoices</h4>
 <table class="table">
 <tr><th>Invoice</th><th>Client</th><th>Date</th><th>Due</th><th>Total</th><th>Status</th><th></th></tr>
 <?php if (!empty($invoices)): foreach ($invoices as $inv): ?>
