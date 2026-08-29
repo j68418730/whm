@@ -5,7 +5,7 @@
 <h2 style="margin:0"><i class="bi bi-person-plus"></i> Create Client</h2>
 <p style="color:var(--text_muted,#94a3b8);margin:4px 0 0">Create a new account under your reseller. Runs through Planet Hosts backend — no SSH/root needed.</p>
 </div>
-<a href="/reseller/clients" class="btn btn-secondary">&larr; Client List</a>
+<a href="/reseller-clients" class="btn btn-secondary">&larr; Client List</a>
 </div>
 
 <form method="POST" action="/reseller/clients/store">
@@ -64,6 +64,6 @@
 
 <div style="display:flex;gap:12px;margin-top:20px;justify-content:flex-start">
 <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> Create Client</button>
-<a href="/reseller/clients" class="btn btn-secondary"><i class="bi bi-x-circle"></i> Cancel</a>
+<a href="/reseller-clients" class="btn btn-secondary"><i class="bi bi-x-circle"></i> Cancel</a>
 </div>
 </form>

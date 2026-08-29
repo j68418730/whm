@@ -13,7 +13,7 @@
 
 <div class="section-grid">
 <a href="/reseller/clients/create" class="section-card"><div class="icon">➕</div><div class="name">Create Client</div><div class="desc">New client account</div></a>
-<a href="/reseller/clients" class="section-card"><div class="icon">👥</div><div class="count"><?php echo $total_clients; ?></div><div class="name">Clients</div><div class="desc">List and manage your clients</div></a>
+<a href="/reseller-clients" class="section-card"><div class="icon">👥</div><div class="count"><?php echo $total_clients; ?></div><div class="name">Clients</div><div class="desc">List and manage your clients</div></a>
 <?php if (!empty($addons['billing'])): ?>
 <a href="/reseller/billing-system" class="section-card"><div class="icon">💰</div><div class="count">$<?php echo number_format($total_outstanding,2); ?></div><div class="name">Billing System</div><div class="desc">Invoices, payments & credits for your clients</div></a>
 <?php endif; ?>

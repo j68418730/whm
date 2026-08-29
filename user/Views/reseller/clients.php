@@ -43,7 +43,7 @@
 </table>
 <div id="clientNoResults" style="display:none;text-align:center;padding:2rem;color:var(--text_muted)">No clients match your search.</div>
 
-<a href="/reseller/clients" class="btn secondary" style="margin-top:12px">&larr; Back</a>
+<a href="/reseller-clients" class="btn secondary" style="margin-top:12px">&larr; Back</a>
 
 <script>
 function applyClientFilter() {
