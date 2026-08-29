@@ -55,34 +55,8 @@ $isLicensePage = str_starts_with($path, '/admin/licensing') || str_starts_with($
 $license = new Core\License(BASE_PATH);
 $licenseResult = $license->verify();
 if (!$licenseResult['valid'] && !$isLicensePage) {
-    $error = $licenseResult['error'] ?? 'Trial period ended';
     http_response_code(403);
-    echo <<<HTML
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>License Required - Planet Hosts</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #07111f; color: #d8e7f7; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: #0d1b2e; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 2rem; max-width: 500px; text-align: center; }
-        h1 { color: #ff4444; }
-        p { color: #9bb4cf; line-height: 1.6; }
-        code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
-        .btn { display: inline-block; margin-top: 1rem; padding: 0.75rem 1.5rem; background: #007bff; color: #fff; text-decoration: none; border-radius: 4px; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h1>License Required</h1>
-        <p>This panel is not licensed. <a href="/admin/licensing" style="color:#4da3ff;">Enter your license key here</a> or contact Planet-Hosts to purchase a license.</p>
-        <p><strong>Error:</strong> {$error}</p>
-        <a class="btn" href="/admin/licensing">Enter License Key</a>
-    </div>
-</body>
-</html>
-HTML;
+    include BASE_PATH . '/public/errors/403.php';
     exit;
 }
 
@@ -90,7 +64,8 @@ try {
     $app = new Core\Application(BASE_PATH, $config);
 } catch (\Exception $e) {
     http_response_code(500);
-    echo '<!DOCTYPE html><html><head><title>System Error - Planet Hosts</title><style>body{font-family:sans-serif;background:#07111f;color:#d8e7f7;display:flex;justify-content:center;align-items:center;height:100vh;margin:0}.card{background:#0d1b2e;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:2rem;max-width:500px;text-align:center}h1{color:#ff6b6b}p{color:#9bb4cf;line-height:1.6}</style></head><body><div class="card"><h1>System Error</h1><p>' . htmlspecialchars($e->getMessage()) . '</p></div></body></html>';
+    $error = $e->getMessage();
+    include BASE_PATH . '/public/errors/500.php';
     exit;
 }
 

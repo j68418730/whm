@@ -61,7 +61,12 @@ class Router
 
         // If no route found, show 404
         $this->response->setStatusCode(404);
-        $this->response->setContent('404 - Not Found');
+        $errorFile = dirname(__DIR__) . '/public/errors/404.php';
+        if (is_file($errorFile)) {
+            include $errorFile;
+        } else {
+            $this->response->setContent('404 - Not Found');
+        }
         $this->response->send();
     }
 
