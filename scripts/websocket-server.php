@@ -7,7 +7,7 @@
  * Accepts HTTP POST on http://127.0.0.1:8081/api/broadcast from PHP app
  */
 
-require_once __DIR__ . '/core/PushServer.php';
+require_once __DIR__ . '/../core/PushServer.php';
 
 use Core\PushServer;
 
