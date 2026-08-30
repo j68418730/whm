@@ -101,14 +101,14 @@ class PushServer
                 $data = @socket_read($fd, 8192);
 
                 if ($data === false || $data === '') {
-                    $this->disconnect($fd, $read);
+                    $this->disconnect($key, $read);
                     continue;
                 }
 
                 if (isset($client['is_http'])) {
-                    $this->handleHttp($fd, $data);
+                    $this->handleHttp($key, $data);
                 } else {
-                    $this->handleWebSocket($fd, $data);
+                    $this->handleWebSocket($key, $data);
                 }
             }
 
