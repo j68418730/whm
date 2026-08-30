@@ -62,14 +62,16 @@ class PushServer
                 $client = socket_accept($this->masterWs);
                 if ($client !== false) {
                     socket_set_nonblock($client);
-                    $this->clients[(int)$client] = [
+                    $key = is_object($client) ? spl_object_id($client) : (int)$client;
+                    $this->clients[$key] = [
+                        'socket' => $client,
                         'admin_id' => null,
                         'authenticated' => false,
                         'buffer' => '',
                         'last_ping' => time(),
                     ];
                     $read[] = $client;
-                    echo "New WS connection: " . (int)$client . "\n";
+                    echo "New WS connection: $key\n";
                 }
             }
 
@@ -78,11 +80,13 @@ class PushServer
                 $client = socket_accept($this->masterHttp);
                 if ($client !== false) {
                     socket_set_nonblock($client);
-                    $this->clients[(int)$client] = [
+                    $key = is_object($client) ? spl_object_id($client) : (int)$client;
+                    $this->clients[$key] = [
+                        'socket' => $client,
                         'is_http' => true,
                         'buffer' => '',
                         'admin_id' => null,
-                        'authenticated' => true, // HTTP clients are pre-authenticated via secret
+                        'authenticated' => true,
                     ];
                     $read[] = $client;
                 }
@@ -92,7 +96,8 @@ class PushServer
             foreach ($r as $fd) {
                 if ($fd === $this->masterWs || $fd === $this->masterHttp) continue;
 
-                $client = &$this->clients[(int)$fd];
+                $key = is_object($fd) ? spl_object_id($fd) : (int)$fd;
+                $client = &$this->clients[$key];
                 $data = @socket_read($fd, 8192);
 
                 if ($data === false || $data === '') {
@@ -117,9 +122,9 @@ class PushServer
         }
     }
 
-    private function handleHttp(int $fd, string $data): void
+    private function handleHttp($fd, string $data): void
     {
-        $client = &$this->clients[(int)$fd];
+        $client = &$this->clients[$fd];
         $client['buffer'] .= $data;
 
         // Check if we have full HTTP request
@@ -166,19 +171,23 @@ class PushServer
         $this->disconnect($fd, []);
     }
 
-    private function sendHttpResponse(int $fd, int $code, array $data): void
+    private function sendHttpResponse($fd, int $code, array $data): void
     {
+        $client = $this->clients[$fd] ?? null;
+        $socket = $client['socket'] ?? null;
+        if (!$socket) return;
+
         $body = json_encode($data);
         $headers = "HTTP/1.1 $code OK\r\n";
         $headers .= "Content-Type: application/json\r\n";
         $headers .= "Content-Length: " . strlen($body) . "\r\n";
         $headers .= "Connection: close\r\n\r\n";
-        @socket_write($fd, $headers . $body);
+        @socket_write($socket, $headers . $body);
     }
 
-    private function handleWebSocket(int $fd, string $data): void
+    private function handleWebSocket($fd, string $data): void
     {
-        $client = &$this->clients[(int)$fd];
+        $client = &$this->clients[$fd];
         $client['buffer'] .= $data;
 
         // Simple WebSocket frame parsing (handles text frames only)
@@ -253,8 +262,12 @@ class PushServer
         return $result;
     }
 
-    private function sendWsFrame(int $fd, int $opcode, string $payload): void
+    private function sendWsFrame($fd, int $opcode, string $payload): void
     {
+        $client = $this->clients[$fd] ?? null;
+        $socket = $client['socket'] ?? null;
+        if (!$socket) return;
+
         $frame = chr(0x80 | $opcode);
         $len = strlen($payload);
         if ($len <= 125) {
@@ -265,15 +278,15 @@ class PushServer
             $frame .= chr(127) . pack('J', $len);
         }
         $frame .= $payload;
-        @socket_write($fd, $frame);
+        @socket_write($socket, $frame);
     }
 
-    private function handleWsMessage(int $fd, string $payload): void
+    private function handleWsMessage($fd, string $payload): void
     {
         $data = json_decode($payload, true);
         if (!$data) return;
 
-        $client = &$this->clients[(int)$fd];
+        $client = &$this->clients[$fd];
         $action = $data['action'] ?? '';
 
         switch ($action) {
@@ -337,18 +350,17 @@ class PushServer
         $message = json_encode(['type' => 'event', 'event' => $event, 'data' => $data, 'ts' => date('c')]);
 
         if (empty($targets)) {
-            // Broadcast to all authenticated clients
-            foreach ($this->clients as $fd => $client) {
+            foreach ($this->clients as $key => $client) {
                 if (!isset($client['is_http']) && $client['authenticated']) {
-                    $this->sendWsFrame($fd, 0x1, $message);
+                    $this->sendWsFrame($key, $message);
                 }
             }
         } else {
             foreach ($targets as $adminId) {
                 if (isset($this->adminConnections[$adminId])) {
-                    foreach ($this->adminConnections[$adminId] as $fd) {
-                        if (isset($this->clients[$fd]) && !$this->clients[$fd]['is_http']) {
-                            $this->sendWsFrame($fd, 0x1, $message);
+                    foreach ($this->adminConnections[$adminId] as $key) {
+                        if (isset($this->clients[$key]) && !$this->clients[$key]['is_http']) {
+                            $this->sendWsFrame($key, $message);
                         }
                     }
                 }
@@ -356,23 +368,24 @@ class PushServer
         }
     }
 
-    private function disconnect(int $fd, array &$read): void
+    private function disconnect($key, array &$read): void
     {
-        $fdInt = (int)$fd;
-        if (isset($this->clients[$fdInt])) {
-            $client = $this->clients[$fdInt];
+        if (isset($this->clients[$key])) {
+            $client = $this->clients[$key];
             if ($client['admin_id'] && isset($this->adminConnections[$client['admin_id']])) {
-                $this->adminConnections[$client['admin_id']] = array_filter($this->adminConnections[$client['admin_id']], function($x) use ($fd) { return $x !== $fd; });
+                $this->adminConnections[$client['admin_id']] = array_filter($this->adminConnections[$client['admin_id']], function($x) use ($key) { return $x !== $key; });
                 if (empty($this->adminConnections[$client['admin_id']])) {
                     unset($this->adminConnections[$client['admin_id']]);
                     $this->updatePresence($client['admin_id'], 'offline');
                 }
             }
-            unset($this->clients[$fdInt]);
+            unset($this->clients[$key]);
         }
-        $key = array_search($fd, $read);
-        if ($key !== false) unset($read[$key]);
-        @socket_close($fd);
-        echo "Disconnected: $fd\n";
+        $keyIdx = array_search($key, $read);
+        if ($keyIdx !== false) unset($read[$keyIdx]);
+        if (isset($this->clients[$key]['socket'])) {
+            @socket_close($this->clients[$key]['socket']);
+        }
+        echo "Disconnected: $key\n";
     }
 }
