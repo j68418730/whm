@@ -6,7 +6,7 @@ use Core\Controller;
 
 class ChatController extends Controller
 {
-    protected $request, $response, $db;
+    protected $request, $response, $db, $auth;
 
     public function __construct()
     {
@@ -15,6 +15,13 @@ class ChatController extends Controller
         $this->request = $app->get('request');
         $this->response = $app->get('response');
         $this->db = $app->get('db');
+    }
+
+    protected function broadcastChatEvent(string $event, array $data, array $targetAdminIds = [])
+    {
+        if (class_exists('Core\Push') && method_exists('Core\Push', 'broadcast')) {
+            \Core\Push::broadcast($event, $data, $targetAdminIds);
+        }
     }
 
 public function start()
@@ -48,6 +55,7 @@ public function start()
         // Notify all admins about new chat
         $now = date('Y-m-d H:i:s');
         $admins = $this->db->table('admins')->get() ?: [];
+        $targetIds = [];
         foreach ($admins as $admin) {
             $this->db->table('notifications')->insertGetId([
                 'user_id' => $admin->id,
@@ -56,7 +64,18 @@ public function start()
                 'message' => 'New Visitor ' . $name . ' (' . ($email ?: 'no email') . ') has requested support.',
                 'created_at' => $now,
             ]);
+            $targetIds[] = (int)$admin->id;
         }
+        // Broadcast real-time event
+        $this->broadcastChatEvent('NEW_CHAT', [
+            'session_id' => $sessionId,
+            'visitor_name' => $name,
+            'visitor_email' => $email,
+            'subject' => $subject,
+            'status' => 'waiting',
+            'created_at' => $now,
+        ], $targetIds);
+
         $this->response->json(['id' => $sessionId]);
         $this->response->send();
         exit;
@@ -99,9 +118,18 @@ public function start()
         $msg = $this->request->post('message', '');
         $name = $this->request->post('name', 'Visitor');
         if ($sessionId && $msg) {
-            $this->db->table('chat_messages')->insertGetId([
+            $messageId = $this->db->table('chat_messages')->insertGetId([
                 'session_id' => $sessionId, 'sender_type' => 'visitor',
                 'sender_name' => $name, 'message' => $msg,
+            ]);
+            // Broadcast real-time event
+            $this->broadcastChatEvent('NEW_MESSAGE', [
+                'session_id' => $sessionId,
+                'message_id' => $messageId,
+                'sender_type' => 'visitor',
+                'sender_name' => $name,
+                'message' => $msg,
+                'created_at' => date('Y-m-d H:i:s'),
             ]);
         }
         echo 'ok';
