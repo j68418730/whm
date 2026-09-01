@@ -17,6 +17,7 @@ class PushServer
     private $masterHttp = null;
     private $clients = []; // fd => ['admin_id' => int, 'authenticated' => bool, 'last_ping' => int]
     private $adminConnections = []; // admin_id => [fd, fd, ...]
+    private $pdo = null;
 
     public function __construct(string $host, int $wsPort, int $httpPort, string $secret)
     {
@@ -24,6 +25,26 @@ class PushServer
         $this->wsPort = $wsPort;
         $this->httpPort = $httpPort;
         $this->secret = $secret;
+
+        $dbHost = getenv('DB_HOST') ?: (getenv('WS_DB_HOST') ?: '127.0.0.1');
+        $dbPort = getenv('DB_PORT') ?: (getenv('WS_DB_PORT') ?: '3306');
+        $dbName = getenv('DB_DATABASE') ?: (getenv('WS_DB_NAME') ?: 'radiohosting');
+        $dbUser = getenv('DB_USERNAME') ?: (getenv('WS_DB_USER') ?: 'radiouser');
+        $dbPass = getenv('DB_PASSWORD') ?: (getenv('WS_DB_PASS') ?: '');
+        try {
+            $this->pdo = new \PDO(
+                "mysql:host=$dbHost;port=$dbPort;dbname=$dbName;charset=utf8mb4",
+                $dbUser,
+                $dbPass,
+                [
+                    \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                    \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+                    \PDO::ATTR_TIMEOUT => 3,
+                ]
+            );
+        } catch (\Throwable $e) {
+            error_log("PushServer DB init failed: " . $e->getMessage());
+        }
     }
 
     public function run(): void
@@ -295,7 +316,6 @@ class PushServer
         switch ($action) {
             case 'auth':
                 $token = $data['token'] ?? '';
-                // Verify token against database (simplified - in production validate via API)
                 if ($this->validateToken($token, $adminId)) {
                     $client['authenticated'] = true;
                     $client['admin_id'] = $adminId;
@@ -304,16 +324,17 @@ class PushServer
                     }
                     $this->adminConnections[$adminId][] = $fd;
                     $this->sendWsFrame($fd, 0x1, json_encode(['type' => 'auth_ok', 'admin_id' => $adminId]));
+                    // Notify other connected agents that this agent came online
+                    $this->broadcastToTargets('AGENT_STATUS_CHANGED', ['admin_id' => $adminId, 'status' => 'online', 'message' => '']);
                     echo "Agent authenticated: $adminId on fd $fd\n";
                 } else {
-                    $this->sendWsFrame($fd, 0x1, json_encode(['type' => 'auth_error', 'message' => 'Invalid token']));
+                    $this->sendWsFrame($fd, 0x1, json_encode(['type' => 'auth_error', 'message' => 'Invalid API key']));
                 }
                 break;
 
             case 'heartbeat':
                 $client['last_ping'] = time();
                 if ($client['admin_id']) {
-                    // Update presence in DB (async, non-blocking)
                     $this->updatePresence($client['admin_id'], 'online');
                 }
                 break;
@@ -323,7 +344,7 @@ class PushServer
                     $status = $data['status'] ?? 'online';
                     $message = $data['message'] ?? '';
                     $this->updatePresence($client['admin_id'], $status, $message);
-                    $this->broadcastToTargets('AGENT_STATUS_CHANGED', ['admin_id' => $client['admin_id'], 'status' => $status, 'message' => $message], [$client['admin_id']]);
+                    $this->broadcastToTargets('AGENT_STATUS_CHANGED', ['admin_id' => $client['admin_id'], 'status' => $status, 'message' => $message]);
                 }
                 break;
 
@@ -335,17 +356,55 @@ class PushServer
 
     private function validateToken(string $token, &$adminId): bool
     {
-        // In production, validate against api_keys table
-        // For now, accept any non-empty token and extract admin_id from a simple format
-        // Expected token format: "ph_<hex>" - we store hash in DB
-        // This is a placeholder - integrate with DesktopController::apiKeyAuth logic
-        return false; // Require proper DB validation
+        if ($token === '' || $this->pdo === null) {
+            return false;
+        }
+        try {
+            $hash = hash('sha256', $token);
+            $stmt = $this->pdo->prepare(
+                'SELECT id, user_id, user_type, permissions FROM api_keys
+                 WHERE key_hash = ? AND is_active = 1 LIMIT 1'
+            );
+            $stmt->execute([$hash]);
+            $row = $stmt->fetch();
+            if (!$row) {
+                return false;
+            }
+            // Only allow admin keys to authenticate agents
+            if (($row['user_type'] ?? 'admin') !== 'admin') {
+                return false;
+            }
+            $adminId = (int)($row['user_id'] ?? 0);
+            if ($adminId <= 0) {
+                // Root API keys may not map to an admin account; reject for agent push.
+                return false;
+            }
+            return true;
+        } catch (\Throwable $e) {
+            error_log("PushServer auth failed: " . $e->getMessage());
+            return false;
+        }
     }
 
     private function updatePresence(int $adminId, string $status, string $message = ''): void
     {
-        // Async DB update - in production use a queue or background job
-        // For now, skip to avoid blocking the event loop
+        if ($this->pdo === null) {
+            return;
+        }
+        try {
+            $stmt = $this->pdo->prepare(
+                'INSERT INTO agent_presence (admin_id, status, status_message, last_heartbeat, updated_at)
+                 VALUES (?, ?, ?, NOW(), NOW())
+                 ON DUPLICATE KEY UPDATE
+                   status = VALUES(status),
+                   status_message = VALUES(status_message),
+                   last_heartbeat = NOW(),
+                   updated_at = NOW()'
+            );
+            $stmt->execute([$adminId, $status, $message]);
+        } catch (\Throwable $e) {
+            error_log("PushServer presence update failed: " . $e->getMessage());
+        }
     }
 
     private function broadcastToTargets(string $event, array $data, array $targets = []): void
