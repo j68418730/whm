@@ -282,6 +282,13 @@ $router->post('/reseller/billing-system/credits/store', 'User\Controllers\Resell
 $router->get('/reseller/billing-system/refunds', 'User\Controllers\ResellerPortalController@clientBillingRefunds');
 $router->post('/reseller/billing-system/create', 'User\Controllers\ResellerPortalController@clientBillingCreate');
 $router->get('/reseller/billing-system/paid/{id}', 'User\Controllers\ResellerPortalController@clientBillingMarkPaid');
+$router->get('/reseller/billing-system/products', 'User\Controllers\ResellerPortalController@clientBillingProducts');
+$router->post('/reseller/billing-system/products/store', 'User\Controllers\ResellerPortalController@clientBillingProductStore');
+$router->post('/reseller/billing-system/products/update/{id}', 'User\Controllers\ResellerPortalController@clientBillingProductUpdate');
+$router->get('/reseller/billing-system/products/toggle/{id}', 'User\Controllers\ResellerPortalController@clientBillingProductToggle');
+$router->get('/reseller/billing-system/products/delete/{id}', 'User\Controllers\ResellerPortalController@clientBillingProductDelete');
+$router->get('/reseller/billing-system/cart', 'User\Controllers\ResellerPortalController@clientBillingCart');
+$router->post('/reseller/billing-system/cart/settings', 'User\Controllers\ResellerPortalController@clientBillingCartSettings');
 $router->get('/reseller/chat-system', 'User\Controllers\ResellerPortalController@clientChat');
 $router->post('/reseller/chat-system/create', 'User\Controllers\ResellerPortalController@clientChatCreateTenant');
 $router->get('/reseller/chat-system/toggle/{tenantId}', 'User\Controllers\ResellerPortalController@clientChatToggle');

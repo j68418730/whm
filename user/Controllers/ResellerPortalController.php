@@ -901,24 +901,27 @@ class ResellerPortalController extends Controller
         $ids = $this->clientIds();
         $in = $ids ? implode(',', $ids) : '0';
 
-        $totalCollected = (float)($pdo->query("SELECT COALESCE(SUM(bp.amount),0) FROM billing_payments bp JOIN hosting_users hu ON hu.id=bp.user_id WHERE bp.status='completed' AND hu.reseller_id={$rid}")->fetchColumn() ?? 0);
-        $outstanding = (float)($pdo->query("SELECT COALESCE(SUM(i.total),0) FROM invoices i JOIN hosting_users hu ON hu.id=i.user_id WHERE i.status IN ('sent','overdue','pending') AND hu.reseller_id={$rid}")->fetchColumn() ?? 0);
-        $mrr = (float)($pdo->query("SELECT COALESCE(SUM(s.price),0) FROM billing_services s JOIN hosting_users hu ON hu.id=s.user_id WHERE s.status='active' AND hu.reseller_id={$rid}")->fetchColumn() ?? 0);
-        $activeServices = (int)($pdo->query("SELECT COUNT(*) FROM billing_services s JOIN hosting_users hu ON hu.id=s.user_id WHERE s.status='active' AND hu.reseller_id={$rid}")->fetchColumn() ?? 0);
+        $totalCollected = (float)($pdo->query("SELECT COALESCE(SUM(bp.amount),0) FROM billing_payments bp JOIN hosting_users hu ON hu.id=bp.user_id WHERE bp.status='completed' AND hu.id IN ({$in})")->fetchColumn() ?? 0);
+        $outstanding = (float)($pdo->query("SELECT COALESCE(SUM(i.total),0) FROM invoices i JOIN hosting_users hu ON hu.id=i.user_id WHERE i.status IN ('sent','overdue','pending') AND hu.id IN ({$in})")->fetchColumn() ?? 0);
+        $mrr = (float)($pdo->query("SELECT COALESCE(SUM(s.price),0) FROM billing_services s JOIN hosting_users hu ON hu.id=s.user_id WHERE s.status='active' AND hu.id IN ({$in})")->fetchColumn() ?? 0);
+        $activeServices = (int)($pdo->query("SELECT COUNT(*) FROM billing_services s JOIN hosting_users hu ON hu.id=s.user_id WHERE s.status='active' AND hu.id IN ({$in})")->fetchColumn() ?? 0);
 
         $counts = [
-            'orders' => (int)($pdo->query("SELECT COUNT(*) FROM billing_orders o JOIN hosting_users hu ON hu.id=o.user_id WHERE hu.reseller_id={$rid}")->fetchColumn() ?? 0),
-            'services' => (int)($pdo->query("SELECT COUNT(*) FROM billing_services s JOIN hosting_users hu ON hu.id=s.user_id WHERE hu.reseller_id={$rid}")->fetchColumn() ?? 0),
-            'invoices' => (int)($pdo->query("SELECT COUNT(*) FROM invoices i JOIN hosting_users hu ON hu.id=i.user_id WHERE hu.reseller_id={$rid}")->fetchColumn() ?? 0),
-            'payments' => (int)($pdo->query("SELECT COUNT(*) FROM billing_payments bp JOIN hosting_users hu ON hu.id=bp.user_id WHERE hu.reseller_id={$rid}")->fetchColumn() ?? 0),
-            'credits' => (int)($pdo->query("SELECT COUNT(*) FROM billing_credits c JOIN hosting_users hu ON hu.id=c.user_id WHERE hu.reseller_id={$rid}")->fetchColumn() ?? 0),
-            'refunds' => (int)($pdo->query("SELECT COUNT(*) FROM billing_refunds r JOIN hosting_users hu ON hu.id=r.user_id WHERE hu.reseller_id={$rid}")->fetchColumn() ?? 0),
+            'orders' => (int)($pdo->query("SELECT COUNT(*) FROM billing_orders o JOIN hosting_users hu ON hu.id=o.user_id WHERE hu.id IN ({$in})")->fetchColumn() ?? 0),
+            'services' => (int)($pdo->query("SELECT COUNT(*) FROM billing_services s JOIN hosting_users hu ON hu.id=s.user_id WHERE hu.id IN ({$in})")->fetchColumn() ?? 0),
+            'invoices' => (int)($pdo->query("SELECT COUNT(*) FROM invoices i JOIN hosting_users hu ON hu.id=i.user_id WHERE hu.id IN ({$in})")->fetchColumn() ?? 0),
+            'payments' => (int)($pdo->query("SELECT COUNT(*) FROM billing_payments bp JOIN hosting_users hu ON hu.id=bp.user_id WHERE hu.id IN ({$in})")->fetchColumn() ?? 0),
+            'credits' => (int)($pdo->query("SELECT COUNT(*) FROM billing_credits c JOIN hosting_users hu ON hu.id=c.user_id WHERE hu.id IN ({$in})")->fetchColumn() ?? 0),
+            'refunds' => (int)($pdo->query("SELECT COUNT(*) FROM billing_refunds r JOIN hosting_users hu ON hu.id=r.user_id WHERE hu.id IN ({$in})")->fetchColumn() ?? 0),
         ];
 
         $invoices = $pdo->query("SELECT i.*, hu.username AS client FROM invoices i
             JOIN hosting_users hu ON hu.id = i.user_id
-            WHERE hu.reseller_id = {$rid} ORDER BY i.created_at DESC LIMIT 200")->fetchAll(\PDO::FETCH_OBJ) ?: [];
-        $clients = $this->db->table('hosting_users')->where('reseller_id', $rid)->get() ?: [];
+            WHERE hu.id IN ({$in}) ORDER BY i.created_at DESC LIMIT 200")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        $clients = $this->db->table('hosting_users')
+            ->where('reseller_id', $rid)
+            ->where('id', '!=', $u->id)
+            ->get() ?: [];
         return $this->view('user.reseller.client_billing', [
             'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Billing System',
             'addons' => $addons, 'invoices' => $invoices, 'clients' => $clients,
@@ -929,8 +932,12 @@ class ResellerPortalController extends Controller
 
     protected function clientIds()
     {
+        $u = $this->requireReseller();
         $ids = [];
-        foreach ($this->db->table('hosting_users')->where('reseller_id', $this->reseller->id)->get() ?: [] as $c) { $ids[] = (int)$c->id; }
+        foreach ($this->db->table('hosting_users')
+            ->where('reseller_id', $this->reseller->id)
+            ->where('id', '!=', $u->id)
+            ->get() ?: [] as $c) { $ids[] = (int)$c->id; }
         return $ids;
     }
 
@@ -940,8 +947,9 @@ class ResellerPortalController extends Controller
         $this->requirePerm('billing');
         $this->requireFeature('billing');
         $addons = $this->enabledAddons();
-        $rid = (int)$this->reseller->id;
-        $orders = $this->db->pdo()->query("SELECT o.*, hu.username AS client FROM billing_orders o JOIN hosting_users hu ON hu.id=o.user_id WHERE hu.reseller_id={$rid} ORDER BY o.created_at DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        $ids = $this->clientIds();
+        $in = $ids ? implode(',', $ids) : '0';
+        $orders = $this->db->pdo()->query("SELECT o.*, hu.username AS client FROM billing_orders o JOIN hosting_users hu ON hu.id=o.user_id WHERE hu.id IN ({$in}) ORDER BY o.created_at DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         return $this->view('user.reseller.client_billing_orders', [
             'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Billing System', 'addons' => $addons, 'orders' => $orders,
         ]);
@@ -953,8 +961,9 @@ class ResellerPortalController extends Controller
         $this->requirePerm('billing');
         $this->requireFeature('billing');
         $addons = $this->enabledAddons();
-        $rid = (int)$this->reseller->id;
-        $services = $this->db->pdo()->query("SELECT s.*, hu.username AS client, bp.name AS product_name FROM billing_services s LEFT JOIN hosting_users hu ON hu.id=s.user_id LEFT JOIN billing_products bp ON s.product_id=bp.id WHERE hu.reseller_id={$rid} ORDER BY s.id DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        $ids = $this->clientIds();
+        $in = $ids ? implode(',', $ids) : '0';
+        $services = $this->db->pdo()->query("SELECT s.*, hu.username AS client, bp.name AS product_name FROM billing_services s LEFT JOIN hosting_users hu ON hu.id=s.user_id LEFT JOIN billing_products bp ON s.product_id=bp.id WHERE hu.id IN ({$in}) ORDER BY s.id DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         return $this->view('user.reseller.client_billing_services', [
             'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Billing System', 'addons' => $addons, 'services' => $services,
         ]);
@@ -966,8 +975,9 @@ class ResellerPortalController extends Controller
         $this->requirePerm('billing');
         $this->requireFeature('billing');
         $addons = $this->enabledAddons();
-        $rid = (int)$this->reseller->id;
-        $payments = $this->db->pdo()->query("SELECT bp.*, hu.username AS client FROM billing_payments bp JOIN hosting_users hu ON hu.id=bp.user_id WHERE hu.reseller_id={$rid} ORDER BY bp.id DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        $ids = $this->clientIds();
+        $in = $ids ? implode(',', $ids) : '0';
+        $payments = $this->db->pdo()->query("SELECT bp.*, hu.username AS client FROM billing_payments bp JOIN hosting_users hu ON hu.id=bp.user_id WHERE hu.id IN ({$in}) ORDER BY bp.id DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         return $this->view('user.reseller.client_billing_payments', [
             'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Billing System', 'addons' => $addons, 'payments' => $payments,
         ]);
@@ -979,9 +989,13 @@ class ResellerPortalController extends Controller
         $this->requirePerm('billing');
         $this->requireFeature('billing');
         $addons = $this->enabledAddons();
-        $rid = (int)$this->reseller->id;
-        $credits = $this->db->pdo()->query("SELECT c.*, hu.username AS client FROM billing_credits c JOIN hosting_users hu ON hu.id=c.user_id WHERE hu.reseller_id={$rid} ORDER BY c.id DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
-        $clients = $this->db->table('hosting_users')->where('reseller_id', $rid)->get() ?: [];
+        $ids = $this->clientIds();
+        $in = $ids ? implode(',', $ids) : '0';
+        $credits = $this->db->pdo()->query("SELECT c.*, hu.username AS client FROM billing_credits c JOIN hosting_users hu ON hu.id=c.user_id WHERE hu.id IN ({$in}) ORDER BY c.id DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        $clients = $this->db->table('hosting_users')
+            ->where('reseller_id', $this->reseller->id)
+            ->where('id', '!=', $u->id)
+            ->get() ?: [];
         return $this->view('user.reseller.client_billing_credits', [
             'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Billing System', 'addons' => $addons, 'credits' => $credits, 'clients' => $clients,
         ]);
@@ -1013,8 +1027,9 @@ class ResellerPortalController extends Controller
         $this->requirePerm('billing');
         $this->requireFeature('billing');
         $addons = $this->enabledAddons();
-        $rid = (int)$this->reseller->id;
-        $refunds = $this->db->pdo()->query("SELECT r.*, hu.username AS client FROM billing_refunds r JOIN hosting_users hu ON hu.id=r.user_id WHERE hu.reseller_id={$rid} ORDER BY r.id DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        $ids = $this->clientIds();
+        $in = $ids ? implode(',', $ids) : '0';
+        $refunds = $this->db->pdo()->query("SELECT r.*, hu.username AS client FROM billing_refunds r JOIN hosting_users hu ON hu.id=r.user_id WHERE hu.id IN ({$in}) ORDER BY r.id DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         return $this->view('user.reseller.client_billing_refunds', [
             'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Billing System', 'addons' => $addons, 'refunds' => $refunds,
         ]);
@@ -1073,7 +1088,183 @@ class ResellerPortalController extends Controller
             ['url' => '/reseller/billing-system/payments', 'label' => '💳 Payments'],
             ['url' => '/reseller/billing-system/credits', 'label' => '🏦 Credits'],
             ['url' => '/reseller/billing-system/refunds', 'label' => '↩️ Refunds'],
+            ['url' => '/reseller/billing-system/products', 'label' => '📦 Products'],
+            ['url' => '/reseller/billing-system/cart', 'label' => '🛒 Cart'],
         ];
+    }
+
+    // ── Reseller Products (scoped to reseller's packages) ──
+    public function clientBillingProducts()
+    {
+        $u = $this->requireReseller();
+        $this->requirePerm('billing');
+        $this->requireFeature('billing');
+        $addons = $this->enabledAddons();
+        $rid = (int)$this->reseller->id;
+        $products = $this->db->table('billing_products')
+            ->where('reseller_id', $rid)
+            ->where('is_active', 1)
+            ->orderBy('sort_order', 'ASC')
+            ->get() ?: [];
+        $resellerPackages = $this->db->table('reseller_packages')
+            ->where('reseller_id', $rid)
+            ->where('is_active', 1)
+            ->get() ?: [];
+        $billingCategories = $this->db->table('billing_categories')
+            ->where('is_active', 1)
+            ->orderBy('sort_order', 'ASC')
+            ->get() ?: [];
+        return $this->view('user.reseller.client_billing_products', [
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Billing System', 'addons' => $addons,
+            'products' => $products, 'resellerPackages' => $resellerPackages, 'billingCategories' => $billingCategories,
+        ]);
+    }
+
+    public function clientBillingProductStore()
+    {
+        $u = $this->requireReseller();
+        $this->requirePerm('billing');
+        $this->requireFeature('billing');
+        $rid = (int)$this->reseller->id;
+        $max = $this->db->table('billing_products')->where('reseller_id', $rid)->get() ?: [];
+        $sort = count($max) + 1;
+        $this->db->table('billing_products')->insertGetId([
+            'reseller_id' => $rid,
+            'reseller_package_id' => $this->request->post('reseller_package_id') ? (int)$this->request->post('reseller_package_id') : null,
+            'name' => $this->request->post('name', ''),
+            'description' => $this->request->post('description', ''),
+            'type' => $this->request->post('type', 'hosting'),
+            'category' => $this->request->post('category', $this->request->post('type', 'hosting')),
+            'price' => $this->request->post('price', 0),
+            'setup_fee' => $this->request->post('setup_fee', 0),
+            'billing_cycle' => $this->request->post('billing_cycle', 'monthly'),
+            'license_key' => $this->request->post('license_key', ''),
+            'image' => $this->request->post('image', ''),
+            'is_active' => 1,
+            'is_visible' => $this->request->post('is_visible') ? 1 : 0,
+            'sort_order' => $sort,
+        ]);
+        $this->response->redirect('/reseller/billing-system/products');
+    }
+
+    public function clientBillingProductUpdate($id)
+    {
+        $u = $this->requireReseller();
+        $this->requirePerm('billing');
+        $this->requireFeature('billing');
+        $rid = (int)$this->reseller->id;
+        $this->db->table('billing_products')->where('id', $id)->where('reseller_id', $rid)->update([
+            'reseller_package_id' => $this->request->post('reseller_package_id') ? (int)$this->request->post('reseller_package_id') : null,
+            'name' => $this->request->post('name', ''),
+            'description' => $this->request->post('description', ''),
+            'type' => $this->request->post('type', 'hosting'),
+            'category' => $this->request->post('category', $this->request->post('type', 'hosting')),
+            'price' => $this->request->post('price', 0),
+            'setup_fee' => $this->request->post('setup_fee', 0),
+            'billing_cycle' => $this->request->post('billing_cycle', 'monthly'),
+            'license_key' => $this->request->post('license_key', ''),
+            'image' => $this->request->post('image', ''),
+            'is_visible' => $this->request->post('is_visible') ? 1 : 0,
+        ]);
+        $this->response->redirect('/reseller/billing-system/products');
+    }
+
+    public function clientBillingProductToggle($id)
+    {
+        $u = $this->requireReseller();
+        $this->requirePerm('billing');
+        $this->requireFeature('billing');
+        $rid = (int)$this->reseller->id;
+        $p = $this->db->table('billing_products')->where('id', $id)->where('reseller_id', $rid)->first();
+        if ($p) {
+            $this->db->table('billing_products')->where('id', $id)->update(['is_active' => $p->is_active ? 0 : 1]);
+        }
+        $this->response->redirect('/reseller/billing-system/products');
+    }
+
+    public function clientBillingProductDelete($id)
+    {
+        $u = $this->requireReseller();
+        $this->requirePerm('billing');
+        $this->requireFeature('billing');
+        $rid = (int)$this->reseller->id;
+        $this->db->table('billing_products')->where('id', $id)->where('reseller_id', $rid)->delete();
+        $this->response->redirect('/reseller/billing-system/products');
+    }
+
+    // ── Reseller Shopping Cart ──
+    public function clientBillingCart()
+    {
+        $u = $this->requireReseller();
+        $this->requirePerm('billing');
+        $this->requireFeature('billing');
+        $addons = $this->enabledAddons();
+        $rid = (int)$this->reseller->id;
+        $products = $this->db->table('billing_products')
+            ->where('reseller_id', $rid)
+            ->where('is_active', 1)
+            ->where('is_visible', 1)
+            ->orderBy('sort_order', 'ASC')
+            ->get() ?: [];
+        $cartSettings = $this->getResellerCartSettings($rid);
+        return $this->view('user.reseller.client_billing_cart', [
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Billing System', 'addons' => $addons,
+            'products' => $products, 'cartSettings' => $cartSettings,
+        ]);
+    }
+
+    public function clientBillingCartSettings()
+    {
+        $u = $this->requireReseller();
+        $this->requirePerm('billing');
+        $this->requireFeature('billing');
+        $rid = (int)$this->reseller->id;
+        if ($this->request->isPost()) {
+            $settings = [
+                'cart_theme' => $this->request->post('cart_theme', 'dark'),
+                'cart_currency' => $this->request->post('cart_currency', 'USD'),
+                'show_images' => $this->request->post('show_images') ? 1 : 0,
+                'guest_checkout' => $this->request->post('guest_checkout') ? 1 : 0,
+                'paypal_enabled' => $this->request->post('paypal_enabled') ? 1 : 0,
+                'paypal_client_id' => $this->request->post('paypal_client_id', ''),
+                'paypal_secret' => $this->request->post('paypal_secret', ''),
+                'paypal_mode' => $this->request->post('paypal_mode', 'sandbox'),
+                'cashapp_enabled' => $this->request->post('cashapp_enabled') ? 1 : 0,
+                'cashapp_username' => $this->request->post('cashapp_username', ''),
+                'cashapp_tag' => $this->request->post('cashapp_tag', ''),
+            ];
+            $this->db->table('reseller_settings')
+                ->where('reseller_id', $rid)
+                ->where('setting_key', 'billing_cart')
+                ->update(['setting_value' => json_encode($settings)]);
+            $_SESSION['success_message'] = 'Cart settings saved.';
+            $this->response->redirect('/reseller/billing-system/cart');
+        }
+    }
+
+    protected function getResellerCartSettings($rid)
+    {
+        $row = $this->db->table('reseller_settings')
+            ->where('reseller_id', $rid)
+            ->where('setting_key', 'billing_cart')
+            ->first();
+        $defaults = [
+            'cart_theme' => 'dark',
+            'cart_currency' => 'USD',
+            'show_images' => 1,
+            'guest_checkout' => 1,
+            'paypal_enabled' => 0,
+            'paypal_client_id' => '',
+            'paypal_secret' => '',
+            'paypal_mode' => 'sandbox',
+            'cashapp_enabled' => 0,
+            'cashapp_username' => '',
+            'cashapp_tag' => '',
+        ];
+        if ($row && $row->setting_value) {
+            return array_merge($defaults, json_decode($row->setting_value, true) ?? []);
+        }
+        return $defaults;
     }
 
     // ── Addon: Chat system (reseller manages their clients' chatbox tenants) ──
