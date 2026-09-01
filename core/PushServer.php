@@ -115,7 +115,7 @@ class PushServer
             // Ping/pong timeout check
             $now = time();
             foreach ($this->clients as $fd => $client) {
-                if (!isset($client['is_http']) && $now - $client['last_ping'] > 60) {
+                if (!isset($client['is_http']) && isset($client['last_ping']) && $now - $client['last_ping'] > 60) {
                     $this->disconnect($fd, $read);
                 }
             }
@@ -168,7 +168,7 @@ class PushServer
         }
 
         // Close HTTP connection after response
-        $this->disconnect($fd, []);
+        $this->closeClient($fd);
     }
 
     private function sendHttpResponse($fd, int $code, array $data): void
@@ -200,7 +200,7 @@ class PushServer
             $payload = $frame['payload'];
 
             if ($opcode === 0x8) { // Close
-                $this->disconnect($fd, []);
+                $this->closeClient($fd);
                 return;
             } elseif ($opcode === 0x9) { // Ping
                 $this->sendWsFrame($fd, 0xA, ''); // Pong
@@ -370,22 +370,28 @@ class PushServer
 
     private function disconnect($key, array &$read): void
     {
+        $this->closeClient($key);
+        $keyIdx = array_search($key, $read);
+        if ($keyIdx !== false) unset($read[$keyIdx]);
+        echo "Disconnected: $key\n";
+    }
+
+    private function closeClient($key): void
+    {
         if (isset($this->clients[$key])) {
             $client = $this->clients[$key];
-            if ($client['admin_id'] && isset($this->adminConnections[$client['admin_id']])) {
+            if (isset($client['admin_id']) && $client['admin_id'] && isset($this->adminConnections[$client['admin_id']])) {
                 $this->adminConnections[$client['admin_id']] = array_filter($this->adminConnections[$client['admin_id']], function($x) use ($key) { return $x !== $key; });
                 if (empty($this->adminConnections[$client['admin_id']])) {
                     unset($this->adminConnections[$client['admin_id']]);
                     $this->updatePresence($client['admin_id'], 'offline');
+                    echo "Agent offline: {$client['admin_id']}\n";
                 }
+            }
+            if (isset($this->clients[$key]['socket'])) {
+                @socket_close($this->clients[$key]['socket']);
             }
             unset($this->clients[$key]);
         }
-        $keyIdx = array_search($key, $read);
-        if ($keyIdx !== false) unset($read[$keyIdx]);
-        if (isset($this->clients[$key]['socket'])) {
-            @socket_close($this->clients[$key]['socket']);
-        }
-        echo "Disconnected: $key\n";
     }
 }
