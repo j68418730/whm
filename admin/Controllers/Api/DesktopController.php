@@ -200,7 +200,7 @@ class DesktopController extends Controller
         $offset = ($page - 1) * $perPage;
         $pdo = $this->pdo();
         $total = $pdo->query("SELECT COUNT(*) FROM hosting_users")->fetchColumn();
-        $stm = $pdo->prepare("SELECT id, username, email, domain, package_id, status, created_at FROM hosting_users ORDER BY created_at DESC LIMIT $perPage OFFSET $offset");
+        $stm = $pdo->prepare("SELECT u.id, u.username, u.email, u.domain, p.name AS package, u.status, u.created_at FROM hosting_users u LEFT JOIN hosting_packages p ON p.id = u.package_id ORDER BY u.created_at DESC LIMIT $perPage OFFSET $offset");
         $stm->execute();
         $this->json(['success' => true, 'total' => (int)$total, 'data' => $stm->fetchAll(\PDO::FETCH_OBJ)]);
     }
