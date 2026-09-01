@@ -7,8 +7,8 @@
 <span>·</span> <i class="bi bi-people"></i> <?php echo $totalAccounts ?? 0; ?> clients owned
 </div>
 <div style="display:flex;gap:6px;flex-wrap:wrap">
-<a href="/reseller-clients" class="btn btn-sm btn-secondary" style="padding:5px 12px;font-size:12px"><i class="bi bi-person-plus"></i> Clients</a>
-<a href="/reseller/packages" class="btn btn-sm btn-secondary" style="padding:5px 12px;font-size:12px"><i class="bi bi-box-seam"></i> Packages</a>
+<?php if ($feat('clients')): ?><a href="/reseller-clients" class="btn btn-sm btn-secondary" style="padding:5px 12px;font-size:12px"><i class="bi bi-person-plus"></i> Clients</a><?php endif; ?>
+<?php if ($feat('packages')): ?><a href="/reseller/packages" class="btn btn-sm btn-secondary" style="padding:5px 12px;font-size:12px"><i class="bi bi-box-seam"></i> Packages</a><?php endif; ?>
 </div>
 </div>
 </div>
@@ -107,19 +107,25 @@
 <div class="card">
 <h3 style="color:var(--text_muted,#64748b);font-size:12px;margin:0 0 10px">Quick Actions</h3>
 <div style="display:grid;grid-template-columns:1fr;gap:6px">
+<?php if ($feat('clients')): ?>
 <a href="/reseller-clients" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-people"></i> View Clients</a>
 <a href="/reseller/packages" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-box-seam"></i> Packages</a>
-<?php if (!empty($addons['billing'])): ?>
+<?php endif; ?>
+<?php if ($feat('billing')): ?>
 <a href="/reseller/billing-system" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-credit-card"></i> Billing System</a>
 <?php endif; ?>
-<?php if (!empty($addons['chat'])): ?>
+<?php if ($feat('chat')): ?>
 <a href="/reseller/chat-system" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-chat-dots"></i> Chat System</a>
 <?php endif; ?>
-<?php if (!empty($addons['support'])): ?>
+<?php if ($feat('support')): ?>
 <a href="/reseller/support-system" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-headset"></i> Support System</a>
 <?php endif; ?>
+<?php if ($feat('provisioning')): ?>
 <a href="/reseller/provisioning" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-hdd-network"></i> Provisioning</a>
+<?php endif; ?>
+<?php if ($feat('branding')): ?>
 <a href="/reseller/branding" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-palette"></i> Branding</a>
+<?php endif; ?>
 </div>
 </div>
 </div>
