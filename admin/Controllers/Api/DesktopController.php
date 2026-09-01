@@ -200,7 +200,7 @@ class DesktopController extends Controller
         $offset = ($page - 1) * $perPage;
         $pdo = $this->pdo();
         $total = $pdo->query("SELECT COUNT(*) FROM hosting_users")->fetchColumn();
-        $stm = $pdo->prepare("SELECT id, username, email, domain, package, status, created_at FROM hosting_users ORDER BY created_at DESC LIMIT $perPage OFFSET $offset");
+        $stm = $pdo->prepare("SELECT id, username, email, domain, package_id, status, created_at FROM hosting_users ORDER BY created_at DESC LIMIT $perPage OFFSET $offset");
         $stm->execute();
         $this->json(['success' => true, 'total' => (int)$total, 'data' => $stm->fetchAll(\PDO::FETCH_OBJ)]);
     }
@@ -532,7 +532,7 @@ class DesktopController extends Controller
     {
         $this->apiKeyAuth();
         $pdo = $this->pdo();
-        $this->json(['success' => true, 'data' => $pdo->query("SELECT * FROM canned_responses ORDER BY title ASC")->fetchAll(\PDO::FETCH_OBJ)]);
+        $this->json(['success' => true, 'data' => $pdo->query("SELECT id, title, message, category FROM chat_canned_responses ORDER BY title ASC")->fetchAll(\PDO::FETCH_OBJ)]);
     }
 
     // ─────────────── File Manager ───────────────
