@@ -262,6 +262,9 @@ class DesktopController extends Controller
     {
         $this->apiKeyAuth();
         $list = $this->db->table('streaming_stations')->where('user_id', (int)$id)->get() ?: [];
+        foreach ($list as $s) {
+            $s->listeners = $s->listener_count ?? 0;
+        }
         $this->json(['success' => true, 'data' => $list]);
     }
 
