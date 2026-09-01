@@ -265,6 +265,8 @@ $router->get('/reseller/packages', 'User\Controllers\ResellerPortalController@pa
 $router->post('/reseller/packages/store', 'User\Controllers\ResellerPortalController@packageStore');
 $router->post('/reseller/packages/update/{id}', 'User\Controllers\ResellerPortalController@packageUpdate');
 $router->get('/reseller/packages/delete/{id}', 'User\Controllers\ResellerPortalController@packageDelete');
+$router->get('/reseller/packages/toggle/{id}', 'User\Controllers\ResellerPortalController@packageToggle');
+$router->get('/reseller/packages/clone/{id}', 'User\Controllers\ResellerPortalController@packageClone');
 $router->get('/reseller/plan', 'User\Controllers\ResellerPortalController@plan');
 $router->get('/reseller/branding', 'User\Controllers\ResellerPortalController@branding');
 $router->get('/reseller/billing', 'User\Controllers\ResellerPortalController@billing');
@@ -284,6 +286,13 @@ $router->get('/reseller/chat-system', 'User\Controllers\ResellerPortalController
 $router->post('/reseller/chat-system/create', 'User\Controllers\ResellerPortalController@clientChatCreateTenant');
 $router->get('/reseller/chat-system/toggle/{tenantId}', 'User\Controllers\ResellerPortalController@clientChatToggle');
 $router->get('/reseller/support-system', 'User\Controllers\ResellerPortalController@clientSupport');
+$router->get('/reseller/support-chat', 'User\Controllers\ResellerPortalController@supportLiveChat');
+$router->get('/reseller/support-chat/messages/{sessionId}', 'User\Controllers\ResellerPortalController@supportLiveChatMessages');
+$router->post('/reseller/support-chat/send', 'User\Controllers\ResellerPortalController@supportLiveChatSend');
+$router->post('/reseller/support-chat/initiate', 'User\Controllers\ResellerPortalController@supportLiveChatInitiate');
+$router->get('/reseller/support-chat/close/{sessionId}', 'User\Controllers\ResellerPortalController@supportLiveChatClose');
+$router->get('/reseller/radio-system', 'User\Controllers\ResellerPortalController@radioSystem');
+$router->get('/reseller/game-system', 'User\Controllers\ResellerPortalController@gameSystem');
 $router->get('/reseller/roles', 'User\Controllers\ResellerPortalController@roles');
 $router->post('/reseller/roles/store', 'User\Controllers\ResellerPortalController@roleStore');
 $router->post('/reseller/roles/update/{id}', 'User\Controllers\ResellerPortalController@roleUpdate');

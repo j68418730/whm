@@ -82,29 +82,35 @@ if (!empty($resellerTheme['colors'])) {
       <div class="nav-label">Management</div>
       <a href="/reseller" class="nav-link <?php echo str_contains($title ?? '', 'Dashboard') ? 'active' : ''; ?>"><i class="bi bi-speedometer2"></i> Dashboard</a>
       <a href="/reseller/alerts" class="nav-link <?php echo str_contains($title ?? '', 'Alerts') ? 'active' : ''; ?>"><i class="bi bi-bell"></i> Alerts<?php if (!empty($alert_unread)): ?> <span style="margin-left:auto;background:#f87171;color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 4px"><?php echo (int)$alert_unread; ?></span><?php endif; ?></a>
-      <?php if ($staff === null || $can('clients')): ?>
+      <?php if ($feat('clients') && ($staff === null || $can('clients'))): ?>
       <a href="/reseller/clients" class="nav-link <?php echo str_contains($title ?? '', 'Clients') ? 'active' : ''; ?>"><i class="bi bi-people"></i> Clients</a>
       <?php endif; ?>
-      <?php if ($staff === null || $can('packages')): ?>
+      <?php if ($feat('packages') && ($staff === null || $can('packages'))): ?>
       <a href="/reseller/packages" class="nav-link <?php echo str_contains($title ?? '', 'Packages') ? 'active' : ''; ?>"><i class="bi bi-box-seam"></i> Packages</a>
       <?php endif; ?>
-      <?php if ($staff === null || $can('provisioning')): ?>
+      <?php if ($feat('provisioning') && ($staff === null || $can('provisioning'))): ?>
       <a href="/reseller/provisioning" class="nav-link <?php echo str_contains($title ?? '', 'Provisioning') ? 'active' : ''; ?>"><i class="bi bi-hdd-network"></i> Provisioning</a>
       <?php endif; ?>
-      <?php if (!empty($addons['billing']) && ($staff === null || $can('billing'))): ?>
+      <?php if ($feat('billing') && ($staff === null || $can('billing'))): ?>
       <a href="/reseller/billing-system" class="nav-link <?php echo str_contains($title ?? '', 'Billing System') ? 'active' : ''; ?>"><i class="bi bi-cash-stack"></i> Billing System</a>
       <?php endif; ?>
-      <?php if (!empty($addons['chat']) && ($staff === null || $can('chat'))): ?>
+      <?php if ($feat('chat') && ($staff === null || $can('chat'))): ?>
       <a href="/reseller/chat-system" class="nav-link <?php echo str_contains($title ?? '', 'Chat System') ? 'active' : ''; ?>"><i class="bi bi-chat-dots"></i> Chat System</a>
       <?php endif; ?>
-      <?php if (!empty($addons['support']) && ($staff === null || $can('support'))): ?>
+      <?php if ($feat('support') && ($staff === null || $can('support'))): ?>
       <a href="/reseller/support-system" class="nav-link <?php echo str_contains($title ?? '', 'Support System') ? 'active' : ''; ?>"><i class="bi bi-headset"></i> Support System</a>
       <?php endif; ?>
+      <?php if ($feat('streaming') && ($staff === null || $can('radio'))): ?>
+      <a href="/reseller/radio-system" class="nav-link <?php echo str_contains($title ?? '', 'Radio System') ? 'active' : ''; ?>"><i class="bi bi-radio"></i> Radio System</a>
+      <?php endif; ?>
+      <?php if ($feat('game_servers') && ($staff === null || $can('games'))): ?>
+      <a href="/reseller/game-system" class="nav-link <?php echo str_contains($title ?? '', 'Game System') ? 'active' : ''; ?>"><i class="bi bi-controller"></i> Game System</a>
+      <?php endif; ?>
       <div class="nav-label">Account</div>
-      <?php if ($staff === null || $can('staff')): ?>
+      <?php if ($feat('staff') && ($staff === null || $can('staff'))): ?>
       <a href="/reseller/roles" class="nav-link <?php echo str_contains($title ?? '', 'Roles & Staff') ? 'active' : ''; ?>"><i class="bi bi-shield-lock"></i> Roles &amp; Staff</a>
       <?php endif; ?>
-      <?php if ($staff === null || $can('branding')): ?>
+      <?php if ($feat('branding') && ($staff === null || $can('branding'))): ?>
       <a href="/reseller/branding" class="nav-link <?php echo str_contains($title ?? '', 'Branding') ? 'active' : ''; ?>"><i class="bi bi-palette"></i> Branding</a>
       <?php endif; ?>
       <a href="/reseller/billing" class="nav-link <?php echo str_contains($title ?? '', 'Billing Overview') ? 'active' : ''; ?>"><i class="bi bi-credit-card"></i> Billing</a>

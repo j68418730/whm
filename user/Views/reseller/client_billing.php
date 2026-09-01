@@ -1,3 +1,23 @@
+<style>
+.section-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.section-card{background:var(--card_bg,rgba(8,16,28,.85));border:1px solid rgba(0,191,255,.08);border-radius:12px;padding:18px;text-align:center;text-decoration:none;color:var(--text,#e0e0e0);transition:.2s}
+.section-card:hover{transform:translateY(-3px);border-color:rgba(0,140,255,.3);box-shadow:0 8px 30px rgba(0,140,255,.08)}
+.section-card .icon{font-size:28px;margin-bottom:6px}
+.section-card .name{font-size:13px;font-weight:600;margin-bottom:2px}
+.section-card .count{font-size:26px;font-weight:800;color:var(--accent);margin-bottom:2px}
+.section-card .desc{font-size:10px;color:#64748b}
+</style>
+
+<div class="section-grid">
+<a href="/reseller/billing-system" class="section-card"><div class="icon">📊</div><div class="name">Dashboard</div><div class="desc">Billing overview &amp; stats</div></a>
+<a href="/reseller/billing-system/orders" class="section-card"><div class="icon">📋</div><div class="name">Orders</div><div class="count"><?php echo (int)($counts['orders'] ?? 0); ?></div><div class="desc">Client orders</div></a>
+<a href="/reseller/billing-system/services" class="section-card"><div class="icon">🖥</div><div class="name">Services</div><div class="count"><?php echo (int)($counts['services'] ?? 0); ?></div><div class="desc">Active services</div></a>
+<a href="/reseller/billing-system" class="section-card"><div class="icon">💰</div><div class="name">Invoices</div><div class="count"><?php echo (int)($counts['invoices'] ?? 0); ?></div><div class="desc">Client invoices</div></a>
+<a href="/reseller/billing-system/payments" class="section-card"><div class="icon">💳</div><div class="name">Payments</div><div class="count"><?php echo (int)($counts['payments'] ?? 0); ?></div><div class="desc">Transactions</div></a>
+<a href="/reseller/billing-system/credits" class="section-card"><div class="icon">🏦</div><div class="name">Credits</div><div class="count"><?php echo (int)($counts['credits'] ?? 0); ?></div><div class="desc">Client credits</div></a>
+<a href="/reseller/billing-system/refunds" class="section-card"><div class="icon">↩️</div><div class="name">Refunds</div><div class="count"><?php echo (int)($counts['refunds'] ?? 0); ?></div><div class="desc">Refund processing</div></a>
+</div>
+
 <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;border-bottom:1px solid var(--border,rgba(0,191,255,.08));padding-bottom:8px">
 <a href="/reseller/billing-system" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff">📊 Dashboard</a>
 <a href="/reseller/billing-system/orders" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text_muted,#94a3b8)">📋 Orders</a>

@@ -54,7 +54,7 @@
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:12px">
 <?php
 $resFeats = is_string($reseller->features ?? null) ? json_decode($reseller->features, true) ?? [] : ($reseller->features ?? []);
-$permFeatures = ['cron'=>'Cron','ssh'=>'SSH','ssl'=>'SSL','git'=>'Git','nodejs'=>'Node.js','python'=>'Python','ruby'=>'Ruby','terminal'=>'Terminal','backups'=>'Backups','installer'=>'Installer','builder'=>'Website Builder','ai_builder'=>'AI Builder','ai_assistant'=>'AI Assistant','marketplace'=>'Marketplace','api'=>'API','webhooks'=>'Webhooks','chat'=>'Chatbox','chat_voice'=>'+ Voice','chat_video'=>'+ Video','dj_panel'=>'DJ Panel','streaming'=>'Streaming','game_servers'=>'Game Servers','vps'=>'VPS'];
+$permFeatures = ['cron'=>'Cron','ssh'=>'SSH','ssl'=>'SSL','git'=>'Git','nodejs'=>'Node.js','python'=>'Python','ruby'=>'Ruby','terminal'=>'Terminal','backups'=>'Backups','installer'=>'Installer','builder'=>'Website Builder','ai_builder'=>'AI Builder','ai_assistant'=>'AI Assistant','marketplace'=>'Marketplace','api'=>'API','webhooks'=>'Webhooks','chat'=>'Chatbox','chat_voice'=>'+ Voice','chat_video'=>'+ Video','dj_panel'=>'DJ Panel','streaming'=>'Streaming','game_servers'=>'Game Servers','vps'=>'VPS','clients'=>'👥 Manage Clients','packages'=>'📦 Reseller Packages','provisioning'=>'⚙️ Provisioning','billing'=>'💰 Client Billing System','support'=>'🎧 Client Support System','staff'=>'🛡️ Roles & Staff','branding'=>'🎨 Branding'];
 foreach ($permFeatures as $k=>$l):
 $isSub = in_array($k, ['chat_voice','chat_video']);
 $checked = in_array($k, (array)$resFeats) || empty($resFeats) ? 'checked' : '';

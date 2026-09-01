@@ -89,11 +89,42 @@ class ResellerPortalController extends Controller
         }
     }
 
+    // ── Central service resolver (spec §14) ──
+    // Source of truth for what services a reseller's OWN panel provides is the feature
+    // set an admin/super-user assigned on the 2087 admin panel (resellers.features).
+    // Empty/MISSING features = all services granted (mirrors the admin edit form, where
+    // an unset feature list defaults every checkbox to checked). Once any features are
+    // set, only the listed services appear in the menu and pass backend checks.
+    protected $grantedCache = null;
+
+    protected function granted($feature)
+    {
+        if ($this->grantedCache === null) {
+            $raw = $this->reseller->features ?? null;
+            $feats = is_string($raw) ? json_decode($raw, true) : $raw;
+            $this->grantedCache = is_array($feats) ? array_values(array_filter($feats, 'is_string')) : [];
+        }
+        if (empty($this->grantedCache)) return true;
+        return in_array($feature, $this->grantedCache, true);
+    }
+
+    // Backend route guard (spec §15): hiding the menu is not security — every route
+    // verifies the feature too. Denied requests bounce to the dashboard.
+    protected function requireFeature($feature)
+    {
+        if (!$this->granted($feature)) {
+            $_SESSION['error_message'] = 'That section is not included in your reseller package features.';
+            $this->response->redirect('/reseller');
+            exit;
+        }
+    }
+
     protected function view($view, $data = [])
     {
         $data['addons'] = $this->addons;
         $data['staff'] = $this->staff;
         $data['can'] = function ($perm) { return $this->can($perm); };
+        $data['feat'] = function ($feature) { return $this->granted($feature); };
 
         // Global quota status for every reseller page (drives the persistent low-resource banner).
         $data['quota'] = $this->quotaStatus();
@@ -218,6 +249,7 @@ class ResellerPortalController extends Controller
     public function clientsOverview()
     {
         $u = $this->requireReseller();
+        $this->requireFeature('clients');
         if ($this->staff && !$this->can('clients')) { $_SESSION['error_message'] = 'You do not have permission to view clients.'; $this->response->redirect('/reseller'); exit; }
         $pdo = $this->db->pdo();
         $rid = (int)$this->reseller->id;
@@ -233,6 +265,7 @@ class ResellerPortalController extends Controller
     public function clients()
     {
         $u = $this->requireReseller();
+        $this->requireFeature('clients');
         if ($this->staff && !$this->can('clients')) { $_SESSION['error_message'] = 'You do not have permission to view clients.'; $this->response->redirect('/reseller'); exit; }
         $rid = (int)$this->reseller->id;
         $accounts = $this->db->table('hosting_users')->where('reseller_id', $rid)->orderBy('created_at', 'DESC')->get() ?: [];
@@ -256,6 +289,7 @@ class ResellerPortalController extends Controller
     public function clientShow($id)
     {
         $u = $this->requireReseller();
+        $this->requireFeature('clients');
         $this->requirePerm('clients');
         $rid = (int)$this->reseller->id;
         $account = $this->db->table('hosting_users')->where('id', (int)$id)->where('reseller_id', $rid)->first();
@@ -292,6 +326,7 @@ class ResellerPortalController extends Controller
     public function clientPassword($id)
     {
         $u = $this->requireReseller();
+        $this->requireFeature('clients');
         $this->requirePerm('clients');
         $rid = (int)$this->reseller->id;
         $a = $this->db->table('hosting_users')->where('id', (int)$id)->where('reseller_id', $rid)->first();
@@ -307,6 +342,7 @@ class ResellerPortalController extends Controller
     public function clientSuspend($id)
     {
         $u = $this->requireReseller();
+        $this->requireFeature('clients');
         if ($this->staff && !$this->can('clients')) { $_SESSION['error_message'] = 'No permission.'; $this->response->redirect('/reseller'); exit; }
         $rid = (int)$this->reseller->id;
         $a = $this->db->table('hosting_users')->where('id', (int)$id)->where('reseller_id', $rid)->first();
@@ -322,6 +358,7 @@ class ResellerPortalController extends Controller
     public function clientUnsuspend($id)
     {
         $u = $this->requireReseller();
+        $this->requireFeature('clients');
         if ($this->staff && !$this->can('clients')) { $_SESSION['error_message'] = 'No permission.'; $this->response->redirect('/reseller'); exit; }
         $rid = (int)$this->reseller->id;
         $a = $this->db->table('hosting_users')->where('id', (int)$id)->where('reseller_id', $rid)->first();
@@ -336,6 +373,7 @@ class ResellerPortalController extends Controller
     public function clientCreate()
     {
         $u = $this->requireReseller();
+        $this->requireFeature('clients');
         if ($this->staff && !$this->can('clients')) { $_SESSION['error_message'] = 'No permission.'; $this->response->redirect('/reseller'); exit; }
         $rid = (int)$this->reseller->id;
         $pkgs = $this->db->table('reseller_packages')->where('reseller_id', $rid)->where('is_active', 1)->orderBy('created_at', 'DESC')->get() ?: [];
@@ -347,6 +385,7 @@ class ResellerPortalController extends Controller
     public function clientStore()
     {
         $u = $this->requireReseller();
+        $this->requireFeature('clients');
         if ($this->staff && !$this->can('clients')) { $_SESSION['error_message'] = 'No permission.'; $this->response->redirect('/reseller'); exit; }
         $rid = (int)$this->reseller->id;
         $username = strtolower(preg_replace('/[^a-z0-9]/', '', $this->request->post('username', '')));
@@ -425,16 +464,25 @@ class ResellerPortalController extends Controller
         return $labels[$type] ?? ucfirst($type);
     }
 
+    // General server-capability features a package may grant, mirroring the admin
+    // package edit page. SSH is root-only and never offered to resellers/customers.
+    protected function generalFeatureKeys()
+    {
+        return ['cron','ssl','git','nodejs','python','ruby','terminal','backups','installer','builder',
+            'ai_builder','ai_assistant','marketplace','api','webhooks','chat','chat_voice','chat_video','dj_panel'];
+    }
+
     // Feature/module checkboxes a reseller may grant are locked to their own reseller type too.
     protected function allowedFeatures()
     {
-        if (($this->reseller->type ?? 'web_reseller') === 'icecast_reseller') {
-            return ['billing' => 'Billing','chat' => 'Chat','support' => 'Support','game' => 'Game Servers',
-                'music' => 'Radio/Music','dj_panel' => 'DJ Panel','databases' => 'Databases','ssl' => 'SSL',
-                'backups' => 'Backups'];
-        }
-        return ['billing' => 'Billing','chat' => 'Chat','support' => 'Support','email' => 'Email',
-            'databases' => 'Databases','ssl' => 'SSL','backups' => 'Backups','vps' => 'VPS','domains' => 'Domains'];
+        $keys = $this->generalFeatureKeys();
+        $labels = ['cron'=>'Cron','ssl'=>'SSL','git'=>'Git','nodejs'=>'Node.js','python'=>'Python','ruby'=>'Ruby',
+            'terminal'=>'Terminal','backups'=>'Backups','installer'=>'Installer','builder'=>'Website Builder',
+            'ai_builder'=>'AI Builder','ai_assistant'=>'AI Assistant','marketplace'=>'Marketplace','api'=>'API',
+            'webhooks'=>'Webhooks','chat'=>'Chatbox','chat_voice'=>'+ Voice','chat_video'=>'+ Video','dj_panel'=>'DJ Panel'];
+        $out = [];
+        foreach ($keys as $k) { $out[$k] = $labels[$k] ?? ucfirst($k); }
+        return $out;
     }
 
     protected function sanitizeFeatures($raw)
@@ -443,6 +491,34 @@ class ResellerPortalController extends Controller
         $clean = [];
         foreach ((array)$raw as $f) { if (in_array($f, $allowed, true)) $clean[] = $f; }
         return $clean;
+    }
+
+    // Build the rich features JSON mirroring the admin mergePkgFeatures():
+    // flat general capability keys + streaming_package + game_package sub-arrays.
+    protected function mergeResellerPackageFeatures()
+    {
+        $allowed = $this->generalFeatureKeys();
+        $featMap = [];
+        foreach ((array)$this->request->post('features', []) as $f) {
+            if (in_array($f, $allowed, true)) $featMap[$f] = true;
+        }
+        $customPkg = $this->request->post('custom_pkg', []);
+        $streaming = [];
+        if ($this->request->post('custom_streaming_enabled', 0)) {
+            $streaming['enabled'] = true;
+            foreach ($customPkg as $k => $v) {
+                if (strpos($k, 'str_') === 0) $streaming[substr($k, 4)] = $v;
+            }
+        }
+        $game = [];
+        if ($this->request->post('custom_game_enabled', 0)) {
+            $game['enabled'] = true;
+            foreach ($customPkg as $k => $v) {
+                if (strpos($k, 'game_') === 0) $game[substr($k, 5)] = $v;
+            }
+        }
+        $merged = array_merge($featMap, ['streaming_package' => $streaming, 'game_package' => $game]);
+        return json_encode($merged);
     }
 
     protected function parseGamesParam()
@@ -462,6 +538,7 @@ class ResellerPortalController extends Controller
     public function packages()
     {
         $u = $this->requireReseller();
+        $this->requireFeature('packages');
         if ($this->staff && !$this->can('packages')) { $_SESSION['error_message'] = 'No permission.'; $this->response->redirect('/reseller'); exit; }
         // The reseller creates/manages their OWN retail packages. They never use server packages.
         $pkgs = $this->db->table('reseller_packages')->where('reseller_id', $this->reseller->id)->orderBy('created_at', 'DESC')->get() ?: [];
@@ -471,10 +548,14 @@ class ResellerPortalController extends Controller
                 $clientCounts[(int)$r->reseller_package_id] = (int)$r->c;
             }
         } catch (\Exception $e) {}
+        $stats = [
+            'total_packages' => count($pkgs),
+            'active_packages' => count(array_filter($pkgs, function ($p) { return ($p->is_active ?? 1) == 1; })),
+        ];
         return $this->view('user.reseller.packages', [
             'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Packages',
             'packages' => $pkgs, 'clientCounts' => $clientCounts, 'allowedTypes' => $this->allowedPackageTypes(),
-            'allowedFeatures' => $this->allowedFeatures(),
+            'allowedFeatures' => $this->allowedFeatures(), 'packagesStats' => $stats,
             'typeLabel' => function ($t) { return $this->packageTypeLabel($t); },
         ]);
     }
@@ -482,6 +563,7 @@ class ResellerPortalController extends Controller
     public function packageStore()
     {
         $u = $this->requireReseller();
+        $this->requireFeature('packages');
         if ($this->staff && !$this->can('packages')) { $_SESSION['error_message'] = 'No permission.'; $this->response->redirect('/reseller'); exit; }
         $name = trim($this->request->post('name', ''));
         if ($name === '') { $_SESSION['error_message'] = 'Package name required.'; $this->response->redirect('/reseller/packages'); exit; }
@@ -500,25 +582,16 @@ class ResellerPortalController extends Controller
         $data = [
             'reseller_id' => $this->reseller->id, 'name' => $name, 'slug' => $slug, 'type' => $type,
             'description' => $this->request->post('description', ''),
-            'price' => (float)$this->request->post('price', 0),
-            'setup_fee' => (float)$this->request->post('setup_fee', 0),
-            'billing_cycle' => $this->request->post('billing_cycle', 'monthly'),
-            'slots' => (int)$this->request->post('slots', 10),
             'disk_space' => (int)$this->request->post('disk_space', 0),
             'bandwidth' => (int)$this->request->post('bandwidth', 0),
             'storage_limit' => (int)$this->request->post('storage_limit', 0),
-            'backup_limit' => (int)$this->request->post('backup_limit', 0),
             'database_limit' => (int)$this->request->post('database_limit', 0),
-            'port_limit' => (int)$this->request->post('port_limit', 0),
-            'player_slots' => (int)$this->request->post('player_slots', 0),
-            'max_stations' => (int)$this->request->post('max_stations', 0),
-            'max_djs' => (int)$this->request->post('max_djs', 0),
-            'max_listeners' => (int)$this->request->post('max_listeners', 0),
-            'max_bitrate' => (int)$this->request->post('max_bitrate', 0),
-            'features' => json_encode($this->sanitizeFeatures($this->request->post('features', []))) ?: null,
-            'allowed_games' => json_encode($this->parseGamesParam()) ?: null,
+            'features' => $this->mergeResellerPackageFeatures() ?: null,
+            'allowed_games' => null,
             'is_active' => $this->request->post('is_active', 1) ? 1 : 0,
         ];
+        // Cost lives on billing products (set up later); keep price/setup_fee/billing_cycle at 0 here.
+        $data['price'] = 0; $data['setup_fee'] = 0;
         // Once committed quota is at/over the threshold, block adding new committed resources.
         if ($this->assertQuota('/reseller/packages', 'create new or larger packages')) { /* blocked */ }
         $this->db->table('reseller_packages')->insertGetId($data);
@@ -530,6 +603,7 @@ class ResellerPortalController extends Controller
     public function packageUpdate($id)
     {
         $u = $this->requireReseller();
+        $this->requireFeature('packages');
         if ($this->staff && !$this->can('packages')) { $_SESSION['error_message'] = 'No permission.'; $this->response->redirect('/reseller'); exit; }
         $pkg = $this->db->table('reseller_packages')->where('id', (int)$id)->where('reseller_id', $this->reseller->id)->first();
         if (!$pkg) { $_SESSION['error_message'] = 'Package not found.'; $this->response->redirect('/reseller/packages'); exit; }
@@ -544,25 +618,14 @@ class ResellerPortalController extends Controller
             'name' => $name,
             'type' => $type,
             'description' => $this->request->post('description', $pkg->description),
-            'price' => (float)$this->request->post('price', 0),
-            'setup_fee' => (float)$this->request->post('setup_fee', 0),
-            'billing_cycle' => $this->request->post('billing_cycle', $pkg->billing_cycle),
-            'slots' => (int)$this->request->post('slots', 10),
             'disk_space' => (int)$this->request->post('disk_space', 0),
             'bandwidth' => (int)$this->request->post('bandwidth', 0),
             'storage_limit' => (int)$this->request->post('storage_limit', 0),
-            'backup_limit' => (int)$this->request->post('backup_limit', 0),
             'database_limit' => (int)$this->request->post('database_limit', 0),
-            'port_limit' => (int)$this->request->post('port_limit', 0),
-            'player_slots' => (int)$this->request->post('player_slots', 0),
-            'max_stations' => (int)$this->request->post('max_stations', 0),
-            'max_djs' => (int)$this->request->post('max_djs', 0),
-            'max_listeners' => (int)$this->request->post('max_listeners', 0),
-            'max_bitrate' => (int)$this->request->post('max_bitrate', 0),
-            'features' => json_encode($this->sanitizeFeatures($this->request->post('features', []))) ?: null,
-            'allowed_games' => json_encode($this->parseGamesParam()) ?: null,
+            'features' => $this->mergeResellerPackageFeatures() ?: null,
             'is_active' => $this->request->post('is_active', 1) ? 1 : 0,
         ];
+        // price/setup_fee/billing_cycle/allowed_games belong to billing products / legacy — never touched here.
         // Only block when the update would increase committed resources beyond capacity.
         $grows = ((int)$data['disk_space'] > (int)$pkg->disk_space) || ((int)$data['bandwidth'] > (int)$pkg->bandwidth);
         if ($grows && $this->assertQuota('/reseller/packages', 'enlarge this package')) { /* blocked */ }
@@ -572,12 +635,57 @@ class ResellerPortalController extends Controller
         $this->response->redirect('/reseller/packages');
     }
 
+    public function packageToggle($id)
+    {
+        $u = $this->requireReseller();
+        $this->requireFeature('packages');
+        if ($this->staff && !$this->can('packages')) { $_SESSION['error_message'] = 'No permission.'; $this->response->redirect('/reseller'); exit; }
+        $pkg = $this->db->table('reseller_packages')->where('id', (int)$id)->where('reseller_id', $this->reseller->id)->first();
+        if (!$pkg) { $_SESSION['error_message'] = 'Package not found.'; $this->response->redirect('/reseller/packages'); exit; }
+        $new = (($pkg->is_active ?? 1) == 1) ? 0 : 1;
+        $this->db->table('reseller_packages')->where('id', (int)$id)->update(['is_active' => $new]);
+        $this->audit($new ? 'package.activated' : 'package.deactivated', 'reseller_package', (int)$id, ['name' => $pkg->name]);
+        $_SESSION['success_message'] = $new ? 'Package activated.' : 'Package deactivated.';
+        $this->response->redirect('/reseller/packages');
+    }
+
+    public function packageClone($id)
+    {
+        $u = $this->requireReseller();
+        $this->requireFeature('packages');
+        if ($this->staff && !$this->can('packages')) { $_SESSION['error_message'] = 'No permission.'; $this->response->redirect('/reseller'); exit; }
+        $pkg = $this->db->table('reseller_packages')->where('id', (int)$id)->where('reseller_id', $this->reseller->id)->first();
+        if (!$pkg) { $_SESSION['error_message'] = 'Package not found.'; $this->response->redirect('/reseller/packages'); exit; }
+        $data = (array)$pkg;
+        unset($data['id'], $data['created_at']);
+        $data['name'] = $pkg->name . ' (Clone)';
+        $data['is_active'] = 0;
+        // unique slug
+        $slugBase = preg_replace('/_[0-9]+$/', '', (string)$pkg->slug) ?: strtolower(preg_replace('/[^a-z0-9]+/', '_', strtolower($pkg->name)));
+        $slug = $slugBase . '_clone';
+        $i = 1;
+        while ($this->db->table('reseller_packages')->where('slug', $slug)->first()) { $slug = $slugBase . '_clone_' . ($i++); }
+        $data['slug'] = $slug;
+        $this->db->table('reseller_packages')->insertGetId($data);
+        $this->audit('package.cloned', 'reseller_package', (int)$id, ['name' => $data['name']]);
+        $_SESSION['success_message'] = 'Package cloned.';
+        $this->response->redirect('/reseller/packages');
+    }
+
     public function packageDelete($id)
     {
         $u = $this->requireReseller();
+        $this->requireFeature('packages');
         if ($this->staff && !$this->can('packages')) { $_SESSION['error_message'] = 'No permission.'; $this->response->redirect('/reseller'); exit; }
+        $pkg = $this->db->table('reseller_packages')->where('id', (int)$id)->where('reseller_id', $this->reseller->id)->first();
+        if (!$pkg) { $_SESSION['error_message'] = 'Package not found.'; $this->response->redirect('/reseller/packages'); exit; }
+        $inUse = $this->db->table('hosting_users')->where('reseller_package_id', (int)$id)->first();
+        if ($inUse) {
+            $_SESSION['error_message'] = 'Cannot delete — this package is in use by client accounts. Deactivate it instead.';
+            $this->response->redirect('/reseller/packages'); exit;
+        }
         $this->db->table('reseller_packages')->where('id', (int)$id)->where('reseller_id', $this->reseller->id)->delete();
-        $this->audit('package.deleted', 'reseller_package', (int)$id);
+        $this->audit('package.deleted', 'reseller_package', (int)$id, ['name' => $pkg->name]);
         $_SESSION['success_message'] = 'Package deleted.';
         $this->response->redirect('/reseller/packages');
     }
@@ -604,6 +712,7 @@ class ResellerPortalController extends Controller
     public function branding()
     {
         $u = $this->requireReseller();
+        $this->requireFeature('branding');
         if ($this->staff && !$this->can('branding')) { $_SESSION['error_message'] = 'No permission.'; $this->response->redirect('/reseller'); exit; }
         return $this->view('user.reseller.branding', [
             'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Branding',
@@ -613,6 +722,7 @@ class ResellerPortalController extends Controller
     public function provisioning()
     {
         $u = $this->requireReseller();
+        $this->requireFeature('provisioning');
         if ($this->staff && !$this->can('provisioning')) { $_SESSION['error_message'] = 'No permission.'; $this->response->redirect('/reseller'); exit; }
         $pdo = $this->db->pdo();
         $rid = (int)$this->reseller->id;
@@ -654,6 +764,7 @@ class ResellerPortalController extends Controller
     public function provisioningClientRun($clientId)
     {
         $u = $this->requireReseller();
+        $this->requireFeature('provisioning');
         if ($this->staff && !$this->can('provisioning')) { $_SESSION['error_message'] = 'No permission.'; $this->response->redirect('/reseller'); exit; }
         $rid = (int)$this->reseller->id;
         $client = $this->db->table('hosting_users')->where('id', (int)$clientId)->where('reseller_id', $rid)->first();
@@ -696,6 +807,7 @@ class ResellerPortalController extends Controller
     public function provisioningRun($orderId)
     {
         $u = $this->requireReseller();
+        $this->requireFeature('provisioning');
         if ($this->staff && !$this->can('provisioning')) { $_SESSION['error_message'] = 'No permission.'; $this->response->redirect('/reseller'); exit; }
         $rid = (int)$this->reseller->id;
         $order = $this->db->table('billing_orders')->where('id', (int)$orderId)->first();
@@ -768,26 +880,11 @@ class ResellerPortalController extends Controller
     }
 
     // ── Addon gating ──
-    // Which addon tools (billing/chat/support) the reseller may use = union of the
-    // feature flags granted across their own active retail packages. A reseller who
-    // sells chat packages gets the Chat tool, etc. Never shows admin/root scope.
+    // Which addon tools (billing/chat/support) the reseller may use. Now derived from
+    // the admin-assigned reseller feature set (resellers.features) via granted().
     protected function enabledAddons()
     {
-        $addons = ['billing' => false, 'chat' => false, 'support' => false];
-        try {
-            $pkgs = $this->db->table('reseller_packages')
-                ->where('reseller_id', $this->reseller->id)
-                ->where('is_active', 1)->get() ?: [];
-            foreach ($pkgs as $p) {
-                $feats = is_string($p->features ?? null) ? json_decode($p->features, true) : ($p->features ?? null);
-                if (is_array($feats)) {
-                    foreach (['billing','chat','support'] as $k) {
-                        if (in_array($k, $feats, true)) $addons[$k] = true;
-                    }
-                }
-            }
-        } catch (\Exception $e) {}
-        return $addons;
+        return ['billing' => $this->granted('billing'), 'chat' => $this->granted('chat'), 'support' => $this->granted('support')];
     }
 
     // ── Addon: Billing system (reseller bills THEIR clients) ──
@@ -797,8 +894,8 @@ class ResellerPortalController extends Controller
     {
         $u = $this->requireReseller();
         $this->requirePerm('billing');
+        $this->requireFeature('billing');
         $addons = $this->enabledAddons();
-        if (!$addons['billing']) { $_SESSION['error_message'] = 'The Billing addon is not enabled on your packages.'; $this->response->redirect('/reseller'); exit; }
         $pdo = $this->db->pdo();
         $rid = (int)$this->reseller->id;
         $ids = $this->clientIds();
@@ -841,8 +938,8 @@ class ResellerPortalController extends Controller
     {
         $u = $this->requireReseller();
         $this->requirePerm('billing');
+        $this->requireFeature('billing');
         $addons = $this->enabledAddons();
-        if (!$addons['billing']) { $this->response->redirect('/reseller'); exit; }
         $rid = (int)$this->reseller->id;
         $orders = $this->db->pdo()->query("SELECT o.*, hu.username AS client FROM billing_orders o JOIN hosting_users hu ON hu.id=o.user_id WHERE hu.reseller_id={$rid} ORDER BY o.created_at DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         return $this->view('user.reseller.client_billing_orders', [
@@ -854,8 +951,8 @@ class ResellerPortalController extends Controller
     {
         $u = $this->requireReseller();
         $this->requirePerm('billing');
+        $this->requireFeature('billing');
         $addons = $this->enabledAddons();
-        if (!$addons['billing']) { $this->response->redirect('/reseller'); exit; }
         $rid = (int)$this->reseller->id;
         $services = $this->db->pdo()->query("SELECT s.*, hu.username AS client, bp.name AS product_name FROM billing_services s LEFT JOIN hosting_users hu ON hu.id=s.user_id LEFT JOIN billing_products bp ON s.product_id=bp.id WHERE hu.reseller_id={$rid} ORDER BY s.id DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         return $this->view('user.reseller.client_billing_services', [
@@ -867,8 +964,8 @@ class ResellerPortalController extends Controller
     {
         $u = $this->requireReseller();
         $this->requirePerm('billing');
+        $this->requireFeature('billing');
         $addons = $this->enabledAddons();
-        if (!$addons['billing']) { $this->response->redirect('/reseller'); exit; }
         $rid = (int)$this->reseller->id;
         $payments = $this->db->pdo()->query("SELECT bp.*, hu.username AS client FROM billing_payments bp JOIN hosting_users hu ON hu.id=bp.user_id WHERE hu.reseller_id={$rid} ORDER BY bp.id DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         return $this->view('user.reseller.client_billing_payments', [
@@ -880,8 +977,8 @@ class ResellerPortalController extends Controller
     {
         $u = $this->requireReseller();
         $this->requirePerm('billing');
+        $this->requireFeature('billing');
         $addons = $this->enabledAddons();
-        if (!$addons['billing']) { $this->response->redirect('/reseller'); exit; }
         $rid = (int)$this->reseller->id;
         $credits = $this->db->pdo()->query("SELECT c.*, hu.username AS client FROM billing_credits c JOIN hosting_users hu ON hu.id=c.user_id WHERE hu.reseller_id={$rid} ORDER BY c.id DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         $clients = $this->db->table('hosting_users')->where('reseller_id', $rid)->get() ?: [];
@@ -894,8 +991,8 @@ class ResellerPortalController extends Controller
     {
         $u = $this->requireReseller();
         $this->requirePerm('billing');
+        $this->requireFeature('billing');
         $addons = $this->enabledAddons();
-        if (!$addons['billing']) { $this->response->redirect('/reseller'); exit; }
         $rid = (int)$this->reseller->id;
         $clientId = (int)$this->request->post('client_id', 0);
         $client = $this->db->table('hosting_users')->where('id', $clientId)->where('reseller_id', $rid)->first();
@@ -914,8 +1011,8 @@ class ResellerPortalController extends Controller
     {
         $u = $this->requireReseller();
         $this->requirePerm('billing');
+        $this->requireFeature('billing');
         $addons = $this->enabledAddons();
-        if (!$addons['billing']) { $this->response->redirect('/reseller'); exit; }
         $rid = (int)$this->reseller->id;
         $refunds = $this->db->pdo()->query("SELECT r.*, hu.username AS client FROM billing_refunds r JOIN hosting_users hu ON hu.id=r.user_id WHERE hu.reseller_id={$rid} ORDER BY r.id DESC LIMIT 300")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         return $this->view('user.reseller.client_billing_refunds', [
@@ -927,8 +1024,8 @@ class ResellerPortalController extends Controller
     {
         $u = $this->requireReseller();
         $this->requirePerm('billing');
+        $this->requireFeature('billing');
         $addons = $this->enabledAddons();
-        if (!$addons['billing']) { $this->response->redirect('/reseller'); exit; }
         $rid = (int)$this->reseller->id;
         $clientId = (int)$this->request->post('client_id', 0);
         $client = $this->db->table('hosting_users')->where('id', $clientId)->where('reseller_id', $rid)->first();
@@ -953,8 +1050,8 @@ class ResellerPortalController extends Controller
     {
         $u = $this->requireReseller();
         $this->requirePerm('billing');
+        $this->requireFeature('billing');
         $addons = $this->enabledAddons();
-        if (!$addons['billing']) { $this->response->redirect('/reseller'); exit; }
         $rid = (int)$this->reseller->id;
         $inv = $this->db->table('invoices')->where('id', (int)$id)->where('reseller_id', $rid)->first();
         if ($inv) {
@@ -984,8 +1081,8 @@ class ResellerPortalController extends Controller
     {
         $u = $this->requireReseller();
         $this->requirePerm('chat');
+        $this->requireFeature('chat');
         $addons = $this->enabledAddons();
-        if (!$addons['chat']) { $_SESSION['error_message'] = 'The Chat addon is not enabled on your packages.'; $this->response->redirect('/reseller'); exit; }
         $pdo = $this->db->pdo();
         $rid = (int)$this->reseller->id;
         $rows = $pdo->query("SELECT hu.id AS user_id, hu.username, ct.id AS tenant_id, ct.widget_title, ct.widget_color, ct.is_active
@@ -1001,8 +1098,8 @@ class ResellerPortalController extends Controller
     {
         $u = $this->requireReseller();
         $this->requirePerm('chat');
+        $this->requireFeature('chat');
         $addons = $this->enabledAddons();
-        if (!$addons['chat']) { $this->response->redirect('/reseller'); exit; }
         $rid = (int)$this->reseller->id;
         $clientId = (int)$this->request->post('client_id', 0);
         $client = $this->db->table('hosting_users')->where('id', $clientId)->where('reseller_id', $rid)->first();
@@ -1026,8 +1123,8 @@ class ResellerPortalController extends Controller
     {
         $u = $this->requireReseller();
         $this->requirePerm('chat');
+        $this->requireFeature('chat');
         $addons = $this->enabledAddons();
-        if (!$addons['chat']) { $this->response->redirect('/reseller'); exit; }
         $pdo = $this->db->pdo();
         $t = $pdo->prepare("SELECT ct.* FROM chatbox_tenants ct JOIN hosting_users hu ON hu.id = ct.hosting_user_id WHERE ct.id = ? AND hu.reseller_id = ?");
         $t->execute([(int)$tenantId, (int)$this->reseller->id]);
@@ -1044,8 +1141,8 @@ class ResellerPortalController extends Controller
     {
         $u = $this->requireReseller();
         $this->requirePerm('support');
+        $this->requireFeature('support');
         $addons = $this->enabledAddons();
-        if (!$addons['support']) { $_SESSION['error_message'] = 'The Support addon is not enabled on your packages.'; $this->response->redirect('/reseller'); exit; }
         $pdo = $this->db->pdo();
         $rid = (int)$this->reseller->id;
         $stmt = $pdo->query("SELECT t.id, t.subject, t.status, t.priority, t.created_at, hu.username AS customer
@@ -1058,10 +1155,207 @@ class ResellerPortalController extends Controller
         ]);
     }
 
+    // ── Radio System (mirrors admin/section/radio) ──
+    // Scoped to the reseller's own clients; capability defined in their packages.
+    public function radioSystem()
+    {
+        $u = $this->requireReseller();
+        $this->requireFeature('streaming');
+        $rid = (int)$this->reseller->id;
+        $addons = $this->enabledAddons();
+        $pdo = $this->db->pdo();
+        $radioClients = 0;
+        $radioStations = 0;
+        try {
+            $radioClients = (int)($pdo->query("SELECT COUNT(DISTINCT r.hosting_user_id) FROM radio_stations r JOIN hosting_users hu ON hu.id=r.hosting_user_id WHERE hu.reseller_id={$rid}")->fetchColumn() ?? 0);
+            $radioStations = (int)($pdo->query("SELECT COUNT(*) FROM radio_stations r JOIN hosting_users hu ON hu.id=r.hosting_user_id WHERE hu.reseller_id={$rid}")->fetchColumn() ?? 0);
+        } catch (\Exception $e) {}
+        // Radio-selling packages = reseller_packages with type music
+        $radioPackages = 0;
+        foreach ($this->db->table('reseller_packages')->where('reseller_id', $rid)->get() ?: [] as $p) {
+            if (($p->type ?? '') === 'music' && ($p->is_active ?? 1)) $radioPackages++;
+        }
+        return $this->view('user.reseller.radio_system', [
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Radio System',
+            'addons' => $addons, 'radioClients' => $radioClients, 'radioStations' => $radioStations,
+            'radioPackages' => $radioPackages,
+            'stationLimit' => (int)($this->reseller->radio_station_limit ?? 0),
+        ]);
+    }
+
+    // ── Game System (mirrors admin/section/games) ──
+    public function gameSystem()
+    {
+        $u = $this->requireReseller();
+        $this->requireFeature('game_servers');
+        $rid = (int)$this->reseller->id;
+        $addons = $this->enabledAddons();
+        $gameClients = 0;
+        try {
+            $gameClients = (int)($this->db->pdo()->query("SELECT COUNT(DISTINCT gs.user_id) FROM game_servers gs JOIN hosting_users hu ON hu.id=gs.user_id WHERE hu.reseller_id={$rid}")->fetchColumn() ?? 0);
+        } catch (\Exception $e) {}
+        $gamePackages = 0;
+        foreach ($this->db->table('reseller_packages')->where('reseller_id', $rid)->get() ?: [] as $p) {
+            if (($p->type ?? '') === 'game' && ($p->is_active ?? 1)) $gamePackages++;
+        }
+        return $this->view('user.reseller.game_system', [
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Game System',
+            'addons' => $addons, 'gameClients' => $gameClients, 'gamePackages' => $gamePackages,
+            'serverLimit' => (int)($this->reseller->game_server_limit ?? 0),
+        ]);
+    }
+
+    // ── Live Chat for Support (mirrors admin/livechat/index.php) ──
+    // Reseller-scoped live chat: sessions/visitors/messages for their clients only.
+    public function supportLiveChat()
+    {
+        $u = $this->requireReseller();
+        $this->requirePerm('support');
+        $this->requireFeature('support');
+        $addons = $this->enabledAddons();
+        $rid = (int)$this->reseller->id;
+        $pdo = $this->db->pdo();
+
+        // Get sessions for this reseller's clients
+        $sql = "SELECT cs.*, cv.name AS visitor_name, cv.current_page, cv.browser, cv.os, cv.ip_address, cv.hosting_user_id, hu.username AS client_name
+            FROM chat_sessions cs
+            JOIN chat_visitors cv ON cv.id = cs.visitor_id
+            JOIN hosting_users hu ON hu.id = cv.hosting_user_id
+            WHERE hu.reseller_id = {$rid}
+            ORDER BY cs.created_at DESC LIMIT 200";
+        $sessions = $pdo->query($sql)->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        $waiting = array_filter($sessions, fn($s) => $s->status === 'waiting');
+        $active = array_filter($sessions, fn($s) => $s->status === 'active');
+
+        // Online visitors (last 3 min)
+        $cutoff = date('Y-m-d H:i:s', time() - 180);
+        $visSql = "SELECT cv.*, hu.username AS client_name
+            FROM chat_visitors cv
+            JOIN hosting_users hu ON hu.id = cv.hosting_user_id
+            WHERE hu.reseller_id = {$rid} AND cv.last_seen > '{$cutoff}'
+            ORDER BY cv.last_seen DESC LIMIT 100";
+        $visitors = $pdo->query($visSql)->fetchAll(\PDO::FETCH_OBJ) ?: [];
+
+        // Canned responses & operator groups
+        $canned = $pdo->query("SELECT * FROM chat_canned_responses ORDER BY id DESC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        $groups = $pdo->query("SELECT * FROM chat_operator_groups ORDER BY id DESC")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+
+        // Embed link for this reseller's domain
+        $embedDomain = $this->reseller->brand_url ?: ($this->reseller->website ?: 'planet-hosts.com');
+
+        return $this->view('user.reseller.support_livechat', [
+            'user' => $u, 'reseller' => $this->reseller, 'layout' => 'reseller_layout', 'title' => 'Live Chat',
+            'addons' => $addons, 'sessions' => $sessions, 'waiting' => $waiting, 'active' => $active,
+            'visitors' => $visitors, 'canned' => $canned, 'groups' => $groups,
+            'embedDomain' => $embedDomain,
+        ]);
+    }
+
+    // API: Messages for a session (reseller-scoped)
+    public function supportLiveChatMessages($sessionId)
+    {
+        $this->requireReseller();
+        $this->requirePerm('support');
+        $this->requireFeature('support');
+        $rid = (int)$this->reseller->id;
+        $since = (int)$this->request->get('since', 0);
+        $pdo = $this->db->pdo();
+        // Verify session belongs to this reseller
+        $own = $pdo->prepare("SELECT cs.id FROM chat_sessions cs JOIN chat_visitors cv ON cv.id=cs.visitor_id JOIN hosting_users hu ON hu.id=cv.hosting_user_id WHERE cs.id=? AND hu.reseller_id=?");
+        $own->execute([$sessionId, $rid]);
+        if (!$own->fetch()) { $this->response->json(['error'=>'Unauthorized']); $this->response->send(); exit; }
+        $all = $this->db->table('chat_messages')->where('session_id', $sessionId)->orderBy('id', 'ASC')->get() ?: [];
+        $seen = []; $msgs = [];
+        foreach ($all as $m) {
+            if (isset($seen[$m->id])) continue;
+            $seen[$m->id] = true;
+            if ($m->id > $since) $msgs[] = $m;
+        }
+        $this->response->json($msgs);
+        $this->response->send();
+        exit;
+    }
+
+    // API: Send message
+    public function supportLiveChatSend()
+    {
+        $u = $this->requireReseller();
+        $this->requirePerm('support');
+        $this->requireFeature('support');
+        $rid = (int)$this->reseller->id;
+        $sessionId = (int)$this->request->post('session_id', 0);
+        $msg = $this->request->post('message', '');
+        $id = 0;
+        if ($sessionId && $msg) {
+            $pdo = $this->db->pdo();
+            $own = $pdo->prepare("SELECT cs.id FROM chat_sessions cs JOIN chat_visitors cv ON cv.id=cs.visitor_id JOIN hosting_users hu ON hu.id=cv.hosting_user_id WHERE cs.id=? AND hu.reseller_id=?");
+            $own->execute([$sessionId, $rid]);
+            if ($own->fetch()) {
+                $id = $this->db->table('chat_messages')->insertGetId([
+                    'session_id' => $sessionId, 'sender_type' => 'operator',
+                    'sender_name' => $u->name ?? 'Staff', 'message' => $msg,
+                    'created_at' => date('Y-m-d H:i:s'),
+                ]);
+                $this->db->table('chat_sessions')->where('id', $sessionId)->update(['status' => 'active']);
+            }
+        }
+        $this->response->json(['ok'=>true, 'id'=>$id]);
+        $this->response->send();
+        exit;
+    }
+
+    // API: Initiate chat with visitor
+    public function supportLiveChatInitiate()
+    {
+        $this->requireReseller();
+        $this->requirePerm('support');
+        $this->requireFeature('support');
+        $rid = (int)$this->reseller->id;
+        $visitorId = (int)$this->request->post('visitor_id', 0);
+        $pdo = $this->db->pdo();
+        // Verify visitor belongs to this reseller
+        $own = $pdo->prepare("SELECT cv.id FROM chat_visitors cv JOIN hosting_users hu ON hu.id=cv.hosting_user_id WHERE cv.id=? AND hu.reseller_id=?");
+        $own->execute([$visitorId, $rid]);
+        if (!$own->fetch()) { $this->response->json(['error'=>'Unauthorized']); $this->response->send(); exit; }
+        // Check existing active/waiting session for this visitor
+        $existing = $pdo->prepare("SELECT cs.id FROM chat_sessions cs WHERE cs.visitor_id=? AND cs.status IN ('waiting','active') ORDER BY cs.created_at DESC LIMIT 1");
+        $existing->execute([$visitorId]);
+        $session = $existing->fetch();
+        if (!$session) {
+            $sessionId = $this->db->table('chat_sessions')->insertGetId([
+                'visitor_id' => $visitorId, 'status' => 'waiting', 'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        } else {
+            $sessionId = (int)$session->id;
+        }
+        $this->response->json(['session_id' => $sessionId]);
+        $this->response->send();
+        exit;
+    }
+
+    // API: Close chat
+    public function supportLiveChatClose($sessionId)
+    {
+        $this->requireReseller();
+        $this->requirePerm('support');
+        $this->requireFeature('support');
+        $rid = (int)$this->reseller->id;
+        $pdo = $this->db->pdo();
+        $own = $pdo->prepare("SELECT cs.id FROM chat_sessions cs JOIN chat_visitors cv ON cv.id=cs.visitor_id JOIN hosting_users hu ON hu.id=cv.hosting_user_id WHERE cs.id=? AND hu.reseller_id=?");
+        $own->execute([$sessionId, $rid]);
+        if ($own->fetch()) {
+            $this->db->table('chat_sessions')->where('id', $sessionId)->update(['status' => 'closed', 'closed_at' => date('Y-m-d H:i:s')]);
+        }
+        $this->response->json(['ok'=>true]);
+        $this->response->send();
+        exit;
+    }
+
     // ── Roles & Staff (mirrors admin Admins/Roles, scoped to this reseller) ──
     public function roles()
     {
         $u = $this->requireReseller();
+        $this->requireFeature('staff');
         $this->requirePerm('staff');
         $rid = (int)$this->reseller->id;
         $staff = $this->db->table('reseller_staff')->where('reseller_id', $rid)->orderBy('id', 'ASC')->get() ?: [];
@@ -1075,6 +1369,7 @@ class ResellerPortalController extends Controller
         $permMap = [
             'clients' => '👥 Clients', 'packages' => '📦 Packages', 'provisioning' => '⚙️ Provisioning',
             'billing' => '💰 Billing', 'chat' => '💬 Chat', 'support' => '🎧 Support',
+            'radio' => '📻 Radio System', 'games' => '🎮 Game System',
             'branding' => '🎨 Branding', 'staff' => '🛡️ Staff & Roles',
         ];
         return $this->view('user.reseller.roles', [
@@ -1086,6 +1381,7 @@ class ResellerPortalController extends Controller
     public function roleStore()
     {
         $u = $this->requireReseller();
+        $this->requireFeature('staff');
         $this->requirePerm('staff');
         $name = trim($this->request->post('name', ''));
         if ($name === '') { $_SESSION['error_message'] = 'Role name is required.'; $this->response->redirect('/reseller/roles'); exit; }
@@ -1104,6 +1400,7 @@ class ResellerPortalController extends Controller
     public function roleUpdate($id)
     {
         $u = $this->requireReseller();
+        $this->requireFeature('staff');
         $this->requirePerm('staff');
         $rid = (int)$this->reseller->id;
         $role = $this->db->table('reseller_roles')->where('id', (int)$id)->where('reseller_id', $rid)->first();
@@ -1122,6 +1419,7 @@ class ResellerPortalController extends Controller
     public function roleDelete($id)
     {
         $u = $this->requireReseller();
+        $this->requireFeature('staff');
         $this->requirePerm('staff');
         $rid = (int)$this->reseller->id;
         $role = $this->db->table('reseller_roles')->where('id', (int)$id)->where('reseller_id', $rid)->first();
@@ -1137,6 +1435,7 @@ class ResellerPortalController extends Controller
     public function staffStore()
     {
         $u = $this->requireReseller();
+        $this->requireFeature('staff');
         $this->requirePerm('staff');
         $rid = (int)$this->reseller->id;
         $email = trim($this->request->post('email', ''));
@@ -1173,6 +1472,7 @@ class ResellerPortalController extends Controller
     public function staffToggle($id)
     {
         $u = $this->requireReseller();
+        $this->requireFeature('staff');
         $this->requirePerm('staff');
         $rid = (int)$this->reseller->id;
         $s = $this->db->table('reseller_staff')->where('id', (int)$id)->where('reseller_id', $rid)->first();
@@ -1186,6 +1486,7 @@ class ResellerPortalController extends Controller
     public function staffDelete($id)
     {
         $u = $this->requireReseller();
+        $this->requireFeature('staff');
         $this->requirePerm('staff');
         $rid = (int)$this->reseller->id;
         $s = $this->db->table('reseller_staff')->where('id', (int)$id)->where('reseller_id', $rid)->first();
