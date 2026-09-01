@@ -15,7 +15,6 @@ $host = getenv('WS_HOST') ?: '0.0.0.0';
 $wsPort = (int)(getenv('WS_PORT') ?: 8081);
 $httpPort = (int)(getenv('WS_HTTP_PORT') ?: 8082);
 $secret = getenv('WS_SECRET') ?: 'planet-hosts-push-secret-2026';
-
 $server = new PushServer($host, $wsPort, $httpPort, $secret);
 
 echo "Starting Push Server...\n";
