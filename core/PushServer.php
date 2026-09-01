@@ -93,6 +93,7 @@ class PushServer
                         'socket' => $client,
                         'admin_id' => null,
                         'authenticated' => false,
+                        'handshaked' => false,
                         'buffer' => '',
                         'last_ping' => time(),
                     ];
@@ -214,7 +215,15 @@ class PushServer
         $client = &$this->clients[$fd];
         $client['buffer'] .= $data;
 
-        // Simple WebSocket frame parsing (handles text frames only)
+        // Complete WebSocket handshake if not done yet
+        if (empty($client['handshaked'])) {
+            if ($this->completeHandshake($fd, $client)) {
+                return; // Will process frames on next read
+            }
+            return; // Incomplete headers, wait for more
+        }
+
+        // WebSocket frame parsing (handles text frames only)
         while (true) {
             $frame = $this->parseWsFrame($client['buffer']);
             if (!$frame) break;
@@ -233,6 +242,42 @@ class PushServer
                 $this->handleWsMessage($fd, $payload);
             }
         }
+    }
+
+    private function completeHandshake(int $fd, array &$client): bool
+    {
+        $buffer = $client['buffer'];
+        $pos = strpos($buffer, "\r\n\r\n");
+        if ($pos === false) return false; // Incomplete headers
+
+        $headerBlock = substr($buffer, 0, $pos);
+        $client['buffer'] = substr($buffer, $pos + 4);
+
+        $key = null;
+        foreach (explode("\r\n", $headerBlock) as $line) {
+            if (stripos($line, 'Sec-WebSocket-Key:') === 0) {
+                $key = trim(substr($line, 18));
+                break;
+            }
+        }
+
+        if (!$key) {
+            $this->closeClient($fd);
+            return true;
+        }
+
+        $acceptKey = base64_encode(sha1($key . '258EAFA5-E914-47DA-95CA-5AB5DC65C743', true));
+        $response = "HTTP/1.1 101 Switching Protocols\r\n"
+                  . "Upgrade: websocket\r\n"
+                  . "Connection: Upgrade\r\n"
+                  . "Sec-WebSocket-Accept: $acceptKey\r\n\r\n";
+
+        $socket = $client['socket'];
+        @socket_write($socket, $response);
+
+        $client['handshaked'] = true;
+        echo "Handshake completed: $fd\n";
+        return true;
     }
 
     private function parseWsFrame(string &$buffer): ?array
