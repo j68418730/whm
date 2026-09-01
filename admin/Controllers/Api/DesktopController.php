@@ -603,6 +603,18 @@ class DesktopController extends Controller
             case 'chats':
                 $data = $pdo->query("SELECT DATE(created_at) as date, COUNT(*) as count FROM chat_sessions GROUP BY DATE(created_at) ORDER BY date DESC LIMIT 30")->fetchAll(\PDO::FETCH_OBJ);
                 break;
+            case 'performance':
+                $data = $pdo->query("SELECT status, COUNT(*) as count FROM tickets GROUP BY status ORDER BY count DESC")->fetchAll(\PDO::FETCH_OBJ);
+                break;
+            case 'customer_satisfaction':
+                $data = $pdo->query("SELECT DATE(created_at) as date, AVG(rating) as avg_rating, COUNT(*) as count FROM chat_ratings GROUP BY DATE(created_at) ORDER BY date DESC LIMIT 30")->fetchAll(\PDO::FETCH_OBJ);
+                break;
+            case 'server_health':
+                $data = $pdo->query("SELECT server_type, status, COUNT(*) as count FROM streaming_stations GROUP BY server_type, status")->fetchAll(\PDO::FETCH_OBJ);
+                break;
+            case 'streaming':
+                $data = $pdo->query("SELECT DATE(created_at) as date, COUNT(*) as stations, SUM(listener_count) as listeners, SUM(peak_listeners) as peak FROM streaming_stations GROUP BY DATE(created_at) ORDER BY date DESC LIMIT 30")->fetchAll(\PDO::FETCH_OBJ);
+                break;
             default:
                 $this->json(['success' => false, 'error' => 'Unknown report type'], 400);
         }
