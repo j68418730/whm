@@ -44,16 +44,21 @@ class PushServer
 
         echo "Server running. WebSocket on {$this->host}:{$this->wsPort}, HTTP on 127.0.0.1:{$this->httpPort}\n";
 
-        $read = [$this->masterWs, $this->masterHttp];
-        $write = [];
-        $except = [];
-
         while (true) {
+            // Rebuild read set each iteration from live clients to avoid
+            // passing closed sockets into socket_select()
+            $read = [$this->masterWs, $this->masterHttp];
+            foreach ($this->clients as $clientData) {
+                if (isset($clientData['socket'])) {
+                    $read[] = $clientData['socket'];
+                }
+            }
             $r = $read;
-            $w = $write;
-            $e = $except;
+            $w = [];
+            $e = [];
 
             if (socket_select($r, $w, $e, 1, 0) === false) {
+                usleep(100000);
                 continue;
             }
 
@@ -70,7 +75,6 @@ class PushServer
                         'buffer' => '',
                         'last_ping' => time(),
                     ];
-                    $read[] = $client;
                     echo "New WS connection: $key\n";
                 }
             }
@@ -88,7 +92,6 @@ class PushServer
                         'admin_id' => null,
                         'authenticated' => true,
                     ];
-                    $read[] = $client;
                 }
             }
 
