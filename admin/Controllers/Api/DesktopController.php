@@ -261,9 +261,18 @@ class DesktopController extends Controller
     public function getAccountStreaming($id)
     {
         $this->apiKeyAuth();
-        $list = $this->db->table('streaming_stations')->where('user_id', (int)$id)->get() ?: [];
-        foreach ($list as &$s) {
-            $s->listeners = $s->listener_count ?? 0;
+        $stations = $this->db->table('streaming_stations')->where('user_id', (int)$id)->get() ?: [];
+        $list = [];
+        foreach ($stations as $s) {
+            $list[] = [
+                'id' => $s->id,
+                'name' => $s->name,
+                'server_type' => $s->server_type,
+                'port' => (int)$s->port,
+                'status' => $s->status,
+                'listeners' => (int)($s->listener_count ?? 0),
+                'created_at' => $s->created_at,
+            ];
         }
         $this->json(['success' => true, 'data' => $list]);
     }
