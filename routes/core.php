@@ -771,12 +771,7 @@ $router->get('/api/dj/api-config', 'Admin\Controllers\Api\PlanetStudioController
 $router->post('/api/dj/api-config', 'Admin\Controllers\Api\PlanetStudioController@updateDjApiConfig');
 
 // Remote Support connect page (OTP verification)
-$router->get('/connect/{code}', function($code) {
-    error_log("Remote support route hit: code=$code");
-    $_GET['verify'] = '1';
-    $_GET['code'] = $code;
-    require BASE_PATH . '/public/remote_support.php';
-});
+$router->get('/connect/{code}', 'Admin\Controllers\Api\DesktopController@remoteConnect');
 
 // DJ Stream Config Routes
 $router->get('/admin/dj/stream-config/{id}/{stationId}', 'Admin\Controllers\DjController@streamConfig');

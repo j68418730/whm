@@ -607,6 +607,14 @@ class DesktopController extends Controller
         $this->json(['success' => true, 'data' => ['session_code' => $sessionCode, 'otp' => $otp, 'url' => $supportUrl]]);
     }
 
+    // Public remote support connect page (no auth required)
+    public function remoteConnect($code)
+    {
+        $_GET['verify'] = '1';
+        $_GET['code'] = $code;
+        require BASE_PATH . '/public/remote_support.php';
+    }
+
     // ─────────────── Reports ───────────────
 
     public function getReport($type)
