@@ -19,13 +19,9 @@
 </div>
 
 <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;border-bottom:1px solid var(--border,rgba(0,191,255,.08));padding-bottom:8px">
-<a href="/reseller/billing-system" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff">📊 Dashboard</a>
-<a href="/reseller/billing-system/orders" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text_muted,#94a3b8)">📋 Orders</a>
-<a href="/reseller/billing-system/services" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text_muted,#94a3b8)">🖥 Services</a>
-<a href="/reseller/billing-system" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text_muted,#94a3b8)">💰 Invoices</a>
-<a href="/reseller/billing-system/payments" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text_muted,#94a3b8)">💳 Payments</a>
-<a href="/reseller/billing-system/credits" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text_muted,#94a3b8)">🏦 Credits</a>
-<a href="/reseller/billing-system/refunds" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;color:var(--text_muted,#94a3b8)">↩️ Refunds</a>
+<?php foreach ($billingTabs as $tab): ?>
+<a href="<?php echo $tab['url']; ?>" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;<?php echo (basename(parse_url($tab['url'], PHP_URL_PATH)) === basename(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH))) ? 'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff' : 'color:var(--text-secondary)'; ?>"><?php echo $tab['label']; ?></a>
+<?php endforeach; ?>
 </div>
 <h3 style="color:var(--accent);margin-bottom:12px">Billing System</h3>
 <p style="color:var(--text_muted,#94a3b8);font-size:13px;margin-bottom:16px">Billing for <b>your own clients</b>. Reuses the Planet Hosts billing engine scoped to your clients — separate from the invoices Planet Hosts sends you.</p>
