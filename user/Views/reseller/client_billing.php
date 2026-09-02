@@ -32,21 +32,6 @@
 <div class="stat-card"><h3>Active Services</h3><div class="value"><?php echo $activeServices ?? 0; ?></div></div>
 </div>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:20px">
-<a href="/reseller/billing-system/orders" class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 16px;text-align:center;text-decoration:none;gap:6px;transition:.15s">
-<div style="font-size:30px">📋</div><div style="font-size:14px;font-weight:600">Orders</div><div style="font-size:22px;font-weight:700;color:var(--accent)"><?php echo (int)($counts['orders'] ?? 0); ?></div></a>
-<a href="/reseller/billing-system/services" class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 16px;text-align:center;text-decoration:none;gap:6px;transition:.15s">
-<div style="font-size:30px">🖥</div><div style="font-size:14px;font-weight:600">Services</div><div style="font-size:22px;font-weight:700;color:var(--accent)"><?php echo (int)($counts['services'] ?? 0); ?></div></a>
-<a href="/reseller/billing-system" class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 16px;text-align:center;text-decoration:none;gap:6px;transition:.15s">
-<div style="font-size:30px">💰</div><div style="font-size:14px;font-weight:600">Invoices</div><div style="font-size:22px;font-weight:700;color:var(--accent)"><?php echo (int)($counts['invoices'] ?? 0); ?></div></a>
-<a href="/reseller/billing-system/payments" class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 16px;text-align:center;text-decoration:none;gap:6px;transition:.15s">
-<div style="font-size:30px">💳</div><div style="font-size:14px;font-weight:600">Payments</div><div style="font-size:22px;font-weight:700;color:var(--accent)"><?php echo (int)($counts['payments'] ?? 0); ?></div></a>
-<a href="/reseller/billing-system/credits" class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 16px;text-align:center;text-decoration:none;gap:6px;transition:.15s">
-<div style="font-size:30px">🏦</div><div style="font-size:14px;font-weight:600">Credits</div><div style="font-size:22px;font-weight:700;color:var(--accent)"><?php echo (int)($counts['credits'] ?? 0); ?></div></a>
-<a href="/reseller/billing-system/refunds" class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 16px;text-align:center;text-decoration:none;gap:6px;transition:.15s">
-<div style="font-size:30px">↩️</div><div style="font-size:14px;font-weight:600">Refunds</div><div style="font-size:22px;font-weight:700;color:var(--accent)"><?php echo (int)($counts['refunds'] ?? 0); ?></div></a>
-</div>
-
 <div class="card">
 <h4 style="color:var(--accent);margin-bottom:12px">➕ Issue Invoice</h4>
 <form method="POST" action="/reseller/billing-system/create">
