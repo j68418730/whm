@@ -104,6 +104,19 @@ if [ ! -f /swapfile ]; then
 fi
 log "SWAP" "setup" "OK" "Swap configured"
 
+# 0b. Journal size limit (prevent disk exhaustion)
+log "JOURNALD" "limit" "RUNNING" "Configuring journal size limit"
+mkdir -p /etc/systemd/journald.conf.d
+cat > /etc/systemd/journald.conf.d/planet-hosts.conf << 'JOURNALEOF'
+[Journal]
+SystemMaxUse=200M
+SystemMaxFileSize=50M
+MaxRetentionSec=1month
+Compress=yes
+JOURNALEOF
+systemctl restart systemd-journald 2>/dev/null || true
+log "JOURNALD" "limit" "OK" "Journal size capped at 200MB"
+
 # 1. System update
 echo "[1/11] Updating system..."
 log "UPDATE" "system" "RUNNING" "Updating operating system"
@@ -247,6 +260,20 @@ else
     log "SHOUTCAST" "install" "SKIP" "SHOUTcast v1 binary not found in script dir"
 fi
 
+# SHOUTcast syslog redirect (prevents 80GB+ syslog bloat)
+log "RSYSLOG" "shoutcast" "RUNNING" "Configuring SHOUTcast syslog redirect"
+mkdir -p /var/log/shoutcast
+cat > /etc/rsyslog.d/40-shoutcast.conf << 'RSYSLOGEOF'
+# Route SHOUTcast sc_serv noise away from /var/log/syslog
+# Anything from sc_serv goes to its own capped file, dropped from syslog
+:programname, isequal,  sc_serv  -/var/log/shoutcast/sc_syslog.log
+:programname, isequal, sc_serv  ~
+:programname, startswith, sc_serv -/var/log/shoutcast/sc_syslog.log
+:programname, startswith, sc_serv  ~
+RSYSLOGEOF
+systemctl restart rsyslog 2>/dev/null || true
+log "RSYSLOG" "shoutcast" "OK" "SHOUTcast logs redirected to /var/log/shoutcast/sc_syslog.log"
+
 install_optional "Liquidsoap" liquidsoap && LIQUIDSOAP_INSTALLED=1
 # Liquidsoap systemd service
 if command -v liquidsoap >/dev/null 2>&1; then
@@ -281,6 +308,58 @@ LSEOF
 fi
 install_optional "ezstream" ezstream-ffmpeg && EZSTREAM_INSTALLED=1
 install_optional "FFmpeg" ffmpeg && FFMPEG_INSTALLED=1
+
+# Log rotation configs (prevent disk exhaustion)
+log "LOGROTATE" "config" "RUNNING" "Configuring log rotation"
+cat > /etc/logrotate.d/syslog-rotate << 'SYSLOGEOF'
+/var/log/syslog
+/var/log/mail.log
+/var/log/kern.log
+/var/log/auth.log
+/var/log/user.log
+/var/log/cron.log
+{
+ rotate 7
+ size 200M
+ maxsize 200M
+ missingok
+ notifempty
+ compress
+ delaycompress
+ sharedscripts
+ postrotate
+ /usr/lib/rsyslog/rsyslog-rotate
+ endscript
+}
+SYSLOGEOF
+
+cat > /etc/logrotate.d/shoutcast << 'SCLOGEOF'
+/var/log/shoutcast/*.log {
+ rotate 5
+ daily
+ maxsize 50M
+ missingok
+ notifempty
+ compress
+ delaycompress
+ copytruncate
+}
+SCLOGEOF
+
+cat > /etc/logrotate.d/planethosts << 'PHLOGEOF'
+/var/log/planethosts/*.log /var/log/radiohosting/**/*.log /var/log/radiohosting/*.log {
+ rotate 5
+ weekly
+ maxsize 20M
+ missingok
+ notifempty
+ compress
+ delaycompress
+ copytruncate
+}
+PHLOGEOF
+log "LOGROTATE" "config" "OK" "Log rotation configured"
+
 log "MEDIA" "install" "OK" "Streaming stack installed"
 
 # 4a. SteamCMD + Game Server support
@@ -419,6 +498,182 @@ fi
 npm install -g npm@latest 2>/dev/null || true
 log "NODEJS" "install" "OK" "Node.js $(node --version) npm $(npm --version) installed"
 
+# Planet Push Server (WebSocket for real-time chat/desktop)
+log "PUSHSERVER" "install" "RUNNING" "Installing Planet Push Server"
+mkdir -p /var/www/radiohosting/scripts
+cat > /etc/systemd/system/planet-push.service << 'PUSHEOF'
+[Unit]
+Description=Planet Hosts Push Server (WebSocket)
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=debian
+WorkingDirectory=/var/www/radiohosting
+EnvironmentFile=/var/www/radiohosting/.env
+ExecStart=/usr/bin/php scripts/websocket-server.php
+Environment=WS_HOST=0.0.0.0
+Environment=WS_PORT=8081
+Environment=WS_HTTP_PORT=8082
+Environment=WS_SECRET=planet-hosts-push-secret-2026
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+PUSHEOF
+systemctl daemon-reload
+systemctl enable --now planet-push 2>/dev/null || true
+log "PUSHSERVER" "install" "OK" "Planet Push Server (WS:8081, HTTP:8082) installed"
+
+# DJ Port Listener (for DJ source connections)
+log "DJLISTENER" "install" "RUNNING" "Installing DJ Port Listener"
+cat > /etc/systemd/system/ph-dj-listener.service << 'DJEOF'
+[Unit]
+Description=Planet Hosts DJ Port Listener
+After=network.target mariadb.service
+Wants=mariadb.service
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/php /var/www/radiohosting/services/DjPortListener.php start
+ExecStop=/usr/bin/php /var/www/radiohosting/services/DjPortListener.php stop
+ExecReload=/usr/bin/php /var/www/radiohosting/services/DjPortListener.php restart
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/var/log/ph-dj-listener.log
+StandardError=append:/var/log/ph-dj-listener.log
+
+[Install]
+WantedBy=multi-user.target
+DJEOF
+systemctl daemon-reload
+systemctl enable --now ph-dj-listener 2>/dev/null || true
+log "DJLISTENER" "install" "OK" "DJ Port Listener installed"
+
+# Planet Backup service & timer
+log "BACKUP" "service" "RUNNING" "Installing Planet Backup service"
+cat > /etc/systemd/system/planet-backup.service << 'BKPEOF'
+[Unit]
+Description=Planet Hosts Account Backups
+After=network.target mysql.service
+
+[Service]
+Type=oneshot
+ExecStart=/var/www/radiohosting/backup.sh run
+StandardOutput=journal
+StandardError=journal
+BKPEOF
+
+cat > /etc/systemd/system/planet-backup.timer << 'BKTMEOF'
+[Unit]
+Description=Planet Hosts Backup Timer (daily at 3am)
+Requires=planet-backup.service
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+BKTMEOF
+systemctl daemon-reload
+systemctl enable --now planet-backup.timer 2>/dev/null || true
+log "BACKUP" "service" "OK" "Planet Backup timer installed"
+
+# Planet Monitoring service & timer
+log "MONITOR" "service" "RUNNING" "Installing Planet Monitor service"
+cat > /etc/systemd/system/planet-monitor.service << 'MONEOF'
+[Unit]
+Description=Planet Hosts Account Monitoring
+After=network.target mysql.service
+
+[Service]
+Type=oneshot
+ExecStart=/var/www/radiohosting/monitor.sh
+StandardOutput=journal
+StandardError=journal
+MONEOF
+
+cat > /etc/systemd/system/planet-monitor.timer << 'MNTMEOF'
+[Unit]
+Description=Planet Hosts Monitoring Timer (every 5 min)
+Requires=planet-monitor.service
+
+[Timer]
+OnCalendar=*:0/5
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+MNTMEOF
+systemctl daemon-reload
+systemctl enable --now planet-monitor.timer 2>/dev/null || true
+log "MONITOR" "service" "OK" "Planet Monitor timer installed"
+
+# Planet Quota Enforcement service & timer
+log "QUOTA" "service" "RUNNING" "Installing Planet Quota service"
+cat > /etc/systemd/system/planet-quota.service << 'QUOEOF'
+[Unit]
+Description=Planet Hosts Quota Enforcement
+After=network.target mysql.service
+
+[Service]
+Type=oneshot
+ExecStart=/var/www/radiohosting/quota_enforce.sh
+StandardOutput=journal
+StandardError=journal
+QUOEOF
+
+cat > /etc/systemd/system/planet-quota.timer << 'QTMEOF'
+[Unit]
+Description=Planet Hosts Quota Enforcement Timer (every 15 min)
+Requires=planet-quota.service
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+QTMEOF
+systemctl daemon-reload
+systemctl enable --now planet-quota.timer 2>/dev/null || true
+log "QUOTA" "service" "OK" "Planet Quota timer installed"
+
+# Planet Security service & timer
+log "SECURITY" "service" "RUNNING" "Installing Planet Security service"
+cat > /etc/systemd/system/planet-security.service << 'SECEOF'
+[Unit]
+Description=Planet Hosts Security Scan
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/var/www/radiohosting/security.sh scan
+StandardOutput=journal
+StandardError=journal
+SECEOF
+
+cat > /etc/systemd/system/planet-security.timer << 'SCTMEOF'
+[Unit]
+Description=Planet Hosts Security Scan Timer (daily at 4am)
+Requires=planet-security.service
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+SCTMEOF
+systemctl daemon-reload
+systemctl enable --now planet-security.timer 2>/dev/null || true
+log "SECURITY" "service" "OK" "Planet Security timer installed"
+
 # 4d. phpMyAdmin + SnappyMail (replaces Roundcube)
 log "PHPMYADMIN" "install" "RUNNING" "Installing phpMyAdmin"
 install_optional "phpMyAdmin" phpmyadmin && PHPMYADMIN_INSTALLED=1
@@ -479,6 +734,35 @@ VHOSTS
 a2ensite panel-ports 2>/dev/null || true
 log "APACHE" "panel-ports" "OK" "Panel ports configured"
 
+# Remote Support vhost (for OTP verification page)
+log "APACHE" "remote-vhost" "RUNNING" "Creating remote.planet-hosts.com vhost"
+cat > /etc/apache2/sites-available/remote.planet-hosts.com.conf <<VHOST
+<VirtualHost *:80>
+    ServerName remote.planet-hosts.com
+    ServerAlias www.remote.planet-hosts.com
+    DocumentRoot $PANEL_DIR/public
+    <Directory $PANEL_DIR/public>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+        DirectoryIndex index.php index.html
+    </Directory>
+    ErrorLog /var/log/apache2/remote.planet-hosts.com_error.log
+    CustomLog /var/log/apache2/remote.planet-hosts.com_access.log combined
+    RewriteEngine on
+    RewriteCond %{SERVER_NAME} =www.remote.planet-hosts.com [OR]
+    RewriteCond %{SERVER_NAME} =remote.planet-hosts.com
+    RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [END,NE,R=permanent]
+</VirtualHost>
+VHOST
+a2ensite remote.planet-hosts.com 2>/dev/null || true
+log "APACHE" "remote-vhost" "OK" "Remote Support vhost configured"
+
+# SSL for remote.planet-hosts.com
+log "SSL" "remote" "RUNNING" "Requesting SSL certificate for remote.planet-hosts.com"
+certbot --apache -d remote.planet-hosts.com -d www.remote.planet-hosts.com --non-interactive --agree-tos --email admin@planet-hosts.com --redirect 2>/dev/null || log "SSL" "remote" "WARNING" "SSL cert request failed (domain may not resolve yet)"
+log "SSL" "remote" "OK" "SSL certificate requested for remote.planet-hosts.com"
+
 # 5. Panel files
 echo "[5/8] Installing panel files..."
 log "PANEL" "deploy" "RUNNING" "Copying panel files to $PANEL_DIR"
@@ -487,6 +771,23 @@ cp -r "$SCRIPT_DIR"/. "$PANEL_DIR"/ 2>/dev/null || true
 rm -f "$PANEL_DIR/scripts/keygen.php" "$PANEL_DIR/config/license_private.pem" "$PANEL_DIR/install.sh" 2>/dev/null || true
 chown -R www-data:www-data "$PANEL_DIR"
 chmod -R 755 "$PANEL_DIR"
+
+# Deploy system scripts (backup, monitor, security, quota, storage)
+log "SCRIPTS" "deploy" "RUNNING" "Deploying system scripts"
+mkdir -p /var/www/radiohosting/scripts
+mkdir -p /var/www/radiohosting/services
+cp -r "$SCRIPT_DIR/scripts/." /var/www/radiohosting/scripts/ 2>/dev/null || true
+cp -r "$SCRIPT_DIR/services/." /var/www/radiohosting/services/ 2>/dev/null || true
+chmod +x /var/www/radiohosting/scripts/*.sh 2>/dev/null || true
+chmod +x /var/www/radiohosting/services/*.php 2>/dev/null || true
+chown -R www-data:www-data /var/www/radiohosting/scripts /var/www/radiohosting/services 2>/dev/null || true
+log "SCRIPTS" "deploy" "OK" "System scripts deployed"
+
+# Run storage setup
+log "STORAGE" "setup" "RUNNING" "Setting up storage directories"
+bash /var/www/radiohosting/scripts/setup_storage.sh 2>/dev/null || true
+log "STORAGE" "setup" "OK" "Storage directories created"
+
 log "PANEL" "deploy" "OK" "Panel files deployed"
 
 # 6. Apache vhost
@@ -550,6 +851,16 @@ done
 for s in "$SCRIPT_DIR"/plugins/*/database/schema.sql; do
   [ -f "$s" ] && mysql -u root radiohosting < "$s" 2>/dev/null || true
 done
+
+# Run migrations
+log "DATABASE" "migrations" "RUNNING" "Running migrations"
+for m in "$SCRIPT_DIR"/database/migrations/*.sql; do
+  [ -f "$m" ] && mysql -u root radiohosting < "$m" 2>/dev/null || true
+done
+for m in "$SCRIPT_DIR"/database/migrations/*.php; do
+  [ -f "$m" ] && php "$m" 2>/dev/null || true
+done
+log "DATABASE" "migrations" "OK" "Migrations applied"
 
 # Add account_licenses table for license key management
 mysql -u root radiohosting <<'MYSQL' 2>/dev/null || true
