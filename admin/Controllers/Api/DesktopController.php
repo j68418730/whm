@@ -589,14 +589,22 @@ class DesktopController extends Controller
         $this->apiKeyAuth();
         $input = $this->getJsonInput();
         $customerId = $input['customer_id'] ?? 0;
+        $chatId = $input['chat_id'] ?? 0;
         if (empty($customerId)) $this->json(['success' => false, 'error' => 'customer_id required'], 400);
-        $sid = bin2hex(random_bytes(16));
+        $sessionCode = bin2hex(random_bytes(8));
+        $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $this->db->table('remote_sessions')->insertGetId([
-            'customer_id' => (int)$customerId, 'session_id' => $sid,
-            'status' => 'pending', 'created_by' => $this->currentApiKey->name ?? 'API',
+            'session_code' => $sessionCode,
+            'otp' => $otp,
+            'chat_session_id' => (int)$chatId,
+            'customer_id' => (int)$customerId,
+            'status' => 'pending',
             'created_at' => date('Y-m-d H:i:s'),
+            'expires_at' => date('Y-m-d H:i:s', strtotime('+15 minutes')),
+            'created_by' => $this->currentApiKey->name ?? 'API',
         ]);
-        $this->json(['success' => true, 'data' => ['session_id' => $sid]]);
+        $supportUrl = "https://remote.planet-hosts.com/connect/{$sessionCode}";
+        $this->json(['success' => true, 'data' => ['session_code' => $sessionCode, 'otp' => $otp, 'url' => $supportUrl]]);
     }
 
     // ─────────────── Reports ───────────────
