@@ -927,6 +927,7 @@ class ResellerPortalController extends Controller
             'addons' => $addons, 'invoices' => $invoices, 'clients' => $clients,
             'totalCollected' => $totalCollected, 'outstanding' => $outstanding, 'mrr' => $mrr, 'activeServices' => $activeServices,
             'counts' => $counts,
+            'billingTabs' => $this->billingTabs(),
         ]);
     }
 
