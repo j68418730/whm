@@ -6,7 +6,7 @@ $code = $_GET['code'] ?? '';
 $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
 
 // ─── OTP Verification ───
-if ($verify && $code) {
+if ($verify && $code && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $otp = trim($_POST['otp'] ?? '');
     $stmt = $pdo->prepare("SELECT * FROM remote_sessions WHERE session_code = ? AND otp = ? AND status = 'pending' AND expires_at > NOW()");
     $stmt->execute([$code, $otp]);
