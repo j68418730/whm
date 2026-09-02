@@ -772,6 +772,7 @@ $router->post('/api/dj/api-config', 'Admin\Controllers\Api\PlanetStudioControlle
 
 // Remote Support connect page (OTP verification)
 $router->get('/connect/{code}', function($code) {
+    error_log("Remote support route hit: code=$code");
     $_GET['verify'] = '1';
     $_GET['code'] = $code;
     require BASE_PATH . '/public/remote_support.php';
