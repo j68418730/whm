@@ -178,6 +178,97 @@ class AdminsController extends Controller
         exit;
     }
 
+    public function profile()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $admin = $this->db->table('admins')->where('id', $user->id)->first();
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        $avatars = array_diff(scandir('/var/www/radiohosting/public/theme/assets/img/avatars/'), ['.', '..']);
+        return $this->view('admin.profile.index', [
+            'user' => $user, 'admin' => $admin, 'theme_settings' => $theme_settings,
+            'title' => 'My Profile', 'avatars' => $avatars
+        ]);
+    }
+
+    public function updateProfile()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $id = $user->id;
+
+        $name = trim($this->request->post('name', ''));
+        $email = trim($this->request->post('email', ''));
+        $avatar = $this->request->post('avatar', '');
+
+        if (!$name) {
+            $_SESSION['error_message'] = 'Name is required.';
+            $this->response->redirect('/admin/profile'); exit;
+        }
+
+        $updateData = [
+            'name' => $name,
+            'email' => $email ?: $user->username . '@planet-hosts.com',
+        ];
+
+        if ($avatar && in_array($avatar, array_diff(scandir('/var/www/radiohosting/public/theme/assets/img/avatars/'), ['.', '..']))) {
+            $updateData['avatar'] = $avatar;
+        }
+
+        $this->db->table('admins')->where('id', $id)->update($updateData);
+
+        // Update session
+        $sessionUser = $this->auth->user();
+        $sessionUser->name = $name;
+        $sessionUser->email = $email;
+        if ($avatar) $sessionUser->avatar = $avatar;
+        $this->session->put('user', $sessionUser);
+
+        $_SESSION['success_message'] = 'Profile updated.';
+        $this->response->redirect('/admin/profile');
+        exit;
+    }
+
+    public function changePassword()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $id = $this->auth->user()->id;
+
+        $currentPassword = $this->request->post('current_password', '');
+        $newPassword = $this->request->post('new_password', '');
+        $confirmPassword = $this->request->post('confirm_password', '');
+
+        if (!$currentPassword || !$newPassword || !$confirmPassword) {
+            $_SESSION['error_message'] = 'All fields are required.';
+            $this->response->redirect('/admin/profile'); exit;
+        }
+
+        if ($newPassword !== $confirmPassword) {
+            $_SESSION['error_message'] = 'New passwords do not match.';
+            $this->response->redirect('/admin/profile'); exit;
+        }
+
+        if (strlen($newPassword) < 6) {
+            $_SESSION['error_message'] = 'Password must be at least 6 characters.';
+            $this->response->redirect('/admin/profile'); exit;
+        }
+
+        $admin = $this->db->table('admins')->where('id', $this->auth->user()->id)->first();
+        if (!password_verify($currentPassword, $admin->password_hash)) {
+            $_SESSION['error_message'] = 'Current password is incorrect.';
+            $this->response->redirect('/admin/profile'); exit;
+        }
+
+        $this->db->table('admins')->where('id', $id)->update([
+            'password_hash' => password_hash($newPassword, PASSWORD_DEFAULT),
+            'must_change_password' => 0,
+        ]);
+
+        $_SESSION['success_message'] = 'Password changed.';
+        $this->response->redirect('/admin/profile');
+        exit;
+    }
+
     public static function hasAccess($permission)
     {
         if (!isset($_SESSION['user'])) return false;

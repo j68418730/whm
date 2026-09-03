@@ -356,6 +356,10 @@ $router->post('/admin/admins/change-password/{id}', 'Admin\Controllers\AdminsCon
 $router->get('/admin/admins/toggle-status/{id}', 'Admin\Controllers\AdminsController@toggleStatus');
 $router->post('/admin/admins/permissions/{id}', 'Admin\Controllers\AdminsController@updatePermissions');
 $router->get('/admin/admins/delete/{id}', 'Admin\Controllers\AdminsController@delete');
+
+$router->get('/admin/profile', 'Admin\Controllers\AdminsController@profile');
+$router->post('/admin/profile', 'Admin\Controllers\AdminsController@updateProfile');
+$router->post('/admin/profile/password', 'Admin\Controllers\AdminsController@changePassword');
 $router->get('/admin/todo', 'Admin\Controllers\TodoController@index');
 $router->post('/admin/todo', 'Admin\Controllers\TodoController@store');
 $router->post('/admin/todo/{id}', 'Admin\Controllers\TodoController@update');
