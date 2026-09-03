@@ -108,9 +108,9 @@
 <h3 style="color:var(--text_muted,#64748b);font-size:12px;margin:0 0 10px">Quick Actions</h3>
 <div style="display:grid;grid-template-columns:1fr;gap:6px">
 <?php if ($feat('clients')): ?>
-<a href="/reseller-clients" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-people"></i> View Clients</a>
-<a href="/reseller/packages" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-box-seam"></i> Packages</a>
-<?php endif; ?>
+    <a href="/reseller-clients" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-people"></i> View Clients</a>
+    <a href="/reseller/packages" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-box-seam"></i> System Packages</a>
+    <?php endif; ?>
 <?php if ($feat('billing')): ?>
 <a href="/reseller/billing-system" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;justify-content:flex-start"><i class="bi bi-credit-card"></i> Billing System</a>
 <?php endif; ?>
