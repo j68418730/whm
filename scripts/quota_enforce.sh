@@ -30,14 +30,14 @@ is_exempt_domain() {
 
 # Get all completed/active accounts with package limits
 $MYSQL -N -e "
-SELECT u.id, u.username, u.domain, u.disk_used, u.bandwidth_used, 
+SELECT u.id, u.username, u.domain, u.disk_used, u.bandwidth_used, u.status,
        p.disk_space, p.bandwidth, p.email_accounts, p.databases,
        p.subdomains, p.addon_domains, p.ftp_accounts, u.allow_suspension,
        u.no_auto_suspend
 FROM radiohosting.hosting_users u 
 JOIN radiohosting.hosting_packages p ON u.package_id = p.id 
 WHERE u.status IN ('completed','active');
-" 2>/dev/null | while IFS=$'\t' read -r id username domain disk_used bw_used max_disk max_bw max_emails max_dbs max_sub max_addon max_ftp allow_suspension no_auto_suspend; do
+" 2>/dev/null | while IFS=$'\t' read -r id username domain disk_used bw_used status max_disk max_bw max_emails max_dbs max_sub max_addon max_ftp allow_suspension no_auto_suspend; do
     [ -z "$id" ] && continue
     
     # Skip auto-suspend for exempt domains (primary server domain, critical services)
