@@ -1296,14 +1296,16 @@ class ResellerPortalController extends Controller
         $clientId = (int)$this->request->post('client_id', 0);
         $client = $this->db->table('hosting_users')->where('id', $clientId)->where('reseller_id', $rid)->first();
         if (!$client) { $_SESSION['error_message'] = 'Client not found.'; $this->response->redirect('/reseller/chat-system'); exit; }
-        $existing = $this->db->table('chatbox_tenants')->where('hosting_user_id', $clientId)->first();
-        if ($existing) { $_SESSION['error_message'] = 'This client already has a chat tenant.'; $this->response->redirect('/reseller/chat-system'); exit; }
+        // Allow multiple chats per client (storage-limited). Voice/Video gated by client's package.
+        $pkg = $this->db->table('reseller_packages')->where('id', $client->reseller_package_id)->first();
+        $hasVoice = $pkg && is_string($pkg->features ?? null) && in_array('chat_voice', json_decode($pkg->features, true) ?? []);
+        $hasVideo = $pkg && is_string($pkg->features ?? null) && in_array('chat_video', json_decode($pkg->features, true) ?? []);
         if ($this->assertQuota('/reseller/chat-system', 'create new chat boxes')) { /* blocked */ }
         $tid = $this->db->table('chatbox_tenants')->insertGetId([
             'hosting_user_id' => $clientId, 'name' => $client->username . '\'s Chat',
             'widget_title' => 'Live Chat', 'widget_color' => '#008cff', 'widget_bg' => '#0a0e1a',
             'widget_text_color' => '#ffffff', 'font_family' => 'Inter, sans-serif',
-            'guest_enabled' => 1, 'registration_enabled' => 1, 'voice_enabled' => 0,
+            'guest_enabled' => 1, 'registration_enabled' => 1, 'voice_enabled' => $hasVoice ? 1 : 0, 'video_enabled' => $hasVideo ? 1 : 0,
             'max_rooms' => 5, 'message_limit_days' => 30, 'is_active' => 1,
         ]);
         $this->audit('chat.tenant_created', 'chatbox_tenant', $tid, ['client' => $clientId]);
