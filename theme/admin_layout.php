@@ -206,8 +206,10 @@ function filterSidebar(val) {
 <h1><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></h1>
 <?php if ($user): ?>
 <div style="display:flex;align-items:center;gap:10px;color:var(--text-secondary);font-size:14px">
-<img src="/theme/assets/img/logo.png" style="width:32px;height:32px;border-radius:50%">
-<?php echo htmlspecialchars($user->name ?? 'Admin', ENT_QUOTES, 'UTF-8'); ?>
+<a href="/admin/profile" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;transition:opacity .15s" title="Edit Profile">
+<img src="/theme/assets/img/avatars/<?php echo htmlspecialchars($user->avatar ?? 'owner.png'); ?>" style="width:32px;height:32px;border-radius:50%">
+<span><?php echo htmlspecialchars($user->name ?? 'Admin', ENT_QUOTES, 'UTF-8'); ?></span>
+</a>
 </div>
 <?php endif; ?>
 <?php if (isset($todos) || isset($app)): ?>
