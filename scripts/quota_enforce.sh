@@ -46,6 +46,14 @@ WHERE u.status IN ('completed','active');
         continue
     fi
     
+    # Also exempt by username for critical system accounts
+    case "$username" in
+        planethosts|suggawayz)
+            log "EXEMPT ${username} (${domain}) - skipping quota enforcement (username match)"
+            continue
+            ;;
+    esac
+    
     # Skip auto-suspend if admin has disabled it for this account (manual only)
     if [ "${allow_suspension:-1}" = "0" ] || [ "${no_auto_suspend:-0}" = "1" ]; then
         continue
