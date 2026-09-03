@@ -229,7 +229,7 @@ class AdminsController extends Controller
         exit;
     }
 
-    public function changePassword()
+    public function changeOwnPassword()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $id = $this->auth->user()->id;
