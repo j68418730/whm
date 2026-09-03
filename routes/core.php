@@ -359,7 +359,7 @@ $router->get('/admin/admins/delete/{id}', 'Admin\Controllers\AdminsController@de
 
 $router->get('/admin/profile', 'Admin\Controllers\AdminsController@profile');
 $router->post('/admin/profile', 'Admin\Controllers\AdminsController@updateProfile');
-$router->post('/admin/profile/password', 'Admin\Controllers\AdminsController@changePassword');
+$router->post('/admin/profile/password', 'Admin\Controllers\AdminsController@changeOwnPassword');
 $router->get('/admin/todo', 'Admin\Controllers\TodoController@index');
 $router->post('/admin/todo', 'Admin\Controllers\TodoController@store');
 $router->post('/admin/todo/{id}', 'Admin\Controllers\TodoController@update');
