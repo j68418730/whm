@@ -12,6 +12,22 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "${LOGDIR}/quota.log"
 }
 
+# Domains that should NEVER be auto-suspended (primary server domain, critical services)
+EXEMPT_DOMAINS=(
+    "planet-hosts.com"
+    "suggawayz.com"
+)
+
+is_exempt_domain() {
+    local domain="$1"
+    for exempt in "${EXEMPT_DOMAINS[@]}"; do
+        if [[ "$domain" == "$exempt" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 # Get all completed/active accounts with package limits
 $MYSQL -N -e "
 SELECT u.id, u.username, u.domain, u.disk_used, u.bandwidth_used, 
@@ -23,6 +39,13 @@ JOIN radiohosting.hosting_packages p ON u.package_id = p.id
 WHERE u.status IN ('completed','active');
 " 2>/dev/null | while IFS=$'\t' read -r id username domain disk_used bw_used max_disk max_bw max_emails max_dbs max_sub max_addon max_ftp allow_suspension no_auto_suspend; do
     [ -z "$id" ] && continue
+    
+    # Skip auto-suspend for exempt domains (primary server domain, critical services)
+    if is_exempt_domain "$domain"; then
+        log "EXEMPT ${username} (${domain}) - skipping quota enforcement"
+        continue
+    fi
+    
     # Skip auto-suspend if admin has disabled it for this account (manual only)
     if [ "${allow_suspension:-1}" = "0" ] || [ "${no_auto_suspend:-0}" = "1" ]; then
         continue
