@@ -27,10 +27,13 @@ A package defines what a server can do. Cost is set later on billing products.
 <input type="hidden" name="id" id="pkg_id" value="0">
 <div class="row g-3">
 <div class="col-md-6">
-<label class="form-label">Package Name *</label>
-<input type="text" name="name" id="pkg_name" required placeholder="e.g. Starter">
-<small style="color:#64748b">Public id becomes <span id="slugPreview">username_name</span></small>
-</div>
+        <label class="form-label">Package Name *</label>
+        <div style="display:flex;gap:4px">
+          <span style="background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:6px 0 0 6px;padding:0 10px;display:flex;align-items:center;color:#64748b;font-size:13px" id="slugPrefix"><?php echo strtolower(preg_replace('/[^a-z0-9]+/', '', strtolower($user->name ?? 'reseller'))); ?>_</span>
+          <input type="text" name="name" id="pkg_name" required placeholder="e.g. starter" style="border-radius:0 6px 6px 0;border-left:none">
+        </div>
+        <small style="color:#64748b">Public slug: <span id="slugPreview"><?php echo strtolower(preg_replace('/[^a-z0-9]+/', '', strtolower($user->name ?? 'reseller'))); ?>_starter</span></small>
+      </div>
 <div class="col-md-6">
 <label class="form-label">Server Type (locked to your reseller)</label>
 <select name="type" id="pkg_type" onchange="toggleStreaming()">
@@ -53,7 +56,7 @@ A package defines what a server can do. Cost is set later on billing products.
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px 12px;font-size:12px;padding:10px;background:rgba(0,0,0,.2);border:1px solid var(--border,rgba(0,191,255,.12));border-radius:8px">
 <?php
 // Mirror admin general features, but SSH is root-only (never offered to resellers/customers).
-$genFeatures = ['cron'=>'Cron','ssl'=>'SSL','git'=>'Git','nodejs'=>'Node.js','python'=>'Python','ruby'=>'Ruby','terminal'=>'Terminal','backups'=>'Backups','installer'=>'Installer','builder'=>'Website Builder','ai_builder'=>'AI Builder','ai_assistant'=>'AI Assistant','marketplace'=>'Marketplace','api'=>'API','webhooks'=>'Webhooks','chat'=>'Chatbox','chat_voice'=>'+ Voice','chat_video'=>'+ Video','dj_panel'=>'DJ Panel'];
+        $genFeatures = ['cron'=>'Cron','ssl'=>'SSL','git'=>'Git','nodejs'=>'Node.js','python'=>'Python','ruby'=>'Ruby','backups'=>'Backups','installer'=>'Installer','builder'=>'Website Builder','ai_builder'=>'AI Builder','ai_assistant'=>'AI Assistant','marketplace'=>'Marketplace','api'=>'API','webhooks'=>'Webhooks','chat'=>'Chatbox','chat_voice'=>'+ Voice','chat_video'=>'+ Video','dj_panel'=>'DJ Panel'];
 foreach ($genFeatures as $k=>$l):
     $isSub = in_array($k, ['chat_voice','chat_video']);
 ?>
@@ -424,7 +427,7 @@ function esc(s){var d=document.createElement('div');d.textContent=s==null?'':Str
 var userSlug = '<?php echo strtolower(preg_replace("/[^a-z0-9]+/","", strtolower($user->name ?? "reseller"))); ?>';
 function previewSlug() {
   var n = (document.getElementById('pkg_name').value||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
-  document.getElementById('slugPreview').textContent = userSlug + '_' + (n||'name');
+  document.getElementById('slugPreview').textContent = userSlug + '_' + (n||'starter');
 }
 document.getElementById('pkg_name').addEventListener('input', previewSlug);
 previewSlug();
