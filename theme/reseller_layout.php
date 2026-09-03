@@ -86,7 +86,7 @@ if (!empty($resellerTheme['colors'])) {
       <a href="/reseller/clients" class="nav-link <?php echo str_contains($title ?? '', 'Clients') ? 'active' : ''; ?>"><i class="bi bi-people"></i> Clients</a>
       <?php endif; ?>
       <?php if ($feat('packages') && ($staff === null || $can('packages'))): ?>
-      <a href="/reseller/packages" class="nav-link <?php echo str_contains($title ?? '', 'Packages') ? 'active' : ''; ?>"><i class="bi bi-box-seam"></i> Packages</a>
+      <a href="/reseller/packages" class="nav-link <?php echo str_contains($title ?? '', 'System Packages') ? 'active' : ''; ?>"><i class="bi bi-box-seam"></i> System Packages</a>
       <?php endif; ?>
       <?php if ($feat('provisioning') && ($staff === null || $can('provisioning'))): ?>
       <a href="/reseller/provisioning" class="nav-link <?php echo str_contains($title ?? '', 'Provisioning') ? 'active' : ''; ?>"><i class="bi bi-hdd-network"></i> Provisioning</a>
