@@ -65,6 +65,9 @@ class SecurityToolsService
             'opendkim' => ['label' => 'DKIM Signing (OpenDKIM)', 'binary' => 'opendkim',
                 'script' => '14-opendkim', 'status' => 'opendkim', 'log' => 'opendkim',
                 'scan' => 'systemctl is-active opendkim', 'group' => 'email'],
+            'logwatchdog' => ['label' => 'Log Size Watchdog', 'binary' => 'find',
+                'script' => '15-logwatchdog', 'status' => 'logwatchdog', 'log' => 'logwatchdog',
+                'scan' => 'sudo /usr/local/bin/ph-logwatchdog', 'group' => 'logs'],
         ];
     }
 
