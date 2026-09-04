@@ -156,6 +156,60 @@ class SecurityController extends Controller
         ]);
     }
 
+    // Log Size Watchdog - check for oversized log files
+    public function logwatchdog()
+    {
+        $this->guard();
+        $user = $this->auth->user();
+        
+        // Run the check
+        $tools = new \Services\SecurityToolsService($this->db);
+        $logwatchdog = $tools->tool('logwatchdog');
+        if ($logwatchdog) {
+            $tools->runScan($logwatchdog);
+        }
+        
+        // Read alerts
+        $alerts = [];
+        $alertFile = '/var/www/radiohosting/storage/security/logwatchdog.alerts';
+        if (is_file($alertFile)) {
+            $content = @file_get_contents($alertFile);
+            $alerts = json_decode($content, true) ?: [];
+        }
+        
+        // Also check current log file sizes
+        $largeFiles = [];
+        $dirs = ['/var/log/planethosts', '/var/log/radiohosting', '/var/log/apache2', '/var/log/shoutcast', '/var/log/icecast2', '/var/log/liquidsoap'];
+        $threshold = 1024 * 1024 * 1024; // 1GB
+        foreach ($dirs as $dir) {
+            if (is_dir($dir)) {
+                $files = glob("$dir/*");
+                foreach ($files as $file) {
+                    if (is_file($file)) {
+                        $size = filesize($file);
+                        if ($size > 1024 * 1024 * 1024) { // 1GB
+                            $largeFiles[] = [
+                                'file' => $file,
+                                'size' => $size,
+                                'size_gb' => round($size / (1024*1024*1024), 2),
+                                'size_mb' => round($size / (1024*1024), 2),
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+        
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        return $this->view('admin.security.logwatchdog', [
+            'user' => $user,
+            'title' => 'Log Size Watchdog',
+            'theme_settings' => $theme_settings,
+            'alerts' => $alerts,
+            'largeFiles' => $largeFiles,
+        ]);
+    }
+
     // Resolve a set of intrusion events
     public function intrusionResolve()
     {
@@ -169,5 +223,75 @@ class SecurityController extends Controller
             $_SESSION['success_message'] = 'Marked as resolved.';
         } catch (\Exception $e) {}
         $this->response->redirect('/admin/security/intrusions');
+    }
+
+    // Clear all logwatchdog alerts
+    public function logwatchdogClear()
+    {
+        $this->guard();
+        $alertFile = '/var/www/radiohosting/storage/security/logwatchdog.alerts';
+        @file_put_contents($alertFile, '[]');
+        $_SESSION['success_message'] = 'All logwatchdog alerts cleared.';
+        $this->response->redirect('/admin/security/logwatchdog');
+    }
+
+    // Dismiss a single alert
+    public function logwatchdogDismiss()
+    {
+        $this->guard();
+        $input = json_decode(file_get_contents('php://input'), true);
+        $file = $input['file'] ?? '';
+        
+        if (!$file) {
+            $this->response->json(['success' => false, 'error' => 'File required']);
+            return;
+        }
+        
+        $alertFile = '/var/www/radiohosting/storage/security/logwatchdog.alerts';
+        if (!is_file($alertFile)) {
+            $this->response->json(['success' => false, 'error' => 'No alerts file']);
+            return;
+        }
+        
+        $alerts = json_decode(@file_get_contents($alertFile), true) ?: [];
+        $alerts = array_filter($alerts, fn($a) => ($a['file'] ?? '') !== $file);
+        @file_put_contents($alertFile, json_encode(array_values($alerts)));
+        
+        $this->response->json(['success' => true]);
+    }
+
+    // Truncate a log file
+    public function logwatchdogTruncate()
+    {
+        $this->guard();
+        $input = json_decode(file_get_contents('php://input'), true);
+        $file = $input['file'] ?? '';
+        
+        if (!$file || !is_file($file)) {
+            $this->response->json(['success' => false, 'error' => 'Invalid or missing file']);
+            return;
+        }
+        
+        // Truncate the file (keep it but clear contents)
+        $result = @file_put_contents($file, '');
+        if ($result === false) {
+            $this->response->json(['success' => false, 'error' => 'Failed to truncate file (permission denied?)']);
+            return;
+        }
+        
+        // Remove any related alerts
+        $alertFile = '/var/www/radiohosting/storage/security/logwatchdog.alerts';
+        if (is_file($alertFile)) {
+            $alerts = json_decode(@file_get_contents($alertFile), true) ?: [];
+            $alerts = array_filter($alerts, fn($a) => ($a['file'] ?? '') !== $file);
+            @file_put_contents($alertFile, json_encode(array_values($alerts)));
+        }
+        
+        // Restart the service if it's a service log
+        if (strpos($file, 'autodj') !== false || strpos($file, 'ffmpeg') !== false) {
+            @exec('sudo systemctl reload apache2 2>/dev/null');
+        }
+        
+        $this->response->json(['success' => true, 'message' => 'Log file truncated']);
     }
 }

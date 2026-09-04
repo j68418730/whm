@@ -86,6 +86,10 @@ $router->get('/admin/security/fix/{tool}', 'Admin\Controllers\SecurityController
 $router->get('/admin/security/logs/{tool}', 'Admin\Controllers\SecurityController@logs');
 $router->get('/admin/security/intrusions', 'Admin\Controllers\SecurityController@intrusions');
 $router->post('/admin/security/intrusions/resolve', 'Admin\Controllers\SecurityController@intrusionResolve');
+$router->get('/admin/security/logwatchdog', 'Admin\Controllers\SecurityController@logwatchdog');
+$router->post('/admin/security/logwatchdog/clear', 'Admin\Controllers\SecurityController@logwatchdogClear');
+$router->post('/admin/security/logwatchdog/dismiss', 'Admin\Controllers\SecurityController@logwatchdogDismiss');
+$router->post('/admin/security/logwatchdog/truncate', 'Admin\Controllers\SecurityController@logwatchdogTruncate');
 $router->get('/admin/backup', 'Admin\Controllers\BackupController@index');
 $router->post('/admin/backup/create', 'Admin\Controllers\BackupController@create');
 $router->get('/admin/backup/restore/{name}', 'Admin\Controllers\BackupController@restore');
