@@ -190,6 +190,55 @@ select option{background:#0a0f1a;color:#e0e0e0}
 </div>
 </div>
 
+<div class="card" style="margin-bottom:16px">
+<h4 style="margin:0 0 12px;font-size:14px">🖼️ Support Widget Images</h4>
+<p style="color:var(--text-muted);font-size:13px;margin:0 0 12px">Customize the chat widget appearance. Leave blank to use defaults.</p>
+<form method="POST" action="/reseller/support-chat/update-images" enctype="multipart/form-data" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="form-group"><label>Avatar / Operator Image</label><input type="file" name="avatar_image" accept="image/*" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;outline:none"></div>
+<div class="form-group"><label>Chat Header Logo</label><input type="file" name="header_logo" accept="image/*" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;outline:none"></div>
+<div class="form-group"><label>Visitor Placeholder Avatar</label><input type="file" name="visitor_avatar" accept="image/*" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;outline:none"></div>
+<div class="form-group"><label>Offline Image</label><input type="file" name="offline_image" accept="image/*" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;outline:none"></div>
+<div class="form-group" style="grid-column:1/-1"><button type="submit" class="btn btn-sm primary">💾 Save Images</button></div>
+</form>
+<div style="margin-top:12px;padding:12px;background:rgba(0,0,0,.3);border-radius:8px;font-size:12px;color:#64748b">
+<strong>Defaults:</strong> Operator avatar = <code>/chatbox/assets/img/avatars/owner.png</code>, Visitor = <code>/chatbox/assets/img/avatars/visitor.png</code>, Header = your brand logo, Offline = built-in placeholder.
+</div>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+<h4 style="margin:0 0 12px;font-size:14px">📢 Live Visitor Banners & Scripts</h4>
+<p style="color:var(--text-muted);font-size:13px;margin:0 0 12px">When live chat is enabled, show a banner to visitors. Choose style and copy the embed script.</p>
+<form method="POST" action="/reseller/support-chat/update-banner" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="form-group"><label>Banner Style</label><select name="banner_style" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;outline:none"><option value="toast">Toast (bottom-right)</option><option value="slide">Slide-in (left)</option><option value="modal">Modal Popup</option><option value="none">No Banner</option></select></div>
+<div class="form-group"><label>Banner Message</label><input type="text" name="banner_message" placeholder="We're here to help! Click to chat." style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;outline:none"></div>
+<div class="form-group"><label>Banner Color</label><input type="color" name="banner_color" value="#008cff" style="width:100%;height:40px;border:none;border-radius:6px;background:rgba(0,0,0,.3)"></div>
+<div class="form-group"><label>Show After (seconds)</label><input type="number" name="banner_delay" value="10" min="0" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;outline:none"></div>
+<div class="form-group" style="grid-column:1/-1"><button type="submit" class="btn btn-sm primary">💾 Save Banner Settings</button></div>
+</form>
+<div style="margin-top:12px">
+<h5 style="font-size:12px;color:var(--text-muted);margin:0 0 8px">Banner Script (include on pages with embed code):</h5>
+<pre id="bannerCodeBox" style="background:rgba(0,0,0,.5);border:1px solid rgba(0,191,255,.15);border-radius:8px;padding:12px;font-size:11px;line-height:1.5;overflow-x:auto;white-space:pre-wrap;color:#4ade80;margin:0"><script>
+(function() {
+  var s = document.createElement("script");
+  s.src = "https://<?php echo htmlspecialchars($embedDomain); ?>/chatbox/banner.js.php";
+  s.async = true;
+  s.onload = function() {
+    if (window.LiveChatBanner) {
+      LiveChatBanner.init({
+        style: "toast",
+        message: "We're here to help! Click to chat.",
+        color: "#008cff",
+        delay: 10
+      });
+    }
+  };
+  document.head.appendChild(s);
+})();
+<\/script></pre>
+<button class="btn btn-sm secondary" onclick="copyBannerCode()" style="margin-top:6px">📋 Copy Banner Script</button>
+</div>
+</div>
+
 <div class="card">
 <h4 style="margin:0 0 12px;font-size:14px">👁️ Visitor Tracking Embed Code</h4>
 <p style="color:var(--text-muted);font-size:13px;margin:0 0 8px">Add to any page to track visitors (used by Live Chat):</p>
@@ -205,6 +254,31 @@ select option{background:#0a0f1a;color:#e0e0e0}
 })();
 <\/script>'); ?></pre>
 <button class="btn btn-sm primary" onclick="copyTrackCode()" style="position:absolute;top:8px;right:8px">📋 Copy</button>
+</div>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+<h4 style="margin:0 0 12px;font-size:14px">🖥️ Desktop App — Download & API</h4>
+<p style="color:var(--text-muted);font-size:13px;margin:0 0 12px">Desktop app for operators to receive live chat notifications. Download and configure with your API key.</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+<div class="card" style="padding:16px">
+<h5 style="margin:0 0 8px;font-size:13px">📥 Download</h5>
+<p style="font-size:12px;color:var(--text-muted);margin:0 0 12px">Windows / macOS / Linux builds:</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<a href="https://<?php echo htmlspecialchars($embedDomain); ?>/desktop/PlanetHosts-Support-Setup.exe" class="btn btn-sm primary">⬇ Windows (.exe)</a>
+<a href="https://<?php echo htmlspecialchars($embedDomain); ?>/desktop/PlanetHosts-Support.dmg" class="btn btn-sm secondary">⬇ macOS (.dmg)</a>
+<a href="https://<?php echo htmlspecialchars($embedDomain); ?>/desktop/PlanetHosts-Support.AppImage" class="btn btn-sm secondary">⬇ Linux (.AppImage)</a>
+</div>
+<p style="font-size:11px;color:#64748b;margin-top:8px">Built from <a href="https://github.com/planet-hosts/desktop-support-app" target="_blank" style="color:#0A84FF">source</a>. Auto-updates enabled.</p>
+</div>
+<div class="card" style="padding:16px">
+<h5 style="margin:0 0 8px;font-size:13px">🔑 API Configuration</h5>
+<p style="font-size:12px;color:var(--text-muted);margin:0 0 12px">Configure the desktop app with your reseller API key:</p>
+<div style="position:relative">
+<pre id="desktopConfigBox" style="background:rgba(0,0,0,.5);border:1px solid rgba(0,191,255,.15);border-radius:8px;padding:12px;font-size:12px;line-height:1.5;overflow-x:auto;white-space:pre-wrap;color:#4ade80;margin:0 0 8px">{ "reseller_id": <?php echo (int)$reseller->id; ?>, "api_key": "<?php echo htmlspecialchars(substr(md5($reseller->id . '-ph-reseller-support'), 0, 32)); ?>", "ws_url": "wss://<?php echo htmlspecialchars($embedDomain); ?>/ws/support", "rest_url": "https://<?php echo htmlspecialchars($embedDomain); ?>/api/reseller/support", "brand": "<?php echo htmlspecialchars($reseller->company_name); ?>", "logo": "<?php echo htmlspecialchars($reseller->brand_logo ?: '/theme/assets/img/logo.png'); ?>" }</pre>
+<button class="btn btn-sm primary" onclick="copyDesktopConfig()" style="position:absolute;top:8px;right:8px">📋 Copy Config</button>
+</div>
+<p style="font-size:11px;color:#64748b;margin-top:8px">Paste this JSON into the app's <code>Settings → API Config</code> or save as <code>config.json</code> in the app data folder.</p>
 </div>
 </div>
 

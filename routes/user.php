@@ -298,6 +298,9 @@ $router->get('/reseller/support-chat/messages/{sessionId}', 'User\Controllers\Re
 $router->post('/reseller/support-chat/send', 'User\Controllers\ResellerPortalController@supportLiveChatSend');
 $router->post('/reseller/support-chat/initiate', 'User\Controllers\ResellerPortalController@supportLiveChatInitiate');
 $router->get('/reseller/support-chat/close/{sessionId}', 'User\Controllers\ResellerPortalController@supportLiveChatClose');
+$router->post('/reseller/support-chat/toggle-enabled', 'User\Controllers\ResellerPortalController@supportLiveChatToggleEnabled');
+$router->post('/reseller/support-chat/update-images', 'User\Controllers\ResellerPortalController@supportLiveChatUpdateImages');
+$router->post('/reseller/support-chat/update-banner', 'User\Controllers\ResellerPortalController@supportLiveChatUpdateBanner');
 $router->get('/reseller/radio-system', 'User\Controllers\ResellerPortalController@radioSystem');
 $router->get('/reseller/game-system', 'User\Controllers\ResellerPortalController@gameSystem');
 $router->get('/reseller/roles', 'User\Controllers\ResellerPortalController@roles');
