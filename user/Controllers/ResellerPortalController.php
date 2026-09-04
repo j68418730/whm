@@ -1545,6 +1545,84 @@ class ResellerPortalController extends Controller
         exit;
     }
 
+    // Toggle live chat enabled for reseller domain
+    public function supportLiveChatToggleEnabled()
+    {
+        $u = $this->requireReseller();
+        $this->requirePerm('support');
+        $this->requireFeature('support');
+        $rid = (int)$this->reseller->id;
+        $enabled = (int)$this->request->post('enabled', 0);
+        $domain = $this->request->post('domain', '');
+        // Store in reseller settings
+        $settings = $this->getResellerCartSettings($rid); // reuse existing settings getter
+        $settings['live_chat_enabled'] = $enabled;
+        $settings['live_chat_domain'] = $domain;
+        $this->db->table('reseller_settings')
+            ->where('reseller_id', $rid)
+            ->where('setting_key', 'billing_cart')
+            ->update(['setting_value' => json_encode($settings)]);
+        $_SESSION['success_message'] = $enabled ? 'Live chat enabled.' : 'Live chat disabled.';
+        $this->response->redirect('/reseller/support-chat');
+    }
+
+    // Update support widget images
+    public function supportLiveChatUpdateImages()
+    {
+        $u = $this->requireReseller();
+        $this->requirePerm('support');
+        $this->requireFeature('support');
+        $rid = (int)$this->reseller->id;
+        // Handle file uploads (avatar_image, header_logo, visitor_avatar, offline_image)
+        $uploads = ['avatar_image', 'header_logo', 'visitor_avatar', 'offline_image'];
+        $saved = [];
+        foreach ($uploads as $field) {
+            if (!empty($_FILES[$field]['tmp_name']) && is_uploaded_file($_FILES[$field]['tmp_name'])) {
+                $ext = strtolower(pathinfo($_FILES[$field]['name'], PATHINFO_EXTENSION));
+                if (!in_array($ext, ['png','jpg','jpeg','gif','webp'])) continue;
+                $fname = $field . '_' . uniqid() . '.' . $ext;
+                $dest = '/var/www/radiohosting/storage/support/' . $fname;
+                if (!is_dir('/var/www/radiohosting/storage/support')) @mkdir('/var/www/radiohosting/storage/support', 0755, true);
+                if (move_uploaded_file($_FILES[$field]['tmp_name'], $dest)) {
+                    $saved[$field] = '/storage/support/' . $fname;
+                }
+            }
+        }
+        if ($saved) {
+            $settings = $this->getResellerCartSettings($rid);
+            $settings['support_images'] = array_merge($settings['support_images'] ?? [], $saved);
+            $this->db->table('reseller_settings')
+                ->where('reseller_id', $rid)
+                ->where('setting_key', 'billing_cart')
+                ->update(['setting_value' => json_encode($settings)]);
+            $_SESSION['success_message'] = 'Support images updated.';
+        }
+        $this->response->redirect('/reseller/support-chat');
+    }
+
+    // Update live chat banner settings
+    public function supportLiveChatUpdateBanner()
+    {
+        $u = $this->requireReseller();
+        $this->requirePerm('support');
+        $this->requireFeature('support');
+        $rid = (int)$this->reseller->id;
+        $banner = [
+            'style' => $this->request->post('banner_style', 'toast'),
+            'message' => $this->request->post('banner_message', "We're here to help! Click to chat."),
+            'color' => $this->request->post('banner_color', '#008cff'),
+            'delay' => (int)$this->request->post('banner_delay', 10),
+        ];
+        $settings = $this->getResellerCartSettings($rid);
+        $settings['support_banner'] = $banner;
+        $this->db->table('reseller_settings')
+            ->where('reseller_id', $rid)
+            ->where('setting_key', 'billing_cart')
+            ->update(['setting_value' => json_encode($settings)]);
+        $_SESSION['success_message'] = 'Banner settings saved.';
+        $this->response->redirect('/reseller/support-chat');
+    }
+
     // ── Roles & Staff (mirrors admin Admins/Roles, scoped to this reseller) ──
     public function roles()
     {
