@@ -26,7 +26,7 @@ class ServerConfigController extends Controller
         $os = trim(shell_exec('cat /etc/os-release 2>/dev/null | grep "^PRETTY_NAME" | cut -d= -f2') ?: 'Linux');
         $kernel = trim(shell_exec('uname -r 2>/dev/null') ?: '');
         $uptime = trim(shell_exec('uptime -p 2>/dev/null') ?: '');
-        $rootPass = 'Skylinehosting171';
+        $rootPass = \db_root_pass();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         return $this->view('admin.serverconfig.index', [
             'user' => $user, 'title' => 'Server Configuration',

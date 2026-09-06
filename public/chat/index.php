@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 // Room page — /chat/{slug}
 $slug = trim($_GET['slug'] ?? '');
 if (!$slug) {
@@ -13,7 +14,7 @@ if (!$slug) {
 $slug = preg_replace('/[^a-z0-9-]/', '', $slug);
 if (!$slug) { http_response_code(404); echo '<h1>Room not found</h1>'; exit; }
 
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 $q = $pdo->prepare("SELECT r.*, t.id as tenant_id FROM chatbox_rooms r JOIN chatbox_tenants t ON t.id = r.tenant_id WHERE r.slug = ? AND r.is_active = 1");
 $q->execute([$slug]);
 $room = $q->fetch(PDO::FETCH_OBJ);

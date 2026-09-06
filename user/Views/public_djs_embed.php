@@ -12,15 +12,19 @@ body{font-family:'Inter',sans-serif;background:#070b14;color:#e0e0e0;padding:16p
 h2{font-size:16px;font-weight:700;margin-bottom:12px;color:#0A84FF}
 </style></head><body>
 <?php
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+require_once __DIR__ . '/../../core/ServerCreds.php';
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 $djs = $pdo->query("SELECT d.* FROM radio_djs d JOIN radio_stations s ON d.stream_id = s.id WHERE d.status='active' ORDER BY d.name ASC")->fetchAll(PDO::FETCH_OBJ);
 ?>
 <h2>🎧 Our DJs</h2>
 <div class="dj-grid">
-<?php if(empty($djs)):?><p style="color:#64748b;font-size:12px">No DJs.</p>
-<?php else: foreach($djs as $dj): $init = strtoupper(substr($dj->name ?? $dj->username, 0, 1)); $online = $dj->last_active && (time()-strtotime($dj->last_active)) < 300; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; if(empty($djs)):?><p style="color:#64748b;font-size:12px">No DJs.</p>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; else: foreach($djs as $dj): $init = strtoupper(substr($dj->name ?? $dj->username, 0, 1)); $online = $dj->last_active && (time()-strtotime($dj->last_active)) < 300; ?>
 <div class="dj-card"><div class="avatar"><?php echo $init;?></div>
 <div class="name"><?php echo htmlspecialchars($dj->name ?? $dj->username);?></div>
 <div class="status" style="color:<?php echo $online?'#4ade80':'#64748b';?>">● <?php echo $online?'Online':'Offline';?></div></div>
-<?php endforeach; endif;?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; endforeach; endif;?>
 </div></body></html>

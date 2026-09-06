@@ -331,12 +331,12 @@ class PlanetStudioController extends Controller
             return $this->json(['error' => 'Upload failed'], 400);
         }
 
-        $filename = basename($file['name']);
-        $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-        if (!in_array($ext, ['mp3', 'aac', 'ogg', 'flac', 'wav', 'm4a'])) {
-            return $this->json(['error' => 'Invalid file type'], 400);
+        $v = validate_music_upload($file);
+        if (!$v['ok']) {
+            return $this->json(['error' => $v['error']], 400);
         }
 
+        $filename = basename($file['name']);
         $dest = $dir . '/' . $filename;
         if (!move_uploaded_file($file['tmp_name'], $dest)) {
             return $this->json(['error' => 'Failed to save file'], 500);

@@ -1,7 +1,8 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 // Chat file upload handler
 session_start();
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_FILES['file'])) {
     http_response_code(400);

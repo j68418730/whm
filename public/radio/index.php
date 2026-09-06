@@ -1,7 +1,8 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 require_once __DIR__ . '/radio_helper.php';
 
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 $streams = $pdo->query("SELECT id, name AS server_name, server_type, port, status, mount_point FROM streaming_stations ORDER BY id ASC")->fetchAll(PDO::FETCH_OBJ);
 $baseUrl = radio_host();
 
@@ -54,7 +55,8 @@ p.desc{color:#64748b;font-size:13px;margin-top:4px}
 <p class="desc">Select a stream to listen or grab embed codes for your website.</p>
 
 <div class="stream-grid">
-<?php foreach ($streams as $s):
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; foreach ($streams as $s):
     $stats = radio_fetch_stats($s);
     $name = htmlspecialchars($s->server_name ?: "Stream #{$s->id}");
     $type = radio_server_type($s);
@@ -75,7 +77,8 @@ p.desc{color:#64748b;font-size:13px;margin-top:4px}
 <span>📊 <?php echo $bitrate; ?>kbps</span>
 </div>
 <div class="stream-stats" style="font-size:11px;color:#64748b;margin-bottom:8px">
-<?php echo $song; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; echo $song; ?>
 </div>
 <div class="player-section">
 <audio src="<?php echo $sUrl; ?>" controls preload="auto" style="width:100%;height:40px"></audio>
@@ -90,7 +93,8 @@ p.desc{color:#64748b;font-size:13px;margin-top:4px}
 <a class="widget-link" href="<?php echo $baseUrl; ?>/radio/widgets/stats.php?stream=<?php echo $s->id; ?>&layout=iframe" target="_blank">📊 Stats</a>
 </div>
 </div>
-<?php endforeach; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; endforeach; ?>
 </div>
 </div>
 </body></html>

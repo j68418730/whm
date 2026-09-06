@@ -3,9 +3,13 @@
 # Usage: security.sh <setup|scan|clean> [username]
 set -eo pipefail
 
+for _c in "$(dirname "$0")/db_creds.sh" "$(dirname "$0")/../db_creds.sh" /usr/local/planet-hosts/db_creds.sh; do
+    [ -f "$_c" ] && { source "$_c"; break; }
+done
+
 ACTION="${1:-setup}"
 USERNAME="$2"
-MYSQL="mysql -u root -pSkylinehosting171"
+MYSQL="mysql -u ${DB_ROOT_USER:-root} -p${DB_ROOT_PASS}"
 LOGDIR="/var/log/radiohosting/security"
 F2B_LOCAL="/etc/fail2ban/jail.local"
 

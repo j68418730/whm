@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 define('BASE_PATH', realpath(__DIR__ . '/../../'));
 // Load .env
 $envFile = BASE_PATH . '/.env';
@@ -54,7 +55,7 @@ if (!$auth->check() || !$auth->isAdmin()) {
 }
 
 $user = $auth->user();
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
 $action = $_GET['action'] ?? 'list';
 
@@ -106,9 +107,11 @@ select,input{padding:8px 12px;background:rgba(0,0,0,.3);border:1px solid rgba(25
 <body>
 <h1>💬 Chat <span>Dashboard</span> <a href="/admin/dashboard" style="font-size:13px;color:#64748b;float:right">← Admin</a></h1>
 
-<?php if (isset($_SESSION['success_message'])): ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; if (isset($_SESSION['success_message'])): ?>
 <div class="alert"><?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?></div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; endif; ?>
 
 <div class="grid">
 <div class="card">
@@ -116,9 +119,11 @@ select,input{padding:8px 12px;background:rgba(0,0,0,.3);border:1px solid rgba(25
 <form method="POST" action="/admin/chat-dashboard.php?action=create_tenant" style="display:flex;gap:8px;flex-wrap:wrap">
 <select name="user_id" required style="flex:2;min-width:150px">
 <option value="">Select user...</option>
-<?php foreach ($users as $u): ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; foreach ($users as $u): ?>
 <option value="<?php echo $u->id; ?>"><?php echo htmlspecialchars($u->username); ?> (<?php echo htmlspecialchars($u->email); ?>)</option>
-<?php endforeach; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; endforeach; ?>
 </select>
 <input name="name" placeholder="Chat Name" required style="flex:1">
 <button type="submit" class="btn btn-primary">Create</button>
@@ -138,9 +143,11 @@ select,input{padding:8px 12px;background:rgba(0,0,0,.3);border:1px solid rgba(25
 <h3 style="color:#008cff;margin-bottom:12px">📋 All Chat Tenants</h3>
 <table>
 <tr><th>ID</th><th>User</th><th>Email</th><th>Chat Name</th><th>Widget</th><th>Voice</th><th>Actions</th></tr>
-<?php if (empty($tenants)): ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; if (empty($tenants)): ?>
 <tr><td colspan="7" style="text-align:center;color:#64748b;padding:20px">No chat tenants yet</td></tr>
-<?php else: foreach ($tenants as $t): ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; else: foreach ($tenants as $t): ?>
 <tr>
 <td><?php echo $t->id; ?></td>
 <td><strong><?php echo htmlspecialchars($t->username); ?></strong></td>
@@ -153,7 +160,8 @@ select,input{padding:8px 12px;background:rgba(0,0,0,.3);border:1px solid rgba(25
 <a href="/admin/chat-dashboard.php?action=delete_tenant&id=<?php echo $t->id; ?>" class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="return confirm('Delete this chat tenant?')">🗑</a>
 </td>
 </tr>
-<?php endforeach; endif; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; endforeach; endif; ?>
 </table>
 </div>
 </body></html>

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 require_once __DIR__ . '/../security_guard.php';
 security_guard_run('radio');
 require_once __DIR__ . '/radio_helper.php';
@@ -21,7 +22,7 @@ $bitrate = $stats['bitrate'];
 // Get last 10 songs from streaming history if the table exists
 $songsList = [];
 try {
-    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
     $h = $pdo->prepare("SELECT * FROM radio_song_history WHERE stream_id = ? ORDER BY played_at DESC LIMIT 10");
     $h->execute([(int)$stream->id]);
     $songsList = $h->fetchAll(PDO::FETCH_OBJ) ?: [];
@@ -30,7 +31,7 @@ try {
 // Pending requests count (only if table exists)
 $requestCount = 0;
 try {
-    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
     $reqs = $pdo->prepare("SELECT COUNT(*) FROM radio_requests WHERE stream_id = ? AND status = 'pending'");
     $reqs->execute([(int)$stream->id]);
     $requestCount = (int)$reqs->fetchColumn();
@@ -68,35 +69,46 @@ body{background:#0a0e1a;color:#e0e0e0;padding:12px;font-size:13px}
 <div class="section">
 <div class="label">DJ / Source</div>
 <div class="value">
-<?php if ($liveDj): ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; if ($liveDj): ?>
 <span class="status-dot live"></span> <?php echo htmlspecialchars($liveDj); ?>
-<?php elseif (!empty($stream->autodj_enabled)): ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; elseif (!empty($stream->autodj_enabled)): ?>
 <span class="status-dot autodj"></span> AutoDJ
-<?php elseif ($online): ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; elseif ($online): ?>
 <span class="status-dot live"></span> Live
-<?php else: ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; else: ?>
 <span class="status-dot offline"></span> Offline
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; endif; ?>
 </div>
 </div>
 
-<?php if (!empty($songsList)): ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; if (!empty($songsList)): ?>
 <div class="section">
 <div class="label">Last 10 Songs</div>
 <div class="song-list">
-<?php foreach ($songsList as $s): ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; foreach ($songsList as $s): ?>
 <div class="song-item">
 <span class="song-title"><?php echo htmlspecialchars(($s->artist ?? '') ? ($s->artist . ' - ' . $s->title) : ($s->title ?? '')); ?></span>
 <span class="song-time"><?php echo date('H:i', strtotime($s->played_at ?? 'now')); ?></span>
 </div>
-<?php endforeach; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; endforeach; ?>
 </div>
 </div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; endif; ?>
 
-<?php if ($requestCount > 0): ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; if ($requestCount > 0): ?>
 <div class="section">
 <div class="requests">🎵 <?php echo $requestCount; ?> song request<?php echo $requestCount > 1 ? 's' : ''; ?> pending</div>
 </div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; endif; ?>
 </div>

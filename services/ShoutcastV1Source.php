@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 /**
  * SHOUTcast v1 Source Client for AutoDJ
  * Reads MP3 files directly and streams to SHOUTcast v1 server
@@ -17,7 +18,7 @@ class ShoutcastV1Source
         $this->bitrate = $bitrate;
         $this->name = $name;
         $this->streamId = $streamId;
-        try { $this->db = new PDO("mysql:host=localhost;dbname=radiohosting","radiouser","Skylinehosting171"); } catch (\Exception $e) {}
+        try { $this->db = new PDO("mysql:host=localhost;dbname=radiohosting",\db_user(), \db_pass()); } catch (\Exception $e) {}
     }
 
     public function setPidFile($path) { $this->pidFile = $path; }

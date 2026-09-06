@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 /**
  * SHOUTcast v2 Source Client for AutoDJ
  * Streams audio files from playlist to a SHOUTcast server
@@ -26,7 +27,7 @@ class ShoutcastSource
         $this->name = $name;
         $this->streamId = $streamId;
         try {
-            $this->db = new PDO("mysql:host=localhost;dbname=radiohosting","radiouser","Skylinehosting171");
+            $this->db = new PDO("mysql:host=localhost;dbname=radiohosting",\db_user(), \db_pass());
         } catch (\Exception $e) {}
     }
 

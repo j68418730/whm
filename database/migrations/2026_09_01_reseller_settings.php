@@ -1,7 +1,8 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 // database/migrations/2026_09_01_reseller_settings.php
 
-$pdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", "radiouser", "Skylinehosting171");
+$pdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", \db_user(), \db_pass());
 
 $pdo->exec("
     CREATE TABLE IF NOT EXISTS reseller_settings (

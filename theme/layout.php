@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 $loggedIn = isset($loggedIn) ? $loggedIn : false;
 $user = isset($user) ? $user : null;
 $title = isset($title) ? $title : 'Planet Hosts';
@@ -26,25 +27,30 @@ $title = isset($title) ? $title : 'Planet Hosts';
 <nav>
 <a href="/">Home</a>
 <a href="/?login#services">Services</a>
-<?php if ($loggedIn && $user): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($loggedIn && $user): ?>
 <a href="/admin/dashboard">Dashboard</a>
 <a href="/admin/logout" style="color:#ff6b6b">Logout</a>
-<?php else: ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; else: ?>
 <a href="/?login">Login</a>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 </nav>
 </div>
 </header>
 
 <div class="container main-content">
-<?php echo $content; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; echo $content; ?>
 </div>
 
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 // Live chat & tracking settings
 $settings = [];
 try {
-    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
     $stmt = $pdo->query("SELECT setting_key, setting_value FROM automation_settings WHERE setting_key IN ('live_chat_enabled','visitor_tracking_enabled','chat_image_online','chat_image_offline','chat_image_away')");
     while ($r = $stmt->fetch(PDO::FETCH_OBJ)) $settings[$r->setting_key] = $r->setting_value;
 } catch (\Exception $e) {}
@@ -59,7 +65,8 @@ $tracking = ($settings['visitor_tracking_enabled'] ?? '1') === '1';
 <div class="footer-links">
 <a href="#">Terms</a>
 <a href="#">Privacy</a>
-<?php if ($liveChat): ?><a href="#" onclick="window.open('https://planet-hosts.com/livechat.php?popup=1','ph_chat','width=400,height=600');return false">Live Chat</a><?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($liveChat): ?><a href="#" onclick="window.open('https://planet-hosts.com/livechat.php?popup=1','ph_chat','width=400,height=600');return false">Live Chat</a><?php endif; ?>
 <a href="#">API</a>
 </div>
 <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.04)">
@@ -69,7 +76,8 @@ $tracking = ($settings['visitor_tracking_enabled'] ?? '1') === '1';
 <div class="copyright">&copy; 2026 Planet-Hosts. All rights reserved.</div>
 </div>
 </footer>
-<?php if ($tracking): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($tracking): ?>
 <script>
 (function() {
     var img = new Image();
@@ -78,6 +86,7 @@ $tracking = ($settings['visitor_tracking_enabled'] ?? '1') === '1';
     document.body.appendChild(img);
 })();
 </script>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 </body>
 </html>

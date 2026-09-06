@@ -40,7 +40,7 @@ class FilesystemController extends Controller
         // Get admin user info
         $user = $this->auth->user();
 
-        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
         $stmt = $pdo->query('SELECT id, username, email, domain FROM hosting_users ORDER BY username');
         $users = $stmt ? $stmt->fetchAll(\PDO::FETCH_OBJ) : [];
 
@@ -69,7 +69,7 @@ class FilesystemController extends Controller
     public function fileManager()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect("/admin/login"); exit; }
-        $pdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", "radiouser", "Skylinehosting171");
+        $pdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", \db_user(), \db_pass());
         $selectedUser = $_GET["user"] ?? "";
         if ($selectedUser) {
             $stmt = $pdo->prepare("SELECT id, username, email, domain FROM hosting_users WHERE username = ?");

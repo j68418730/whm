@@ -4,7 +4,11 @@
 # Auto-suspends accounts exceeding package limits
 set -eo pipefail
 
-MYSQL="mysql -u root -pSkylinehosting171"
+for _c in "$(dirname "$0")/db_creds.sh" "$(dirname "$0")/../db_creds.sh" /usr/local/planet-hosts/db_creds.sh; do
+    [ -f "$_c" ] && { source "$_c"; break; }
+done
+
+MYSQL="mysql -u ${DB_ROOT_USER:-root} -p${DB_ROOT_PASS}"
 LOGDIR="/var/log/radiohosting/quota"
 mkdir -p "$LOGDIR"
 

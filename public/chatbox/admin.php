@@ -1,8 +1,9 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 session_start();
 $action = $_GET['action'] ?? 'dashboard';
 $error = '';
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
 // Check panel auth first (super admin bypass)
 $bypassTenantId = 0;
@@ -202,12 +203,14 @@ fetch('/chatbox/api.php?action=mod_log', {credentials:'include'}).then(r=>r.json
 <input name="password" placeholder="Password" style="width:auto;margin:0">
 <button class="btn btn-sm btn-primary">+ Add</button>
 </form>
-<?php foreach ($roomsList as $r): ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; foreach ($roomsList as $r): ?>
 <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px">
 <span><?php echo htmlspecialchars($r->name); ?> <span style="color:#64748b;font-size:11px">(<?php echo $r->type; ?>)</span></span>
 <form method="POST" style="display:inline"><input type="hidden" name="action" value="delete_room"><input type="hidden" name="room_id" value="<?php echo $r->id; ?>"><button class="btn btn-sm btn-danger">✕</button></form>
 </div>
-<?php endforeach; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; endforeach; ?>
 </div>
 
 <div class="card">
@@ -221,7 +224,8 @@ fetch('/chatbox/api.php?action=mod_log', {credentials:'include'}).then(r=>r.json
 <button class="btn btn-sm btn-primary">+ Add</button>
 </form>
 <table><tr><th>User</th><th>Role</th><th>Status</th><th>Action</th></tr>
-<?php foreach ($usersList as $u): ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; foreach ($usersList as $u): ?>
 <tr>
 <td><?php echo htmlspecialchars($u->display_name ?: $u->username); ?></td>
 <td><?php echo $u->role; ?></td>
@@ -235,7 +239,8 @@ fetch('/chatbox/api.php?action=mod_log', {credentials:'include'}).then(r=>r.json
 <form method="POST" style="display:inline"><input type="hidden" name="action" value="delete_user"><input type="hidden" name="user_id" value="<?php echo $u->id; ?>"><button class="btn btn-sm btn-danger">✕</button></form>
 </td>
 </tr>
-<?php endforeach; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; endforeach; ?>
 </table>
 </div>
 

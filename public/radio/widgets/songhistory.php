@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../../core/ServerCreds.php';
 require_once __DIR__ . '/../../security_guard.php';
 security_guard_run('radio');
 require_once __DIR__ . '/../radio_helper.php';
@@ -11,7 +12,7 @@ if ($limit > 100) $limit = 100;
 if (!$streamId) exit;
 
 try {
-    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
     $q = $pdo->prepare("SELECT * FROM radio_song_history WHERE stream_id = ? ORDER BY played_at DESC LIMIT {$limit}");
     $q->execute([$streamId]);
     $history = $q->fetchAll(PDO::FETCH_OBJ);

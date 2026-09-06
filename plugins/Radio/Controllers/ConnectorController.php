@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../../core/ServerCreds.php';
 /**
  * Connector API — used by Planet Hosts Desktop Connector
  * Authenticates via API key, handles file uploads and station data
@@ -7,7 +8,7 @@
 $action = $_GET['action'] ?? '';
 header('Content-Type: application/json');
 
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
 // Authenticate
 if ($_POST && $_SERVER['REQUEST_URI'] === '/connector/auth') {
@@ -50,6 +51,12 @@ if ($_POST && preg_match('#^connector/station/(\d+)/upload$#', $uri, $m)) {
     $file = $_FILES['file'] ?? null;
     if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
         echo json_encode(['success' => false, 'error' => 'No file uploaded']);
+        exit;
+    }
+    
+    $v = validate_music_upload($file);
+    if (!$v['ok']) {
+        echo json_encode(['success' => false, 'error' => $v['error']]);
         exit;
     }
     

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 require_once __DIR__ . '/../security_guard.php';
 security_guard_run('chat');
 session_start();
@@ -9,7 +10,7 @@ header('Access-Control-Allow-Headers: Content-Type, Authorization');
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') { http_response_code(200); exit; }
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
 // Resolve a valid token to a chat user (works for desktop/embedded clients without cookies)
 function chatbox_resolve_token($pdo, $token) {

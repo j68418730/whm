@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 /**
  * DJ Port Listener — Dedicated per-STATION source port daemon
  *
@@ -23,8 +24,7 @@ class DjPortListener
     {
         $this->pdo = new PDO(
             'mysql:host=localhost;dbname=radiohosting;charset=utf8mb4',
-            'radiouser',
-            'Skylinehosting171',
+            \db_user(), \db_pass(),
             [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
         );
     }

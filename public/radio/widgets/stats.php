@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../../core/ServerCreds.php';
 require_once __DIR__ . '/../../security_guard.php';
 security_guard_run('radio');
 require_once __DIR__ . '/../radio_helper.php';
@@ -17,7 +18,7 @@ $bitrate = $stats['bitrate'];
 $online = $stats['status'];
 
 try {
-    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
     $q = $pdo->prepare("SELECT COUNT(*) as c FROM radio_song_history WHERE stream_id = ?");
     $q->execute([$streamId]);
     $totalSongs = $q->fetchColumn();

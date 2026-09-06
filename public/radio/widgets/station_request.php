@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../../core/ServerCreds.php';
 require_once __DIR__ . '/../../security_guard.php';
 security_guard_run('radio');
 require_once __DIR__ . '/../radio_helper.php';
@@ -7,7 +8,7 @@ $layout = $_GET['layout'] ?? 'js';
 if (!$streamId) { header('Content-Type: application/javascript'); echo 'console.log("no stream");'; exit; }
 $stream = radio_get_stream($streamId);
 if (!$stream) { header('Content-Type: application/javascript'); echo 'console.log("stream not found");'; exit; }
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4',\db_user(), \db_pass());
 // Build a readable station slug for the request endpoint
 $stName = $stream->name ?? "Station #{$streamId}";
 $reqSlug = strtolower(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($stName)), '-'));

@@ -474,12 +474,12 @@ class StudioController extends Controller
             exit;
         }
 
-        $allowed = ['mp3', 'aac', 'ogg', 'flac', 'opus', 'wav', 'm4a', 'wma'];
-        $ext = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
-        if (!in_array($ext, $allowed)) {
-            $this->response->json(['success' => false, 'error' => 'Invalid file type'], 400);
+        $v = validate_music_upload($_FILES['file']);
+        if (!$v['ok']) {
+            $this->response->json(['success' => false, 'error' => $v['error']], 400);
             exit;
         }
+        $ext = $v['ext'];
 
         $targetDir = '/var/www/radiohosting/storage/radio/autodj/music/';
         @mkdir($targetDir, 0755, true);

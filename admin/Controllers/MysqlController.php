@@ -21,7 +21,7 @@ class MysqlController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-        $pw = 'Skylinehosting171';
+        $pw = \db_root_pass();
         $version = trim(shell_exec("mysql -u root -p{$pw} -V 2>/dev/null") ?: 'MariaDB -');
         $dbCount = (int)shell_exec("mysql -u root -p{$pw} -e 'SHOW DATABASES' 2>/dev/null | wc -l") ?: 0;
         $userCount = (int)shell_exec("mysql -u root -p{$pw} -e \"SELECT COUNT(*) FROM mysql.user WHERE user NOT IN ('root','mariadb.sys','mysql')\" 2>/dev/null | tail -1") ?: 0;

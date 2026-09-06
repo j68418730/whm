@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 /**
  * Icecast Listener Monitor
  * Parses Icecast status XML to update listener counts and analytics.
@@ -8,7 +9,7 @@ $base = dirname(__DIR__, 2);
 require_once $base . '/core/Database.php';
 require_once $base . '/config/app.php';
 
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
 // Get all active streams
 $streams = $pdo->query("SELECT s.id, s.port, s.name, s.user_id, h.email as user_email, h.username as os_user

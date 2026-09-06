@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 session_start();
 $host = $_SERVER["HTTP_HOST"] ?? "planet-hosts.com";
 $error = $_GET['error'] ?? '';
@@ -9,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = $_POST['email'] ?? '';
     $password = $_POST['password'] ?? '';
     try {
-        $pdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", "radiouser", "Skylinehosting171");
+        $pdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", \db_user(), \db_pass());
         // 1) Admin / super-admin
         $astmt = $pdo->prepare("SELECT * FROM admins WHERE (email = ? OR username = ?) AND status = 'active' LIMIT 1");
         $astmt->execute([$email, $email]);
@@ -40,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['username'] = $user->username;
             // Reseller owners/staff land on their reseller portal
             try {
-                $rpdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", "radiouser", "Skylinehosting171");
+                $rpdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", \db_user(), \db_pass());
                 $rs = $rpdo->prepare("SELECT id FROM resellers WHERE email = ? AND is_active = 1 LIMIT 1");
                 $rs->execute([$user->email]);
                 if ($rs->fetchColumn()) { header('Location: /reseller'); exit; }
@@ -50,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         // 3) Reseller staff member (owner → role-based panel access, scoped to that reseller)
         try {
-            $spdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", "radiouser", "Skylinehosting171");
+            $spdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", \db_user(), \db_pass());
             $sstmt = $spdo->prepare("SELECT s.*, r.id AS reseller_record_id, r.email AS owner_email
                 FROM reseller_staff s
                 JOIN resellers r ON r.id = s.reseller_id
@@ -127,12 +128,16 @@ h2{text-align:center;font-size:18px;font-weight:600;margin-bottom:6px;color:#e0e
 </div>
 <h2>Welcome Back</h2>
 <p class="sub">Sign in to your hosting account</p>
-<?php if ($error): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($error): ?>
 <div class="error show">Invalid email or password. Please try again.</div>
-<?php endif; ?>
-<?php if ($loggedOut): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($loggedOut): ?>
 <div class="success show">You have been logged out successfully.</div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 <form method="POST" action="/user_login.php">
 <div class="form-group"><label>Email or Username</label><input type="text" name="email" placeholder="email@example.com or username" required autofocus></div>
 <div class="form-group"><label>Password</label><input type="password" name="password" placeholder="Enter your password" required></div>

@@ -1,8 +1,9 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 // database/migrations/2026_08_17_create_user_alerts_table.php
 
 // Create user_alerts table if it doesn't exist
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4',\db_user(), \db_pass());
 $pdo->exec("CREATE TABLE IF NOT EXISTS user_alerts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     hosting_user_id INT NOT NULL,

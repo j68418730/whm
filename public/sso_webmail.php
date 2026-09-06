@@ -1,8 +1,9 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 $email = $_GET['email'] ?? '';
 if (!$email) { header('Location: /snappymail/'); exit; }
 
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 $stmt = $pdo->prepare("SELECT password_plain FROM mail_accounts WHERE email = ? LIMIT 1");
 $stmt->execute([$email]);
 $row = $stmt->fetch(PDO::FETCH_OBJ);

@@ -274,7 +274,7 @@ class AdminsController extends Controller
         if (!isset($_SESSION['user'])) return false;
         $u = $_SESSION['user'];
         if (in_array($u->name ?? '', ['root', 'kane', 'spectre'])) return true;
-        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
         $stmt = $pdo->prepare("SELECT role, permissions, is_active FROM admins WHERE id = ?");
         $stmt->execute([$u->id]);
         $admin = $stmt->fetch(\PDO::FETCH_OBJ);

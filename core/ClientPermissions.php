@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 // Client Permission System
 // Client = full access to their own modules
 // Sub-users = only what client grants
@@ -31,7 +32,7 @@ function clientHasAccess($clientId, $subUser, $permission) {
 }
 
 function getClientSubUsers($clientId) {
-    $p = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+    $p = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
     $q = $p->prepare("SELECT * FROM client_sub_users WHERE client_id = ? ORDER BY created_at DESC");
     $q->execute([$clientId]);
     return $q->fetchAll(PDO::FETCH_OBJ);

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 /**
  * GameProvision — called after a game-server order payment is verified (PayPal IPN
  * or admin approval). Creates the game_servers row, allocates a port, generates
@@ -11,7 +12,7 @@
  */
 
 function gameProvision($orderId, $userId, $item) {
-    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
     // 1. Load the hosting user
     $user = $pdo->prepare("SELECT * FROM hosting_users WHERE id = ?");

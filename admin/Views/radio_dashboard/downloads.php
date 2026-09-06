@@ -25,11 +25,13 @@ td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.04)}
 <select name="station_id">
 <option value="">All Stations</option>
 <?php
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','Skylinehosting171');
+require_once __DIR__ . '/../../../core/ServerCreds.php';
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4',\db_user(), \db_pass());
 $sts = $pdo->query("SELECT id,name FROM streaming_stations ORDER BY name")->fetchAll(PDO::FETCH_OBJ);
 foreach ($sts as $s): ?>
 <option value="<?=$s->id?>"><?=htmlspecialchars($s->name)?></option>
-<?php endforeach; ?>
+<?php
+require_once __DIR__ . '/../../../core/ServerCreds.php'; endforeach; ?>
 </select></div>
 <div class="form-group"><label>Description</label><textarea name="description" rows="2" placeholder="Optional description"></textarea></div>
 </div>
@@ -41,10 +43,13 @@ foreach ($sts as $s): ?>
 <h3>All Downloads</h3>
 <table>
 <tr><th>File</th><th>Station</th><th>Size</th><th>Uploaded</th><th>Actions</th></tr>
-<?php if (empty($downloads)): ?>
+<?php
+require_once __DIR__ . '/../../../core/ServerCreds.php'; if (empty($downloads)): ?>
 <tr><td colspan="5" style="text-align:center;color:#64748b;padding:20px">No downloads yet.</td></tr>
-<?php else: ?>
-<?php foreach ($downloads as $d): ?>
+<?php
+require_once __DIR__ . '/../../../core/ServerCreds.php'; else: ?>
+<?php
+require_once __DIR__ . '/../../../core/ServerCreds.php'; foreach ($downloads as $d): ?>
 <tr>
 <td><strong><?=htmlspecialchars($d->name)?></strong><?php if ($d->description): ?><div style="font-size:10px;color:#64748b"><?=htmlspecialchars($d->description)?></div><?php endif; ?></td>
 <td><?=htmlspecialchars($d->station_name ?? 'All Stations')?></td>
@@ -54,7 +59,9 @@ foreach ($sts as $s): ?>
 <a href="/admin/radio/downloads/delete/<?=$d->id?>" class="btn btn-d" onclick="return confirm('Delete <?=htmlspecialchars($d->name)?>?')">Delete</a>
 </td>
 </tr>
-<?php endforeach; ?>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../../../core/ServerCreds.php'; endforeach; ?>
+<?php
+require_once __DIR__ . '/../../../core/ServerCreds.php'; endif; ?>
 </table>
 </div>

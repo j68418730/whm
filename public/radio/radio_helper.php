@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 /**
  * Radio Helper — unified Icecast & SHOUTcast handler
  * Auto-detects server type from streaming_stations.server_type
@@ -10,7 +11,7 @@ function radio_get_stream(int $id): ?stdClass
     if ($pdo === null) {
         $pdo = new PDO(
             'mysql:host=localhost;dbname=radiohosting;charset=utf8mb4',
-            'radiouser', 'Skylinehosting171',
+            \db_user(), \db_pass(),
             [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
         );
     }
@@ -59,7 +60,7 @@ function radio_get_live_dj(int $streamId): ?stdClass
 {
     static $pdo = null;
     if ($pdo === null) {
-        $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','Skylinehosting171');
+        $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4',\db_user(), \db_pass());
     }
     $s = $pdo->prepare("SELECT current_dj, current_song, current_artist, current_song_started FROM streaming_stations WHERE id=? AND current_dj IS NOT NULL AND current_dj != ''");
     $s->execute([$streamId]);

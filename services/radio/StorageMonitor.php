@@ -1,11 +1,12 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 /**
  * Storage Alert Monitor
  * Checks all hosting accounts for storage usage.
  * Sends alert when 1GB or less remaining.
  * Run via cron every 6 hours.
  */
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
 // Get all active accounts with packages that have storage limits
 $accounts = $pdo->query("SELECT h.id, h.username, h.email, h.first_name, h.last_name,

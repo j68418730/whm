@@ -1,7 +1,8 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 // Port Management System
 // Single source of truth for all port allocations
-$p = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$p = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 $p->exec("CREATE TABLE IF NOT EXISTS port_allocations (
     id INT AUTO_INCREMENT PRIMARY KEY,
     port INT NOT NULL UNIQUE,

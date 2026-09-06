@@ -1,9 +1,10 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 session_start();
 $action = $_POST['action'] ?? $_GET['action'] ?? 'login';
 $error = '';
 $success = '';
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
 // Allow switching stream via URL param
 if (isset($_GET['stream_id']) && isset($_SESSION['dj_user'])) {
@@ -504,14 +505,19 @@ if ($action === 'requests_refresh' && isset($_SESSION['dj_user'])) {
         ?>
 <div class="req-item">
 <div style="display:flex;gap:8px;align-items:center;min-width:0">
-<?php if (!empty($r->brand_logo)): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (!empty($r->brand_logo)): ?>
   <img src="https://planet-hosts.com<?=htmlspecialchars($r->brand_logo)?>" alt="" style="width:34px;height:34px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,.08)">
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 <div style="min-width:0">
 <div class="req-title"><?php echo htmlspecialchars($r->artist . ' - ' . $r->title); ?></div>
-<?php if ($r->guest_name): ?><div class="req-meta">Requested by: <?php echo htmlspecialchars($r->guest_name); ?></div><?php endif; ?>
-<?php if ($r->station_name): ?><div class="req-meta" style="color:<?php echo htmlspecialchars($r->brand_primary_color ?? '#38bdf8'); ?>">📡 Station: <?php echo htmlspecialchars($r->station_name); ?></div><?php endif; ?>
-<?php if ($r->message): ?><div class="req-msg">"<?php echo htmlspecialchars($r->message); ?>"</div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($r->guest_name): ?><div class="req-meta">Requested by: <?php echo htmlspecialchars($r->guest_name); ?></div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($r->station_name): ?><div class="req-meta" style="color:<?php echo htmlspecialchars($r->brand_primary_color ?? '#38bdf8'); ?>">📡 Station: <?php echo htmlspecialchars($r->station_name); ?></div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($r->message): ?><div class="req-msg">"<?php echo htmlspecialchars($r->message); ?>"</div><?php endif; ?>
 </div>
 </div>
 <div style="display:flex;gap:6px;flex-shrink:0">
@@ -520,6 +526,7 @@ if ($action === 'requests_refresh' && isset($_SESSION['dj_user'])) {
 </div>
 </div>
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
     }
     exit;
 }
@@ -672,7 +679,8 @@ p{color:#8ca0bf;font-size:13px;margin-bottom:22px}
 <div style="font-size:38px;margin-bottom:8px">🎤</div>
 <h1>Planet <span>DJ</span></h1>
 <p>Sign in with your DJ credentials</p>
-<?php if ($error): ?><div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($error): ?><div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
 <form method="POST">
 <div class="form-group"><label>DJ Username</label><input name="username" required autofocus></div>
 <div class="form-group"><label>Password</label><input name="password" type="password" required></div>
@@ -680,7 +688,8 @@ p{color:#8ca0bf;font-size:13px;margin-bottom:22px}
 </form>
 <p style="margin-top:14px;font-size:11px;color:#475569">Powered by Planet-Hosts Radio</p>
 </div></body></html>
-<?php exit; } ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; exit; } ?>
 
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -873,6 +882,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 <h2><span style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#0ea5e9,#7c3aed);display:inline-flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 4px 16px rgba(14,165,233,.3)">🎤</span> Planet <span style="background:linear-gradient(135deg,#38bdf8,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent">DJ</span> <span class="tb-badge">STREAM</span></h2>
 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 // Station picker
 $sp = $pdo->prepare("SELECT id, name FROM streaming_stations WHERE user_id=? ORDER BY name");
 $sp->execute([$_SESSION['dj_user']['stream_id'] > 10000 ? ($_SESSION['dj_user']['stream_id'] - 10000) : $_SESSION['dj_user']['stream_id']]);
@@ -890,11 +900,14 @@ if (!$allStations) {
 }
 if (!empty($allStations) && count($allStations) > 1): ?>
 <select onchange="window.location.href='/dj_panel.php?action=dashboard&stream_id='+this.value" style="padding:5px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px;outline:none">
-<?php foreach ($allStations as $s): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; foreach ($allStations as $s): ?>
 <option value="<?=$s->id?>" <?=$s->id==($_SESSION['dj_user']['stream_id']??0)?'selected':''?>><?=htmlspecialchars($s->name)?></option>
-<?php endforeach; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endforeach; ?>
 </select>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 <span style="font-size:13px;color:#94a3b8"><?php echo htmlspecialchars($_SESSION['dj_user']['name'] ?? ''); ?></span>
 <a href="/dj_panel.php?action=logout">Logout</a>
 <a href="/studio/index.php" target="_blank" style="color:#a855f7;text-decoration:none;font-size:13px;margin-left:12px">🎛️ Studio</a>
@@ -902,11 +915,15 @@ if (!empty($allStations) && count($allStations) > 1): ?>
 </div>
 <div class="container">
 
-<?php if ($success): ?><div class="alert"><?php echo htmlspecialchars($success); ?></div><?php endif; ?>
-<?php if ($error): ?><div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
-<?php if (!empty($_SESSION['dj_user']['on_leave'])): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($success): ?><div class="alert"><?php echo htmlspecialchars($success); ?></div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($error): ?><div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (!empty($_SESSION['dj_user']['on_leave'])): ?>
 <div class="alert" style="background:rgba(250,204,21,.1);border:1px solid rgba(250,204,21,.2);color:#facc15">🌴 You are currently <strong>On Leave</strong>. You can log in and manage your profile, but streaming / DJ takeover is disabled. Contact the station owner to reactivate.</div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 
 <div class="dj-tabs">
     <div class="dj-tab act" onclick="sw(event,'overview')">Overview</div>
@@ -1046,6 +1063,7 @@ if (!empty($allStations) && count($allStations) > 1): ?>
 
 <div class="dj-panel act" id="pn-overview">
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 $streamId = $djData->stream_id ?? 0;
 $ss = $pdo->prepare("SELECT * FROM streaming_stations WHERE id = ?");
 $ss->execute([$streamId]);
@@ -1104,6 +1122,7 @@ $myStreams = $userStreams->fetchAll(PDO::FETCH_OBJ);
 
 <!-- Stream Player -->
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 $compId = 10000 + (int)($station->id ?? 0);
 $streamUrl = "/radio/stream-proxy.php?stream={$compId}";
 $playerId = "player-" . ($station->id ?? 0);
@@ -1186,12 +1205,15 @@ echo htmlspecialchars($samPass);
 <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0"><span style="color:#64748b">Format:</span><span style="color:#94a3b8">MP3 · <?php echo $station->bitrate ?? 128; ?> kbps</span></div>
 </div>
 <div style="display:flex;gap:6px;margin-top:10px">
-<?php if (!empty($_SESSION['dj_user']['on_leave'])): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (!empty($_SESSION['dj_user']['on_leave'])): ?>
 <div style="font-size:12px;color:#facc15;background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.2);border-radius:8px;padding:10px;width:100%">🌴 On Leave — streaming &amp; DJ controls are disabled. You can still manage your profile.</div>
-<?php else: ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; else: ?>
 <button class="btn btn-primary btn-sm" onclick="ca()">📋 Copy All</button>
 <button class="btn btn-danger btn-sm" onclick="window.location.href='/dj_panel.php?action=takeover'">🎤 Stop AutoDJ</button>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 </div>
 </div>
 
@@ -1227,18 +1249,23 @@ echo htmlspecialchars($samPass);
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
 
 <div style="background:rgba(15,23,42,.5);border:1px solid rgba(56,189,248,.06);border-radius:14px;overflow:hidden;position:relative;min-height:120px;display:flex;align-items:center;justify-content:center">
-<?php if ($djData->banner): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($djData->banner): ?>
 <img src="/<?php echo $djData->banner; ?>" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">
-<?php else: ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; else: ?>
 <div style="text-align:center;color:#475569"><i class="fas fa-image" style="font-size:28px;opacity:.3;display:block;margin-bottom:4px"></i><span style="font-size:12px">No Banner</span></div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 </div>
 
 <div style="background:rgba(15,23,42,.5);border:1px solid rgba(250,204,21,.08);border-radius:14px;padding:16px">
 <div style="font-size:13px;font-weight:700;color:#e0e0e0;margin-bottom:8px">📷 Profile Banner</div>
-<?php if ($djData->banner): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($djData->banner): ?>
 <img src="/<?php echo $djData->banner; ?>" style="width:100%;max-height:60px;object-fit:cover;border-radius:6px;margin-bottom:6px">
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 <form method="POST" enctype="multipart/form-data" style="display:flex;gap:6px">
 <input type="hidden" name="action" value="upload_banner">
 <input type="file" name="file" accept="image/*" style="flex:1;font-size:11px;color:#94a3b8;padding:4px 0">
@@ -1254,27 +1281,35 @@ echo htmlspecialchars($samPass);
 <div style="width:32px;height:32px;border-radius:8px;background:rgba(248,113,113,.12);display:flex;align-items:center;justify-content:center;font-size:16px">⛔</div>
 <div><div style="font-size:14px;font-weight:700;color:#e0e0e0">Kick Source</div><div style="font-size:10px;color:#64748b">Force-disconnect current source from a stream</div></div>
 </div>
-<?php if (empty($myStreams)): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (empty($myStreams)): ?>
 <p class="empty-text">No streams available.</p>
-<?php else: ?>
-<?php foreach ($myStreams as $st): 
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; else: ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; foreach ($myStreams as $st): 
   $stEngine = strtolower($st->engine ?? $st->server_type ?? 'icecast');
   $stLabel = strtoupper($stEngine === 'shoutcast' || $stEngine === 'shoutcast1' || $stEngine === 'shoutcast2' ? 'SHOUTcast' : 'Icecast');
 ?>
 <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">
 <div><div style="font-weight:600;font-size:13px;color:#e0e0e0"><?php echo htmlspecialchars($st->name ?? "Stream #{$st->id}"); ?></div>
 <div style="font-size:11px;color:#64748b"><?php echo $stLabel; ?> · Port <?php echo $st->port; ?> · <span style="color:<?php echo $st->status === 'running' ? '#4ade80' : '#f87171'; ?>"><?php echo $st->status; ?></span></div></div>
-<?php if (!empty($_SESSION['dj_user']['on_leave'])): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (!empty($_SESSION['dj_user']['on_leave'])): ?>
 <span style="font-size:10px;color:#facc15">🔒 On leave</span>
-<?php else: ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; else: ?>
 <form method="POST" action="/dj_panel.php?action=kick" onsubmit="return confirm('Kick source on <?php echo htmlspecialchars($st->name ?? 'this stream'); ?>?');">
 <input type="hidden" name="stream_id" value="<?php echo $st->id; ?>">
 <button class="btn btn-danger btn-sm">Kick</button>
 </form>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 </div>
-<?php endforeach; ?>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endforeach; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 </div>
 
 <script>
@@ -1293,6 +1328,7 @@ function ca2(s,h,pt,u,pw,m){m=m||'';navigator.clipboard.writeText('Server: '+h+'
 
 <div class="dj-panel" id="pn-schedule">
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 $sId = $_SESSION['dj_user']['stream_id'] ?? 0;
 $djId = $_SESSION['dj_user']['id'] ?? 0;
 
@@ -1327,13 +1363,18 @@ $fullDayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Sa
 <a href="?action=dashboard&tab=schedule&sched_month=<?=$nextMonth?>&sched_year=<?=$nextYear?>" class="btn btn-sm btn-secondary">Next ▶</a>
 </div>
 <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;max-width:500px;margin:0 auto">
-<?php foreach ($dayNames as $dn): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; foreach ($dayNames as $dn): ?>
 <div style="text-align:center;font-size:11px;color:#64748b;font-weight:600;padding:4px 0"><?=$dn?></div>
-<?php endforeach; ?>
-<?php for ($i=0; $i<$startWeekday; $i++): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endforeach; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; for ($i=0; $i<$startWeekday; $i++): ?>
 <div></div>
-<?php endfor; ?>
-<?php for ($d=1; $d<=$daysInMonth; $d++): 
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endfor; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; for ($d=1; $d<=$daysInMonth; $d++): 
     $ts = mktime(0,0,0,$month,$d,$year);
     $dateStr = sprintf('%04d-%02d-%02d', $year, $month, $d);
     $daySched = array_filter($mySchedule, function($s) use ($dateStr) { return ($s->scheduled_date ?? '') === $dateStr; });
@@ -1342,11 +1383,14 @@ $fullDayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Sa
 ?>
 <div style="text-align:center;padding:6px 2px;border-radius:8px;background:<?=$isBooked?'rgba(74,222,128,.15)':($isToday?'rgba(56,189,248,.1)':'rgba(0,0,0,.15)')?>;border:1px solid <?=$isToday?'rgba(56,189,248,.3)':'transparent'?>;cursor:pointer;font-size:12px;position:relative" onclick="toggleDate(this,'<?=$dateStr?>')" title="<?=$isBooked?'Click to unbook':'Click to book'?>">
 <div style="font-weight:<?=$isToday?'700':'400'?>;color:<?=$isBooked?'#4ade80':($isToday?'#38bdf8':'#94a3b8')?>"><?=$d?></div>
-<?php if ($isBooked): $firstSched = reset($daySched); ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($isBooked): $firstSched = reset($daySched); ?>
 <div style="font-size:8px;color:#4ade80;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?=htmlspecialchars($firstSched->show_name??'Booked')?></div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 </div>
-<?php endfor; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endfor; ?>
 </div>
 
 <!-- Show details for selected date -->
@@ -1366,11 +1410,13 @@ $fullDayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Sa
 </form>
 </div>
 
-<?php if (!empty($mySchedule)): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (!empty($mySchedule)): ?>
 <div style="margin-top:20px;text-align:center">
 <h4 style="font-size:13px;color:#94a3b8;margin-bottom:8px">All Shows</h4>
 <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
-<?php 
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; 
 $shown = [];
 foreach ($mySchedule as $sh): 
     $key = $sh->scheduled_date . '_' . $sh->time_slot;
@@ -1382,9 +1428,11 @@ foreach ($mySchedule as $sh):
 <div style="color:#64748b;font-size:10px"><?=htmlspecialchars($sh->scheduled_date)?> · <?=htmlspecialchars($sh->time_slot)?></div>
 <a href="/dj_panel.php?action=remove_schedule&id=<?=$sh->id?>" style="color:#f87171;font-size:10px;text-decoration:none" onclick="return confirm('Unbook this show?')">✕ Unbook</a>
 </div>
-<?php endforeach; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endforeach; ?>
 </div></div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 </div>
 </div>
 
@@ -1413,6 +1461,7 @@ function toggleDate(el,date){
 
 <div class="dj-panel" id="pn-requests">
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 // Show pending requests across ALL stations this DJ can access, with the station name
 $djIdReqs = $_SESSION['dj_user']['id'] ?? 0;
 $reqStmt = $pdo->prepare("SELECT r.*, ss.name AS station_name, ss.engine AS station_engine,
@@ -1431,20 +1480,28 @@ $requests = $reqStmt->fetchAll(PDO::FETCH_OBJ);
 <div class="card">
 <h3><i class="fas fa-music"></i> Song Requests (<span id="req-count"><?php echo count($requests); ?></span>)</h3>
 <div id="req-list">
-<?php if (empty($requests)): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (empty($requests)): ?>
 <p class="empty-text">No pending requests.</p>
-<?php else: ?>
-<?php foreach ($requests as $r): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; else: ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; foreach ($requests as $r): ?>
 <div class="req-item">
 <div style="display:flex;gap:8px;align-items:center;min-width:0">
-<?php if (!empty($r->brand_logo)): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (!empty($r->brand_logo)): ?>
   <img src="https://planet-hosts.com<?=htmlspecialchars($r->brand_logo)?>" alt="" style="width:34px;height:34px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,.08)">
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 <div style="min-width:0">
 <div class="req-title"><?php echo htmlspecialchars($r->artist . ' - ' . $r->title); ?></div>
-<?php if ($r->guest_name): ?><div class="req-meta">Requested by: <?php echo htmlspecialchars($r->guest_name); ?></div><?php endif; ?>
-<?php if ($r->station_name): ?><div class="req-meta" style="color:<?php echo htmlspecialchars($r->brand_primary_color ?? '#38bdf8'); ?>">📡 Station: <?php echo htmlspecialchars($r->station_name); ?></div><?php endif; ?>
-<?php if ($r->message): ?><div class="req-msg">"<?php echo htmlspecialchars($r->message); ?>"</div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($r->guest_name): ?><div class="req-meta">Requested by: <?php echo htmlspecialchars($r->guest_name); ?></div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($r->station_name): ?><div class="req-meta" style="color:<?php echo htmlspecialchars($r->brand_primary_color ?? '#38bdf8'); ?>">📡 Station: <?php echo htmlspecialchars($r->station_name); ?></div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($r->message): ?><div class="req-msg">"<?php echo htmlspecialchars($r->message); ?>"</div><?php endif; ?>
 </div>
 </div>
 <div style="display:flex;gap:6px;flex-shrink:0">
@@ -1452,8 +1509,10 @@ $requests = $reqStmt->fetchAll(PDO::FETCH_OBJ);
 <a href="/dj_panel.php?action=remove_request&req_id=<?php echo $r->id; ?>" class="btn btn-danger btn-xs">✕ Remove</a>
 </div>
 </div>
-<?php endforeach; ?>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endforeach; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 </div>
 </div>
 </div>
@@ -1461,6 +1520,7 @@ $requests = $reqStmt->fetchAll(PDO::FETCH_OBJ);
 
 <div class="dj-panel" id="pn-downloads">
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 try {
     $sid = $_SESSION['dj_user']['stream_id'] ?? 0;
     $dlStmt = $pdo->prepare("SELECT * FROM radio_downloads WHERE station_id IS NULL OR station_id = ? OR station_id IN (SELECT stream_id FROM radio_dj_streams WHERE dj_id = ? AND is_active = 'yes') ORDER BY created_at DESC");
@@ -1469,20 +1529,27 @@ try {
 ?>
 <div class="card">
 <h3><i class="fas fa-download"></i> Downloads</h3>
-<?php if (!empty($dls)): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (!empty($dls)): ?>
 <div style="display:flex;flex-direction:column;gap:6px">
-<?php foreach ($dls as $d): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; foreach ($dls as $d): ?>
 <a href="/admin/radio/downloads/serve/<?=$d->id?>" class="btn btn-sm btn-primary" style="text-align:left;justify-content:flex-start;margin:0" target="_blank">
 📥 <?=htmlspecialchars($d->name)?>
-<?php if ($d->description): ?><span style="font-weight:400;font-size:10px;color:#94a3b8;margin-left:6px">— <?=htmlspecialchars($d->description)?></span><?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($d->description): ?><span style="font-weight:400;font-size:10px;color:#94a3b8;margin-left:6px">— <?=htmlspecialchars($d->description)?></span><?php endif; ?>
 </a>
-<?php endforeach; ?>
-</div>
-<?php else: ?>
-<p class="empty-text">No downloads available.</p>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endforeach; ?>
 </div>
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php'; else: ?>
+<p class="empty-text">No downloads available.</p>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
+</div>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 } catch (\Exception $e) {
     echo '<p class="empty-text">No downloads available.</p>';
 } ?>
@@ -1490,6 +1557,7 @@ try {
 
 <div class="dj-panel" id="pn-profile">
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 $pd = $djData->profile_data ? json_decode($djData->profile_data, true) : [];
 function pf($k, $d=''){global $pd; return htmlspecialchars($pd[$k] ?? $d);}
 ?>
@@ -1498,9 +1566,11 @@ function pf($k, $d=''){global $pd; return htmlspecialchars($pd[$k] ?? $d);}
 <div class="card">
 <h3><i class="fas fa-camera"></i> Photo</h3>
 <div class="profile-photo-row">
-<?php if ($djData->avatar): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($djData->avatar): ?>
 <img src="/<?php echo $djData->avatar; ?>" class="avatar-pic">
-<?php else: ?><div class="avatar-placeholder">🎤</div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; else: ?><div class="avatar-placeholder">🎤</div><?php endif; ?>
 <label class="upload-btn">Change Photo<input type="file" name="file" style="display:none" onchange="var f=this.form;f.action='/dj_panel.php?action=upload_avatar';f.submit()"></label>
 <label class="upload-btn" style="background:rgba(250,204,21,.1);border-color:rgba(250,204,21,.2)">Change Banner<input type="file" name="file" style="display:none" onchange="var f=this.form;f.action='/dj_panel.php?action=upload_banner';f.submit()"></label>
 </div>
@@ -1525,9 +1595,11 @@ function pf($k, $d=''){global $pd; return htmlspecialchars($pd[$k] ?? $d);}
 </div>
 
 <div class="card"><h3>Social Media</h3>
-<?php foreach(['facebook'=>'Facebook','instagram'=>'Instagram','twitter'=>'X (Twitter)','tiktok'=>'TikTok','youtube'=>'YouTube','twitch'=>'Twitch','discord'=>'Discord','spotify'=>'Spotify','apple_music'=>'Apple Music','soundcloud'=>'SoundCloud','mixcloud'=>'Mixcloud','beatport'=>'Beatport'] as $k=>$l): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; foreach(['facebook'=>'Facebook','instagram'=>'Instagram','twitter'=>'X (Twitter)','tiktok'=>'TikTok','youtube'=>'YouTube','twitch'=>'Twitch','discord'=>'Discord','spotify'=>'Spotify','apple_music'=>'Apple Music','soundcloud'=>'SoundCloud','mixcloud'=>'Mixcloud','beatport'=>'Beatport'] as $k=>$l): ?>
 <div class="form-group"><label><?php echo $l; ?></label><input name="<?php echo $k; ?>" value="<?php echo pf($k); ?>" placeholder="https://"></div>
-<?php endforeach; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endforeach; ?>
 </div>
 
 <div class="card"><h3>Favorites</h3>
@@ -1617,21 +1689,28 @@ function pf($k, $d=''){global $pd; return htmlspecialchars($pd[$k] ?? $d);}
 <small class="upload-hint">JPG, PNG, GIF, WEBP, MP4, MOV — max 20MB</small>
 </form>
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 $galleryData = $djData->gallery ? json_decode($djData->gallery, true) : [];
 if (!empty($galleryData)): ?>
 <div class="gallery-grid">
-<?php foreach ($galleryData as $i=>$item): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; foreach ($galleryData as $i=>$item): ?>
 <div class="gallery-item">
-<?php if (($item['type']??'image') === 'video'): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (($item['type']??'image') === 'video'): ?>
 <video src="<?php echo htmlspecialchars($item['url']); ?>"></video>
-<?php else: ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; else: ?>
 <img src="<?php echo htmlspecialchars($item['url']); ?>">
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 <a href="/dj_panel.php?action=delete_gallery&idx=<?php echo $i; ?>" class="gallery-del">✕</a>
 </div>
-<?php endforeach; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endforeach; ?>
 </div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 </div>
 </div>
 </div>

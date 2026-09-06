@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 /**
  * Auto-Provision Account
  * Called after payment is confirmed (PayPal IPN or admin approval).
@@ -6,7 +7,7 @@
  */
 function autoProvision($userId, $packageId) {
     $sn = $_SERVER['SERVER_NAME'] ?? 'planet-hosts.com';
-    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
     $user = $pdo->prepare("SELECT * FROM hosting_users WHERE id = ?");
     $user->execute([$userId]);

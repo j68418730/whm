@@ -1,7 +1,8 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 session_start();
 $action = $_GET['action'] ?? 'view';
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
 // Initialize cart
 if (!isset($_SESSION['cart'])) $_SESSION['cart'] = [];
@@ -203,7 +204,8 @@ input,select{width:100%;padding:10px 14px;background:rgba(0,0,0,.3);border:1px s
 <div class="bg"></div>
 <div class="container">
 
-<?php if ($action === 'thankyou'): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($action === 'thankyou'): ?>
 <div class="card thankyou">
 <div class="icon">🎉</div>
 <h2>Order Placed!</h2>
@@ -211,9 +213,11 @@ input,select{width:100%;padding:10px 14px;background:rgba(0,0,0,.3);border:1px s
 <p style="color:#64748b;font-size:13px">If you paid via PayPal, your account will be provisioned automatically once payment clears.<br>
 If you selected manual payment, an admin will review and activate your account.</p>
 <a href="/" class="btn btn-primary" style="margin-top:16px">Back to Home</a>
-<?php unset($_SESSION['cart']); ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; unset($_SESSION['cart']); ?>
 </div>
-<?php exit; endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; exit; endif; ?>
 
 <h1>🛒 Shopping <span>Cart</span></h1>
 
@@ -226,30 +230,37 @@ If you selected manual payment, an admin will review and activate your account.<
 <a class="cart-tab" href="/hosting/VPS">🖥 VPS</a>
 </div>
 
-<?php if (!empty($_SESSION['cart_errors'])): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (!empty($_SESSION['cart_errors'])): ?>
 <div class="alert alert-error"><?php echo implode('<br>', $_SESSION['cart_errors']); unset($_SESSION['cart_errors']); ?></div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 
-<?php if (empty($_SESSION['cart'])): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (empty($_SESSION['cart'])): ?>
 <div class="card" style="text-align:center;padding:40px">
 <div style="font-size:48px;margin-bottom:12px">🛒</div>
 <p style="color:#64748b;margin-bottom:16px">Your cart is empty.</p>
 <a href="/" class="btn btn-primary">Browse Plans</a>
 <a href="/game-servers.php" class="btn btn-primary" style="margin-left:8px">Game Servers</a>
 </div>
-<?php else:
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; else:
 $total = array_sum(array_map(fn($i) => $i['price'] * $i['qty'], $_SESSION['cart']));
 $ownDomain = isset($_POST['domain']) ? strtolower(trim($_POST['domain'])) : '';
 ?>
 <form method="POST" action="/cart.php?action=update">
 <table>
 <tr><th>Item</th><th>Type</th><th>Price</th><th>Qty</th><th>Subtotal</th><th></th></tr>
-<?php foreach ($_SESSION['cart'] as $idx => $item): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; foreach ($_SESSION['cart'] as $idx => $item): ?>
 <tr>
 <td><strong><?php echo htmlspecialchars($item['name']); ?></strong>
-<?php if (($item['type'] ?? '') === 'game'): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (($item['type'] ?? '') === 'game'): ?>
 <br><small style="color:#64748b"><?php echo $item['slots']; ?> slots @ $<?php echo number_format($item['price_per_slot'] ?? 0, 2); ?>/slot</small>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 </td>
 <td><?php echo ($item['type'] ?? 'hosting') === 'game' ? '🎮 Game' : '📦 Hosting'; ?></td>
 <td>$<?php echo number_format($item['price'], 2); ?><?php echo $item['setup'] > 0 ? ' + $'.number_format($item['setup'], 2).' setup' : ''; ?></td>
@@ -257,7 +268,8 @@ $ownDomain = isset($_POST['domain']) ? strtolower(trim($_POST['domain'])) : '';
 <td>$<?php echo number_format($item['price'] * $item['qty'], 2); ?></td>
 <td><a href="/cart.php?action=remove&index=<?php echo $idx; ?>" class="btn btn-danger" style="padding:4px 10px;font-size:12px">✕</a></td>
 </tr>
-<?php endforeach; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endforeach; ?>
 </table>
 <div style="text-align:right;margin-top:16px">
 <div class="total-row">Total: $<?php echo number_format($total, 2); ?></div>
@@ -270,8 +282,10 @@ $ownDomain = isset($_POST['domain']) ? strtolower(trim($_POST['domain'])) : '';
 <div class="form-group"><label>Full Name</label><input name="name" required></div>
 <div class="form-group"><label>Email Address</label><input name="email" type="email" required></div>
 <div class="form-group"><label>Password (for your account)</label><input name="password" type="password" minlength="8" required></div>
-<?php $hasHostingCheckout = false; foreach ($_SESSION['cart'] as $cit) { if (($cit['type'] ?? '') !== 'game') { $hasHostingCheckout = true; break; } } ?>
-<?php if ($hasHostingCheckout): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; $hasHostingCheckout = false; foreach ($_SESSION['cart'] as $cit) { if (($cit['type'] ?? '') !== 'game') { $hasHostingCheckout = true; break; } } ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($hasHostingCheckout): ?>
 <div class="form-group"><label>Domain for Hosting</label>
 <div style="display:flex;flex-direction:column;gap:8px;padding:10px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);border-radius:8px">
 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin:0"><input type="radio" name="domain_choice" value="own" checked onchange="document.getElementById('ownDomainWrap').style.display=this.checked?'':'none';document.getElementById('regDomainWrap').style.display=this.checked?'none':''"> I have my own domain</label>
@@ -279,7 +293,8 @@ $ownDomain = isset($_POST['domain']) ? strtolower(trim($_POST['domain'])) : '';
 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin:0"><input type="radio" name="domain_choice" value="register" onchange="document.getElementById('regDomainWrap').style.display=this.checked?'':'none';document.getElementById('ownDomainWrap').style.display=this.checked?'none':''"> Register a new domain for me</label>
 <div id="regDomainWrap" style="display:none;margin-left:22px;font-size:12px;color:#64748b">Domain registration is coming soon — for now, use your own domain or add one later from the client panel.</div>
 </div></div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 <div class="form-group"><label>Payment Method</label>
 <select name="method">
 <option value="paypal">PayPal</option>
@@ -292,7 +307,8 @@ $ownDomain = isset($_POST['domain']) ? strtolower(trim($_POST['domain'])) : '';
 <a href="/" class="btn btn-outline" style="width:100%;margin-top:8px">↩ Order More</a>
 </form>
 </div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 
 <p style="text-align:center;margin-top:20px;display:flex;justify-content:center;gap:16px">
 <a href="/" style="color:#64748b;font-size:13px">← Browse Hosting</a>

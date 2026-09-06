@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../../core/ServerCreds.php';
 require_once __DIR__ . '/../../security_guard.php';
 security_guard_run('radio');
 require_once __DIR__ . '/../radio_helper.php';
@@ -7,7 +8,7 @@ $streamId = (int)($_GET['stream'] ?? 0);
 if (!$streamId) exit;
 // Resolve to the real station id (composite 10000+id supported) and build a readable slug
 $realId = $streamId > 10000 ? ($streamId % 10000) : $streamId;
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 $st = $pdo->prepare("SELECT name FROM streaming_stations WHERE id = ?");
 $st->execute([$realId]);
 $stName = $st->fetchColumn() ?: "Station #{$realId}";

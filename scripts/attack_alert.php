@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 /**
  * Planet Hosts — Intrusion Detection Monitor (attack_alert.php)
  * Watches Apache access + error logs for attack signatures (brute-force,
@@ -16,7 +17,7 @@ ini_set('display_errors', '0');
 define('BASE', __DIR__ . '/..');
 $pdo = new PDO(
     'mysql:host=localhost;dbname=radiohosting;charset=utf8mb4',
-    'radiouser', 'Skylinehosting171',
+    \db_user(), \db_pass(),
     [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
 );
 

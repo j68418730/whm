@@ -1,11 +1,12 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 /**
  * Radio Auto-Provision
  * Called after payment is confirmed for a radio package.
  * Creates Icecast stream, config, starts the stream.
  */
 function radioProvision($userId, $packageId) {
-    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
     $stmt = $pdo->prepare("SELECT * FROM hosting_users WHERE id = ?"); $stmt->execute([$userId]); $user = $stmt->fetch(PDO::FETCH_OBJ);
     if (!$user) return false;

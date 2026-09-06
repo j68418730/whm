@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 /**
  * Planet Hosts Studio — Stream Relay
  * 
@@ -21,7 +22,7 @@ if (!$djUser) {
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $streamId = (int)($_GET['stream_id'] ?? $_POST['stream_id'] ?? 0);
 
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
 // Get stream info from existing streaming_stations table
 $stmt = $pdo->prepare("SELECT * FROM streaming_stations WHERE id = ?");

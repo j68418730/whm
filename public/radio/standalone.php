@@ -1,9 +1,10 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 require_once __DIR__ . '/radio_helper.php';
 header('Content-Type: text/html; charset=utf-8');
 $streamId = (int)($_GET['stream'] ?? 0);
 $streams = [];
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 $rows = $pdo->query("SELECT id, name AS station_name, server_type, port, mount_point, bitrate, status, current_song, current_artist FROM streaming_stations ORDER BY id")->fetchAll(PDO::FETCH_OBJ);
 $defaultIdx = 0;
 foreach ($rows as $i => $r) {
@@ -67,9 +68,11 @@ body{font-family:Inter,system-ui,sans-serif;background:<?=$isDark?'#0a0e1a':'#f0
 <div class="player-wrap">
 <div class="player">
 <div class="sel-wrap"><select id="stationSel" onchange="switchStation(this.value)">
-<?php foreach ($streams as $i => $s): ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; foreach ($streams as $i => $s): ?>
 <option value="<?=$i?>"<?=$i===$defaultIdx?' selected':''?>><?=htmlspecialchars($s['name'])?> (<?=strtoupper($s['type'])?>)</option>
-<?php endforeach; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; endforeach; ?>
 </select></div>
 <div class="cover" id="cover">🎵</div>
 <div class="station-name">PLANET <span>HOSTS</span></div>

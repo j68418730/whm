@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 $stationId = (int)($_GET['station'] ?? 0);
 if (!$stationId) { http_response_code(400); echo json_encode(['error'=>'station required']); exit; }
 
@@ -16,7 +17,7 @@ function sd_utf8($v) {
 }
 
 try {
-    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
     $st = $pdo->prepare("SELECT * FROM streaming_stations WHERE id=?");
     $st->execute([$stationId]);

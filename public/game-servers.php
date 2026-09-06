@@ -1,7 +1,8 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 session_start();
 
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
 // Fetch all active game types
 $games = $pdo->query("SELECT * FROM game_types WHERE is_active = 1 ORDER BY sort_order ASC, name ASC")->fetchAll(PDO::FETCH_OBJ);
@@ -195,20 +196,25 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
 <p>Deploy high-performance game servers with instant setup. Choose your game, pick your slots, and launch in minutes.</p>
 </div>
 
-<?php if (!$selectedGameId): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (!$selectedGameId): ?>
 <div class="game-grid">
-<?php foreach ($games as $g): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; foreach ($games as $g): ?>
 <a href="?game=<?php echo urlencode($g->name); ?>" class="game-card<?php echo $selectedGameId === (int)$g->id ? ' active' : ''; ?>">
 <div class="icon"><?php echo htmlspecialchars($g->icon ?? '🎮'); ?></div>
 <h4><?php echo htmlspecialchars($g->name); ?></h4>
 <p><?php echo htmlspecialchars($g->description ?? ''); ?></p>
 <div class="price-tag">From <?php echo $currency; ?><?php echo number_format($g->price_per_slot, 2); ?>/slot</div>
 </a>
-<?php endforeach; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endforeach; ?>
 </div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 if ($selectedGameId > 0):
 $selectedGame = null;
 foreach ($games as $g) { if ((int)$g->id === $selectedGameId) { $selectedGame = $g; break; } }
@@ -278,17 +284,20 @@ function updatePricing(slots) {
 <div class="panel-card">
 <h3>Configure Your Server</h3>
 <p style="color:#94a3b8;font-size:14px;margin-bottom:16px">
-<?php echo htmlspecialchars($selectedGame->icon ?? '🎮'); ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; echo htmlspecialchars($selectedGame->icon ?? '🎮'); ?>
 <strong><?php echo htmlspecialchars($selectedGame->name); ?></strong>
 — <?php echo htmlspecialchars($selectedGame->description ?? ''); ?>
 </p>
 
-<?php if (!empty($gamePkgs) && $enablePackages): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (!empty($gamePkgs) && $enablePackages): ?>
 <div class="tab-bar">
 <button class="tab-btn active" onclick="setTab('slider',this)">Per-Slot Pricing</button>
 <button class="tab-btn" onclick="setTab('packages',this)">Fixed Packages</button>
 </div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 
 <div id="tabSlider" class="panel-section active">
 <div class="slot-display">
@@ -310,9 +319,11 @@ function updatePricing(slots) {
 <div class="price-row"><span class="label">Price Per Slot</span><span class="value" id="pricePerSlot"><?php echo $currency; ?><?php echo number_format($pricePerSlot, 2); ?></span></div>
 <div class="price-row"><span class="label">Slots Selected</span><span class="value" id="slotsSelected"><?php echo $selectedSlots; ?></span></div>
 <div class="price-row"><span class="label">Monthly Cost</span><span class="value" id="monthlyCost"><?php echo $currency; ?><?php echo number_format($monthlyCost, 2); ?></span></div>
-<?php if ($setupFee > 0): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($setupFee > 0): ?>
 <div class="price-row setup"><span class="label">Setup Fee</span><span class="value" id="setupFeeDisplay"><?php echo $currency; ?><?php echo number_format($setupFee, 2); ?></span></div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 <div class="price-row total"><span class="label">Total Today</span><span class="value" id="totalDisplay"><?php echo $currency; ?><?php echo number_format($total, 2); ?></span></div>
 </div>
 
@@ -321,26 +332,33 @@ function updatePricing(slots) {
 </a>
 </div>
 
-<?php if (!empty($gamePkgs) && $enablePackages): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (!empty($gamePkgs) && $enablePackages): ?>
 <div id="tabPackages" class="panel-section">
 <p style="color:#94a3b8;font-size:13px;margin-bottom:16px">Pre-configured packages with fixed pricing:</p>
 <div class="packages-grid">
-<?php foreach ($gamePkgs as $pkg): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; foreach ($gamePkgs as $pkg): ?>
 <div class="pkg-card" onclick="selectPackage(this, <?php echo $pkg->id; ?>, <?php echo $pkg->price; ?>, <?php echo $pkg->setup_fee ?? 0; ?>, <?php echo $pkg->slots; ?>)">
 <h5><?php echo htmlspecialchars($pkg->name); ?></h5>
 <p><?php echo htmlspecialchars($pkg->description ?? ''); ?></p>
 <div class="pkg-price"><?php echo $currency; ?><?php echo number_format($pkg->price, 2); ?><small>/mo</small></div>
 <div class="pkg-slots"><?php echo $pkg->slots; ?> slots</div>
-<?php if ($pkg->setup_fee > 0): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($pkg->setup_fee > 0): ?>
 <div class="pkg-slots" style="color:#fbbf24;font-size:.7rem">+<?php echo $currency; ?><?php echo number_format($pkg->setup_fee, 2); ?> setup</div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 <a class="btn-select" href="/cart.php?action=add_game&game_id=<?php echo $selectedGameId; ?>&package_id=<?php echo $pkg->id; ?>&template_id=<?php echo (int)($pkg->template_id ?? 0); ?>&slots=<?php echo $pkg->slots; ?>&price=<?php echo $pkg->price; ?>&setup=<?php echo $pkg->setup_fee ?? 0; ?>&pkg_name=<?php echo urlencode($pkg->name); ?>">Select</a>
 </div>
-<?php endforeach; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endforeach; ?>
 </div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 </div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 </div>
 
 <div class="panel-card">
@@ -377,12 +395,14 @@ All game servers include a dedicated IP, full FTP access, web-based file manager
 </div>
 </div>
 
-<?php if (!empty($gameTiers)): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (!empty($gameTiers)): ?>
 <div class="info-note">
 <i class="fa-solid fa-chart-line" style="margin-right:6px"></i>
 Volume discounts available — larger slot counts get lower per-slot pricing.
 </div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 
 <script>
 function setTab(tab, btn) {
@@ -399,9 +419,11 @@ function selectPackage(el, id, price, setup, slots) {
 </script>
 
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 $gameTiers = null; // cleanup
 ?>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 </div>
 
 <footer class="footer">

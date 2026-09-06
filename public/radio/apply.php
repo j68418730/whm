@@ -1,9 +1,10 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 require_once __DIR__ . '/radio_helper.php';
 $streamId = (int)($_GET['stream'] ?? 0);
 $stream = null;
 if ($streamId) {
-    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
     $st = $pdo->prepare("SELECT id, name FROM streaming_stations WHERE id=?");
     $st->execute([$streamId]);
     $stream = $st->fetch(PDO::FETCH_OBJ);
@@ -40,8 +41,10 @@ h1 span{color:#008cff}
 <div class="card">
 <h1>PLANET <span>HOSTS</span></h1>
 <p class="sub">Apply to become a DJ for <?php echo $stationName; ?></p>
-<?php if ($success): ?><div class="msg ok"><?php echo htmlspecialchars($success); ?></div><?php endif; ?>
-<?php if ($error): ?><div class="msg err"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; if ($success): ?><div class="msg ok"><?php echo htmlspecialchars($success); ?></div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; if ($error): ?><div class="msg err"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
 <form method="POST" action="/user/radio/dj/apply">
 <input type="hidden" name="stream_id" value="<?php echo $streamId; ?>">
 <div class="row">
