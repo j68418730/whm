@@ -9,6 +9,19 @@ After every commit/push, automatically deploy to the live server:
 5. Run storage setup: `sudo bash scripts/setup_storage.sh`
 6. Update `K:\site_del\Masterinstall` with `git pull origin master`
 
+## NEVER `git clean -fd` ON THE SERVER
+The live repo at `/var/www/radiohosting` holds untracked RUNTIME state that
+`git clean -fd` will DELETE and break production (panel redirects to /setup):
+- `config/install.lock` — setup-wizard lock; missing it = every page redirects to /setup
+- `storage/*` (logs, branding, robots, sitemaps, security/*) — app write dirs
+- `public/uploads/*` — user uploads (chat, support, banners)
+If a hard reset is required, use `sudo git reset --hard origin/master` and at
+most `git clean -fd -e config/install.lock -e storage -e public/uploads`.
+After any accidental wipe: `sudo touch config/install.lock` + recreate dirs
+from `scripts/setup_storage.sh` + chown www-data.
+Also: the live tree is SERVED while you work on it — never leave the working
+tree on another branch or mid-merge; do review work in a separate clone.
+
 ## Server Info
 > **Credentials are NOT stored in this file or this repo.** They live on the
 > live server in `db_creds.sh` (mode 600) and in the app `.env` (gitignored).
