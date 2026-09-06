@@ -70,14 +70,15 @@ class SettingsController extends Controller
             'company_phone' => $this->getSetting('company_phone', ''),
             'company_address' => $this->getSetting('company_address', ''),
             'company_website' => $this->getSetting('company_website', 'https://planet-hosts.com'),
+            'primary_domain' => $this->getSetting('primary_domain', primary_domain()),
         ]);
     }
 
     public function companySave()
     {
         $this->guard();
-        foreach (['company_name','company_email','company_phone','company_address','company_website'] as $k) {
-            $this->setSetting($k, $this->request->post($k, ''));
+        foreach (['company_name','company_email','company_phone','company_address','company_website','primary_domain'] as $k) {
+            $this->setSetting($k, trim($this->request->post($k, '')));
         }
         $_SESSION['success_message'] = 'Company settings saved.';
         $this->response->redirect('/admin/settings/company');

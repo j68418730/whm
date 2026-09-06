@@ -16,7 +16,7 @@ $slug = strtolower(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($stName)), 
 if ($slug === '') $slug = (string)$realId;
 ?>
 <div style="font-family:Inter,sans-serif;max-width:300px">
-<form id="ph-req-<?=$streamId?>" onsubmit="var f=this;fetch('https://planet-hosts.com/connector/station/<?=$slug?>/requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({artist:f.artist.value,title:f.title.value,guest_name:f.name.value,message:f.message.value})}).then(function(r){f.innerHTML='<div style=\"color:#4ade80;font-size:13px\">Request sent!</div>'});return false">
+<form id="ph-req-<?=$streamId?>" onsubmit="var f=this;fetch('<?=site_base_url()?>/connector/station/<?=$slug?>/requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({artist:f.artist.value,title:f.title.value,guest_name:f.name.value,message:f.message.value})}).then(function(r){f.innerHTML='<div style=\"color:#4ade80;font-size:13px\">Request sent!</div>'});return false">
 <div style="margin-bottom:6px"><input name="artist" placeholder="Artist" required style="width:100%;padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px;box-sizing:border-box"></div>
 <div style="margin-bottom:6px"><input name="title" placeholder="Song Title" required style="width:100%;padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px;box-sizing:border-box"></div>
 <div style="margin-bottom:6px"><input name="name" placeholder="Your Name (optional)" style="width:100%;padding:7px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;font-size:12px;box-sizing:border-box"></div>

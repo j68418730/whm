@@ -77,7 +77,7 @@ $js = "document.getElementById('ph-sr-{$streamId}').innerHTML='<div style=\"font
     ."<div id=\"srp\" style=\"display:none;margin-top:6px;font-size:12px;text-align:center;padding:6px;border-radius:6px\"></div></div></div>';"
     ."function srq(){var a=document.getElementById('sra'),t=document.getElementById('srt'),g=document.getElementById('srg'),p=document.getElementById('srp');"
     ."if(!a.value||!t.value){p.style.display='block';p.style.background='rgba(248,113,113,.1)';p.style.color='#f87171';p.textContent='Artist and title required';return;}"
-    ."fetch('https://planet-hosts.com/connector/station/{$reqSlug}/requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({artist:a.value,title:t.value,guest_name:g.value})})"
+    ."fetch('".site_base_url()."/connector/station/{$reqSlug}/requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({artist:a.value,title:t.value,guest_name:g.value})})"
     .".then(function(r){return r.json()}).then(function(d){p.style.display='block';"
     ."if(d.success){a.value='';t.value='';g.value='';p.style.background='rgba(74,222,128,.1)';p.style.color='#4ade80';p.textContent='Request sent!';}"
     ."else{p.style.background='rgba(248,113,113,.1)';p.style.color='#f87171';p.textContent='Error.';}})"

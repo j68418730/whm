@@ -30,6 +30,66 @@ if (!function_exists('now')) {
     }
 }
 
+if (!function_exists('primary_domain')) {
+    /**
+     * Primary brand domain for the panel.
+     * Sources (in order): setup wizard (setup_settings.primary_domain),
+     * admin settings (automation_settings.primary_domain / company_website),
+     * current HTTP host, then fallback.
+     */
+    function primary_domain(): string
+    {
+        static $cached = null;
+        if ($cached !== null && $cached !== '') return $cached;
+        $domain = '';
+        try {
+            if (!function_exists('db_pdo') && defined('BASE_PATH')) {
+                require_once base_path('core' . DIRECTORY_SEPARATOR . 'ServerCreds.php');
+            }
+            if (function_exists('db_pdo')) {
+                $pdo = \db_pdo();
+                foreach (
+                    [
+                        ['setup_settings', 'primary_domain'],
+                        ['automation_settings', 'primary_domain'],
+                    ] as [$table, $key]
+                ) {
+                    try {
+                        $st = $pdo->prepare("SELECT setting_value FROM {$table} WHERE setting_key = ? LIMIT 1");
+                        $st->execute([$key]);
+                        $v = $st->fetchColumn();
+                        if ($v) { $domain = trim((string)$v); break; }
+                    } catch (\Throwable $e) { /* table may not exist yet */ }
+                }
+                if ($domain === '') {
+                    try {
+                        $st = $pdo->prepare("SELECT setting_value FROM automation_settings WHERE setting_key = ? LIMIT 1");
+                        $st->execute(['company_website']);
+                        $v = $st->fetchColumn();
+                        if ($v) {
+                            $host = parse_url(trim((string)$v), PHP_URL_HOST) ?: preg_replace('#^https?://#i', '', trim((string)$v));
+                            $domain = strtok((string)$host, ':') ?: '';
+                        }
+                    } catch (\Throwable $e) { /* ignore */ }
+                }
+            }
+        } catch (\Throwable $e) { /* DB unavailable — fall through */ }
+        if ($domain === '' && !empty($_SERVER['HTTP_HOST'])) {
+            $domain = preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST']);
+        }
+        if ($domain === '') $domain = 'planet-hosts.com';
+        return $cached = strtolower($domain);
+    }
+}
+
+if (!function_exists('site_base_url')) {
+    /** Base URL of the panel site, e.g. https://planet-hosts.com */
+    function site_base_url(): string
+    {
+        return 'https://' . primary_domain();
+    }
+}
+
 if (!function_exists('license_check')) {
     function license_check($feature = null)
     {
