@@ -100,6 +100,7 @@ class AutodjController extends Controller
                 $this->db->table('radio_playlist_items')->where('playlist_id', $p->id)->delete();
             }
             $this->db->table('radio_playlists')->where('stream_id', $id)->delete();
+            $this->db->table('radio_autodj_config')->where('station_id', 10000 + $id)->delete();
             $this->db->table('radio_autodj_config')->where('station_id', $id)->delete();
             $this->db->table('streaming_stations')->where('id', $id)->update(['autodj_enabled' => 0, 'autodj_active' => 0]);
             $_SESSION['success_message'] = 'AutoDJ removed for "' . ($station->name ?? ('#' . $id)) . '" (playlists cleared).';
