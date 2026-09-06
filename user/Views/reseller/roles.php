@@ -80,5 +80,34 @@
 <?php else: ?><p style="color:#64748b;font-size:13px">No staff yet. Add your first team member above.</p><?php endif; ?>
 </div>
 
-</div>
-<a href="/reseller" class="btn secondary">&larr; Back</a>
+<!-- Reseller API Link -->
+    <div class="card" style="margin-top:16px">
+      <h4 style="color:var(--accent,#008cff);margin-bottom:12px"><i class="bi bi-code-slash"></i> Reseller API</h4>
+      <p style="color:var(--text-muted);font-size:13px;margin:0 0 12px">Share your API credentials with staff or integrate with external systems.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="form-group"><label>API Base URL</label><input type="text" id="apiBaseUrl" readonly value="<?php echo 'https://' . ($reseller->brand_url ?: 'planet-hosts.com') . ':2089/api/reseller'; ?>" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;outline:none;font-size:12px;font-family:monospace"></div>
+        <div class="form-group"><label>API Key</label><input type="text" id="apiKey" readonly value="<?php echo htmlspecialchars(substr(md5($reseller->id . '-ph-reseller-api'), 0, 32)); ?>" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);color:#fff;outline:none;font-size:12px;font-family:monospace"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-sm primary" onclick="copyTo('apiBaseUrl')">📋 Copy Base URL</button>
+        <button class="btn btn-sm secondary" onclick="copyTo('apiKey')">📋 Copy API Key</button>
+      </div>
+      <div style="margin-top:8px;font-size:11px;color:#64748b">Include header: <code>Authorization: Bearer <API Key></code></div>
+    </div>
+
+  </div>
+  <a href="/reseller" class="btn secondary">&larr; Back</a>
+
+<script>
+function copyTo(id) {
+  var el = document.getElementById(id);
+  if (el) {
+    navigator.clipboard.writeText(el.value).then(function() {
+      var btn = event.target;
+      var orig = btn.textContent;
+      btn.textContent = '✅ Copied!';
+      setTimeout(function() { btn.textContent = orig; }, 1500);
+    });
+  }
+}
+</script>
