@@ -187,6 +187,20 @@ class StreamsController extends Controller
         $user = $this->auth->user();
         $stream = $this->db->table('streaming_stations')->where('id', $id)->first();
         if (!$stream) { $_SESSION['error_message'] = 'Stream not found.'; $this->response->redirect('/admin/streams'); exit; }
+        if (!function_exists('radio_stream_url')) {
+            @require_once base_path('public' . DIRECTORY_SEPARATOR . 'radio' . DIRECTORY_SEPARATOR . 'radio_helper.php');
+        }
+        $u = $this->db->table('hosting_users')->where('id', $stream->user_id)->first();
+        $stream->user_name = $u ? $u->username : '';
+        $stream->live_online = false;
+        $stream->live_listeners = (int)($stream->listener_count ?? 0);
+        if (function_exists('radio_fetch_stats')) {
+            try {
+                $stats = radio_fetch_stats($stream);
+                $stream->live_online = (bool)($stats['status'] ?? false);
+                $stream->live_listeners = (int)($stats['listeners'] ?? $stream->live_listeners);
+            } catch (\Throwable $e) { /* keep defaults */ }
+        }
         return $this->view('Plugins.Radio.Views.admin.streams.edit', [
             'user' => $user, 'stream' => $stream, 'streamId' => $id,
             'theme_settings' => json_decode($user->theme_settings ?? '{}', true), 'title' => 'Edit Stream'
@@ -201,6 +215,8 @@ class StreamsController extends Controller
             $v = $this->request->post($f);
             if ($v !== null) $data[$f] = $v;
         }
+        // Keep the engine column in sync with server_type
+        if (isset($data['server_type'])) $data['engine'] = $data['server_type'];
         foreach (['port', 'bitrate', 'max_listeners', 'public_server', 'autodj_enabled', 'ssl_enabled'] as $f) {
             $v = $this->request->post($f);
             if ($v !== null) $data[$f] = (int)$v;
