@@ -8,3 +8,29 @@ RewriteRule ^chat/([a-z0-9-]+)$ chat/index.php?slug=$1 [L,QSA]
 # Handle front controller — route everything except existing files to index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^ index.php [L]
+
+# --- Security: deny probe/debug/backup files ---
+<FilesMatch "\.(bak|orig|old|save|swp|tmp)$">
+    Require all denied
+</FilesMatch>
+<Files "debug_login.php">
+    Require all denied
+</Files>
+<Files "debug_upload.php">
+    Require all denied
+</Files>
+<Files "func_test.php">
+    Require all denied
+</Files>
+<Files "pi.php">
+    Require all denied
+</Files>
+<Files "pma-login.php">
+    Require all denied
+</Files>
+<Files "pma_signon.php">
+    Require all denied
+</Files>
+<Files "upload_test.php">
+    Require all denied
+</Files>
