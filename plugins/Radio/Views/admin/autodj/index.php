@@ -101,6 +101,7 @@ foreach ($autodjs as $s) {
         <a class="start" href="javascript:void(0)" onclick="adStart(<?php echo (int)$s->id; ?>, this)" <?php if (!empty($s->autodj_running)): ?>style="opacity:.4;pointer-events:none"<?php endif; ?>>▶ Start</a>
         <a class="stop" href="javascript:void(0)" onclick="adStop(<?php echo (int)$s->id; ?>, this)" <?php if (empty($s->autodj_running)): ?>style="opacity:.4;pointer-events:none"<?php endif; ?>>⏹ Stop</a>
         <a href="/admin/streams/edit/<?php echo (int)$s->id; ?>">✏️ Edit</a>
+        <a class="del" href="javascript:void(0)" onclick="adDelete(<?php echo (int)$s->id; ?>, this)" style="color:#f87171">🗑 Delete</a>
       </div>
     </div>
     <?php endforeach; ?>
@@ -125,6 +126,14 @@ function adStop(id, btn) {
     btn.textContent = 'Stopping...';
     var x = new XMLHttpRequest();
     x.open('GET', '/api/autodj/stop/' + (10000 + id), true);
+    x.onload = function() { location.reload(); };
+    x.send();
+}
+function adDelete(id, btn) {
+    if (!confirm('Delete AutoDJ for station ' + id + '?\n\nThis stops the AutoDJ player and removes its playlists, songs and schedule config. The station itself is kept.')) return;
+    btn.textContent = 'Deleting...';
+    var x = new XMLHttpRequest();
+    x.open('GET', '/admin/autodj/delete-station/' + id, true);
     x.onload = function() { location.reload(); };
     x.send();
 }

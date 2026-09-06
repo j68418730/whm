@@ -18,6 +18,14 @@ $router->get('/admin/streams/restart/{id}', 'Plugins\Radio\Controllers\Admin\Str
 $router->get('/admin/streams/suspend/{id}', 'Plugins\Radio\Controllers\Admin\StreamsController@suspend');
 $router->get('/admin/streams/unsuspend/{id}', 'Plugins\Radio\Controllers\Admin\StreamsController@unsuspend');
 $router->get('/admin/streams/clone/{id}', 'Plugins\Radio\Controllers\Admin\StreamsController@clone');
+// Bulk actions
+$router->get('/admin/streams/start-all', 'Plugins\Radio\Controllers\Admin\StreamsController@startAll');
+$router->get('/admin/streams/stop-all', 'Plugins\Radio\Controllers\Admin\StreamsController@stopAll');
+$router->get('/admin/streams/restart-all', 'Plugins\Radio\Controllers\Admin\StreamsController@restartAll');
+$router->get('/admin/streams/start-all-autodj', 'Plugins\Radio\Controllers\Admin\StreamsController@startAllAutodj');
+$router->get('/admin/streams/stop-all-autodj', 'Plugins\Radio\Controllers\Admin\StreamsController@stopAllAutodj');
+// AutoDJ station actions
+$router->get('/admin/autodj/delete-station/{id}', 'Plugins\Radio\Controllers\Admin\AutodjController@deleteStation');
 $router->get('/admin/autodj', 'Plugins\Radio\Controllers\Admin\AutodjController@index');
 $router->post('/admin/autodj/upload', 'Plugins\Radio\Controllers\Admin\AutodjController@upload');
 $router->get('/admin/autodj/library', 'Plugins\Radio\Controllers\Admin\AutodjController@library');

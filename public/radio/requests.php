@@ -57,7 +57,7 @@ foreach ($djByStation as &$arr) {
 }
 unset($arr);
 
-$base = "https://planet-hosts.com";
+$base = site_base_url();
 
 // Helper: is a DJ "online"? (last_active within 5 min, or current_dj on a running station)
 function dj_online($dj, $pdo) {

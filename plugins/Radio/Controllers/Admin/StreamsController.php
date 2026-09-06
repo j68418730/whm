@@ -22,17 +22,30 @@ class StreamsController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         license_check('radio');
         $user = $this->auth->user();
+        if (!function_exists('radio_fetch_stats')) {
+            @require_once base_path('public' . DIRECTORY_SEPARATOR . 'radio' . DIRECTORY_SEPARATOR . 'radio_helper.php');
+        }
         $rows = $this->db->table('streaming_stations')->get() ?: [];
         $streams = [];
         foreach ($rows as $s) {
             $u = $this->db->table('hosting_users')->where('id', $s->user_id)->first();
             $s->user_name = $u ? $u->username . ' (' . $u->email . ')' : 'Unassigned';
             if (!isset($s->server_name)) $s->server_name = $s->name ?? 'Stream #' . $s->id;
+            // Live probe: online = stream server reachable & source up (not the stale DB status)
+            $s->live_online = false;
+            $s->live_listeners = (int)($s->listener_count ?? 0);
+            if (function_exists('radio_fetch_stats')) {
+                try {
+                    $stats = radio_fetch_stats($s);
+                    $s->live_online = (bool)($stats['status'] ?? false);
+                    $s->live_listeners = (int)($stats['listeners'] ?? $s->live_listeners);
+                } catch (\Throwable $e) { /* keep defaults */ }
+            }
             $streams[] = $s;
         }
         $total = count($streams); $active = 0; $suspended = 0;
         foreach ($streams as $s) {
-            if ($s->status === 'running') $active++;
+            if ($s->live_online) $active++;
             if ($s->status === 'suspended' || $s->status === 'error') $suspended++;
         }
         return $this->view('Plugins.Radio.Views.admin.streams.index', [
@@ -262,6 +275,93 @@ class StreamsController extends Controller
             ]);
             $_SESSION['success_message'] = "Stream cloned to port $newPort.";
         }
+        $this->response->redirect('/admin/streams');
+    }
+
+    public function startAll()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $stations = $this->db->table('streaming_stations')->get() ?: [];
+        $count = 0;
+        foreach ($stations as $s) {
+            if ($s->status === 'suspended') continue;
+            try {
+                $engine = \Plugins\Radio\Services\StreamingEngine::getInstance();
+                $engine->startStation($s->id);
+                $count++;
+            } catch (\Throwable $e) {}
+        }
+        $_SESSION['success_message'] = "Started $count station(s).";
+        $this->response->redirect('/admin/streams');
+    }
+
+    public function stopAll()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $stations = $this->db->table('streaming_stations')->get() ?: [];
+        $count = 0;
+        foreach ($stations as $s) {
+            try {
+                $engine = \Plugins\Radio\Services\StreamingEngine::getInstance();
+                $engine->stopStation($s->id);
+                $count++;
+            } catch (\Throwable $e) {}
+        }
+        $_SESSION['success_message'] = "Stopped $count station(s).";
+        $this->response->redirect('/admin/streams');
+    }
+
+    public function restartAll()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $stations = $this->db->table('streaming_stations')->get() ?: [];
+        $count = 0;
+        foreach ($stations as $s) {
+            if ($s->status === 'suspended') continue;
+            try {
+                $engine = \Plugins\Radio\Services\StreamingEngine::getInstance();
+                $engine->stopStation($s->id);
+                usleep(500000);
+                $engine->startStation($s->id);
+                $count++;
+            } catch (\Throwable $e) {}
+        }
+        $_SESSION['success_message'] = "Restarted $count station(s).";
+        $this->response->redirect('/admin/streams');
+    }
+
+    public function startAllAutodj()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $stations = $this->db->table('streaming_stations')->get() ?: [];
+        $count = 0;
+        foreach ($stations as $s) {
+            if ($s->status === 'suspended') continue;
+            try {
+                $sid = 10000 + $s->id;
+                $player = new \Services\RadioAutoDJPlayer($sid);
+                $player->start();
+                $count++;
+            } catch (\Throwable $e) {}
+        }
+        $_SESSION['success_message'] = "Started AutoDJ for $count station(s).";
+        $this->response->redirect('/admin/streams');
+    }
+
+    public function stopAllAutodj()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $stations = $this->db->table('streaming_stations')->get() ?: [];
+        $count = 0;
+        foreach ($stations as $s) {
+            try {
+                $sid = 10000 + $s->id;
+                $player = new \Services\RadioAutoDJPlayer($sid);
+                $player->stop();
+                $count++;
+            } catch (\Throwable $e) {}
+        }
+        $_SESSION['success_message'] = "Stopped AutoDJ for $count station(s).";
         $this->response->redirect('/admin/streams');
     }
 }

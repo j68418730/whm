@@ -82,6 +82,33 @@ class AutodjController extends Controller
         ]);
     }
 
+    public function deleteStation($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $id = (int)$id;
+        $station = $this->db->table('streaming_stations')->where('id', $id)->first();
+        if (!$station) { $_SESSION['error_message'] = 'Station not found.'; $this->response->redirect('/admin/autodj'); exit; }
+        try {
+            // Stop the AutoDJ player first
+            try {
+                $player = new \Services\RadioAutoDJPlayer(10000 + $id);
+                $player->stop();
+            } catch (\Throwable $e) { /* ignore */ }
+            // Remove playlists + items owned by this stream
+            $pls = $this->db->table('radio_playlists')->where('stream_id', $id)->get() ?: [];
+            foreach ($pls as $p) {
+                $this->db->table('radio_playlist_items')->where('playlist_id', $p->id)->delete();
+            }
+            $this->db->table('radio_playlists')->where('stream_id', $id)->delete();
+            $this->db->table('radio_autodj_config')->where('station_id', $id)->delete();
+            $this->db->table('streaming_stations')->where('id', $id)->update(['autodj_enabled' => 0, 'autodj_active' => 0]);
+            $_SESSION['success_message'] = 'AutoDJ removed for "' . ($station->name ?? ('#' . $id)) . '" (playlists cleared).';
+        } catch (\Throwable $e) {
+            $_SESSION['error_message'] = 'Delete failed: ' . $e->getMessage();
+        }
+        $this->response->redirect('/admin/autodj');
+    }
+
     public function upload()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }

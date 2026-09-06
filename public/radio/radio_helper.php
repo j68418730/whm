@@ -1,8 +1,11 @@
 <?php
 require_once __DIR__ . '/../../core/ServerCreds.php';
+require_once __DIR__ . '/../../core/helpers.php';
 /**
  * Radio Helper — unified Icecast & SHOUTcast handler
  * Auto-detects server type from streaming_stations.server_type
+ * Status is determined by a LIVE probe of the stream server (127.0.0.1),
+ * not by the (often stale) DB status column.
  */
 
 function radio_get_stream(int $id): ?stdClass
@@ -38,10 +41,36 @@ function radio_server_type(stdClass $stream): string
     return radio_is_icecast($stream) ? 'icecast' : 'shoutcast';
 }
 
+/**
+ * Resolve the real listen port for a station.
+ * DB port first, then engine defaults (shared per-engine DNAS on this host),
+ * then parse the station config file if present.
+ */
+function radio_stream_port(stdClass $stream): int
+{
+    $p = (int)($stream->port ?? 0);
+    if ($p > 0) return $p;
+    // Parse the station's own config if it exists
+    $cfg = $stream->config_path ?? '';
+    if ($cfg && is_file($cfg)) {
+        $content = @file_get_contents($cfg);
+        if ($content !== false) {
+            if (preg_match('/<port>(\d+)<\/port>/i', $content, $m)) return (int)$m[1];
+            if (preg_match('/^PortBase\s*=\s*(\d+)/mi', $content, $m)) return (int)$m[1];
+            if (preg_match('/^portbase\s*=\s*(\d+)/mi', $content, $m)) return (int)$m[1];
+        }
+    }
+    // Engine defaults on this server (shared DNAS instances)
+    $type = strtolower($stream->server_type ?? 'icecast');
+    if ($type === 'shoutcast1') return 11000;   // SHOUTcast v1 DNAS
+    if ($type === 'shoutcast2' || $type === 'shoutcast') return 8000; // SHOUTcast v2 DNAS
+    return 8002;                                 // global Icecast2
+}
+
 function radio_stream_url(stdClass $stream): string
 {
-    $host = 'planet-hosts.com';
-    $port = (int)($stream->port ?? 8000);
+    $host = primary_domain();
+    $port = radio_stream_port($stream);
     $proto = !empty($stream->ssl_enabled) ? 'https' : 'http';
     if (radio_is_icecast($stream)) {
         $mount = $stream->mount_point ?? '/live';
@@ -53,7 +82,7 @@ function radio_stream_url(stdClass $stream): string
 
 function radio_ssl_stream_url(int $streamId): string
 {
-    return "https://planet-hosts.com/radio/stream-proxy.php?stream={$streamId}";
+    return site_base_url() . "/radio/stream-proxy.php?stream={$streamId}";
 }
 
 function radio_get_live_dj(int $streamId): ?stdClass
@@ -67,76 +96,146 @@ function radio_get_live_dj(int $streamId): ?stdClass
     return $s->fetch(PDO::FETCH_OBJ) ?: null;
 }
 
-function radio_fetch_stats(stdClass $stream): array
+function radio_stats_defaults(stdClass $stream): array
 {
-    $default = [
+    return [
         'listeners' => (int)($stream->listener_count ?? 0),
-        'peak' => (int)($stream->listener_count ?? 0),
+        'peak' => (int)($stream->peak_listeners ?? $stream->listener_peak ?? 0),
         'bitrate' => (int)($stream->bitrate ?? 128),
         'song' => $stream->current_song ?? $stream->name ?? '',
         'artist' => $stream->current_artist ?? '',
-        'status' => $stream->status === 'running',
+        'status' => false,
         'uptime' => '',
         'live_dj' => $stream->current_dj ?? null,
     ];
-    if ($stream->status !== 'running') return $default;
-
-    try {
-        if (radio_is_icecast($stream)) {
-            return radio_fetch_icecast_stats($stream, $default);
-        }
-        return radio_fetch_shoutcast_stats($stream, $default);
-    } catch (\Exception $e) {
-        return $default;
-    }
 }
 
-function radio_fetch_icecast_stats(stdClass $stream, array $d): array
+function radio_http_get(string $url, int $timeout = 3): string
 {
-    $port = (int)($stream->port ?? 8000);
+    return @file_get_contents($url, false, stream_context_create(['http' => ['timeout' => $timeout, 'ignore_errors' => true]])) ?: '';
+}
+
+function radio_port_open(string $host, int $port, int $timeout = 2): bool
+{
+    if ($port <= 0) return false;
+    $fp = @fsockopen($host, $port, $errno, $errstr, $timeout);
+    if (!$fp) return false;
+    fclose($fp);
+    return true;
+}
+
+/**
+ * Live probe a SHOUTcast v2 DNAS via /stats?sid=1
+ */
+function radio_probe_shoutcast_v2(stdClass $stream, int $port): array
+{
+    $xml = radio_http_get("http://127.0.0.1:{$port}/stats?sid=1");
+    if ($xml === '') return [];
+    $stats = @simplexml_load_string($xml);
+    if (!$stats) return [];
+    return [
+        'status' => ((int)($stats->STREAMSTATUS ?? 0)) === 1,
+        'server_up' => true,
+        'listeners' => (int)($stats->CURRENTLISTENERS ?? 0),
+        'peak' => (int)($stats->PEAKLISTENERS ?? 0),
+        'bitrate' => (int)($stats->BITRATE ?? 0),
+        'song' => (string)($stats->SONGTITLE ?? ''),
+        'uptime' => (string)($stats->SERVERUPTIME ?? ''),
+    ];
+}
+
+/**
+ * Live probe a SHOUTcast v1 DNAS via its index page + admin.cgi stats.
+ */
+function radio_probe_shoutcast_v1(stdClass $stream, int $port): array
+{
+    if (!radio_port_open('127.0.0.1', $port)) return [];
+    $html = radio_http_get("http://127.0.0.1:{$port}/index.html");
+    if ($html === '') return [];
+    $out = ['status' => false, 'server_up' => true, 'listeners' => 0, 'peak' => 0, 'bitrate' => (int)($stream->bitrate ?? 128), 'song' => '', 'uptime' => ''];
+    // v1 index page shows "Stream is up at ... kb/s with N listener(s)" or "Server is currently down"
+    if (preg_match('/Stream is up/i', $html)) $out['status'] = true;
+    if (preg_match('/with (\d+) listener/i', $html, $m)) $out['listeners'] = (int)$m[1];
+    if (preg_match('/Current Song:\s*([^<]+)/i', $html, $m)) $out['song'] = trim($m[1]);
+    if (preg_match('/Stream is up at (\d+) kbps/i', $html, $m)) $out['bitrate'] = (int)$m[1];
+    // If v2-style /stats also works (hybrid), prefer it
+    $v2 = radio_probe_shoutcast_v2($stream, $port);
+    if (!empty($v2)) return $v2 + ['server_up' => true];
+    return $out;
+}
+
+/**
+ * Live probe Icecast via status-json.xsl, matching the station's mount.
+ */
+function radio_probe_icecast(stdClass $stream, int $port): array
+{
+    $json = radio_http_get("http://127.0.0.1:{$port}/status-json.xsl");
+    if ($json === '') return [];
+    $data = json_decode($json, true);
+    if (!is_array($data)) return [];
     $mount = $stream->mount_point ?? '/live';
     if (!str_starts_with($mount, '/')) $mount = "/{$mount}";
-    $url = "http://planet-hosts.com:{$port}/status-json.xsl";
-    $json = @file_get_contents($url, false, stream_context_create(['http'=>['timeout'=>3]]));
-    if (!$json) return $d;
-    $data = json_decode($json, true);
-    if (!$data) return $d;
-    $source = $data['icestats']['source'] ?? [];
-    if (isset($source[0])) {
-        foreach ($source as $src) {
-            if (($src['mount'] ?? '') === $mount) { $source = $src; break; }
+    $src = $data['icestats']['source'] ?? [];
+    $found = null;
+    if (isset($src[0])) {
+        foreach ($src as $s) {
+            if (($s['mount'] ?? '') === $mount) { $found = $s; break; }
         }
-        if (isset($source[0])) $source = $source[0];
+    } elseif (isset($src['mount']) && $src['mount'] === $mount) {
+        $found = $src;
     }
-    $d['listeners'] = (int)($source['listeners'] ?? $d['listeners']);
-    $d['peak'] = (int)($source['listener_peak'] ?? $d['peak']);
-    $d['bitrate'] = (int)($source['bitrate'] ?? $d['bitrate']);
-    $d['song'] = $source['title'] ?? $d['song'];
-    $d['artist'] = $source['artist'] ?? $d['artist'];
-    $d['status'] = true;
-    $d['uptime'] = $source['stream_start'] ?? $d['uptime'];
-    return $d;
+    if (!$found) return ['status' => false, 'server_up' => true, 'listeners' => 0, 'peak' => 0, 'bitrate' => (int)($stream->bitrate ?? 128), 'song' => '', 'uptime' => ''];
+    return [
+        'status' => true,
+        'server_up' => true,
+        'listeners' => (int)($found['listeners'] ?? 0),
+        'peak' => (int)($found['listener_peak'] ?? 0),
+        'bitrate' => (int)($found['bitrate'] ?? $stream->bitrate ?? 128),
+        'song' => (string)($found['title'] ?? ''),
+        'uptime' => (string)($found['stream_start_extended'] ?? $found['stream_start'] ?? ''),
+    ];
 }
 
-function radio_fetch_shoutcast_stats(stdClass $stream, array $d): array
+function radio_fetch_stats(stdClass $stream): array
 {
-    $port = (int)($stream->port ?? 8000);
-    $url = "http://planet-hosts.com:{$port}/stats?sid=1";
-    $xml = @file_get_contents($url, false, stream_context_create(['http'=>['timeout'=>3]]));
-    if (!$xml) return $d;
-    $stats = simplexml_load_string($xml);
-    if (!$stats) return $d;
-    $d['listeners'] = (int)($stats->CURRENTLISTENERS ?? $d['listeners']);
-    $d['peak'] = (int)($stats->PEAKLISTENERS ?? $d['peak']);
-    $d['bitrate'] = (int)($stats->BITRATE ?? $d['bitrate']);
-    $d['song'] = (string)$stats->SONGTITLE ?: $d['song'];
-    $d['status'] = true;
-    $d['uptime'] = (string)($stats->SERVERUPTIME ?? $d['uptime']);
-    if ($d['song'] && !$d['artist']) {
-        $parts = explode(' - ', $d['song'], 2);
-        if (count($parts) === 2) { $d['artist'] = trim($parts[0]); $d['song'] = trim($parts[1]); }
+    $default = radio_stats_defaults($stream);
+    // Suspended stations are never online
+    if (($stream->status ?? '') === 'suspended') return $default;
+
+    $port = radio_stream_port($stream);
+    try {
+        if (radio_is_icecast($stream)) {
+            $probe = radio_probe_icecast($stream, $port);
+        } else {
+            $type = strtolower($stream->server_type ?? '');
+            $probe = $type === 'shoutcast1'
+                ? radio_probe_shoutcast_v1($stream, $port)
+                : radio_probe_shoutcast_v2($stream, $port);
+        }
+    } catch (\Throwable $e) {
+        $probe = [];
     }
-    return $d;
+
+    if (empty($probe)) {
+        // Probe failed entirely — fall back to a TCP port check
+        $default['status'] = radio_port_open('127.0.0.1', $port);
+        return $default;
+    }
+
+    $default['status'] = (bool)($probe['status'] ?? false) || ($probe['server_up'] ?? false);
+    foreach (['listeners', 'peak', 'bitrate', 'uptime'] as $k) {
+        if (isset($probe[$k]) && $probe[$k] !== '' && $probe[$k] !== null) $default[$k] = $probe[$k];
+    }
+    if (!empty($probe['song'])) {
+        $default['song'] = $probe['song'];
+        $default['artist'] = $stream->current_artist ?? '';
+        if ($default['artist'] === '' && strpos($probe['song'], ' - ') !== false) {
+            $parts = explode(' - ', $probe['song'], 2);
+            $default['artist'] = trim($parts[0]);
+            $default['song'] = trim($parts[1]);
+        }
+    }
+    return $default;
 }
 
 function radio_embed_html(string $jsCode, string $iframeCode, string $type = 'js'): string
@@ -147,5 +246,5 @@ function radio_embed_html(string $jsCode, string $iframeCode, string $type = 'js
 
 function radio_host(): string
 {
-    return 'https://planet-hosts.com';
+    return site_base_url();
 }
