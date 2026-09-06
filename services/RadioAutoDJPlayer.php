@@ -73,7 +73,12 @@ class RadioAutoDJPlayer
             $url = "icecast://source:{$password}@127.0.0.1:{$port}{$mount}";
             // NOTE: no -re — with -f concat + -stream_loop, -re stalls source registration on icecast.
             // Without -re, icecast backpressure paces reads at realtime.
-            $ff = "ffmpeg -stream_loop -1 -f concat -safe 0 -i " . escapeshellarg($playlistPath)
+            // -nostats -loglevel quiet keeps the log empty: ffmpeg otherwise
+            // floods "non monotonically increasing dts / Estimating duration
+            // from bitrate" messages (logged at ERROR level in ffmpeg 5.1) on
+            // every -stream_loop boundary, which ballooned autodj_14.log to 27GB.
+            $ff = "ffmpeg -nostats -loglevel quiet -stream_loop -1 -f concat -safe 0 -i "
+                . escapeshellarg($playlistPath)
                 . " -vn -c:a libmp3lame -b:a {$bitrate}k -f mp3 " . escapeshellarg($url);
             // Retry wrapper: if ffmpeg dies (e.g. icecast mount still in use from a just-disconnected
             // DJ), wait and relaunch up to 10 times before giving up.
@@ -81,7 +86,15 @@ class RadioAutoDJPlayer
             file_put_contents($retryScript,
                 "#!/bin/bash\n"
                 . "trap 'kill -9 \$ffpid 2>/dev/null; exit 0' TERM INT\n"
+                . "# truncate log on each start so it can never accumulate unbounded\n"
+                . ": > " . escapeshellarg($logPath) . "\n"
+                . "sleep 1\n"
                 . "for i in \$(seq 1 10); do\n"
+                . "  # hard cap: if ffmpeg ever logs excessively, trim the log before each retry\n"
+                . "  if [ -f " . escapeshellarg($logPath) . " ]; then\n"
+                . "    sz=\$(stat -c%s " . escapeshellarg($logPath) . " 2>/dev/null || echo 0)\n"
+                . "    [ \"\$sz\" -gt 10485760 ] && : > " . escapeshellarg($logPath) . "\n"
+                . "  fi\n"
                 . "  {$ff} >> " . escapeshellarg($logPath) . " 2>&1 &\n"
                 . "  ffpid=\$!\n"
                 . "  wait \$ffpid\n"
