@@ -42,7 +42,7 @@ if (!function_exists('env') && file_exists(dirname(__DIR__) . '/core/helpers.php
 
 if (!function_exists('db_user')) {
     /** @return string app database user (radiouser by default) */
-    function \db_user()
+    function db_user()
     {
         return env('DB_USERNAME', 'radiouser');
     }
@@ -50,7 +50,7 @@ if (!function_exists('db_user')) {
 
 if (!function_exists('db_pass')) {
     /** @return string app database password */
-    function \db_pass()
+    function db_pass()
     {
         return env('DB_PASSWORD', '');
     }
@@ -58,7 +58,7 @@ if (!function_exists('db_pass')) {
 
 if (!function_exists('db_root_user')) {
     /** @return string MySQL root user */
-    function \db_root_user()
+    function db_root_user()
     {
         return env('DB_ROOT_USERNAME', 'root');
     }
@@ -66,7 +66,7 @@ if (!function_exists('db_root_user')) {
 
 if (!function_exists('db_root_pass')) {
     /** @return string MySQL root password */
-    function \db_root_pass()
+    function db_root_pass()
     {
         return env('DB_ROOT_PASSWORD', env('DB_PASSWORD', ''));
     }
