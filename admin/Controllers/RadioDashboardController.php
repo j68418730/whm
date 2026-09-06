@@ -67,7 +67,7 @@ class RadioDashboardController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','Skylinehosting171');
+        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4',\db_user(), \db_pass());
         $downloads = $pdo->query("SELECT rd.*, ss.name AS station_name FROM radio_downloads rd LEFT JOIN streaming_stations ss ON ss.id=rd.station_id ORDER BY rd.created_at DESC")->fetchAll(\PDO::FETCH_OBJ);
         return $this->view('admin.radio_dashboard.downloads', [
             'user' => $user, 'downloads' => $downloads,
@@ -79,7 +79,7 @@ class RadioDashboardController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','Skylinehosting171');
+        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4',\db_user(), \db_pass());
         
         if ($_POST && isset($_FILES['file'])) {
             $name = trim($_POST['name'] ?? pathinfo($_FILES['file']['name'], PATHINFO_FILENAME));
@@ -108,7 +108,7 @@ class RadioDashboardController extends Controller
     public function deleteDownload($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','Skylinehosting171');
+        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4',\db_user(), \db_pass());
         $dl = $pdo->prepare("SELECT * FROM radio_downloads WHERE id=?")->execute([$id]);
         // Use a direct delete
         $pdo->prepare("DELETE FROM radio_downloads WHERE id=?")->execute([$id]);
@@ -118,7 +118,7 @@ class RadioDashboardController extends Controller
 
     public function serveDownload($id)
     {
-        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','Skylinehosting171');
+        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4',\db_user(), \db_pass());
         $dl = $pdo->prepare("SELECT * FROM radio_downloads WHERE id=?");
         $dl->execute([$id]);
         $d = $dl->fetch(\PDO::FETCH_OBJ);
@@ -139,7 +139,7 @@ class RadioDashboardController extends Controller
         $user = $this->auth->user();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
 
-        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
         $streams = $pdo->query("SELECT id, name AS server_name, server_type, port, status, mount_point FROM streaming_stations ORDER BY id ASC")->fetchAll(\PDO::FETCH_OBJ);
 
         return $this->view('admin.radio_dashboard.widgets', [

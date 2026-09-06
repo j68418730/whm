@@ -1,8 +1,9 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 session_start();
 $error = '';
 if ($_POST) {
-    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
     $email = $_POST['email'] ?? '';
     $pass = $_POST['password'] ?? '';
     $stmt = $pdo->prepare("SELECT * FROM admins WHERE email = ? OR username = ?");
@@ -45,7 +46,8 @@ p{color:#64748b;font-size:13px;margin:0 0 20px}
 <div class="login-card">
 <div class="logo"><img src="/theme/assets/img/logo.png" alt=""><h1>Reseller <span>Center</span></h1></div>
 <p>Sign in to manage your clients and billing</p>
-<?php if ($error): ?><div class="alert"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($error): ?><div class="alert"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
 <form method="POST">
 <div class="form-group"><label>Email</label><input name="email" required placeholder="admin@planet-hosts.com"></div>
 <div class="form-group"><label>Password</label><input name="password" type="password" required></div>

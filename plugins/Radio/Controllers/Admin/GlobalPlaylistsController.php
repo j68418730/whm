@@ -91,6 +91,19 @@ class GlobalPlaylistsController extends Controller
         foreach ((array)$source['name'] as $i => $name) {
             if ($source['error'][$i] !== UPLOAD_ERR_OK) { $_SESSION['error_message'] = 'Upload error ' . $source['error'][$i] . ' for ' . $name; continue; }
             $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+            if ($ext === 'm3u') {
+                // Playlist text files: allow, just enforce a small size cap
+                if ((int)$source['size'][$i] > 1048576) { $_SESSION['error_message'] = 'Playlist too large (max 1MB): ' . $name; continue; }
+            } else {
+                $v = validate_music_upload([
+                    'name' => $name,
+                    'tmp_name' => $source['tmp_name'][$i],
+                    'size' => $source['size'][$i],
+                    'error' => $source['error'][$i],
+                ]);
+                if (!$v['ok']) { $_SESSION['error_message'] = $v['error'] . ' (' . $name . ')'; continue; }
+                $ext = $v['ext'];
+            }
             if (in_array($ext, ['mp3', 'aac', 'ogg', 'flac', 'wav', 'm4a', 'm3u'])) {
                 $dest = $dir . '/' . basename($name);
                 if (file_exists($dest)) continue;

@@ -1,9 +1,10 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 header('Content-Type: application/javascript');
 header('Access-Control-Allow-Origin: *');
 $tenantId = (int)($_GET['tenant_id'] ?? 0);
 if (!$tenantId) { echo 'console.error("Chatbox: Invalid tenant_id");'; exit; }
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 $stmt = $pdo->prepare("SELECT * FROM chatbox_tenants WHERE id = ?");
 $stmt->execute([$tenantId]);
 $tenant = $stmt->fetch(PDO::FETCH_OBJ);

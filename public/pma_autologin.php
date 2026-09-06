@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 /**
  * phpMyAdmin Auto-Login for Planet-Hosts
  * Users get read-only access to their own database only.
@@ -7,12 +8,12 @@
 session_start();
 
 $isAdmin = !empty($_SESSION['is_admin']);
-$dbUser = 'radiouser';
-$dbPass = 'Skylinehosting171';
+$dbUser = \db_user();
+$dbPass = \db_pass();
 
 if ($isAdmin) {
-    $dbUser = 'root';
-    $dbPass = 'Skylinehosting171';
+    $dbUser = \db_root_user();
+    $dbPass = \db_root_pass();
 } else {
     // For regular users, find their specific database and create a scoped user
     $user = $_SESSION['user'] ?? null;
@@ -21,7 +22,7 @@ if ($isAdmin) {
     $uid = is_object($user) ? ($user->id ?? 0) : ($user['id'] ?? 0);
 
     try {
-        $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+        $pdo = db_pdo();
         // Find hosting user
         $stmt = $pdo->prepare("SELECT id, username FROM hosting_users WHERE id = ? OR email = ? OR username = ? LIMIT 1");
         $stmt->execute([$uid, $email, $uname]);
@@ -46,14 +47,14 @@ if ($isAdmin) {
                 $dbPass = bin2hex(random_bytes(12));
                 // Create a dedicated PMA user with SELECT access only to this DB
                 try {
-                    $rootPdo = new PDO('mysql:host=localhost;charset=utf8mb4', 'root', 'Skylinehosting171');
+                    $rootPdo = db_root_pdo();
                     $rootPdo->exec("CREATE USER IF NOT EXISTS '{$dbUser}'@'localhost' IDENTIFIED BY " . $rootPdo->quote($dbPass));
                     $rootPdo->exec("GRANT SELECT, SHOW VIEW, PROCESS ON `{$userDb}`.* TO '{$dbUser}'@'localhost'");
                     $rootPdo->exec("FLUSH PRIVILEGES");
                 } catch (\Exception $e) {
                     // Fallback to radiouser if can't create scoped user
-                    $dbUser = 'radiouser';
-                    $dbPass = 'Skylinehosting171';
+                    $dbUser = \db_user();
+                    $dbPass = \db_pass();
                 }
             }
         }

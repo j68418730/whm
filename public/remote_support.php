@@ -1,9 +1,10 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 $chatId = (int)($_GET['chat_id'] ?? 0);
 $json = (int)($_GET['json'] ?? 0);
 $verify = $_GET['verify'] ?? '';
 $code = $_GET['code'] ?? '';
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
 // ─── OTP Verification ───
 if ($verify && $code && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -113,9 +114,11 @@ p{color:#64748b;font-size:14px;margin:0 0 20px}
 <div class="card">
 <h1>PLANET-<span>HOSTS</span></h1>
 <p>Remote support session generated.</p>
-<?php if (!empty($sent)): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if (!empty($sent)): ?>
 <div class="success">✅ Link + OTP sent directly to the chat!</div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 <div style="font-size:12px;color:#64748b;margin-bottom:4px">Session Link</div>
 <div class="code-box"><?php echo htmlspecialchars($supportUrl); ?></div>
 <div style="font-size:12px;color:#64748b;margin-bottom:4px">One-Time Password (expires in 15 min)</div>

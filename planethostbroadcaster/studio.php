@@ -1,6 +1,7 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 session_start();
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 $djUser = $_SESSION['dj_user'] ?? null;
 if (!$djUser) { header('Location: /dj_panel.php'); exit; }
 
@@ -83,13 +84,16 @@ body{font-family:Inter,sans-serif;background:#070b14;color:#e0e0e0;height:100vh;
 <div class="sidebar">
 <div class="lib">
 <div class="plh">Library</div>
-<?php foreach ($playlists as $pl): 
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; foreach ($playlists as $pl): 
 $items = $pdo->prepare("SELECT * FROM radio_playlist_items WHERE playlist_id=? ORDER BY id");
 $items->execute([$pl->id]); ?>
 <div class="plh" style="font-size:11px;color:#e0e0e0;text-transform:none;letter-spacing:0"><?php echo htmlspecialchars($pl->name); ?></div>
-<?php while ($item = $items->fetch(PDO::FETCH_OBJ)): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; while ($item = $items->fetch(PDO::FETCH_OBJ)): ?>
 <div class="trk" onclick="loadTrack('<?php echo htmlspecialchars($item->title ?: basename($item->file_path)); ?>','<?php echo htmlspecialchars($item->artist); ?>')">♪ <?php echo htmlspecialchars($item->title ?: basename($item->file_path)); ?></div>
-<?php endwhile; endforeach; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endwhile; endforeach; ?>
 </div>
 </div>
 <div class="cont">

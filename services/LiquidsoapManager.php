@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 /**
  * Liquidsoap Manager — Seamless AutoDJ ↔ Live DJ source switching
  *
@@ -19,8 +20,7 @@ class LiquidsoapManager
     {
         $this->pdo = new PDO(
             'mysql:host=localhost;dbname=radiohosting;charset=utf8mb4',
-            'radiouser',
-            'Skylinehosting171',
+            \db_user(), \db_pass(),
             [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
         );
         @mkdir($this->scriptsDir, 0755, true);

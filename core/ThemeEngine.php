@@ -116,7 +116,7 @@ class ThemeEngine
     protected function getSetting($key, $default = '')
     {
         try {
-            $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+            $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
             $q = $pdo->prepare("SELECT setting_value FROM automation_settings WHERE setting_key = ?");
             $q->execute([$key]);
             return $q->fetchColumn() ?: $default;
@@ -126,7 +126,7 @@ class ThemeEngine
     protected function setSetting($key, $value)
     {
         try {
-            $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+            $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
             $pdo->prepare("INSERT INTO automation_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)")
                 ->execute([$key, $value]);
         } catch (\Exception $e) {}

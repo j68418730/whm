@@ -21,7 +21,7 @@ class DjSourceRelay
     {
         $this->streamId = (int)$streamId;
         try {
-            $this->db = new \PDO("mysql:host=localhost;dbname=radiohosting","radiouser","Skylinehosting171");
+            $this->db = new \PDO("mysql:host=localhost;dbname=radiohosting",\db_user(), \db_pass());
         } catch (\Exception $e) {}
     }
 

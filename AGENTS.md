@@ -10,13 +10,16 @@ After every commit/push, automatically deploy to the live server:
 6. Update `K:\site_del\Masterinstall` with `git pull origin master`
 
 ## Server Info
+> **Credentials are NOT stored in this file or this repo.** They live on the
+> live server in `db_creds.sh` (mode 600) and in the app `.env` (gitignored).
+> Fetch them at deploy time; never commit them.
 - **IP:** 15.204.114.226
-- **SSH User:** debian / Skylinehosting171
+- **SSH User:** debian (see local `$env:SSH_ASKPASS` / keychain)
 - **Panel URL:** http://15.204.114.226:2087/
-- **Admin Login:** root / vps-535ec74e-J2X9on8
-- **DB (radiouser):** Skylinehosting171
-- **MySQL root:** Skylinehosting171
-- **phpMyAdmin:** http://15.204.114.226/phpmyadmin/ (root / Skylinehosting171)
+- **Admin Login:** root (see `.env`/server vault)
+- **DB (radiouser):** see `db_creds.sh` / `.env`
+- **MySQL root:** see `db_creds.sh` / `.env`
+- **phpMyAdmin:** http://15.204.114.226/phpmyadmin/
 - **Webmail:** http://15.204.114.226:2096/
 - **nginx:** http://15.204.114.226:8080/ (reverse proxy)
 

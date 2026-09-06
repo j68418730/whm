@@ -14,12 +14,14 @@
 <p style="color:#64748b;margin-bottom:14px;font-size:12px">Choose a service to add to your account.</p>
 
 <?php
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+require_once __DIR__ . '/../../core/ServerCreds.php';
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 $packages = $pdo->query("SELECT hp.*, COALESCE(bp.price, hp.monthly_price) as price, bp.setup_fee as bp_setup_fee FROM hosting_packages hp LEFT JOIN billing_products bp ON hp.id = bp.package_id AND bp.is_active = 1 WHERE hp.is_active = 1 ORDER BY hp.sort_order, COALESCE(bp.price, hp.monthly_price)")->fetchAll(PDO::FETCH_OBJ);
 $categories = ['web_hosting' => ['🌐','Web Hosting'], 'icecast' => ['📻','Radio Streaming'], 'game' => ['🎮','Game Servers'], 'builder' => ['🏗️','Website Builder'], 'chat' => ['💬','Chat']];
 ?>
 
-<?php foreach ($packages as $pkg):
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; foreach ($packages as $pkg):
 $type = $pkg->type ?? 'web_hosting';
 $cat = $categories[$type] ?? $categories['web_hosting'];
 $features = [];
@@ -38,10 +40,12 @@ $price = $pkg->price > 0 ? '$'.number_format($pkg->price,2) : 'Free';
 <div class="icon"><?php echo $cat[0]; ?></div>
 <div class="name"><?php echo htmlspecialchars($pkg->name); ?></div>
 <div class="price"><?php echo $price; ?><small>/mo</small></div>
-<?php if ($features): ?><div class="features"><?php echo implode(' • ', $features); ?></div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; if ($features): ?><div class="features"><?php echo implode(' • ', $features); ?></div><?php endif; ?>
 <a href="#" class="btn-order" onclick="return alert('Order submitted! In production, this would create an invoice.')">Order Now</a>
 </div>
-<?php endforeach; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; endforeach; ?>
 
 <div style="text-align:center;margin-top:16px">
 <a href="/user/services" class="btn btn-sm btn-secondary">← Back to Services</a>

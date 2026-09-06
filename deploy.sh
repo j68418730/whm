@@ -14,13 +14,17 @@
 #
 set -uo pipefail
 
+for _c in "$(dirname "$0")/db_creds.sh" "$(dirname "$0")/../db_creds.sh" /usr/local/planet-hosts/db_creds.sh; do
+    [ -f "$_c" ] && { source "$_c"; break; }
+done
+
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MIG_DIR="$APP_DIR/database/migrations"
 
 DB_HOST="${DB_HOST:-localhost}"
 DB_NAME="${DB_NAME:-radiohosting}"
-DB_USER="${DB_USER:-root}"
-DB_PASS="${DB_PASS:-Skylinehosting171}"
+DB_USER="${DB_USER:-${DB_ROOT_USER:-root}}"
+DB_PASS="${DB_PASS:-${DB_ROOT_PASS:-}}"
 
 if ! command -v mysql >/dev/null 2>&1; then
     echo "ERROR: 'mysql' client not found in PATH." >&2

@@ -1,11 +1,12 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 /**
  * Public DJ Page — DJ Name, Banner, Bio, Song Request Form
  */
 $username = $_GET['u'] ?? $_SERVER['DJ_USERNAME'] ?? '';
 if (!$username) { http_response_code(404); exit; }
 
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4',\db_user(), \db_pass());
 $dj = $pdo->prepare("SELECT rd.*, ss.name AS station_name, ss.id AS station_id FROM radio_djs rd JOIN streaming_stations ss ON ss.id=rd.stream_id WHERE rd.username=? AND rd.status='active' LIMIT 1");
 $dj->execute([$username]);
 $dj = $dj->fetch(PDO::FETCH_OBJ);
@@ -21,7 +22,8 @@ $profileData = $dj->profile_data ? json_decode($dj->profile_data, true) : [];
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:Inter,sans-serif;background:#02050e;color:#e2e8f0;min-height:100vh}
 .bg{position:fixed;inset:0;background:linear-gradient(145deg,rgba(2,8,23,.92),rgba(15,23,42,.98));z-index:-2}
-<?php if ($dj->banner): ?>.banner{width:100%;height:280px;background:url('/<?=htmlspecialchars($dj->banner)?>') center/cover;position:relative}
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($dj->banner): ?>.banner{width:100%;height:280px;background:url('/<?=htmlspecialchars($dj->banner)?>') center/cover;position:relative}
 .banner::after{content:'';position:absolute;inset:0;background:linear-gradient(transparent 40%,#02050e)}<?php endif; ?>
 .container{max-width:600px;margin:0 auto;padding:24px}
 .avatar{width:100px;height:100px;border-radius:50%;border:3px solid rgba(56,189,248,.2);object-fit:cover;margin:-60px auto 16px;display:block;background:rgba(15,23,42,.8)}
@@ -47,15 +49,19 @@ footer{text-align:center;padding:20px;font-size:11px;color:#475569}
 </style>
 </head><body>
 <div class="bg"></div>
-<?php if ($dj->banner): ?><div class="banner"></div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($dj->banner): ?><div class="banner"></div><?php endif; ?>
 <div class="container">
-<?php if ($dj->avatar): ?><img src="/<?=htmlspecialchars($dj->avatar)?>" class="avatar"><?php else: ?><div class="avatar-placeholder"><?=strtoupper(substr($dj->name?:$dj->username,0,1))?></div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($dj->avatar): ?><img src="/<?=htmlspecialchars($dj->avatar)?>" class="avatar"><?php else: ?><div class="avatar-placeholder"><?=strtoupper(substr($dj->name?:$dj->username,0,1))?></div><?php endif; ?>
 <h1><?=htmlspecialchars($dj->name ?: $dj->username)?></h1>
 <div class="station">🎵 <?=htmlspecialchars($dj->station_name)?></div>
 
-<?php if ($dj->bio): ?><div class="bio"><?=nl2br(htmlspecialchars($dj->bio))?></div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($dj->bio): ?><div class="bio"><?=nl2br(htmlspecialchars($dj->bio))?></div><?php endif; ?>
 
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 $socialLinks = [];
 foreach (['website_url'=>'🌐 Website','facebook'=>'📘 Facebook','instagram'=>'📷 Instagram','twitter'=>'🐦 X','youtube'=>'▶️ YouTube','soundcloud'=>'🎵 SoundCloud','mixcloud'=>'☁️ Mixcloud'] as $k=>$l) {
     $v = $profileData[$k] ?? ($dj->$k ?? '');

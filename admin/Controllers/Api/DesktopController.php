@@ -504,6 +504,27 @@ class DesktopController extends Controller
 
     // ─────────────── Knowledge Base ───────────────
 
+    private function kbArticleMap($row)
+    {
+        $catName = null;
+        if (!empty($row->category_id)) {
+            $cat = $this->db->table('kb_categories')->where('id', (int)$row->category_id)->first();
+            $catName = $cat->name ?? null;
+        }
+        return [
+            'id' => (int)$row->id,
+            'category_id' => !empty($row->category_id) ? (int)$row->category_id : null,
+            'category_name' => $catName,
+            'title' => $row->title ?? '',
+            'slug' => $row->slug ?? '',
+            'content' => $row->content ?? null,
+            'views' => (int)($row->views ?? 0),
+            'is_published' => (bool)($row->is_published ?? false),
+            'created_at' => $row->created_at ?? '',
+            'updated_at' => $row->updated_at ?? null,
+        ];
+    }
+
     public function kbCategories()
     {
         $this->apiKeyAuth();
@@ -511,9 +532,15 @@ class DesktopController extends Controller
         $cats = $pdo->query("SELECT * FROM kb_categories ORDER BY name ASC")->fetchAll(\PDO::FETCH_OBJ);
         $result = [];
         foreach ($cats as $c) {
-            $stm = $pdo->prepare("SELECT COUNT(*) FROM kb_articles WHERE category_id = ?");
+            $stm = $pdo->prepare("SELECT COUNT(*) FROM kb_articles WHERE category_id = ? AND is_published = 1");
             $stm->execute([$c->id]);
-            $result[] = ['id' => (int)$c->id, 'name' => $c->name ?? '', 'article_count' => (int)$stm->fetchColumn()];
+            $result[] = [
+                'id' => (int)$c->id,
+                'name' => $c->name ?? '',
+                'slug' => $c->slug ?? '',
+                'description' => $c->description ?? null,
+                'article_count' => (int)$stm->fetchColumn(),
+            ];
         }
         $this->json(['success' => true, 'data' => $result]);
     }
@@ -523,13 +550,16 @@ class DesktopController extends Controller
         $this->apiKeyAuth();
         $catId = $this->request->query('category_id', '');
         $pdo = $this->pdo();
+        $rows = [];
         if (!empty($catId)) {
             $stm = $pdo->prepare("SELECT * FROM kb_articles WHERE category_id = ? ORDER BY title ASC");
             $stm->execute([(int)$catId]);
+            $rows = $stm->fetchAll(\PDO::FETCH_OBJ);
         } else {
-            $stm = $pdo->query("SELECT * FROM kb_articles ORDER BY title ASC");
+            $rows = $pdo->query("SELECT * FROM kb_articles ORDER BY title ASC")->fetchAll(\PDO::FETCH_OBJ);
         }
-        $this->json(['success' => true, 'data' => $stm->fetchAll(\PDO::FETCH_OBJ)]);
+        $result = array_map(fn($r) => $this->kbArticleMap($r), $rows);
+        $this->json(['success' => true, 'data' => $result]);
     }
 
     public function getKbArticle($id)
@@ -537,7 +567,7 @@ class DesktopController extends Controller
         $this->apiKeyAuth();
         $a = $this->db->table('kb_articles')->where('id', (int)$id)->first();
         if (!$a) $this->json(['success' => false, 'error' => 'Article not found'], 404);
-        $this->json(['success' => true, 'data' => $a]);
+        $this->json(['success' => true, 'data' => $this->kbArticleMap($a)]);
     }
 
     public function cannedResponses()

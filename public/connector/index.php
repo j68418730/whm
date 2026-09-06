@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 require_once __DIR__ . '/../security_guard.php';
 // Service inferred per endpoint below (radio/requests/api)
 security_guard_run(preg_match('#/requests$#', $_SERVER['REQUEST_URI'] ?? '') ? 'requests' : 'radio');
@@ -8,7 +9,7 @@ security_guard_run(preg_match('#/requests$#', $_SERVER['REQUEST_URI'] ?? '') ? '
  */
 header('Content-Type: application/json');
 
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
 // Resolve a station identifier from the URL path — accepts a numeric ID (12)
 // OR a URL-safe station name slug (e.g. "Test-Plans-uce"). Returns station id or 0.
@@ -158,6 +159,12 @@ if (preg_match('#^/connector/station/([^/]+)/upload$#', $uriPath, $m)) {
     
     $dir = "/home/planethosts/radio/musicdatabase/playlist_{$stationId}";
     if (!is_dir($dir)) @mkdir($dir, 0755, true);
+    
+    $v = validate_music_upload($file);
+    if (!$v['ok']) {
+        echo json_encode(['success' => false, 'error' => $v['error']]);
+        exit;
+    }
     
     $dest = $dir . '/' . basename($file['name']);
     move_uploaded_file($file['tmp_name'], $dest);

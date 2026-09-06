@@ -7,7 +7,7 @@ class GameServerManager
 
     public function __construct()
     {
-        $this->pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+        $this->pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
     }
 
     public function install($userId, $serverName, $appId = 0, $port = 27015, $maxPlayers = 16)
@@ -41,7 +41,7 @@ class GameServerManager
         $serverId = $this->pdo->lastInsertId();
 
         $steamUser = env('STEAM_USERNAME', 'planet_hosts_dev');
-        $steamPass = env('STEAM_PASS', 'Skylinehosting171');
+        $steamPass = env('STEAM_PASS', '');
         $script = "#!/bin/bash\ncd {$installDir}\nexport HOME=/home/{$username}\n";
         if ($appId > 0) {
             $script .= "steamcmd +login {$steamUser} {$steamPass} +app_update {$appId} +quit\n";

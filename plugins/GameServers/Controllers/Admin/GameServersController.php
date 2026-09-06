@@ -116,7 +116,7 @@ class GameServersController extends Controller
             @mkdir($installDir, 0755, true);
             if ($appId) {
                 $_SESSION['success_message'] = "Server '{$name}' created. Installing via SteamCMD (App {$appId}) on port {$port}.";
-                exec("cd {$installDir} && nohup steamcmd +login planet_hosts_dev Skylinehosting171 +force_install_dir {$installDir} +app_update {$appId} validate +quit > {$installDir}/install.log 2>&1 &");
+                exec("cd {$installDir} && nohup steamcmd +login planet_hosts_dev " . \env('STEAM_PASS', '') . " +force_install_dir {$installDir} +app_update {$appId} validate +quit > {$installDir}/install.log 2>&1 &");
             } else {
                 $_SESSION['success_message'] = "Server '{$name}' created on port {$port} with no Steam App ID.";
             }

@@ -4,9 +4,13 @@
 # Checks all active accounts and generates alerts
 set -eo pipefail
 
+for _c in "$(dirname "$0")/db_creds.sh" "$(dirname "$0")/../db_creds.sh" /usr/local/planet-hosts/db_creds.sh; do
+    [ -f "$_c" ] && { source "$_c"; break; }
+done
+
 LOGDIR="/var/log/radiohosting/monitor"
 ALERT_FILE="${LOGDIR}/alerts.json"
-MYSQL="mysql -u root -pSkylinehosting171"
+MYSQL="mysql -u ${DB_ROOT_USER:-root} -p${DB_ROOT_PASS}"
 NOW=$(date '+%Y-%m-%d %H:%M:%S')
 TIMESTAMP=$(date +%s)
 

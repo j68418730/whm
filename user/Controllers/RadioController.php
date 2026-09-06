@@ -599,6 +599,18 @@ class RadioController extends Controller
             foreach ((array)$source['name'] as $i => $name) {
                 if ($source['error'][$i] !== UPLOAD_ERR_OK) continue;
                 $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                if ($ext === 'm3u') {
+                    if ((int)$source['size'][$i] > 1048576) { $_SESSION['error'] = 'Playlist too large (max 1MB): ' . $name; continue; }
+                } else {
+                    $v = validate_music_upload([
+                        'name' => $name,
+                        'tmp_name' => $source['tmp_name'][$i],
+                        'size' => $source['size'][$i],
+                        'error' => $source['error'][$i],
+                    ]);
+                    if (!$v['ok']) { $_SESSION['error'] = $v['error'] . ' (' . $name . ')'; continue; }
+                    $ext = $v['ext'];
+                }
                 if (in_array($ext, ['mp3', 'aac', 'ogg', 'flac', 'wav', 'm4a', 'm3u'])) {
                     $dest = $dir . '/' . basename($name);
                     if (file_exists($dest)) { $dupes++; continue; }

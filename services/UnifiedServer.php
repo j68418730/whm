@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 /**
  * Planet Hosts Unified Streaming Server
  * Protocol Detection → Auth → Relay Engine
@@ -15,7 +16,7 @@ $streamId = isset($argv[1]) ? (int)$argv[1] : 4;
 $logLevel = 3; // 0=errors, 1=connect/disconnect, 2=auth, 3=full debug
 
 // ─── DB ───
-$pdo = new PDO("mysql:host=localhost;dbname=radiohosting","radiouser","Skylinehosting171");
+$pdo = new PDO("mysql:host=localhost;dbname=radiohosting",\db_user(), \db_pass());
 $st = $pdo->query("SELECT * FROM streaming_stations WHERE id=" . $streamId)->fetch(PDO::FETCH_OBJ);
 if (!$st) { die("Stream $streamId not found\n"); }
 

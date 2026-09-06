@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 /**
  * PayPal REST API v2 helpers (OAuth client_credentials + Orders API).
  * Reads credentials from automation_settings:
@@ -13,7 +14,7 @@ function paypal_setting($key, $default = '')
     if ($cache === null) {
         $cache = [];
         try {
-            $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+            $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
             foreach ($pdo->query("SELECT setting_key, setting_value FROM automation_settings") as $row) {
                 $cache[$row['setting_key']] = $row['setting_value'];
             }

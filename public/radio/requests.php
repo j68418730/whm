@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 /**
  * Planet Hosts — Account Request Page
  * Public page: shows ALL of a hosting account's stations grouped by station
@@ -15,7 +16,7 @@ require_once __DIR__ . '/radio_helper.php';
 $username = trim($_GET['u'] ?? '');
 if (!$username) { header('Location: /'); exit; }
 
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
 // Resolve the hosting account
 $acc = $pdo->prepare("SELECT * FROM hosting_users WHERE username=? OR email=? LIMIT 1");
@@ -172,11 +173,14 @@ h1{font-size:22px;margin-bottom:4px}
 <h1>Request a Song</h1>
 <div class="desc">Pick a station below, see what the DJ is playing, and request a song. Songs already in the DJ's queue/playlist are normal — anything <span style="color:#f87171;font-weight:700">highlighted red</span> is NOT in their list, so they'll add or play it for you.</div>
 
-<?php if (empty($stations)): ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; if (empty($stations)): ?>
 <div class="empty-note">No stations on this account yet.</div>
-<?php else: ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; else: ?>
 
-<?php foreach ($stations as $st):
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; foreach ($stations as $st):
     $sid = (int)$st->id;
     $slug = station_slug($st->name ?? "Station #{$sid}", $sid);
     // Pending requests for this station (only shown in the DJ's desktop app, not here)
@@ -247,8 +251,10 @@ h1{font-size:22px;margin-bottom:4px}
     </div>
   </div>
 </div>
-<?php endforeach; ?>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; endforeach; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; endif; ?>
 </div>
 <script>
 var SONG_LISTS = <?php echo json_encode(array_map(function($st) use ($pdo) { $sid=(int)$st->id; return ['sid'=>$sid, 'list'=>station_song_list($pdo,$sid), 'current'=>station_current_song($pdo,$sid)]; }, $stations)); ?>;

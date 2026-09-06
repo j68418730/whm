@@ -909,12 +909,12 @@ chmod 600 "$PANEL_DIR/.env"
 php -r "
 \$c = file_get_contents('/etc/phpmyadmin/config.inc.php');
 \$search = \"\\\$cfg['Servers'][\\\$i]['auth_type'] = 'cookie';\";
-\$replace = \"\\\$cfg['Servers'][\\\$i]['auth_type'] = 'config';\n\\\$cfg['Servers'][\\\$i]['user'] = 'root';\n\\\$cfg['Servers'][\\\$i]['password'] = 'Skylinehosting171';\";
+\$replace = \"\\\$cfg['Servers'][\\\$i]['auth_type'] = 'config';\n\\\$cfg['Servers'][\\\$i]['user'] = 'root';\n\\\$cfg['Servers'][\\\$i]['password'] = '$DB_PASS';\";
 file_put_contents('/etc/phpmyadmin/config.inc.php', str_replace(\$search, \$replace, \$c));
 echo 'phpMyAdmin config set.\n';
 "
 
-mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'Skylinehosting171'; GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
+mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$DB_PASS'; GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
 echo $(date +%s) > "$PANEL_DIR/.installed"
 chmod 644 "$PANEL_DIR/.installed"
 

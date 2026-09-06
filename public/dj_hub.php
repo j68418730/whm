@@ -1,7 +1,8 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 // DJ V2 Hub — Scheduling, Public List, Listen Live, Messages, Apps
 session_start();
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
 $action = $_GET['action'] ?? 'list';
 

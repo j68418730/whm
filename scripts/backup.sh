@@ -4,10 +4,14 @@
 # Actions: run, restore, list
 set -eo pipefail
 
+for _c in "$(dirname "$0")/db_creds.sh" "$(dirname "$0")/../db_creds.sh" /usr/local/planet-hosts/db_creds.sh; do
+    [ -f "$_c" ] && { source "$_c"; break; }
+done
+
 ACTION="${1:-run}"
 USERNAME="$2"
 DOMAIN="$3"
-MYSQL="mysql -u root -pSkylinehosting171"
+MYSQL="mysql -u ${DB_ROOT_USER:-root} -p${DB_ROOT_PASS}"
 BACKUP_BASE="/backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 LOGDIR="/var/log/radiohosting/backup"
@@ -122,7 +126,7 @@ case "$ACTION" in
             if [ -f "$DB_BACKUP" ]; then
                 DB_NAME=$($MYSQL -N -e "SELECT database_name FROM radiohosting.hosting_users WHERE username='${USERNAME}';" 2>/dev/null || true)
                 if [ -n "$DB_NAME" ]; then
-                    gunzip -c "$DB_BACKUP" | mysql -u root -pSkylinehosting171 "$DB_NAME" 2>/dev/null
+                    gunzip -c "$DB_BACKUP" | mysql -u "${DB_ROOT_USER:-root}" -p"${DB_ROOT_PASS}" "$DB_NAME" 2>/dev/null
                     log "OK ${USERNAME}: database restored"
                 fi
             fi

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../core/ServerCreds.php';
 /**
  * Chat Control Center — ROOT ONLY
  * Super-admin overview of all chatbox tenants, their assignments, stats, and controls.
@@ -14,7 +15,7 @@ if (!$isRoot) {
     exit;
 }
 
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 $error = '';
 $success = '';
 
@@ -155,9 +156,12 @@ a{color:#38bdf8;text-decoration:none}
     </div>
 </div>
 
-<?php if ($okFlag): ?><div class="alert ok">Saved.</div><?php endif; ?>
-<?php if ($errFlag): ?><div class="alert err"><?php echo $error ?: 'Something went wrong.'; ?></div><?php endif; ?>
-<?php if ($error): ?><div class="alert err"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; if ($okFlag): ?><div class="alert ok">Saved.</div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; if ($errFlag): ?><div class="alert err"><?php echo $error ?: 'Something went wrong.'; ?></div><?php endif; ?>
+<?php
+require_once __DIR__ . '/../../core/ServerCreds.php'; if ($error): ?><div class="alert err"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
 
 <div class="stats">
     <div class="stat"><div class="v blue"><?php echo $totals->tenants; ?></div><div class="l">Tenants</div></div>

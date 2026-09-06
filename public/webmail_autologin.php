@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 session_start();
 $user = $_SESSION['user'] ?? null;
 $email = '';
@@ -11,7 +12,7 @@ if (!empty($_SESSION['webmail_password'])) $password = $_SESSION['webmail_passwo
 
 // Get domain email accounts instead
 if (!$email) {
-    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+    $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
     $uid = is_object($user) ? ($user->id ?? 0) : ($user['id'] ?? 0);
     $uname = is_object($user) ? ($user->name ?? '') : ($user['name'] ?? '');
     // Find hosting user
@@ -35,7 +36,7 @@ if (!$email) {
 // Try to get plain password for this email
 if ($email) {
     try {
-        $pwPdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+        $pwPdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
         $pwStmt = $pwPdo->prepare("SELECT password_plain FROM mail_accounts WHERE email = ? LIMIT 1");
         $pwStmt->execute([$email]);
         $pwRow = $pwStmt->fetch(PDO::FETCH_OBJ);
@@ -44,7 +45,7 @@ if ($email) {
 }
 
 // Get logo
-$pdo2 = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo2 = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 $q = $pdo2->query("SELECT setting_value FROM automation_settings WHERE setting_key='company_logo'");
 $logoRow = $q->fetch(PDO::FETCH_OBJ);
 $logo = $logoRow ? $logoRow->setting_value : '/theme/assets/img/logo.png';
@@ -69,12 +70,16 @@ body{background:#02050e;color:#fff;font-family:'Inter',sans-serif;display:flex;j
 <div class="spinner"></div>
 </div>
 <script>
-<?php if ($email && $password): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if ($email && $password): ?>
 setTimeout(function(){window.location.href='/sso_webmail.php?email=' + encodeURIComponent('<?php echo htmlspecialchars($email); ?>');}, 500);
-<?php elseif ($email): ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; elseif ($email): ?>
 setTimeout(function(){window.location.href='/sso_webmail.php?email=' + encodeURIComponent('<?php echo htmlspecialchars($email); ?>');}, 500);
-<?php else: ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; else: ?>
 setTimeout(function(){window.location.href='/snappymail/';}, 500);
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 </script>
 </body></html>

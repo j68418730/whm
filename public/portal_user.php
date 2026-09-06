@@ -1,5 +1,6 @@
 <?php
-$pdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", "radiouser", "Skylinehosting171");
+require_once __DIR__ . '/../core/ServerCreds.php';
+$pdo = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4", \db_user(), \db_pass());
 $packages = $pdo->query("SELECT hp.*, COALESCE(bp.price, hp.monthly_price) as price FROM hosting_packages hp LEFT JOIN billing_products bp ON hp.id = bp.package_id AND bp.is_active = 1 WHERE hp.is_active = 1 ORDER BY hp.type, COALESCE(bp.price, hp.monthly_price) LIMIT 20")->fetchAll(PDO::FETCH_OBJ) ?: [];
 $categories = [];
 foreach ($packages as $p) $categories[$p->type ?? "web_hosting"][] = $p;
@@ -99,8 +100,9 @@ footer{text-align:center;padding:30px 0;border-top:1px solid rgba(255,255,255,.0
 </div></div>
 
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 $cs = [];
-try { $p2 = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4","radiouser","Skylinehosting171");
+try { $p2 = new PDO("mysql:host=localhost;dbname=radiohosting;charset=utf8mb4",\db_user(), \db_pass());
 $st = $p2->query("SELECT setting_key,setting_value FROM automation_settings WHERE setting_key LIKE 'chat_image_%' OR setting_key='live_chat_enabled'");
 while ($r = $st->fetch(PDO::FETCH_OBJ)) $cs[$r->setting_key]=$r->setting_value; } catch(\Exception $e){}
 $ce = ($cs['live_chat_enabled']??'1')==='1';
@@ -109,18 +111,23 @@ if ($ce && ($oi||$ofi||$ai)): ?>
 <div style="margin:20px 0;padding:16px;background:rgba(8,16,28,.6);border:1px solid rgba(0,191,255,.08);border-radius:10px;text-align:center">
 <strong>≡ƒÆ¼ Live Chat Status</strong>
 <div style="display:flex;justify-content:center;gap:20px;margin-top:10px;font-size:13px">
-<?php if($oi):?><div><img src="/<?=htmlspecialchars($oi)?>" style="width:20px;height:20px;vertical-align:middle"> Online</div><?php endif;?>
-<?php if($ofi):?><div><img src="/<?=htmlspecialchars($ofi)?>" style="width:20px;height:20px;vertical-align:middle"> Offline</div><?php endif;?>
-<?php if($ai):?><div><img src="/<?=htmlspecialchars($ai)?>" style="width:20px;height:20px;vertical-align:middle"> Away</div><?php endif;?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if($oi):?><div><img src="/<?=htmlspecialchars($oi)?>" style="width:20px;height:20px;vertical-align:middle"> Online</div><?php endif;?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if($ofi):?><div><img src="/<?=htmlspecialchars($ofi)?>" style="width:20px;height:20px;vertical-align:middle"> Offline</div><?php endif;?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; if($ai):?><div><img src="/<?=htmlspecialchars($ai)?>" style="width:20px;height:20px;vertical-align:middle"> Away</div><?php endif;?>
 </div>
 </div>
-<?php endif; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
 
 <div id="pricing" style="margin:30px 0">
 <h2 class="sec-title">Simple Pricing</h2>
 <p class="sec-sub">Choose the plan that fits your needs. All plans include our full panel.</p>
 <div class="grid">
-<?php foreach ($packages as $pkg):
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; foreach ($packages as $pkg):
 $type = $pkg->type ?? "web_hosting";
 $catName = $hosts[$type] ?? $type;
 ?>
@@ -131,6 +138,7 @@ $catName = $hosts[$type] ?? $type;
 <div class="pr">$<?php echo number_format($pkg->price ?? $pkg->monthly_price ?? 0, 2); ?><small>/mo</small></div>
 <div class="feat">
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 if ($pkg->disk_space > 0) echo number_format($pkg->disk_space) . " MB Disk<br>";
 if ($pkg->bandwidth > 0) echo number_format($pkg->bandwidth) . " MB Bandwidth<br>";
 if ($pkg->email_accounts > 0) echo ($pkg->email_accounts < 0 ? "Unlimited" : $pkg->email_accounts) . " Emails<br>";
@@ -140,7 +148,8 @@ echo "Free SSL<br>24/7 Support";
 </div>
 <a href="/order?package=<?php echo $pkg->id; ?>" class="btn btn-primary">Order Now</a>
 </div>
-<?php endforeach; ?>
+<?php
+require_once __DIR__ . '/../core/ServerCreds.php'; endforeach; ?>
 </div></div>
 
 <div style="margin:30px 0">

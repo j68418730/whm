@@ -35,7 +35,7 @@ class AutodjController extends Controller
             exit;
         }
         $user = $this->auth->user();
-        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4','radiouser','Skylinehosting171');
+        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4',\db_user(), \db_pass());
 
         // Get all stations with AutoDJ info + owning hosting user
         $stations = $pdo->query(

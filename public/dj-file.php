@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 /**
  * DJ Asset Server — serves images from /home/{username}/radio/dj/{djname}/
  * URL: /dj-file.php?dj=spectre&file=avatar.jpg
@@ -6,7 +7,7 @@
 $dj = preg_replace('/[^a-z0-9_\-]/', '', $_GET['dj'] ?? '');
 $file = preg_replace('/[^a-z0-9_\-\.\/]/', '', $_GET['file'] ?? '');
 if (!$dj || !$file) { http_response_code(400); exit; }
-$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+$pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 $st = $pdo->prepare("SELECT ss.user_id FROM radio_djs d JOIN streaming_stations ss ON d.stream_id = ss.id WHERE d.username = ?");
 $st->execute([$dj]);
 $row = $st->fetch(PDO::FETCH_OBJ);

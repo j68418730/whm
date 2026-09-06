@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../core/ServerCreds.php';
 return [
     'key' => 'admin_todo',
     'name' => 'ToDo List',
@@ -9,7 +10,7 @@ return [
     'height' => 2,
     'render' => function($uw) {
         try {
-            $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', 'radiouser', 'Skylinehosting171');
+            $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
             $todos = $pdo->query("SELECT * FROM todos WHERE TRIM(title) <> '' ORDER BY (status='completed'), created_at DESC LIMIT 20")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         } catch (\Exception $e) {
             $todos = [];

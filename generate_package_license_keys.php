@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__ . '/core/ServerCreds.php';
 /**
  * License Key Generator for Planet Hosts Packages
  * Generates unique license keys for packages
  */
 
-$pdo = new PDO("mysql:host=127.0.0.1;dbname=radiohosting", "root", "Skylinehosting171");
+$pdo = new PDO("mysql:host=127.0.0.1;dbname=radiohosting", \db_root_user(), \db_root_pass());
 
 // Get packages that need license keys
 $packages = $pdo->query("SELECT id, name FROM hosting_packages WHERE is_active = 1 AND (product_id IS NULL OR product_id = 0) ORDER BY sort_order")->fetchAll(PDO::FETCH_ASSOC);

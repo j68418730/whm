@@ -5,8 +5,11 @@ license_private.key
 # Each installation generates its own license
 license.key
 
-# Environment file with DB credentials
+# Env file with DB credentials
 .env
+
+# Server credentials file consumed by shell ops scripts
+db_creds.sh
 
 # Runtime copy of theme in public directory
 public/theme
