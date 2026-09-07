@@ -126,8 +126,9 @@ $MYSQL -N -e "SELECT id, username, domain FROM radiohosting.hosting_users WHERE 
     LOG_FILE="/home/${username}/logs/access.log"
     if [ -f "$LOG_FILE" ]; then
         # Approximate bandwidth from log (sum of bytes_sent)
-        BW_USED=$(awk '{sum += $10} END {print sum}' "$LOG_FILE" 2>/dev/null || echo 0)
-        if [ "$BW_USED" -gt 0 ]; then
+        BW_USED=$(awk '{sum += $10} END {print sum+0}' "$LOG_FILE" 2>/dev/null || echo 0)
+        BW_USED=${BW_USED:-0}
+        if [ "$BW_USED" -gt 0 ] 2>/dev/null; then
             $MYSQL -e "UPDATE radiohosting.hosting_users SET bandwidth_used=${BW_USED} WHERE id=${id};" 2>/dev/null || true
             PKG_BW=$($MYSQL -N -e "SELECT p.bandwidth FROM radiohosting.hosting_users u JOIN radiohosting.hosting_packages p ON u.package_id=p.id WHERE u.id=${id};" 2>/dev/null || echo 0)
             if [ "$PKG_BW" -gt 0 ] && [ "$BW_USED" -gt "$PKG_BW" ]; then
