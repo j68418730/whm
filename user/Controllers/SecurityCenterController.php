@@ -76,11 +76,32 @@ class SecurityCenterController extends Controller
                 $alerts = $this->security->getAlerts($cid, 100);
                 $this->security->markAlertsRead($cid);
                 return $this->render('alerts', ['alerts' => $alerts], $u);
+            case 'pin':
+                return $this->render('pin', [], $u);
             default:
                 $data = $this->security->dashboard($cid);
                 $data['sessions'] = $this->security->getSessions($cid);
                 return $this->render('dashboard', $data, $u);
         }
+    }
+
+    /** POST /user/security/pin/save — set or clear the 4-digit account authorization code (REQ #6). */
+    public function pinSave()
+    {
+        $u = $this->requireUser();
+        $cid = $this->customerId();
+        if (!$this->hostingUser) { $this->response->redirect('/?login'); exit; }
+        $pin = preg_replace('/\D/', '', (string)$this->request->post('account_pin', ''));
+        if (isset($_POST['clear_pin'])) {
+            $this->db->table('hosting_users')->where('id', $cid)->update(['support_pin_hash' => null]);
+            $_SESSION['success'] = 'Account PIN removed.';
+        } elseif (strlen($pin) === 4) {
+            $this->db->table('hosting_users')->where('id', $cid)->update(['support_pin_hash' => password_hash($pin, PASSWORD_DEFAULT)]);
+            $_SESSION['success'] = '4-digit account PIN set. Support will ask for it before discussing billing, and it is required to authorize purchases with this email.';
+        } else {
+            $_SESSION['error'] = 'PIN must be exactly 4 digits.';
+        }
+        $this->response->redirect('/user/security?tab=pin');
     }
 
     protected function render($tab, $extra, $user)

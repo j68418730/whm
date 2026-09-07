@@ -53,6 +53,7 @@ $router->get('/user/security', 'User\Controllers\SecurityCenterController@index'
 $router->post('/user/security/rules/store', 'User\Controllers\SecurityCenterController@ruleStore');
 $router->get('/user/security/rules/delete/{id}', 'User\Controllers\SecurityCenterController@ruleDelete');
 $router->post('/user/security/login/save', 'User\Controllers\SecurityCenterController@loginSecuritySave');
+$router->post('/user/security/pin/save', 'User\Controllers\SecurityCenterController@pinSave');
 $router->get('/user/security/trusted/delete/{id}', 'User\Controllers\SecurityCenterController@trustedDelete');
 $router->get('/user/security/sessions/terminate/{id}', 'User\Controllers\SecurityCenterController@sessionTerminate');
 $router->get('/user/security/alerts/clear', 'User\Controllers\SecurityCenterController@alertsClear');

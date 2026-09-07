@@ -117,9 +117,38 @@ if ($action === 'checkout' && $_POST) {
 
     if (empty($errors)) {
         // Check if user exists, if not create
-        $existing = $pdo->prepare("SELECT id FROM hosting_users WHERE email = ?");
+        $existing = $pdo->prepare("SELECT id, support_pin_hash FROM hosting_users WHERE email = ?");
         $existing->execute([$email]);
         $user = $existing->fetch(PDO::FETCH_OBJ);
+
+        // Existing accounts with a 4-digit PIN must authorize the purchase (REQ #6)
+        if ($user && !empty($user->support_pin_hash)) {
+            $_SESSION['pin_attempts'] = $_SESSION['pin_attempts'] ?? ['count' => 0, 'first' => time()];
+            if ($_SESSION['pin_attempts']['count'] >= 5 && (time() - $_SESSION['pin_attempts']['first']) < 900) {
+                $errors[] = 'Too many PIN attempts — try again in a few minutes.';
+            } else {
+                $pin = preg_replace('/\D/', '', $_POST['account_pin'] ?? '');
+                if ($pin === '' || !password_verify($pin, (string)$user->support_pin_hash)) {
+                    if ((time() - $_SESSION['pin_attempts']['first']) >= 900) {
+                        $_SESSION['pin_attempts'] = ['count' => 1, 'first' => time()];
+                    } else {
+                        $_SESSION['pin_attempts']['count']++;
+                    }
+                    $errors[] = 'This email belongs to an existing account protected by a 4-digit account PIN — enter it to authorize this purchase.';
+                } else {
+                    $_SESSION['pin_attempts'] = ['count' => 0, 'first' => time()];
+                }
+            }
+        }
+    }
+
+    if (empty($errors)) {
+        if (!isset($user)) {
+            // Check if user exists, if not create
+            $existing = $pdo->prepare("SELECT id FROM hosting_users WHERE email = ?");
+            $existing->execute([$email]);
+            $user = $existing->fetch(PDO::FETCH_OBJ);
+        }
 
         if (!$user) {
             $username = explode('@', $email)[0] . rand(100, 999);
@@ -295,6 +324,10 @@ require_once __DIR__ . '/../core/ServerCreds.php'; if ($hasHostingCheckout): ?>
 </div></div>
 <?php
 require_once __DIR__ . '/../core/ServerCreds.php'; endif; ?>
+<div class="form-group"><label>Account PIN <span style="font-weight:400;color:#64748b">(optional)</span></label>
+<input name="account_pin" inputmode="numeric" maxlength="4" placeholder="4 digits — only if this email is an existing account" style="width:100%">
+<div style="font-size:11px;color:#64748b;margin-top:4px">If this email already belongs to a Planet Hosts account protected by a 4-digit account PIN, you must enter it to authorize the purchase.</div>
+</div>
 <div class="form-group"><label>Payment Method</label>
 <select name="method">
 <option value="paypal">PayPal</option>

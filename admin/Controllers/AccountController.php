@@ -600,7 +600,7 @@ class AccountController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $account = $this->db->table('hosting_users')->where('id', $id)->first();
         if (!$account) { $this->response->redirect('/admin/account'); exit; }
-        $this->db->table('hosting_users')->where('id', $id)->update([
+        $data = [
             'username' => strtolower(preg_replace('/[^a-z0-9]/', '', $_POST['username'] ?? $account->username)),
             'domain' => strtolower(trim($_POST['domain'] ?? $account->domain)),
             'email' => trim($_POST['email'] ?? $account->email),
@@ -608,8 +608,25 @@ class AccountController extends Controller
             'php_version' => $_POST['php_version'] ?? $account->php_version,
             'first_name' => $_POST['first_name'] ?? $account->first_name,
             'last_name' => $_POST['last_name'] ?? $account->last_name,
-        ]);
-        $_SESSION['success_message'] = 'Account updated.';
+            'phone' => trim($_POST['phone'] ?? ($account->phone ?? '')),
+            'address' => trim($_POST['address'] ?? ($account->address ?? '')),
+            'city' => trim($_POST['city'] ?? ($account->city ?? '')),
+            'state' => trim($_POST['state'] ?? ($account->state ?? '')),
+            'zip' => trim($_POST['zip'] ?? ($account->zip ?? '')),
+            'country' => trim($_POST['country'] ?? ($account->country ?? '')),
+            'avatar' => trim($_POST['avatar'] ?? ($account->avatar ?? '')),
+            'payment_gateway' => trim($_POST['payment_gateway'] ?? ($account->payment_gateway ?? '')),
+            'payment_gateway_id' => trim($_POST['payment_gateway_id'] ?? ($account->payment_gateway_id ?? '')),
+        ];
+        // 4-digit account authorization code (PIN) — hashed, never stored plaintext
+        $pin = preg_replace('/\D/', '', $_POST['account_pin'] ?? '');
+        if (strlen($pin) === 4) {
+            $data['support_pin_hash'] = password_hash($pin, PASSWORD_DEFAULT);
+        } elseif (isset($_POST['clear_pin'])) {
+            $data['support_pin_hash'] = null;
+        }
+        $this->db->table('hosting_users')->where('id', $id)->update($data);
+        $_SESSION['success_message'] = 'Account updated.' . (strlen($pin) === 4 ? ' Account PIN set.' : '');
         $this->response->redirect('/admin/account/show/' . $id);
         exit;
     }
