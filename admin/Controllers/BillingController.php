@@ -362,7 +362,7 @@ class BillingController extends Controller
   function load(){
     CONTAINER = document.querySelector(CONTAINER_SELECTOR || '#ph-cart');
     if(!CONTAINER) return;
-    loadCss('/store/theme.css?id='+THEME);
+    loadCss('/storefront/theme.css?id='+THEME);
     if(IS_BOOTSTRAP) loadCss('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css');
     if('$icons'==='fa') loadCss('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
     if('$icons'==='bi') loadCss('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css');

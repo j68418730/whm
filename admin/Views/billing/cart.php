@@ -40,7 +40,7 @@
 <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Add this script tag to your website's <code style="font-size:11px;background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px">&lt;/body&gt;</code> to display a Planet Hosts product catalog and shopping cart.</p>
 <div class="code-block" id="embedCode">&lt;!-- Planet Hosts Shopping Cart --&gt;
 &lt;div id="ph-cart"&gt;&lt;/div&gt;
-&lt;script src="https://<?php echo htmlspecialchars($_SERVER['HTTP_HOST'] ?? primary_domain()); ?>/store/embed.js"&gt;&lt;/script&gt;
+&lt;script src="https://<?php echo htmlspecialchars($_SERVER['HTTP_HOST'] ?? primary_domain()); ?>/storefront/embed.js"&gt;&lt;/script&gt;
 &lt;script&gt;
   PHCart.init({
     container: '#ph-cart',
@@ -55,7 +55,7 @@
 <div class="card" style="margin-bottom:16px;padding:20px">
 <h4 style="color:var(--accent);margin:0 0 8px">Iframe Embed (Simplest)</h4>
 <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">For sites that can't run JavaScript, use an iframe:</p>
-<div class="code-block" id="iframeCode">&lt;iframe src="https://<?php echo htmlspecialchars($_SERVER['HTTP_HOST'] ?? 'planet-hosts.com'); ?>/store" width="100%" height="800" style="border:none;border-radius:8px"&gt;&lt;/iframe&gt;</div>
+<div class="code-block" id="iframeCode">&lt;iframe src="https://<?php echo htmlspecialchars($_SERVER['HTTP_HOST'] ?? primary_domain()); ?>/storefront" width="100%" height="800" style="border:none;border-radius:8px"&gt;&lt;/iframe&gt;</div>
 <div style="margin-top:8px"><button class="copy-btn" onclick="copyText('iframeCode')">📋 Copy Iframe Code</button></div>
 </div>
 
