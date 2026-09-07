@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS `gateways` (
   `live_secret` VARCHAR(255) DEFAULT '',
   `brand_name` VARCHAR(255) DEFAULT '',
   `invoice_prefix` VARCHAR(20) DEFAULT '',
+  `config` TEXT DEFAULT NULL,
   `enabled` TINYINT(1) DEFAULT 0,
   `test_mode` TINYINT(1) DEFAULT 1,
   `sort_order` INT DEFAULT 0,
