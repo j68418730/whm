@@ -1,0 +1,32 @@
+-- Create the base `gateways` table (was missing — /admin/gateways 500'd).
+-- Schema = union of every column referenced by GatewayManager / GatewayController / 012_expand_gateways.
+CREATE TABLE IF NOT EXISTS `gateways` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `name` VARCHAR(50) NOT NULL,
+  `display_name` VARCHAR(100) DEFAULT '',
+  `description` TEXT DEFAULT NULL,
+  `logo_url` VARCHAR(500) DEFAULT '',
+  `merchant_id` VARCHAR(255) DEFAULT '',
+  `supported_currencies` VARCHAR(255) DEFAULT 'USD',
+  `min_amount` DECIMAL(10,2) DEFAULT 0.00,
+  `max_amount` DECIMAL(10,2) DEFAULT 0.00,
+  `processing_fee` DECIMAL(10,2) DEFAULT 0.00,
+  `fee_type` VARCHAR(20) DEFAULT 'fixed',
+  `webhook_url` VARCHAR(500) DEFAULT '',
+  `webhook_secret` VARCHAR(255) DEFAULT '',
+  `success_url` VARCHAR(500) DEFAULT '',
+  `cancel_url` VARCHAR(500) DEFAULT '',
+  `is_default` TINYINT(1) DEFAULT 0,
+  `sandbox_client_id` VARCHAR(255) DEFAULT '',
+  `sandbox_secret` VARCHAR(255) DEFAULT '',
+  `live_client_id` VARCHAR(255) DEFAULT '',
+  `live_secret` VARCHAR(255) DEFAULT '',
+  `brand_name` VARCHAR(255) DEFAULT '',
+  `invoice_prefix` VARCHAR(20) DEFAULT '',
+  `enabled` TINYINT(1) DEFAULT 0,
+  `test_mode` TINYINT(1) DEFAULT 1,
+  `sort_order` INT DEFAULT 0,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
