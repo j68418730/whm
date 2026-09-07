@@ -8,6 +8,8 @@ $currentUrl = $_SERVER['REQUEST_URI'] ?? '';
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?> - Planet Hosts</title>
 <link rel="stylesheet" href="/theme/assets/css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <?php 
 $activeTheme = 'planethosts';
 $ts = [];
@@ -44,6 +46,9 @@ $accentColor = $ts['accent_color'] ?? '';
 .sidebar{position:fixed;left:0;top:0;height:100vh;z-index:998;transform:translateX(0);transition:transform .3s}
 .sidebar.closed{transform:translateX(-105%)}
 }
+.nav-section a{display:flex;align-items:center;gap:10px}
+.nav-section a .bi{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.nav-section a .nav-ext{margin-left:auto;font-size:10px;color:#64748b}
 .nav-section a.active{background:rgba(0,191,255,.15);color:#00bfff;border-left:3px solid #008cff}
 </style>
 </head>
@@ -102,102 +107,112 @@ function filterSidebar(val) {
 
 <div class="nav-section" data-section="main">
 <div class="nav-label">Main</div>
-<a href="/admin/dashboard" class="<?php echo str_contains($currentUrl,'/admin/dashboard')?'active':''; ?>">Dashboard</a>
-<a href="/admin/server" class="<?php echo str_contains($currentUrl,'/admin/server')?'active':''; ?>">Server Overview</a>
-<a href="/admin/server/health" class="<?php echo str_contains($currentUrl,'/admin/server/health')?'active':''; ?>">Server Health</a>
+<a href="/admin/dashboard" class="<?php echo str_contains($currentUrl,'/admin/dashboard')?'active':''; ?>"><i class="bi bi-speedometer2"></i> Dashboard</a>
+<a href="/admin/server" class="<?php echo str_contains($currentUrl,'/admin/server') && !str_contains($currentUrl,'/admin/server/terminal')?'active':''; ?>"><i class="bi bi-server"></i> Server Overview</a>
+<a href="/admin/server/health" class="<?php echo str_contains($currentUrl,'/admin/server/health')?'active':''; ?>"><i class="bi bi-heart-pulse"></i> Server Health</a>
 </div>
 
 <div class="nav-section" data-section="accounts">
 <div class="nav-label">Accounts</div>
-<a href="/admin/account" class="<?php echo str_contains($currentUrl,'/admin/account')?'active':''; ?>">Account Functions</a>
-<a href="/admin/packages" class="<?php echo str_contains($currentUrl,'/admin/packages')?'active':''; ?>">Packages</a>
-<a href="/admin/reseller" class="<?php echo str_contains($currentUrl,'/admin/reseller')?'active':''; ?>">Resellers</a>
-<a href="/admin/userfeatures" class="<?php echo str_contains($currentUrl,'/admin/userfeatures')?'active':''; ?>">Feature Manager</a>
+<a href="/admin/account" class="<?php echo str_contains($currentUrl,'/admin/account')?'active':''; ?>"><i class="bi bi-people"></i> Account Functions</a>
+<a href="/admin/packages" class="<?php echo str_contains($currentUrl,'/admin/packages')?'active':''; ?>"><i class="bi bi-box-seam"></i> Packages</a>
+<a href="/admin/reseller" class="<?php echo str_contains($currentUrl,'/admin/reseller')?'active':''; ?>"><i class="bi bi-diagram-3"></i> Resellers</a>
+<a href="/admin/userfeatures" class="<?php echo str_contains($currentUrl,'/admin/userfeatures')?'active':''; ?>"><i class="bi bi-list-check"></i> Feature Manager</a>
+<a href="/admin/admins" class="<?php echo str_contains($currentUrl,'/admin/admins')?'active':''; ?>"><i class="bi bi-person-badge"></i> Admins</a>
 </div>
 
-<div class="nav-section" data-section="services">
-<div class="nav-label">Services</div>
-<a href="/admin/dns" class="<?php echo str_contains($currentUrl,'/admin/dns')?'active':''; ?>">DNS Zones</a>
-<a href="/admin/email" class="<?php echo str_contains($currentUrl,'/admin/email')?'active':''; ?>">Email</a>
-<a href="https://planet-hosts.com:2097/" target="_blank" style="font-size:12px;padding-left:20px;color:#fb923c" class="<?php echo 0?'active':''; ?>">📧 Webmail (2097)</a>
-<a href="/admin/mysql" class="<?php echo str_contains($currentUrl,'/admin/mysql')?'active':''; ?>">Databases</a>
-<a href="/admin/ftp" class="<?php echo str_contains($currentUrl,'/admin/ftp')?'active':''; ?>">FTP</a>
-<a href="/admin/ip" class="<?php echo str_contains($currentUrl,'/admin/ip')?'active':''; ?>">IP Management</a>
-<a href="/admin/installers" class="<?php echo str_contains($currentUrl,'/admin/installers')?'active':''; ?>">One-Click Installer</a>
+<div class="nav-section" data-section="hosting">
+<div class="nav-label">Hosting</div>
+<a href="/admin/dns" class="<?php echo str_contains($currentUrl,'/admin/dns')?'active':''; ?>"><i class="bi bi-globe2"></i> DNS Zones</a>
+<a href="/admin/email" class="<?php echo str_contains($currentUrl,'/admin/email')?'active':''; ?>"><i class="bi bi-envelope"></i> Email</a>
+<a href="https://planet-hosts.com:2097/" target="_blank"><i class="bi bi-envelope-open"></i> Webmail <span class="nav-ext">↗</span></a>
+<a href="/admin/mysql" class="<?php echo str_contains($currentUrl,'/admin/mysql')?'active':''; ?>"><i class="bi bi-database"></i> Databases</a>
+<a href="/admin/ftp" class="<?php echo str_contains($currentUrl,'/admin/ftp')?'active':''; ?>"><i class="bi bi-folder2"></i> FTP</a>
+<a href="/admin/ip" class="<?php echo str_contains($currentUrl,'/admin/ip')?'active':''; ?>"><i class="bi bi-ethernet"></i> IP Management</a>
+<a href="/admin/backup" class="<?php echo str_contains($currentUrl,'/admin/backup')?'active':''; ?>"><i class="bi bi-cloud-arrow-down"></i> Backups</a>
+<a href="/admin/installers" class="<?php echo str_contains($currentUrl,'/admin/installers')?'active':''; ?>"><i class="bi bi-download"></i> One-Click Installer</a>
 </div>
 
-<div class="nav-section" data-section="security">
-<div class="nav-label">Security</div>
-<a href="/admin/security" class="<?php echo str_contains($currentUrl,'/admin/security')?'active':''; ?>">Security Center</a>
+<div class="nav-section" data-section="billing">
+<div class="nav-label">Billing</div>
+<a href="/admin/billing" class="<?php echo str_contains($currentUrl,'/admin/billing')?'active':''; ?>"><i class="bi bi-cash-stack"></i> Billing</a>
+<a href="/admin/gateways" class="<?php echo str_contains($currentUrl,'/admin/gateways')?'active':''; ?>"><i class="bi bi-credit-card-2-front"></i> Payment Gateways</a>
+<a href="/admin/paypal" class="<?php echo str_contains($currentUrl,'/admin/paypal')?'active':''; ?>"><i class="bi bi-paypal"></i> PayPal</a>
 </div>
 
 <div class="nav-section" data-section="support">
-<div class="nav-label">Support</div>
-<a href="/admin/support" class="<?php echo str_contains($currentUrl,'/admin/support') && !str_contains($currentUrl,'/admin/support/tickets') && !str_contains($currentUrl,'/admin/support/kb') && !str_contains($currentUrl,'/admin/support/announcements') && !str_contains($currentUrl,'/admin/support/status') && !str_contains($currentUrl,'/admin/livechat') && !str_contains($currentUrl,'/admin/reviews')?'active':''; ?>">Support Center</a>
-<a href="/admin/livechat" class="<?php echo str_contains($currentUrl,'/admin/livechat')?'active':''; ?>">Live Chat</a>
-<a href="/admin/reviews" class="<?php echo str_contains($currentUrl,'/admin/reviews')?'active':''; ?>" style="font-size:12px;padding-left:20px;color:#facc15">📝 Reviews</a>
+<div class="nav-label">Support &amp; Chat</div>
+<a href="/admin/support" class="<?php echo str_contains($currentUrl,'/admin/support') && !str_contains($currentUrl,'/admin/support/tickets') && !str_contains($currentUrl,'/admin/support/kb') && !str_contains($currentUrl,'/admin/support/announcements') && !str_contains($currentUrl,'/admin/support/status')?'active':''; ?>"><i class="bi bi-life-preserver"></i> Support Center</a>
+<a href="/admin/livechat" class="<?php echo str_contains($currentUrl,'/admin/livechat')?'active':''; ?>"><i class="bi bi-chat-dots"></i> Live Chat</a>
+<a href="/admin/chat-dashboard" class="<?php echo str_contains($currentUrl,'/admin/chat-dashboard')?'active':''; ?>"><i class="bi bi-chat-square-text"></i> Chat Dashboard</a>
+<a href="/chatbox/admin.php" target="_blank"><i class="bi bi-box-arrow-up-right"></i> Chat Admin <span class="nav-ext">↗</span></a>
+<a href="/admin/reviews" class="<?php echo str_contains($currentUrl,'/admin/reviews')?'active':''; ?>"><i class="bi bi-star"></i> Reviews</a>
 </div>
 
-<div class="nav-section" data-section="chat">
-<div class="nav-label">💬 Chat</div>
-<a href="/admin/livechat" class="<?php echo str_contains($currentUrl,'/admin/livechat')?'active':''; ?>">Live Chat</a>
-<a href="/admin/chat-dashboard" class="<?php echo str_contains($currentUrl,'/admin/chat-dashboard')?'active':''; ?>">Chat Dashboard</a>
-<a href="/chatbox/admin.php" target="_blank" style="color:#38bdf8">Chat Admin</a>
+<div class="nav-section" data-section="radio">
+<div class="nav-label">Radio</div>
+<a href="/admin/radio_dashboard" class="<?php echo str_contains($currentUrl,'/admin/radio_dashboard')?'active':''; ?>"><i class="bi bi-broadcast"></i> Radio Dashboard</a>
+<a href="/admin/streams" class="<?php echo str_contains($currentUrl,'/admin/streams')?'active':''; ?>"><i class="bi bi-music-note-beamed"></i> Streams</a>
+<a href="/admin/djs" class="<?php echo str_contains($currentUrl,'/admin/djs')?'active':''; ?>"><i class="bi bi-mic"></i> DJ Accounts</a>
+<a href="/admin/dj/ports" class="<?php echo str_contains($currentUrl,'/admin/dj/ports')?'active':''; ?>"><i class="bi bi-plug"></i> DJ Ports</a>
+<a href="/admin/dj/connections" class="<?php echo str_contains($currentUrl,'/admin/dj/connections')?'active':''; ?>"><i class="bi bi-clock-history"></i> DJ History</a>
+<a href="/admin/autodj" class="<?php echo str_contains($currentUrl,'/admin/autodj')?'active':''; ?>"><i class="bi bi-disc"></i> AutoDJ</a>
+<a href="/admin/radio/downloads" class="<?php echo str_contains($currentUrl,'/admin/radio/downloads')?'active':''; ?>"><i class="bi bi-cloud-download"></i> Radio Downloads</a>
+<a href="/admin/radiosettings" class="<?php echo str_contains($currentUrl,'/admin/radiosettings')?'active':''; ?>"><i class="bi bi-gear"></i> Radio Settings</a>
 </div>
 
-<div class="nav-section" data-section="dashboards">
-<div class="nav-label">📊 Dashboards</div>
-<a href="/admin/radio_dashboard" class="<?php echo str_contains($currentUrl,'/admin/radio_dashboard')?'active':''; ?>">📡 Radio Dashboard</a>
-<a href="/admin/streams" class="<?php echo str_contains($currentUrl,'/admin/streams')?'active':''; ?>">🎵 Streams</a>
-<a href="/admin/djs" class="<?php echo str_contains($currentUrl,'/admin/djs')?'active':''; ?>">🎤 DJ Accounts</a>
-<a href="/admin/dj/ports" class="<?php echo str_contains($currentUrl,'/admin/dj/ports')?'active':''; ?>">🔌 DJ Ports</a>
-<a href="/admin/dj/connections" class="<?php echo str_contains($currentUrl,'/admin/dj/connections')?'active':''; ?>">📋 DJ History</a>
-<a href="/admin/autodj" class="<?php echo str_contains($currentUrl,'/admin/autodj')?'active':''; ?>">🤖 AutoDJ</a>
-<a href="/admin/radio/downloads" class="<?php echo str_contains($currentUrl,'/admin/radio/downloads')?'active':''; ?>">📥 Radio Downloads</a>
-<a href="/admin/radiosettings" class="<?php echo str_contains($currentUrl,'/admin/radiosettings')?'active':''; ?>">⚙️ Radio Settings</a>
-<a href="/admin/games" class="<?php echo str_contains($currentUrl,'/admin/games')?'active':''; ?>">🎮 Game Servers</a>
-<a href="/admin/djs" style="font-size:12px;padding-left:20px;color:#a78bfa">🎤 DJ Dashboard</a>
+<div class="nav-section" data-section="games">
+<div class="nav-label">Games</div>
+<a href="/admin/games" class="<?php echo str_contains($currentUrl,'/admin/games')?'active':''; ?>"><i class="bi bi-controller"></i> Game Servers</a>
+</div>
+
 <?php if (class_exists('\\Plugins\\WebsiteBuilder\\WebsiteBuilderPlugin')): ?>
-<a href="/admin/websitebuilder" style="font-size:12px;padding-left:20px;color:#34d399">🌐 Website Builder</a>
+<div class="nav-section" data-section="builder">
+<div class="nav-label">Builder</div>
+<a href="/admin/websitebuilder" class="<?php echo str_contains($currentUrl,'/admin/websitebuilder')?'active':''; ?>"><i class="bi bi-window-sidebar"></i> Website Builder</a>
+</div>
 <?php endif; ?>
+
+<div class="nav-section" data-section="security">
+<div class="nav-label">Security</div>
+<a href="/admin/security" class="<?php echo str_contains($currentUrl,'/admin/security')?'active':''; ?>"><i class="bi bi-shield-lock"></i> Security Center</a>
 </div>
 
-
+<div class="nav-section" data-section="domains">
+<div class="nav-label">Domains</div>
+<a href="/admin/section/domains" class="<?php echo str_contains($currentUrl,'/admin/section/domains')?'active':''; ?>"><i class="bi bi-globe-americas"></i> Domains &amp; DNS</a>
+</div>
 
 <div class="nav-section" data-section="system">
 <div class="nav-label">System</div>
-<a href="/admin/gateways" class="<?php echo str_contains($currentUrl,'/admin/gateways')?'active':''; ?>">💳 Payment Gateways</a>
-<a href="/admin/backup" class="<?php echo str_contains($currentUrl,'/admin/backup')?'active':''; ?>">Backups</a>
-<a href="/admin/apache" class="<?php echo str_contains($currentUrl,'/admin/apache')?'active':''; ?>">Apache</a>
-<a href="/admin/php" class="<?php echo str_contains($currentUrl,'/admin/php')?'active':''; ?>">PHP Manager</a>
-<a href="/admin/php-switcher" style="font-size:12px;padding-left:20px;color:#34d399">🔄 PHP Version</a>
-<a href="/admin/process-manager" style="font-size:12px;padding-left:20px;color:#f87171">🖥 Process Manager</a>
-<a href="/admin/plugins" class="<?php echo str_contains($currentUrl,'/admin/plugins')?'active':''; ?>">Plugins</a>
-
-<a href="/admin/cron" class="<?php echo str_contains($currentUrl,'/admin/cron')?'active':''; ?>">Cron</a>
-<a href="/admin/automation" class="<?php echo str_contains($currentUrl,'/admin/automation')?'active':''; ?>">Automation</a>
-<a href="/admin/server/terminal" class="<?php echo str_contains($currentUrl,'/admin/server/terminal') || str_contains($currentUrl,'/admin/terminal') ?'active':''; ?>" style="color:#34d399">🖥 Terminal</a>
-<a href="/admin/serverconfig" class="<?php echo str_contains($currentUrl,'/admin/serverconfig')?'active':''; ?>">Server Config</a>
-<a href="/admin/theme" class="<?php echo str_contains($currentUrl,'/admin/theme')?'active':''; ?>">Theme</a>
-<a href="/admin/settings" class="<?php echo str_contains($currentUrl,'/admin/settings')?'active':''; ?>">Settings</a>
-<a href="/admin/licensing" class="<?php echo str_contains($currentUrl,'/admin/licensing') && !str_contains($currentUrl,'/generate')?'active':''; ?>">Licensing</a>
-<a href="/admin/licensing/generate" class="<?php echo str_contains($currentUrl,'/admin/licensing/generate')?'active':''; ?>">Generate License</a>
-<a href="/admin/todo" class="<?php echo str_contains($currentUrl,'/admin/todo')?'active':''; ?>">ToDo List</a>
-<a href="/admin/admins" class="<?php echo str_contains($currentUrl,'/admin/admins')?'active':''; ?>" style="color:#facc15">👤 Admins</a>
+<a href="/admin/serverconfig" class="<?php echo str_contains($currentUrl,'/admin/serverconfig')?'active':''; ?>"><i class="bi bi-sliders"></i> Server Config</a>
+<a href="/admin/tweak?cat=all" class="<?php echo str_contains($currentUrl,'/admin/tweak')?'active':''; ?>"><i class="bi bi-clipboard-data"></i> Tweak Settings</a>
+<a href="/admin/apache" class="<?php echo str_contains($currentUrl,'/admin/apache')?'active':''; ?>"><i class="bi bi-hdd-network"></i> Apache</a>
+<a href="/admin/php" class="<?php echo str_contains($currentUrl,'/admin/php')?'active':''; ?>"><i class="bi bi-filetype-php"></i> PHP Manager</a>
+<a href="/admin/php-switcher" class="<?php echo str_contains($currentUrl,'/admin/php-switcher')?'active':''; ?>"><i class="bi bi-arrow-left-right"></i> PHP Version</a>
+<a href="/admin/process-manager" class="<?php echo str_contains($currentUrl,'/admin/process-manager')?'active':''; ?>"><i class="bi bi-cpu"></i> Process Manager</a>
+<a href="/admin/server/terminal" class="<?php echo str_contains($currentUrl,'/admin/server/terminal') || str_contains($currentUrl,'/admin/terminal')?'active':''; ?>"><i class="bi bi-terminal"></i> Terminal</a>
+<a href="/admin/cron" class="<?php echo str_contains($currentUrl,'/admin/cron')?'active':''; ?>"><i class="bi bi-clock"></i> Cron</a>
+<a href="/admin/automation" class="<?php echo str_contains($currentUrl,'/admin/automation')?'active':''; ?>"><i class="bi bi-robot"></i> Automation</a>
+<a href="/admin/plugins" class="<?php echo str_contains($currentUrl,'/admin/plugins')?'active':''; ?>"><i class="bi bi-puzzle"></i> Plugins</a>
+<a href="/admin/theme" class="<?php echo str_contains($currentUrl,'/admin/theme')?'active':''; ?>"><i class="bi bi-palette"></i> Theme</a>
+<a href="/admin/settings" class="<?php echo str_contains($currentUrl,'/admin/settings')?'active':''; ?>"><i class="bi bi-gear"></i> Settings</a>
+<a href="/admin/licensing" class="<?php echo str_contains($currentUrl,'/admin/licensing') && !str_contains($currentUrl,'/admin/licensing/generate')?'active':''; ?>"><i class="bi bi-award"></i> Licensing</a>
+<a href="/admin/licensing/generate" class="<?php echo str_contains($currentUrl,'/admin/licensing/generate')?'active':''; ?>"><i class="bi bi-key"></i> Generate License</a>
+<a href="/admin/todo" class="<?php echo str_contains($currentUrl,'/admin/todo')?'active':''; ?>"><i class="bi bi-check2-square"></i> ToDo List</a>
 </div>
 
 <div class="nav-section" data-section="api">
 <div class="nav-label">API</div>
-<a href="/admin/api" class="<?php echo str_contains($currentUrl,'/admin/api') && !str_contains($currentUrl,'/admin/api/')?'active':''; ?>">API Keys</a>
-<a href="/admin/api/permissions" class="<?php echo str_contains($currentUrl,'/admin/api/permissions')?'active':''; ?>">Permissions</a>
-<a href="/admin/api/webhooks" class="<?php echo str_contains($currentUrl,'/admin/api/webhooks')?'active':''; ?>">Webhooks</a>
-<a href="/admin/api/docs" class="<?php echo str_contains($currentUrl,'/admin/api/docs')?'active':''; ?>">API Docs</a>
-<a href="/admin/api/rate-limits" class="<?php echo str_contains($currentUrl,'/admin/api/rate-limits')?'active':''; ?>">Rate Limits</a>
-<a href="/admin/paypal/settings" class="<?php echo str_contains($currentUrl,'/admin/paypal')?'active':''; ?>">PayPal</a>
+<a href="/admin/api" class="<?php echo str_contains($currentUrl,'/admin/api') && !str_contains($currentUrl,'/admin/api/')?'active':''; ?>"><i class="bi bi-key"></i> API Keys</a>
+<a href="/admin/api/permissions" class="<?php echo str_contains($currentUrl,'/admin/api/permissions')?'active':''; ?>"><i class="bi bi-shield-check"></i> Permissions</a>
+<a href="/admin/api/webhooks" class="<?php echo str_contains($currentUrl,'/admin/api/webhooks')?'active':''; ?>"><i class="bi bi-webhook"></i> Webhooks</a>
+<a href="/admin/api/docs" class="<?php echo str_contains($currentUrl,'/admin/api/docs')?'active':''; ?>"><i class="bi bi-book"></i> API Docs</a>
+<a href="/admin/api/rate-limits" class="<?php echo str_contains($currentUrl,'/admin/api/rate-limits')?'active':''; ?>"><i class="bi bi-speedometer"></i> Rate Limits</a>
 </div>
 
 <div class="nav-section" data-section="logout" style="margin-top:24px;border-top:1px solid rgba(255,255,255,.06);padding-top:16px">
-<a href="/admin/logout" style="color:#ff6b6b">Logout</a>
+<a href="/admin/logout" style="color:#ff6b6b"><i class="bi bi-box-arrow-right"></i> Logout</a>
 </div>
 </div>
 
