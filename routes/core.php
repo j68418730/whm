@@ -642,6 +642,11 @@ $router->post('/paypal/ipn', 'Admin\Controllers\PaypalController@ipn');
 // -- Billing routes --
 $router->get('/admin/billing', 'Admin\Controllers\BillingController@index');
 $router->get('/admin/billing/cart', 'Admin\Controllers\BillingController@cart');
+$router->post('/admin/billing/cart/themes/use/{id}', 'Admin\Controllers\BillingController@cartThemeUse');
+$router->post('/admin/billing/cart/settings', 'Admin\Controllers\BillingController@cartSettings');
+$router->get('/store', 'Admin\Controllers\BillingController@store');
+$router->get('/store/theme.css', 'Admin\Controllers\BillingController@storeThemeCss');
+$router->get('/store/embed.js', 'Admin\Controllers\BillingController@storeEmbedJs');
 $router->get('/admin/billing/products', 'Admin\Controllers\BillingController@products');
 $router->post('/admin/billing/products/store', 'Admin\Controllers\BillingController@productStore');
 $router->post('/admin/billing/products/update/{id}', 'Admin\Controllers\BillingController@productUpdate');

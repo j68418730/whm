@@ -145,7 +145,258 @@ class BillingController extends Controller
         return $this->view('admin.billing.cart', [
             'user' => $user, 'title' => 'Shopping Cart', 'theme_settings' => $this->theme(),
             'products' => $products,
+            'themes' => \Admin\Services\CartThemes::all(),
+            'cartSettings' => $this->cartSettingsAll(),
         ]);
+    }
+
+    // ── Cart Themes & Settings ──
+    protected function cartSettingsAll(): array
+    {
+        $defaults = [
+            'cart_theme' => 'planethosts',
+            'cart_currency' => 'USD',
+            'cart_show_images' => '1',
+            'cart_guest_checkout' => '1',
+            'cart_footer_message' => '',
+            'cart_logo_url' => '',
+            'cart_header_image' => '',
+        ];
+        $out = [];
+        foreach ($defaults as $k => $d) {
+            $row = $this->db->table('setup_settings')->where('setting_key', $k)->first();
+            $out[$k] = $row->setting_value ?? $d;
+        }
+        return $out;
+    }
+
+    protected function cartSetting($key, $value)
+    {
+        $existing = $this->db->table('setup_settings')->where('setting_key', $key)->first();
+        if ($existing) {
+            $this->db->table('setup_settings')->where('setting_key', $key)->update(['setting_value' => $value]);
+        } else {
+            $this->db->table('setup_settings')->insertGetId(['setting_key' => $key, 'setting_value' => $value]);
+        }
+    }
+
+    public function cartThemeUse($id)
+    {
+        $this->guard();
+        $theme = \Admin\Services\CartThemes::get($id);
+        if ($theme) {
+            $this->cartSetting('cart_theme', $theme['id']);
+            $_SESSION['success_message'] = 'Default cart theme set to "' . $theme['name'] . '".';
+        }
+        $this->response->redirect('/admin/billing/cart?tab=themes');
+    }
+
+    public function cartSettings()
+    {
+        $this->guard();
+        $theme = $this->request->post('cart_theme', 'planethosts');
+        $currency = $this->request->post('cart_currency', 'USD');
+        if (!in_array($currency, ['USD', 'EUR', 'GBP'], true)) {
+            $currency = 'USD';
+        }
+        $this->cartSetting('cart_theme', \Admin\Services\CartThemes::get($theme)['id']);
+        $this->cartSetting('cart_currency', $currency);
+        $this->cartSetting('cart_show_images', $this->request->post('show_images', '1') ? '1' : '0');
+        $this->cartSetting('cart_guest_checkout', $this->request->post('guest_checkout', '1') ? '1' : '0');
+        $this->cartSetting('cart_footer_message', trim((string)$this->request->post('footer_message', '')));
+        $this->cartSetting('cart_logo_url', trim((string)$this->request->post('logo_url', '')));
+        $this->cartSetting('cart_header_image', trim((string)$this->request->post('header_image', '')));
+        $_SESSION['success_message'] = 'Cart settings saved.';
+        $this->response->redirect('/admin/billing/cart?tab=settings');
+    }
+
+    // ── Public Storefront (/store) ──
+    public function store()
+    {
+        $settings = $this->cartSettingsAll();
+        $theme = $settings['cart_theme'] ?? 'planethosts';
+        try {
+            $products = $this->db->table('billing_products')->where('is_active', 1)->where('is_visible', 1)->orderBy('sort_order', 'ASC')->get() ?: [];
+        } catch (\Throwable $e) {
+            $products = $this->db->table('billing_products')->where('is_active', 1)->orderBy('sort_order', 'ASC')->get() ?: [];
+        }
+        $css = \Admin\Services\CartThemes::fullCss($theme);
+
+        header('Content-Type: text/html; charset=utf-8');
+        $links = '';
+        if (\Admin\Services\CartThemes::isBootstrap($theme)) {
+            $links .= '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">';
+        }
+        $icons = \Admin\Services\CartThemes::icons($theme);
+        if ($icons === 'fa') {
+            $links .= '<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">';
+        } elseif ($icons === 'bi') {
+            $links .= '<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">';
+        }
+        echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            . '<title>' . htmlspecialchars(primary_domain()) . ' Store</title>' . $links
+            . '<style>' . $css . '</style>'
+            . '</head><body style="margin:0;background:var(--phc-bg)">';
+        echo $this->storeHtml($products, $theme, $settings);
+        echo '</body></html>';
+        exit;
+    }
+
+    protected function storeHtml($products, string $theme, array $settings): string
+    {
+        $t = \Admin\Services\CartThemes::get($theme);
+        $currency = $settings['cart_currency'] ?? 'USD';
+        $symbol = $currency === 'EUR' ? '€' : ($currency === 'GBP' ? '£' : '$');
+        $footerMsg = trim($settings['cart_footer_message'] ?? '');
+        if ($footerMsg === '') {
+            $footerMsg = \Admin\Services\CartThemes::defaultFooter($theme);
+        }
+        $logoUrl = trim($settings['cart_logo_url'] ?? '');
+        $headerImage = trim($settings['cart_header_image'] ?? '');
+        $cartIcon = $this->cartIcon($t['icons'] ?? 'fa');
+
+        $logoHtml = $logoUrl !== '' ? '<img class="phc-logo" src="' . htmlspecialchars($logoUrl) . '" alt="logo" onerror="this.remove()">' : '';
+        $brandText = '<span class="phc-logo-text">' . htmlspecialchars($t['logo_a'] ?? '') . ($t['logo_b'] !== '' ? '<b>' . htmlspecialchars($t['logo_b']) . '</b>' : '') . '</span>';
+        if (!empty($t['header_sub'])) {
+            $brandText .= '<div class="phc-header-sub">' . htmlspecialchars($t['header_sub']) . '</div>';
+        }
+        $headerBg = $headerImage !== '' ? ' style="background:url(' . htmlspecialchars($headerImage) . ') center/cover no-repeat;border:none"' : '';
+
+        $items = '';
+        foreach ($products as $p) {
+            $items .= '<div class="phc-product" data-id="' . (int)$p->id . '" data-name="' . htmlspecialchars($p->name ?? '') . '" data-price="' . (float)$p->price . '">'
+                . '<div class="phc-name">' . htmlspecialchars($p->name ?? '') . '</div>'
+                . '<div class="phc-desc">' . htmlspecialchars(mb_strimwidth((string)($p->description ?? ''), 0, 70, '…')) . '</div>'
+                . '<div class="phc-price">' . $symbol . number_format((float)$p->price, 2) . ' <small>/' . htmlspecialchars($p->billing_cycle ?? 'mo') . '</small></div>'
+                . '<button class="phc-btn" onclick="addToCart(' . (int)$p->id . ')">' . $cartIcon . ' Add to Cart</button>'
+                . '</div>';
+        }
+        $store = '<div class="ph-store phc-' . htmlspecialchars($theme) . '">'
+            . '<header class="phc-header"' . $headerBg . '><div class="phc-brand">' . $logoHtml . '<div>' . $brandText . '</div></div><span class="phc-cart-badge" id="phc-count">0 items</span></header>'
+            . '<div class="phc-grid">' . ($items ?: '<div class="phc-empty">No products available.</div>') . '</div>'
+            . '<div class="phc-cart"><h4>' . $cartIcon . ' Your Cart</h4><div id="phc-cart-items" class="phc-empty">Cart is empty.</div>'
+            . '<div class="phc-total">Total: <span id="phc-total">' . $symbol . '0.00</span></div></div>'
+            . '<footer class="phc-footer">' . htmlspecialchars($footerMsg) . '</footer>'
+            . '<div class="phc-foot">⚡ Powered by Planet Hosts</div>'
+            . '</div>';
+        $store .= '<script>
+            var PHC_PRODUCTS=' . json_encode(array_map(function ($p) {
+                return ['id' => (int)$p->id, 'name' => (string)$p->name, 'price' => (float)$p->price];
+            }, $products)) . ';
+            var PHC_CART = {};
+            function money(n){var s=' . json_encode($symbol) . ';return s+n.toFixed(2);}
+            function addToCart(id){var p=PHC_PRODUCTS.find(function(x){return x.id===id;});if(!p)return;PHC_CART[id]=(PHC_CART[id]||0)+1;renderCart();}
+            function renderCart(){var el=document.getElementById("phc-cart-items");var rows=Object.keys(PHC_CART).map(function(id){var p=PHC_PRODUCTS.find(function(x){return x.id===+id;});var q=PHC_CART[id];return "<div class=\"phc-item\"><span>"+p.name+" x"+q+"</span><span>"+money(p.price*q)+"</span></div>";}).join("");var total=Object.keys(PHC_CART).reduce(function(t,id){var p=PHC_PRODUCTS.find(function(x){return x.id===+id;});return t+p.price*PHC_CART[id];},0);var count=Object.keys(PHC_CART).reduce(function(c,id){return c+PHC_CART[id];},0);el.innerHTML=rows||"<div class=\"phc-empty\">Cart is empty.</div>";document.getElementById("phc-total").textContent=money(total);var b=document.getElementById("phc-count");if(b)b.textContent=count+" item"+(count===1?"":"s");}
+        </script>';
+        return $store;
+    }
+
+    protected function cartIcon(string $icons): string
+    {
+        if ($icons === 'fa') {
+            return '<i class="fa-solid fa-cart-shopping"></i>';
+        }
+        if ($icons === 'bi') {
+            return '<i class="bi bi-cart"></i>';
+        }
+        if ($icons === 'emoji') {
+            return '🛒';
+        }
+        return '';
+    }
+
+    public function storeThemeCss()
+    {
+        $theme = $_GET['id'] ?? 'planethosts';
+        header('Content-Type: text/css; charset=utf-8');
+        header('Cache-Control: public, max-age=300');
+        echo \Admin\Services\CartThemes::fullCss($theme);
+        exit;
+    }
+
+    public function storeEmbedJs()
+    {
+        $settings = $this->cartSettingsAll();
+        $theme = $settings['cart_theme'] ?? 'planethosts';
+        header('Content-Type: application/javascript; charset=utf-8');
+        header('Cache-Control: public, max-age=300');
+        try {
+            $products = $this->db->table('billing_products')->where('is_active', 1)->where('is_visible', 1)->orderBy('sort_order', 'ASC')->get() ?: [];
+        } catch (\Throwable $e) {
+            $products = $this->db->table('billing_products')->where('is_active', 1)->orderBy('sort_order', 'ASC')->get() ?: [];
+        }
+        $json = json_encode(array_map(function ($p) {
+            return ['id' => (int)$p->id, 'name' => (string)$p->name, 'desc' => (string)$p->description, 'price' => (float)$p->price, 'cycle' => $p->billing_cycle ?? 'mo'];
+        }, $products));
+
+        $t = \Admin\Services\CartThemes::get($theme);
+        $footerMsg = trim($settings['cart_footer_message'] ?? '');
+        if ($footerMsg === '') {
+            $footerMsg = \Admin\Services\CartThemes::defaultFooter($theme);
+        }
+        $currency = $settings['cart_currency'] ?? 'USD';
+        $symbol = $currency === 'EUR' ? '€' : ($currency === 'GBP' ? '£' : '$');
+        $logoA = $t['logo_a'] ?? '';
+        $logoB = $t['logo_b'] ?? '';
+        $headerSub = $t['header_sub'] ?? '';
+        $icons = $t['icons'] ?? 'fa';
+        $cartIcon = $this->cartIcon($icons);
+        $bootstrap = (int)\Admin\Services\CartThemes::isBootstrap($theme);
+
+        echo <<<JS
+(function(){
+  var PRODUCTS = $json;
+  var THEME = {$this->jsonStr($theme)};
+  var SYM = {$this->jsonStr($symbol)};
+  var LOGO_A = {$this->jsonStr($logoA)};
+  var LOGO_B = {$this->jsonStr($logoB)};
+  var HEADER_SUB = {$this->jsonStr($headerSub)};
+  var FOOTER_MSG = {$this->jsonStr($footerMsg)};
+  var CART_ICON = {$this->jsonStr($cartIcon)};
+  var IS_BOOTSTRAP = $bootstrap;
+  var CONTAINER_SELECTOR = '#ph-cart';
+  var CONTAINER = null;
+  var CART = {};
+  function m(n){ return SYM + n.toFixed(2); }
+  function loadCss(href){ var l=document.createElement('link'); l.rel='stylesheet'; l.href=href; document.head.appendChild(l); }
+  function load(){
+    CONTAINER = document.querySelector(CONTAINER_SELECTOR || '#ph-cart');
+    if(!CONTAINER) return;
+    loadCss('/store/theme.css?id='+THEME);
+    if(IS_BOOTSTRAP) loadCss('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css');
+    if('$icons'==='fa') loadCss('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
+    if('$icons'==='bi') loadCss('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css');
+    CONTAINER.className='ph-store phc-'+THEME;
+    CONTAINER.innerHTML='<header class="phc-header"><div class="phc-brand"><div><span class="phc-logo-text">'+LOGO_A+(LOGO_B?'<b>'+LOGO_B+'</b>':'')+'</span>'+(HEADER_SUB?'<div class="phc-header-sub">'+HEADER_SUB+'</div>':'')+'</div></div><span class="phc-cart-badge" id="phc-count">0 items</span></header>'+
+      '<div class="phc-grid">'+PRODUCTS.map(function(p){
+        return '<div class="phc-product"><div class="phc-name">'+p.name+'</div><div class="phc-desc">'+p.desc+'</div><div class="phc-price">'+m(p.price)+' <small>/'+p.cycle+'</small></div><button class="phc-btn" onclick="PHCart.add('+p.id+')">'+CART_ICON+' Add to Cart</button></div>';
+      }).join('')+'</div>'+
+      '<div class="phc-cart"><h4>'+CART_ICON+' Your Cart</h4><div id="phc-items" class="phc-empty">Cart is empty.</div><div class="phc-total">Total: <span id="phc-total">'+SYM+'0.00</span></div></div>'+
+      '<footer class="phc-footer">'+FOOTER_MSG+'</footer><div class="phc-foot">⚡ Powered by Planet Hosts</div>';
+  }
+  window.PHCart = {
+    init: function(opts){ CONTAINER_SELECTOR = (opts && opts.container) || '#ph-cart'; THEME = (opts && opts.theme) || THEME; load(); },
+    add: function(id){ var p=PRODUCTS.find(function(x){return x.id===id;}); if(!p)return; CART[id]=(CART[id]||0)+1; render(); },
+    render: render
+  };
+  function render(){
+    var el=CONTAINER&&CONTAINER.querySelector('#phc-items'); if(!el)return;
+    var rows=Object.keys(CART).map(function(id){ var p=PRODUCTS.find(function(x){return x.id===+id;}); var q=CART[id]; return '<div class="phc-item"><span>'+p.name+' x'+q+'</span><span>'+m(p.price*q)+'</span></div>'; }).join('');
+    var total=Object.keys(CART).reduce(function(t,id){ var p=PRODUCTS.find(function(x){return x.id===+id;}); return t+p.price*CART[id]; },0);
+    var count=Object.keys(CART).reduce(function(c,id){ return c+CART[id]; },0);
+    el.innerHTML=rows||'<div class="phc-empty">Cart is empty.</div>';
+    var t=CONTAINER.querySelector('#phc-total'); if(t)t.textContent=m(total);
+    var b=CONTAINER.querySelector('#phc-count'); if(b)b.textContent=count+' item'+(count===1?'':'s');
+  }
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', load); } else { load(); }
+})();
+JS;
+        exit;
+    }
+
+    protected function jsonStr($v)
+    {
+        return json_encode($v);
     }
 
     // ── Products ──
