@@ -370,6 +370,27 @@ class ShoutcastDriver implements StreamingDriverInterface
             preg_match('/<BITRATE>(\d+)<\/BITRATE>/', $xml, $m); $stats['bitrate'] = (int)($m[1] ?? $station->bitrate);
             preg_match('/<GENRE>(.*?)<\/GENRE>/', $xml, $m); $stats['genre'] = $m[1] ?? '';
             preg_match('/<SERVER_NAME>(.*?)<\/SERVER_NAME>/', $xml, $m); $stats['server_name'] = $m[1] ?? $station->name;
+        } else {
+            // SHOUTcast v1 has no /stats endpoint — scrape the public index page
+            $html = @file_get_contents("http://127.0.0.1:{$station->port}/index.html", false, $ctx);
+            if ($html) {
+                if (preg_match('/Stream is up at (\d+) kbps with (\d+) of/i', $html, $m)) {
+                    $stats['bitrate'] = (int)$m[1];
+                    $stats['listeners'] = (int)$m[2];
+                } elseif (preg_match('/with (\d+) listener/i', $html, $m)) {
+                    $stats['listeners'] = (int)$m[1];
+                }
+                if (preg_match('/Stream Title:\s*<\/td>\s*<td[^>]*>\s*<[^>]+>([^<]+)/i', $html, $m)) {
+                    $stats['server_name'] = trim($m[1]);
+                }
+                if (preg_match('/Current Song:\s*<\/td>\s*<td[^>]*>\s*<[^>]+>([^<]+)/i', $html, $m)) {
+                    $stats['audio_info'] = trim($m[1]);
+                }
+                if (preg_match('/Listener Peak:\s*<\/td>\s*<td[^>]*>\s*<[^>]+>(\d+)/i', $html, $m)) {
+                    $stats['listener_peak'] = (int)$m[1];
+                }
+                if (preg_match('/Stream is up/i', $html)) $stats['stream_start'] = date('Y-m-d H:i:s');
+            }
         }
         return $stats;
     }
