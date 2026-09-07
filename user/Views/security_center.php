@@ -61,6 +61,7 @@ table.sc-t{width:100%;border-collapse:collapse;font-size:12px}
   <a href="/user/security?tab=login" class="<?=$tab==='login'?'active':''?>">Login Security</a>
   <a href="/user/security?tab=audit" class="<?=$tab==='audit'?'active':''?>">Audit Log</a>
   <a href="/user/security?tab=alerts" class="<?=$tab==='alerts'?'active':''?>">Notifications</a>
+  <a href="/user/security?tab=pin" class="<?=$tab==='pin'?'active':''?>">Account PIN</a>
 </div>
 
 <?php if (isset($_SESSION['success'])): ?><div class="sc-card" style="background:rgba(0,200,83,.08);border-color:rgba(0,200,83,.2);color:#00C853;font-size:13px"><?=htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?></div><?php endif; ?>
@@ -285,6 +286,27 @@ table.sc-t{width:100%;border-collapse:collapse;font-size:12px}
 </tr>
 <?php endforeach; ?>
 </table><?php endif; ?>
+</div>
+
+<?php elseif ($tab === 'pin'): ?>
+<div class="sc-card"><h3>Account Authorization Code (4-digit PIN)</h3>
+<div class="sc-note" style="margin-bottom:14px">Your PIN authorizes purchases made with this account's email and lets Support verify your identity before discussing billing. It is stored hashed — Support sees only whether a PIN is set, never the PIN itself.</div>
+<form method="POST" action="/user/security/pin/save">
+<input type="hidden" name="_csrf_token" value="<?=htmlspecialchars($csrfField ?? '')?>">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:420px">
+<div><label style="font-size:10px;color:#64748b;display:block;margin-bottom:4px"><?=!empty($hosting->support_pin_hash) ? 'Replace PIN (currently set)' : 'Set 4-digit PIN'?></label>
+<input name="account_pin" inputmode="numeric" pattern="\d{4}" maxlength="4" class="sc-inp" placeholder="4 digits" autocomplete="off"></div>
+<div style="align-self:end"><button class="sc-btn sc-btn-p">Save PIN</button></div>
+</div>
+</form>
+<?php if (!empty($hosting->support_pin_hash)): ?>
+<form method="POST" action="/user/security/pin/save" style="margin-top:14px">
+<input type="hidden" name="_csrf_token" value="<?=htmlspecialchars($csrfField ?? '')?>">
+<input type="hidden" name="clear_pin" value="1">
+<button class="sc-btn sc-btn-d">Remove PIN</button>
+<span style="font-size:11px;color:#64748b;margin-left:8px">Without a PIN, support cannot verify billing conversations and purchases are not PIN-protected.</span>
+</form>
+<?php endif; ?>
 </div>
 
 <?php endif; ?>
