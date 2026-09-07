@@ -1,3 +1,7 @@
+<?php
+$allPerms = ['billing','accounts','packages','resellers','streaming','domains','dns','ssl','ssh','ftp','email','databases','backups','support','tickets','livechat','kb','announcements','reports','servers','plugins','templates','security','api','settings','theme'];
+$allRoles = ['admin','super','support','sales','billing','technical','server','streaming','game','domain','cpanel','abuse','dmca','linux','windows'];
+?>
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
 <h2 style="margin:0">Admin Management</h2>
 </div>
@@ -25,11 +29,7 @@
 <div style="margin-top:10px">
 <label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:6px">Permissions (what this admin can do)</label>
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:4px;max-height:200px;overflow-y:auto;padding:8px;background:rgba(0,0,0,.15);border-radius:6px">
-<?php
-$allPerms = ['billing','accounts','packages','resellers','streaming','domains','dns','ssl','ssh','ftp','email','databases','backups','support','tickets','livechat','kb','announcements','reports','servers','plugins','templates','security','api','settings','theme'];
-$allRoles = ['admin','super','support','sales','billing','technical','server','streaming','game','domain','cpanel','abuse','dmca','linux','windows'];
-foreach ($allPerms as $perm):
-?>
+<?php foreach ($allPerms as $perm): ?>
 <label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;padding:2px 4px;border-radius:3px;background:rgba(255,255,255,.02)">
 <input type="checkbox" name="permissions[]" value="<?php echo $perm; ?>"> <?php echo ucfirst($perm); ?>
 </label>
