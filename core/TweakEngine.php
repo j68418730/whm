@@ -402,17 +402,21 @@ class TweakEngine
 
     public static function securityScore(): array
     {
+        $fw = trim((string)shell_exec('systemctl is-active firewalld 2>/dev/null') ?: '') === 'active'
+            || trim((string)shell_exec('sudo -n firewall-cmd --state 2>/dev/null') ?: '') === 'running';
         $checks = [
-            'Firewall' => self::isOn('fw.enabled') || trim((string)shell_exec('firewall-cmd --state 2>/dev/null') ?: '') === 'running',
-            'SSL' => self::isOn('ssl.enabled'),
-            'PHP' => self::isOn('sec.disable_php_functions') !== false && self::value('php.customer.disable_functions') !== '',
-            'SSH' => self::isOn('f2b.ssh'),
-            'Mail' => self::isOn('mail.spam_filter'),
+            'Firewall' => $fw || self::isOn('fw.enabled', false) && stripos((string)self::value('fw.enabled'), 'running') !== false,
+            'SSL' => self::value('ssl.enabled') === '1' || self::isOn('ssl.enabled'),
+            'PHP' => trim((string)self::value('php.customer.disable_functions')) !== '' || self::isOn('php.panel.opcache', false),
+            'SSH' => self::value('f2b.ssh') === '1' || self::isOn('f2b.ssh'),
+            'Mail' => self::value('mail.spam_filter') === '1' || self::isOn('mail.spam_filter'),
             'DNS' => self::value('dns.recursive') === 'local',
-            'Authentication' => self::isOn('sec.login_rate_limit') && self::isOn('sec.csrf'),
-            'Backups' => self::isOn('backup.enabled'),
-            'Updates' => self::isOn('sw.security_updates'),
-            'Logging' => self::isOn('logging.audit') && self::isOn('logging.security'),
+            'Authentication' => (self::value('sec.login_rate_limit') === '1' || self::isOn('sec.login_rate_limit'))
+                && (self::value('sec.csrf') === '1' || self::isOn('sec.csrf')),
+            'Backups' => self::value('backup.enabled') === '1' || self::isOn('backup.enabled'),
+            'Updates' => self::value('sw.security_updates') === '1' || self::isOn('sw.security_updates'),
+            'Logging' => (self::value('logging.audit') === '1' || self::isOn('logging.audit'))
+                && (self::value('logging.security') === '1' || self::isOn('logging.security')),
         ];
         $pass = count(array_filter($checks));
         return ['score' => (int)round($pass / count($checks) * 100), 'checks' => $checks];
