@@ -144,13 +144,30 @@ function radio_probe_shoutcast_v2(stdClass $stream, int $port): array
     ];
 }
 
+function radio_stats_raw_get(int $port, string $path): string
+{
+    $fp = @fsockopen('127.0.0.1', $port, $errno, $errstr, 4);
+    if (!$fp) return '';
+    fwrite($fp, "GET {$path} HTTP/1.0\r\nUser-Agent: Mozilla/5.0 (PlanetHosts)\r\n\r\n");
+    stream_set_timeout($fp, 4);
+    $resp = '';
+    while (!feof($fp)) {
+        $d = fread($fp, 8192);
+        if ($d === false || $d === '') break;
+        $resp .= $d;
+    }
+    fclose($fp);
+    return $resp;
+}
+
 /**
  * Live probe a SHOUTcast v1 DNAS via its index page + admin.cgi stats.
+ * v1 serves non-standard headers — use a raw socket, not the http:// wrapper.
  */
 function radio_probe_shoutcast_v1(stdClass $stream, int $port): array
 {
     if (!radio_port_open('127.0.0.1', $port)) return [];
-    $html = radio_http_get("http://127.0.0.1:{$port}/index.html");
+    $html = radio_stats_raw_get($port, '/index.html');
     if ($html === '') return [];
     $out = ['status' => false, 'server_up' => true, 'listeners' => 0, 'peak' => 0, 'bitrate' => (int)($stream->bitrate ?? 128), 'song' => '', 'uptime' => ''];
     // v1 index page shows "Stream is up at ... kb/s with N listener(s)" or "Server is currently down"
