@@ -39,7 +39,7 @@ if (!function_exists('admin_menu_sections')) {
             ['label' => 'Domains', 'href' => '/admin/section/domains', 'icon' => '🌍', 'match' => ['/admin/domains', '/admin/dns', '/admin/ip']],
             ['label' => 'Chat', 'href' => '/chatbox/admin-control.php', 'icon' => '💬', 'match' => ['/admin/livechat', '/admin/chat-dashboard', '/chatbox']],
             ['label' => 'Security', 'href' => '/admin/section/security', 'icon' => '🔒', 'match' => ['/admin/security', '/admin/firewall', '/admin/ipblocker', '/admin/twofactor']],
-            ['label' => 'System', 'href' => '/admin/section/system', 'icon' => '⚙️', 'match' => ['/admin/settings', '/admin/serverconfig', '/admin/hostname', '/admin/licensing', '/admin/plugins', '/admin/installers', '/admin/todo', '/admin/process-manager', '/admin/automation', '/admin/filesystem', '/admin/themes', '/admin/theme']],
+            ['label' => 'System', 'href' => '/admin/section/system', 'icon' => '⚙️', 'match' => ['/admin/settings', '/admin/serverconfig', '/admin/tweak', '/admin/hostname', '/admin/licensing', '/admin/plugins', '/admin/installers', '/admin/todo', '/admin/process-manager', '/admin/automation', '/admin/filesystem', '/admin/themes', '/admin/theme']],
         ];
     }
 }
