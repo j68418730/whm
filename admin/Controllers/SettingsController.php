@@ -96,6 +96,7 @@ class SettingsController extends Controller
             'smtp_from' => $this->getSetting('smtp_from', 'noreply@planet-hosts.com'),
             'smtp_encryption' => $this->getSetting('smtp_encryption', 'tls'),
             'smtp_enabled' => $this->getSetting('smtp_enabled', '0'),
+            'company_email' => $this->getSetting('company_email', 'admin@planet-hosts.com'),
         ]);
     }
 
