@@ -73,7 +73,12 @@ if (!function_exists('admin_menu_sections')) {
                 ['label' => 'Game Servers', 'href' => '/admin/games', 'icon' => 'bi-controller', 'match' => ['/admin/games']],
             ]],
             ['group' => 'Builder', 'items' => [
-                ['label' => 'Website Builder', 'href' => '/admin/websitebuilder', 'icon' => 'bi-window-sidebar', 'match' => ['/admin/websitebuilder']],
+                ['label' => 'Website Builder', 'href' => '/admin/websitebuilder', 'icon' => 'bi-window-sidebar', 'match' => ['/admin/websitebuilder'], 'not' => ['/admin/websitebuilder/sites', '/admin/websitebuilder/templates', '/admin/websitebuilder/themes', '/admin/websitebuilder/settings', '/admin/websitebuilder/ai']],
+                ['label' => 'Sites', 'href' => '/admin/websitebuilder/sites', 'icon' => 'bi-layers', 'match' => ['/admin/websitebuilder/sites']],
+                ['label' => 'Templates', 'href' => '/admin/websitebuilder/templates', 'icon' => 'bi-layout-text-window-reverse', 'match' => ['/admin/websitebuilder/templates']],
+                ['label' => 'Builder Themes', 'href' => '/admin/websitebuilder/themes', 'icon' => 'bi-paint-bucket', 'match' => ['/admin/websitebuilder/themes']],
+                ['label' => 'Builder Settings', 'href' => '/admin/websitebuilder/settings', 'icon' => 'bi-gear', 'match' => ['/admin/websitebuilder/settings']],
+                ['label' => 'AI Builder', 'href' => '/admin/websitebuilder/ai', 'icon' => 'bi-stars', 'match' => ['/admin/websitebuilder/ai']],
             ], 'require_plugin' => '\\Plugins\\WebsiteBuilder\\WebsiteBuilderPlugin'],
             ['group' => 'Security', 'items' => [
                 ['label' => 'Security Center', 'href' => '/admin/security', 'icon' => 'bi-shield-lock', 'match' => ['/admin/security', '/admin/firewall', '/admin/ipblocker', '/admin/twofactor']],
@@ -116,8 +121,14 @@ if (!function_exists('render_admin_menu_sections')) {
             $groupActive = false;
             foreach (($section['items'] ?? []) as $item) {
                 $active = false;
-                foreach ($item['match'] ?? [] as $m) {
-                    if ($m && str_starts_with($currentUrl, $m)) { $active = true; break; }
+                $excluded = false;
+                foreach ($item['not'] ?? [] as $n) {
+                    if ($n && str_starts_with($currentUrl, $n)) { $excluded = true; break; }
+                }
+                if (!$excluded) {
+                    foreach ($item['match'] ?? [] as $m) {
+                        if ($m && str_starts_with($currentUrl, $m)) { $active = true; break; }
+                    }
                 }
                 if ($active) $groupActive = true;
                 $ext = !empty($item['ext']);
