@@ -21,6 +21,7 @@
 <a href="/admin/settings/localization" class="section-card"><div class="icon">🌍</div><div class="name">Localization</div><div class="desc">Language & region</div></a>
 <a href="/admin/hostname" class="section-card"><div class="icon">🏷️</div><div class="name">Hostname</div><div class="desc">Server hostname &amp; SSL</div></a>
 <a href="/admin/serverconfig" class="section-card"><div class="icon">🖥️</div><div class="name">Server Config</div><div class="desc">Server configuration</div></a>
+<a href="/admin/tweak?cat=all" class="section-card" style="border-color:rgba(0,140,255,.25)"><div class="icon">🧪</div><div class="name">Tweak Settings</div><div class="desc">514 settings · search, profiles, history</div></a>
 <a href="/admin/ip" class="section-card"><div class="icon">📶</div><div class="name">IP Management</div><div class="desc">IP address pools</div></a>
 <a href="/admin/licensing" class="section-card"><div class="icon">📜</div><div class="name">Licensing</div><div class="desc">License management</div></a>
 <a href="/admin/plugins" class="section-card"><div class="icon">🧩</div><div class="name">Plugins</div><div class="desc">Plugin management</div></a>

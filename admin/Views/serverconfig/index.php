@@ -2,6 +2,11 @@
 <div class="alert alert-success"><?php echo htmlspecialchars($_SESSION['success_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['success_message']); ?></div>
 <?php endif; ?>
 
+<div style="margin-bottom:16px">
+<a href="/admin/tweak?cat=all" class="btn primary" style="text-decoration:none">🧪 Tweak Settings</a>
+<span style="color:#64748b;font-size:12px;margin-left:8px">514 server configuration settings, profiles, history &amp; security score</span>
+</div>
+
 <div class="stats-grid" style="margin-bottom:20px">
 <div class="stat-card"><h3>Hostname</h3><div class="value" style="font-size:16px"><?php echo htmlspecialchars($hostname); ?></div></div>
 <div class="stat-card"><h3>Server IP</h3><div class="value" style="font-size:16px"><?php echo htmlspecialchars($serverIp); ?></div></div>
