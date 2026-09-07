@@ -376,19 +376,21 @@ class ShoutcastDriver implements StreamingDriverInterface
             // break PHP's http:// wrapper, so use a raw socket.
             $html = $this->rawGet($station->port, '/index.html');
             if ($html) {
-                if (preg_match('/Stream is up at (\d+) kbps with (\d+) of/i', $html, $m)) {
+                if (preg_match('/Stream is up at (\d+) kbps with <B>(\d+) of/i', $html, $m)) {
                     $stats['bitrate'] = (int)$m[1];
                     $stats['listeners'] = (int)$m[2];
+                } elseif (preg_match('/with <B>(\d+) of/i', $html, $m)) {
+                    $stats['listeners'] = (int)$m[1];
                 } elseif (preg_match('/with (\d+) listener/i', $html, $m)) {
                     $stats['listeners'] = (int)$m[1];
                 }
-                if (preg_match('/Stream Title:\s*<\/td>\s*<td[^>]*>\s*<[^>]+>([^<]+)/i', $html, $m)) {
+                if (preg_match('/Stream Title:\s*<\/font><\/td><td><font class=default><b>\s*([^<]+)/i', $html, $m)) {
                     $stats['server_name'] = trim($m[1]);
                 }
-                if (preg_match('/Current Song:\s*<\/td>\s*<td[^>]*>\s*<[^>]+>([^<]+)/i', $html, $m)) {
+                if (preg_match('/Current Song:\s*<\/font><\/td><td><font class=default><b>\s*([^<]*)<\/b>/i', $html, $m)) {
                     $stats['audio_info'] = trim($m[1]);
                 }
-                if (preg_match('/Listener Peak:\s*<\/td>\s*<td[^>]*>\s*<[^>]+>(\d+)/i', $html, $m)) {
+                if (preg_match('/Listener Peak:\s*<\/font><\/td><td><font class=default><b>(\d+)/i', $html, $m)) {
                     $stats['listener_peak'] = (int)$m[1];
                 }
                 if (preg_match('/Stream is up/i', $html)) $stats['stream_start'] = date('Y-m-d H:i:s');

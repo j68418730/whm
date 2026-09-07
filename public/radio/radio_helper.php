@@ -170,10 +170,12 @@ function radio_probe_shoutcast_v1(stdClass $stream, int $port): array
     $html = radio_stats_raw_get($port, '/index.html');
     if ($html === '') return [];
     $out = ['status' => false, 'server_up' => true, 'listeners' => 0, 'peak' => 0, 'bitrate' => (int)($stream->bitrate ?? 128), 'song' => '', 'uptime' => ''];
-    // v1 index page shows "Stream is up at ... kb/s with N listener(s)" or "Server is currently down"
+    // v1 index page shows "Stream is up at ... kb/s with <B>0 of 500 listeners"
     if (preg_match('/Stream is up/i', $html)) $out['status'] = true;
-    if (preg_match('/with (\d+) listener/i', $html, $m)) $out['listeners'] = (int)$m[1];
-    if (preg_match('/Current Song:\s*([^<]+)/i', $html, $m)) $out['song'] = trim($m[1]);
+    if (preg_match('/with <B>(\d+) of/i', $html, $m)) $out['listeners'] = (int)$m[1];
+    elseif (preg_match('/with (\d+) listener/i', $html, $m)) $out['listeners'] = (int)$m[1];
+    if (preg_match('/Current Song:\s*<\/font><\/td><td><font class=default><b>\s*([^<]*)<\/b>/i', $html, $m)) $out['song'] = trim($m[1]);
+    if (preg_match('/Listener Peak:\s*<\/font><\/td><td><font class=default><b>(\d+)/i', $html, $m)) $out['peak'] = (int)$m[1];
     if (preg_match('/Stream is up at (\d+) kbps/i', $html, $m)) $out['bitrate'] = (int)$m[1];
     // If v2-style /stats also works (hybrid), prefer it
     $v2 = radio_probe_shoutcast_v2($stream, $port);
