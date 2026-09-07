@@ -164,28 +164,141 @@ class ServerConfigController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
-        $settings = $this->getTweakSettings();
-        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        $cat = $this->request->get('cat', 'all');
+        $q = trim((string)($this->request->get('q', '') ?? ''));
+        $filter = (string)($this->request->get('filter', 'all') ?? 'all');
+        $resolved = \Core\TweakEngine::resolved();
+        $categories = \Core\TweakEngine::categories();
+        $score = \Core\TweakEngine::securityScore();
+        $history = \Core\TweakEngine::history(100);
+        $thisCat = $categories[$cat] ?? null;
+        $settings = [];
+        foreach ($resolved as $s) {
+            $def = $s['definition'];
+            if ($cat !== 'all' && $cat !== 'history' && $def['cat'] !== $cat) continue;
+            if ($q !== '') {
+                $hay = strtolower($def['key'] . ' ' . $def['label'] . ' ' . ($def['desc'] ?? '') . ' ' . strtolower($categories[$def['cat']]['name'] ?? ''));
+                if (strpos($hay, strtolower($q)) === false) continue;
+            }
+            $state = $s['source'] === 'custom' ? 'custom' : ($s['definition']['type'] === 'info' ? 'live' : 'default');
+            if ($filter === 'custom' && $state !== 'custom') continue;
+            if ($filter === 'default' && $state !== 'default') continue;
+            if ($filter === 'live' && $state !== 'live') continue;
+            if ($filter === 'requires_restart' && empty($def['restart'])) continue;
+            if ($filter === 'high_risk' && ($def['risk'] ?? '') !== 'high') continue;
+            if ($filter === 'security' && ($def['cat'] ?? '') !== 'security' && stripos($def['label'], 'secur') === false) continue;
+            $settings[] = $s + ['state' => $state];
+        }
         return $this->view('admin.serverconfig.tweak', [
-            'user' => $user, 'settings' => $settings, 'theme_settings' => $theme_settings, 'title' => 'Tweak Settings'
+            'user' => $user, 'theme_settings' => json_decode($user->theme_settings ?? '{}', true), 'title' => 'Tweak Settings',
+            'cat' => $cat, 'q' => $q, 'filter' => $filter, 'thisCat' => $thisCat,
+            'settings' => $settings, 'categories' => $categories, 'score' => $score, 'history' => $history,
         ]);
     }
 
     public function tweakSave()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $_SESSION['success_message'] = 'Settings saved. (Configuration persistence requires additional implementation)';
-        $this->response->redirect('/admin/tweak');
+        $keys = (array)($this->request->post('tweak', []) ?? []);
+        $confirmHighRisk = (string)($this->request->post('confirm_high_risk', '') ?? '') === '1';
+        $reason = (string)($this->request->post('reason', '') ?? '');
+        $applied = 0; $errors = []; $highRiskPending = []; $needsRestart = [];
+        foreach ($keys as $key => $val) {
+            if (is_array($val)) $val = implode(',', $val);
+            $def = \Core\TweakEngine::find((string)$key);
+            if (!$def || in_array($def['type'], ['info', 'link'], true)) continue;
+            $cur = \Core\TweakEngine::value((string)$key);
+            if ((string)$cur === (string)$val) continue;
+            $isHigh = ($def['risk'] ?? '') === 'high';
+            if ($isHigh && !$confirmHighRisk) { $highRiskPending[] = $def['label']; continue; }
+            $r = \Core\TweakEngine::set((string)$key, (string)$val, $reason ?: 'Panel save');
+            if ($r['ok']) { $applied++; if (!empty($r['restart'])) $needsRestart[] = $def['label']; }
+            else { $errors[] = $def['label'] . ': ' . $r['message']; }
+        }
+        if ($highRiskPending) {
+            $_SESSION['tweaks_high_risk'] = $highRiskPending;
+            $_SESSION['error_message'] = 'High-risk change(s) require confirmation: ' . implode(', ', $highRiskPending) . ' — tick "Confirm high-risk changes" and save again.';
+        }
+        if ($applied > 0) {
+            $msg = "Saved $applied setting(s).";
+            if ($needsRestart) $msg .= ' Restart required for: ' . implode(', ', array_slice($needsRestart, 0, 5)) . (count($needsRestart) > 5 ? '…' : '');
+            $_SESSION['success_message'] = $msg;
+        }
+        if ($errors) $_SESSION['error_message'] = trim(($_SESSION['error_message'] ?? '') . ' Errors: ' . implode('; ', $errors));
+        $back = '/admin/tweak';
+        if ($this->request->post('cat', '')) $back .= '?cat=' . urlencode((string)$this->request->post('cat', ''));
+        $this->response->redirect($back);
     }
 
-    private function getTweakSettings()
+    public function tweakReset()
     {
-        return [
-            'Compression' => [['key'=>'compress_transfer','label'=>'Enable compression for transfers','type'=>'toggle','default'=>true]],
-            'Security' => [['key'=>'login_security','label'=>'Login security (max attempts)','type'=>'number','default'=>5]],
-            'PHP' => [['key'=>'php_default_version','label'=>'Default PHP version','type'=>'select','options'=>['8.2'=>'8.2','8.1'=>'8.1'],'default'=>'8.2']],
-            'Mail' => [['key'=>'mail_quota_mb','label'=>'Default mailbox quota (MB)','type'=>'number','default'=>1000]],
-        ];
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $key = (string)($this->request->get('key', '') ?? '');
+        $r = \Core\TweakEngine::reset($key);
+        $_SESSION[$r['ok'] ? 'success_message' : 'error_message'] = $r['message'];
+        $this->response->redirect('/admin/tweak' . ($this->request->get('cat', '') ? '?cat=' . urlencode((string)$this->request->get('cat', '')) : ''));
+    }
+
+    public function tweakExport()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        header('Content-Type: application/json');
+        header('Content-Disposition: attachment; filename="planet-hosts-tweaks-' . date('Ymd_His') . '.json"');
+        echo \Core\TweakEngine::export();
+        exit;
+    }
+
+    public function tweakImport()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $raw = (string)($this->request->post('tweaks_json', '') ?? '');
+        $confirm = (string)($this->request->post('confirm', '') ?? '') === '1';
+        if ($raw === '') {
+            $_SESSION['error_message'] = 'Paste a tweaks JSON export.';
+            $this->response->redirect('/admin/tweak?cat=all');
+        }
+        $r = \Core\TweakEngine::import($raw, $confirm);
+        if (!$confirm && !empty($r['preview'])) {
+            $_SESSION['tweaks_import_preview'] = ['json' => $raw, 'changes' => array_slice($r['preview'], 0, 100), 'total' => count($r['preview'])];
+            $_SESSION['success_message'] = 'Preview: ' . $r['message'] . ' Review below, back up the current config (Export), then confirm.';
+        } elseif ($r['ok']) {
+            $_SESSION['success_message'] = $r['message'];
+        } else {
+            $_SESSION['error_message'] = $r['message'];
+        }
+        $this->response->redirect('/admin/tweak?cat=all');
+    }
+
+    public function tweakProfile()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $profileId = (string)($this->request->get('id', '') ?? '');
+        $confirm = (string)($this->request->get('confirm', '') ?? '') === '1';
+        $profiles = \Core\TweakEngine::profiles();
+        if (!isset($profiles[$profileId])) {
+            $_SESSION['error_message'] = 'Unknown profile.';
+            $this->response->redirect('/admin/tweak?cat=all');
+        }
+        if (!$confirm) {
+            $changes = [];
+            foreach ($profiles[$profileId]['settings'] as $k => $v) {
+                $def = \Core\TweakEngine::find((string)$k);
+                if (!$def) continue;
+                $changes[] = ['label' => $def['label'], 'old' => \Core\TweakEngine::value((string)$k), 'new' => $v, 'risk' => $def['risk'] ?? 'normal'];
+            }
+            $_SESSION['tweaks_profile_preview'] = ['id' => $profileId, 'name' => $profiles[$profileId]['name'], 'changes' => $changes];
+            $_SESSION['success_message'] = 'Profile preview: ' . $profiles[$profileId]['name'] . ' (' . count($changes) . ' changes). Click "Apply" to confirm.';
+            $this->response->redirect('/admin/tweak?cat=all');
+        }
+        $applied = 0;
+        foreach ($profiles[$profileId]['settings'] as $k => $v) {
+            if (\Core\TweakEngine::find((string)$k)) {
+                $r = \Core\TweakEngine::set((string)$k, (string)$v, 'Profile: ' . $profiles[$profileId]['name']);
+                if ($r['ok']) $applied++;
+            }
+        }
+        $_SESSION['success_message'] = "Profile '{$profiles[$profileId]['name']}' applied ($applied settings).";
+        $this->response->redirect('/admin/tweak?cat=all');
     }
 }
 

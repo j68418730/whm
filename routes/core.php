@@ -130,6 +130,10 @@ $router->post('/admin/serverconfig/rootpass', 'Admin\Controllers\ServerConfigCon
 $router->post('/admin/serverconfig/ports', 'Admin\Controllers\ServerConfigController@setupPorts');
 $router->get('/admin/tweak', 'Admin\Controllers\ServerConfigController@tweak');
 $router->post('/admin/tweak', 'Admin\Controllers\ServerConfigController@tweakSave');
+$router->get('/admin/tweak/reset', 'Admin\Controllers\ServerConfigController@tweakReset');
+$router->get('/admin/tweak/export', 'Admin\Controllers\ServerConfigController@tweakExport');
+$router->post('/admin/tweak/import', 'Admin\Controllers\ServerConfigController@tweakImport');
+$router->get('/admin/tweak/profile', 'Admin\Controllers\ServerConfigController@tweakProfile');
 $router->get('/admin/network', 'Admin\Controllers\NetworkController@index');
 $router->post('/admin/network', 'Admin\Controllers\NetworkController@store');
 $router->get('/admin/ipblocker', 'Admin\Controllers\IpBlockerController@index');
