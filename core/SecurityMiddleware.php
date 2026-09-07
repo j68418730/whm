@@ -72,7 +72,7 @@ class SecurityMiddleware
             $adminUser = $auth->user();
             // root/kane/spectre pass through untouched
             if (in_array($adminUser->name ?? '', ['root', 'kane', 'spectre'], true)) return;
-            if (!\AdminsController::canAccessPath($path)) {
+            if (!\Admin\Controllers\AdminsController::canAccessPath($path)) {
                 http_response_code(403);
                 $errorFile = dirname(__DIR__) . '/public/errors/403.php';
                 if (is_file($errorFile)) {
