@@ -525,9 +525,17 @@ class DesktopController extends Controller
         ];
     }
 
+    /**
+     * REQ #3 — KB response format (stable envelope for the desktop app):
+     *   { success, data:{...}, <resource>:<same-as-data>, count, generated_at }
+     * Categories  → data + categories
+     * Articles    → data + articles (optional ?category_id=&search=)
+     * Single      → data + article
+     */
     public function kbCategories()
     {
         $this->apiKeyAuth();
+        $this->logApiCall('/api/kb/categories');
         $pdo = $this->pdo();
         $cats = $pdo->query("SELECT * FROM kb_categories ORDER BY name ASC")->fetchAll(\PDO::FETCH_OBJ);
         $result = [];
@@ -542,33 +550,228 @@ class DesktopController extends Controller
                 'article_count' => (int)$stm->fetchColumn(),
             ];
         }
-        $this->json(['success' => true, 'data' => $result]);
+        $this->json([
+            'success' => true,
+            'data' => $result,
+            'categories' => $result,
+            'count' => count($result),
+            'generated_at' => date('c'),
+        ]);
     }
 
     public function kbArticles()
     {
         $this->apiKeyAuth();
+        $this->logApiCall('/api/kb/articles');
         $catId = $this->request->query('category_id', '');
+        $search = trim((string)$this->request->query('search', ''));
+        $includeContent = $this->request->query('content', '') === '1';
         $pdo = $this->pdo();
         $rows = [];
         if (!empty($catId)) {
             $stm = $pdo->prepare("SELECT * FROM kb_articles WHERE category_id = ? ORDER BY title ASC");
             $stm->execute([(int)$catId]);
             $rows = $stm->fetchAll(\PDO::FETCH_OBJ);
+        } elseif ($search !== '') {
+            $stm = $pdo->prepare("SELECT * FROM kb_articles WHERE title LIKE ? OR content LIKE ? ORDER BY title ASC");
+            $stm->execute(["%{$search}%", "%{$search}%"]);
+            $rows = $stm->fetchAll(\PDO::FETCH_OBJ);
         } else {
             $rows = $pdo->query("SELECT * FROM kb_articles ORDER BY title ASC")->fetchAll(\PDO::FETCH_OBJ);
         }
-        $result = array_map(fn($r) => $this->kbArticleMap($r), $rows);
-        $this->json(['success' => true, 'data' => $result]);
+        $result = array_map(function ($r) use ($includeContent) {
+            $m = $this->kbArticleMap($r);
+            if (!$includeContent) $m['content'] = null; // list view: omit heavy content
+            return $m;
+        }, $rows);
+        $this->json([
+            'success' => true,
+            'data' => $result,
+            'articles' => $result,
+            'count' => count($result),
+            'filters' => ['category_id' => $catId !== '' ? (int)$catId : null, 'search' => $search !== '' ? $search : null],
+            'generated_at' => date('c'),
+        ]);
     }
 
     public function getKbArticle($id)
     {
         $this->apiKeyAuth();
+        $this->logApiCall('/api/kb/articles/' . (int)$id);
         $a = $this->db->table('kb_articles')->where('id', (int)$id)->first();
-        if (!$a) $this->json(['success' => false, 'error' => 'Article not found'], 404);
-        $this->json(['success' => true, 'data' => $this->kbArticleMap($a)]);
+        if (!$a) $this->json(['success' => false, 'error' => 'Article not found', 'article' => null], 404);
+        $m = $this->kbArticleMap($a);
+        $this->json([
+            'success' => true,
+            'data' => $m,
+            'article' => $m,
+            'generated_at' => date('c'),
+        ]);
     }
+
+    // ─────────────── Support Identity: Account PIN (REQ #6) ───────────────
+
+    protected function accountPinInfo($u): array
+    {
+        return [
+            'id' => (int)$u->id,
+            'username' => $u->username ?? '',
+            'email' => $u->email ?? '',
+            'status' => $u->status ?? '',
+            'pin_set' => !empty($u->support_pin_hash),
+            'code_active' => !empty($u->support_pin_code) && (!empty($u->support_pin_code_expires) && strtotime((string)$u->support_pin_code_expires) > time()),
+        ];
+    }
+
+    /** POST /api/v1/accounts/{id}/set-pin  {pin} | {mode:"code"} — set/replace identity PIN (or generate one-time code). */
+    public function setAccountPin($id)
+    {
+        $this->apiKeyAuth();
+        $this->logApiCall('/api/v1/accounts/' . (int)$id . '/set-pin');
+        $u = $this->db->table('hosting_users')->where('id', (int)$id)->first();
+        if (!$u) $this->json(['success' => false, 'error' => 'Account not found'], 404);
+        $in = $this->getJsonInput();
+        $mode = $in['mode'] ?? 'pin';
+        $pdo = $this->pdo();
+        if ($mode === 'code') {
+            $code = (string)random_int(100000, 999999);
+            $pdo->prepare("UPDATE hosting_users SET support_pin_code = ?, support_pin_code_expires = DATE_ADD(NOW(), INTERVAL 15 MINUTE) WHERE id = ?")
+                ->execute([$code, (int)$id]);
+            $this->json(['success' => true, 'message' => 'One-time verification code generated (valid 15 minutes)', 'account' => $this->accountPinInfo($u), 'code' => $code, 'expires_in' => 900]);
+        }
+        $pin = preg_replace('/\D/', '', (string)($in['pin'] ?? ''));
+        if (strlen($pin) < 4 || strlen($pin) > 12) {
+            $this->json(['success' => false, 'error' => 'PIN must be 4-12 digits'], 400);
+        }
+        $pdo->prepare("UPDATE hosting_users SET support_pin_hash = ?, support_pin_code = NULL, support_pin_code_expires = NULL WHERE id = ?")
+            ->execute([password_hash($pin, PASSWORD_DEFAULT), (int)$id]);
+        $u = $this->db->table('hosting_users')->where('id', (int)$id)->first();
+        $this->json(['success' => true, 'message' => 'PIN set', 'account' => $this->accountPinInfo($u)]);
+    }
+
+    /** POST /api/v1/accounts/{id}/verify-pin  {pin} — verify the account identity PIN. */
+    public function verifyAccountPin($id)
+    {
+        $this->apiKeyAuth();
+        $this->logApiCall('/api/v1/accounts/' . (int)$id . '/verify-pin');
+        $u = $this->db->table('hosting_users')->where('id', (int)$id)->first();
+        if (!$u) $this->json(['success' => false, 'error' => 'Account not found'], 404);
+        $in = $this->getJsonInput();
+        $pin = preg_replace('/\D/', '', (string)($in['pin'] ?? ''));
+        if (empty($u->support_pin_hash)) {
+            $this->json(['success' => true, 'verified' => false, 'reason' => 'no_pin_set', 'account' => $this->accountPinInfo($u)]);
+        }
+        $ok = !empty($pin) && password_verify($pin, (string)$u->support_pin_hash);
+        $this->json([
+            'success' => true,
+            'verified' => $ok,
+            'reason' => $ok ? null : 'pin_mismatch',
+            'account' => $this->accountPinInfo($u),
+            'verified_at' => date('c'),
+        ]);
+    }
+
+    /** POST /api/account/{id}/verify-code  (Admin) {code} — verify a one-time code or the account PIN. */
+    public function verifyAccountCode($id)
+    {
+        $this->apiKeyAuth();
+        $this->logApiCall('/api/account/' . (int)$id . '/verify-code');
+        $u = $this->db->table('hosting_users')->where('id', (int)$id)->first();
+        if (!$u) $this->json(['success' => false, 'error' => 'Account not found'], 404);
+        $in = $this->getJsonInput();
+        $code = trim((string)($in['code'] ?? ''));
+        if ($code === '') $this->json(['success' => false, 'error' => 'Missing code'], 400);
+        // 1) One-time code (takes priority, consumed on success)
+        if (!empty($u->support_pin_code)) {
+            $expired = empty($u->support_pin_code_expires) || strtotime((string)$u->support_pin_code_expires) < time();
+            if (!$expired && hash_equals((string)$u->support_pin_code, $code)) {
+                $this->pdo()->prepare("UPDATE hosting_users SET support_pin_code = NULL, support_pin_code_expires = NULL WHERE id = ?")->execute([(int)$id]);
+                $u = $this->db->table('hosting_users')->where('id', (int)$id)->first();
+                $this->json(['success' => true, 'verified' => true, 'method' => 'one_time_code', 'account' => $this->accountPinInfo($u), 'verified_at' => date('c')]);
+            }
+        }
+        // 2) Fallback: the account PIN doubles as a verbal code
+        if (!empty($u->support_pin_hash) && preg_match('/^\d{4,12}$/', $code) && password_verify($code, (string)$u->support_pin_hash)) {
+            $this->json(['success' => true, 'verified' => true, 'method' => 'pin', 'account' => $this->accountPinInfo($u), 'verified_at' => date('c')]);
+        }
+        $reason = (!empty($u->support_pin_code) && strtotime((string)($u->support_pin_code_expires ?? '')) < time()) ? 'code_expired' : 'code_mismatch';
+        $this->json(['success' => true, 'verified' => false, 'reason' => $reason, 'account' => $this->accountPinInfo($u)]);
+    }
+
+    // ─────────────── Support Identity: Subcontacts (REQ #6) ───────────────
+
+    protected function subcontactMap($r): array
+    {
+        return [
+            'id' => (int)$r->id,
+            'hosting_user_id' => (int)$r->hosting_user_id,
+            'username' => $r->username ?? '',
+            'email' => $r->email ?? null,
+            'phone' => $r->phone ?? null,
+            'role' => $r->role ?? null,
+            'is_active' => (bool)($r->is_active ?? 1),
+            'pin_set' => !empty($r->pin_hash),
+            'created_at' => $r->created_at ?? '',
+        ];
+    }
+
+    /** GET /api/account/{id}/subcontacts — list account subcontacts. */
+    public function listSubcontacts($id)
+    {
+        $this->apiKeyAuth();
+        $this->logApiCall('/api/account/' . (int)$id . '/subcontacts');
+        $u = $this->db->table('hosting_users')->where('id', (int)$id)->first();
+        if (!$u) $this->json(['success' => false, 'error' => 'Account not found'], 404);
+        $rows = $this->db->table('client_sub_users')->where('hosting_user_id', (int)$id)->orderBy('id', 'ASC')->get() ?: [];
+        $result = array_map(fn($r) => $this->subcontactMap($r), $rows);
+        $this->json([
+            'success' => true,
+            'data' => $result,
+            'subcontacts' => $result,
+            'count' => count($result),
+            'account' => $this->accountPinInfo($u),
+            'generated_at' => date('c'),
+        ]);
+    }
+
+    /** POST /api/account/{id}/subcontacts  {username, email?, phone?, role?, pin?} — add a subcontact. */
+    public function addSubcontact($id)
+    {
+        $this->apiKeyAuth();
+        $this->logApiCall('/api/account/' . (int)$id . '/subcontacts');
+        $u = $this->db->table('hosting_users')->where('id', (int)$id)->first();
+        if (!$u) $this->json(['success' => false, 'error' => 'Account not found'], 404);
+        $in = $this->getJsonInput();
+        $username = trim((string)($in['username'] ?? ''));
+        if ($username === '') $this->json(['success' => false, 'error' => 'Missing username'], 400);
+        $exists = $this->db->table('client_sub_users')
+            ->where('hosting_user_id', (int)$id)->where('username', '=', $username)->first();
+        if ($exists) $this->json(['success' => false, 'error' => 'Subcontact already exists'], 409);
+        $pin = preg_replace('/\D/', '', (string)($in['pin'] ?? ''));
+        if ($pin !== '' && (strlen($pin) < 4 || strlen($pin) > 12)) {
+            $this->json(['success' => false, 'error' => 'PIN must be 4-12 digits'], 400);
+        }
+        $sid = $this->db->table('client_sub_users')->insertGetId([
+            'hosting_user_id' => (int)$id,
+            'username' => $username,
+            'password_hash' => !empty($in['password']) ? password_hash((string)$in['password'], PASSWORD_DEFAULT) : null,
+            'email' => $in['email'] ?? null,
+            'phone' => $in['phone'] ?? null,
+            'role' => $in['role'] ?? null,
+            'pin_hash' => $pin !== '' ? password_hash($pin, PASSWORD_DEFAULT) : null,
+            'permissions' => $in['permissions'] ?? null,
+            'is_active' => 1,
+        ]);
+        $row = $this->db->table('client_sub_users')->where('id', (int)$sid)->first();
+        $this->json([
+            'success' => true,
+            'message' => 'Subcontact added',
+            'data' => $this->subcontactMap($row),
+            'subcontact' => $this->subcontactMap($row),
+        ], 201);
+    }
+
+    // ─────────────── Knowledge Base (legacy single-article helper removed — merged above) ───────────────
 
     public function cannedResponses()
     {

@@ -412,6 +412,19 @@ $router->get('/api/v1/transactions', 'Admin\Controllers\Api\DesktopController@li
 $router->get('/api/kb/categories', 'Admin\Controllers\Api\DesktopController@kbCategories');
 $router->get('/api/kb/articles', 'Admin\Controllers\Api\DesktopController@kbArticles');
 $router->get('/api/kb/articles/{id}', 'Admin\Controllers\Api\DesktopController@getKbArticle');
+
+// Support identity verification (REQ #6) — PIN + one-time code + subcontacts
+$router->post('/api/v1/accounts/{id}/set-pin', 'Admin\Controllers\Api\DesktopController@setAccountPin');
+$router->post('/api/v1/accounts/{id}/verify-pin', 'Admin\Controllers\Api\DesktopController@verifyAccountPin');
+$router->post('/api/account/{id}/verify-code', 'Admin\Controllers\Api\DesktopController@verifyAccountCode');
+$router->get('/api/account/{id}/subcontacts', 'Admin\Controllers\Api\DesktopController@listSubcontacts');
+$router->post('/api/account/{id}/subcontacts', 'Admin\Controllers\Api\DesktopController@addSubcontact');
+// Back-compat aliases for the v1 PIN endpoints
+$router->post('/api/account/{id}/set-pin', 'Admin\Controllers\Api\DesktopController@setAccountPin');
+$router->post('/api/account/{id}/verify-pin', 'Admin\Controllers\Api\DesktopController@verifyAccountPin');
+$router->post('/api/v1/accounts/{id}/verify-code', 'Admin\Controllers\Api\DesktopController@verifyAccountCode');
+$router->get('/api/v1/accounts/{id}/subcontacts', 'Admin\Controllers\Api\DesktopController@listSubcontacts');
+$router->post('/api/v1/accounts/{id}/subcontacts', 'Admin\Controllers\Api\DesktopController@addSubcontact');
 $router->get('/api/canned-responses', 'Admin\Controllers\Api\DesktopController@cannedResponses');
 $router->get('/api/files', 'Admin\Controllers\Api\DesktopController@listFiles');
 $router->get('/api/files/download', 'Admin\Controllers\Api\DesktopController@downloadFile');
