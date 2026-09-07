@@ -274,15 +274,102 @@ class AdminsController extends Controller
         if (!isset($_SESSION['user'])) return false;
         $u = $_SESSION['user'];
         if (in_array($u->name ?? '', ['root', 'kane', 'spectre'])) return true;
-        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
-        $stmt = $pdo->prepare("SELECT role, permissions, is_active FROM admins WHERE id = ?");
-        $stmt->execute([$u->id]);
-        $admin = $stmt->fetch(\PDO::FETCH_OBJ);
+        try {
+            $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
+            $stmt = $pdo->prepare("SELECT role, permissions, is_active FROM admins WHERE id = ?");
+            $stmt->execute([$u->id]);
+            $admin = $stmt->fetch(\PDO::FETCH_OBJ);
+        } catch (\Throwable $e) {
+            return false;
+        }
         if (!$admin || !$admin->is_active) return false;
         if ($admin->role === 'super') return true;
         if ($admin->permissions) {
             $perms = json_decode($admin->permissions, true) ?: [];
             return in_array($permission, $perms);
+        }
+        return false;
+    }
+
+    /**
+     * Required permission(s) for an /admin/* path. Value may be a string (single
+     * permission) or array (any-of). Returns null for paths that need no
+     * permission check (dashboard, profile, login/logout, public-ish endpoints).
+     */
+    public static function permissionForPath(string $path): ?array
+    {
+        // Always allowed
+        foreach (['/admin/dashboard', '/admin/profile', '/admin/login', '/admin/logout', '/admin/support-status'] as $p) {
+            if (str_starts_with($path, $p)) return null;
+        }
+        // Super-only areas (not grantable via checkboxes)
+        if (str_starts_with($path, '/admin/admins') || str_starts_with($path, '/admin/roles')) return ['admins'];
+        // Ordered: most specific first
+        $map = [
+            '/admin/api/streaming' => ['streaming', 'radio'],
+            '/admin/radio/downloads' => ['streaming', 'radio'],
+            '/admin/radio' => ['streaming', 'radio'],
+            '/admin/radio_dashboard' => ['streaming', 'radio'],
+            '/admin/streams' => ['streaming', 'radio'],
+            '/admin/autodj' => ['streaming', 'radio'],
+            '/admin/radiosettings' => ['streaming', 'radio'],
+            '/admin/djs' => ['streaming', 'radio'],
+            '/admin/dj/' => ['streaming', 'radio'],
+            '/admin/games' => ['game', 'nodes'],
+            '/admin/billing' => ['billing'],
+            '/admin/gateways' => ['billing'],
+            '/admin/paypal' => ['billing'],
+            '/admin/account' => ['accounts'],
+            '/admin/userfeatures' => ['packages'],
+            '/admin/packages' => ['packages'],
+            '/admin/reseller' => ['resellers'],
+            '/admin/domains' => ['domains'],
+            '/admin/dns' => ['domains'],
+            '/admin/ip' => ['domains'],
+            '/admin/ssl' => ['ssl'],
+            '/admin/ftp' => ['ftp'],
+            '/admin/email' => ['email'],
+            '/admin/mysql' => ['databases'],
+            '/admin/backup' => ['backups'],
+            '/admin/livechat' => ['livechat'],
+            '/admin/chat-dashboard' => ['livechat'],
+            '/admin/support' => ['support'],
+            '/admin/reviews' => ['support'],
+            '/admin/reports' => ['reports'],
+            '/admin/server' => ['servers'],
+            '/admin/apache' => ['servers'],
+            '/admin/php' => ['servers'],
+            '/admin/process-manager' => ['servers'],
+            '/admin/cron' => ['servers'],
+            '/admin/automation' => ['servers'],
+            '/admin/plugins' => ['plugins'],
+            '/admin/websitebuilder' => ['templates'],
+            '/admin/security' => ['security'],
+            '/admin/firewall' => ['security'],
+            '/admin/ipblocker' => ['security'],
+            '/admin/api' => ['api'],
+            '/admin/serverconfig' => ['settings'],
+            '/admin/hostname' => ['settings'],
+            '/admin/licensing' => ['settings'],
+            '/admin/todo' => ['settings'],
+            '/admin/settings' => ['settings'],
+            '/admin/tweak' => ['tweak'],
+            '/admin/theme' => ['theme'],
+            '/admin/themes' => ['theme'],
+        ];
+        foreach ($map as $prefix => $perms) {
+            if (str_starts_with($path, $prefix)) return $perms;
+        }
+        return null;
+    }
+
+    /** True when the current admin session may access a path (uses permissionForPath + hasAccess). */
+    public static function canAccessPath(string $path): bool
+    {
+        $perms = self::permissionForPath($path);
+        if ($perms === null) return true;
+        foreach ($perms as $p) {
+            if (self::hasAccess($p)) return true;
         }
         return false;
     }

@@ -21,6 +21,11 @@ class SecurityMiddleware
     public static function handle()
     {
         try {
+            // Admin permission enforcement (non-super admins are limited to their
+            // granted permission checkboxes). Runs before dispatch; super admins,
+            // root/kane/spectre and the dashboard/profile/login paths pass through.
+            self::enforceAdminPermissions();
+
             $app = \Core\Application::getInstance();
             $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
             $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -49,6 +54,36 @@ class SecurityMiddleware
             }
         } catch (\Throwable $e) {
             // Fail-open on middleware errors (do not break the site)
+        }
+    }
+
+    /**
+     * Enforce admin permission checkboxes on /admin/* requests.
+     * Fail-open on any internal error so a middleware bug can never lock out root.
+     */
+    protected static function enforceAdminPermissions()
+    {
+        $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+        if (!str_starts_with($path, '/admin/')) return;
+        try {
+            $app = \Core\Application::getInstance();
+            $auth = $app->get('auth');
+            if (!$auth->check() || !$auth->isAdmin()) return; // login redirects handled by controllers
+            $adminUser = $auth->user();
+            // root/kane/spectre pass through untouched
+            if (in_array($adminUser->name ?? '', ['root', 'kane', 'spectre'], true)) return;
+            if (!\AdminsController::canAccessPath($path)) {
+                http_response_code(403);
+                $errorFile = dirname(__DIR__) . '/public/errors/403.php';
+                if (is_file($errorFile)) {
+                    include $errorFile;
+                } else {
+                    echo '<h1>403 — Permission required</h1><p>Your admin account does not have permission for this area. Ask a super admin to grant it under Admin Management.</p>';
+                }
+                exit;
+            }
+        } catch (\Throwable $e) {
+            // fail-open
         }
     }
 
