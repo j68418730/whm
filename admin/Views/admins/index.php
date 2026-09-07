@@ -1,5 +1,5 @@
 <?php
-$allPerms = ['billing','accounts','packages','resellers','streaming','domains','dns','ssl','ssh','ftp','email','databases','backups','support','tickets','livechat','kb','announcements','reports','servers','plugins','templates','security','api','settings','theme'];
+$allPerms = ['billing','accounts','packages','resellers','streaming','radio','game','nodes','domains','dns','ssl','ssh','ftp','email','databases','backups','support','tickets','livechat','kb','announcements','reports','servers','plugins','templates','security','api','settings','theme','tweak'];
 $allRoles = ['admin','super','support','sales','billing','technical','server','streaming','game','domain','cpanel','abuse','dmca','linux','windows'];
 ?>
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
