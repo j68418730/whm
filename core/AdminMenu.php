@@ -25,11 +25,11 @@ if (!function_exists('admin_menu_sections')) {
     function admin_menu_sections(): array
     {
         return [
-            'group' => 'Main', 'items' => [
+            ['group' => 'Main', 'items' => [
                 ['label' => 'Dashboard', 'href' => '/admin/dashboard', 'icon' => 'bi-speedometer2', 'match' => ['/admin/dashboard', '/admin/activity-log', '/admin/monitoring', '/admin/notifications']],
                 ['label' => 'Server Overview', 'href' => '/admin/server', 'icon' => 'bi-server', 'match' => ['/admin/server']],
                 ['label' => 'Server Health', 'href' => '/admin/server/health', 'icon' => 'bi-heart-pulse', 'match' => ['/admin/server/health']],
-            ],
+            ]],
             ['group' => 'Accounts', 'items' => [
                 ['label' => 'Account Functions', 'href' => '/admin/account', 'icon' => 'bi-people', 'match' => ['/admin/account']],
                 ['label' => 'Packages', 'href' => '/admin/packages', 'icon' => 'bi-box-seam', 'match' => ['/admin/packages']],
