@@ -371,8 +371,10 @@ class ShoutcastDriver implements StreamingDriverInterface
             preg_match('/<GENRE>(.*?)<\/GENRE>/', $xml, $m); $stats['genre'] = $m[1] ?? '';
             preg_match('/<SERVER_NAME>(.*?)<\/SERVER_NAME>/', $xml, $m); $stats['server_name'] = $m[1] ?? $station->name;
         } else {
-            // SHOUTcast v1 has no /stats endpoint — scrape the public index page
-            $html = @file_get_contents("http://127.0.0.1:{$station->port}/index.html", false, $ctx);
+            // SHOUTcast v1 has no /stats endpoint — scrape the public index page.
+            // NOTE: v1 sends non-standard headers (content-type without space) that
+            // break PHP's http:// wrapper, so use a raw socket.
+            $html = $this->rawGet($station->port, '/index.html');
             if ($html) {
                 if (preg_match('/Stream is up at (\d+) kbps with (\d+) of/i', $html, $m)) {
                     $stats['bitrate'] = (int)$m[1];
@@ -393,6 +395,23 @@ class ShoutcastDriver implements StreamingDriverInterface
             }
         }
         return $stats;
+    }
+
+    /** Raw-socket GET that tolerates SHOUTcast v1's non-standard response headers. */
+    protected function rawGet(int $port, string $path): string
+    {
+        $fp = @fsockopen('127.0.0.1', $port, $errno, $errstr, 4);
+        if (!$fp) return '';
+        fwrite($fp, "GET {$path} HTTP/1.0\r\nUser-Agent: Mozilla/5.0 (PlanetHosts)\r\n\r\n");
+        stream_set_timeout($fp, 4);
+        $resp = '';
+        while (!feof($fp)) {
+            $d = fread($fp, 8192);
+            if ($d === false || $d === '') break;
+            $resp .= $d;
+        }
+        fclose($fp);
+        return $resp;
     }
 
     public function getLogs($station, $lines = 100)
