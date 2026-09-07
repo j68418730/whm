@@ -96,6 +96,26 @@
 .stats-grid{grid-template-columns:1fr 1fr}
 }
 </style>
+
+<script>
+function adminMenuFilter(q){
+  q=(q||"").toLowerCase().trim();
+  var total=0;
+  document.querySelectorAll(".sidebar .nav-section").forEach(function(sec){
+    var links=sec.querySelectorAll(".nav-link"),vis=0;
+    links.forEach(function(a){var hit=!q||a.textContent.toLowerCase().indexOf(q)>-1;a.style.display=hit?"":"none";if(hit)vis++;});
+    total+=vis;
+    var lbl=sec.querySelector(".nav-label");
+    if(lbl)lbl.style.display=(!q||vis>0)?"":"none";
+  });
+  var bar=document.querySelector(".sidebar .search");
+  if(bar&&!bar.dataset.noresInit){bar.dataset.noresInit="1";var n=document.createElement("div");n.id="menuNoResults";n.style.cssText="display:none;font-size:11px;color:#64748b;padding:6px 14px";n.textContent="No matching menu items";bar.parentNode.insertBefore(n,bar.nextSibling);}
+  var nr=document.getElementById("menuNoResults");if(nr)nr.style.display=(q&&total===0)?"block":"none";
+}
+</script>
+<style>
+@media(max-width:768px){.sidebar:not(.open) .search,.sidebar:not(.open) .nav{display:none}.sidebar:not(.open){overflow:hidden}}
+</style>
 </head>
 <body>
 <div class="admin-shell d-flex">
@@ -103,7 +123,7 @@
   <div class="sidebar" id="sidebar">
     <div class="logo">PLANET <span>HOSTS</span></div>
     <div class="search" style="position:relative">
-       <input type="text" id="menuSearch" class="form-control" placeholder="Search menu..." oninput="filterMenu(this.value)">
+       <input type="text" id="menuSearch" class="form-control" placeholder="Search menu..." oninput="adminMenuFilter(this.value)">
        
      </div>
     <div class="nav">
