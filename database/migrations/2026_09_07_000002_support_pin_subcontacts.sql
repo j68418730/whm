@@ -1,0 +1,12 @@
+-- REQ #6: Support identity verification (account PIN + subcontacts)
+ALTER TABLE hosting_users
+  ADD COLUMN IF NOT EXISTS support_pin_hash VARCHAR(255) NULL,
+  ADD COLUMN IF NOT EXISTS support_pin_code VARCHAR(12) NULL,
+  ADD COLUMN IF NOT EXISTS support_pin_code_expires DATETIME NULL;
+
+ALTER TABLE client_sub_users
+  ADD COLUMN IF NOT EXISTS email VARCHAR(150) NULL,
+  ADD COLUMN IF NOT EXISTS phone VARCHAR(50) NULL,
+  ADD COLUMN IF NOT EXISTS role VARCHAR(50) NULL,
+  ADD COLUMN IF NOT EXISTS pin_hash VARCHAR(255) NULL,
+  ADD COLUMN IF NOT EXISTS is_active TINYINT(1) NOT NULL DEFAULT 1;
