@@ -6,19 +6,75 @@
 <div class="alert alert-error" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;padding:12px;border-radius:8px;margin-bottom:16px">Private key not found on this server. Key generation is only available on the master license server.</div>
 <?php endif; ?>
 
-<div class="card" style="max-width:550px;margin-bottom:20px">
+<div class="card" style="max-width:700px;margin-bottom:20px">
 <form method="POST" action="/admin/licensing/generate">
 <h3 style="color:var(--accent);margin-bottom:12px">Generate License Key</h3>
-<div class="form-group"><label>Licensee Name</label><input name="licensee" required value="<?php echo htmlspecialchars($_POST['licensee'] ?? ''); ?>" placeholder="Customer or Company Name"></div>
-<div class="form-group"><label>License ID</label><input name="license_id" value="<?php echo htmlspecialchars($_POST['license_id'] ?? ('LICS-' . date('Y') . '-0001')); ?>" placeholder="LICS-2026-0001"></div>
-<div class="form-group"><label>Expiry Date</label><input name="expiry" type="date" value="<?php echo htmlspecialchars($_POST['expiry'] ?? date('Y-m-d', strtotime('+1 year'))); ?>"><br><small style="color:var(--text-secondary)">Leave blank or enter any date. Use <strong>never</strong> for lifetime.</small></div>
+<div class="form-group"><label>Licensee Name</label>
+<?php if (!empty($clients)): ?>
+<select name="licensee" required style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0">
+<option value="">Select a client...</option>
+<?php foreach ($clients as $c): ?>
+<option value="<?php echo htmlspecialchars($c->username ?? $c->email); ?>" <?php echo (($_POST['licensee'] ?? '') === ($c->username ?? $c->email)) ? 'selected' : ''; ?>><?php echo htmlspecialchars(($c->username ?? '') . ' - ' . ($c->email ?? '') . ' (' . ($c->domain ?? 'no domain') . ')'); ?></option>
+<?php endforeach; ?>
+</select>
+<small style="color:#64748b">Pick a client from the dropdown. Or type a custom name below if needed.</small>
+<input name="licensee_custom" value="<?php echo htmlspecialchars($_POST['licensee_custom'] ?? ''); ?>" placeholder="Or enter custom licensee name" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0;margin-top:6px">
+<script>
+document.querySelector('select[name=licensee]').addEventListener('change', function() {
+  if (this.value) document.querySelector('input[name=licensee_custom]').value = '';
+});
+document.querySelector('input[name=licensee_custom]').addEventListener('input', function() {
+  if (this.value) document.querySelector('select[name=licensee]').value = '';
+});
+</script>
+<?php else: ?>
+<input name="licensee" required value="<?php echo htmlspecialchars($_POST['licensee'] ?? ''); ?>" placeholder="Customer or Company Name" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0">
+<?php endif; ?>
+</div>
+<div class="form-group"><label>License ID</label><input name="license_id" value="<?php echo htmlspecialchars($_POST['license_id'] ?? ('PH-' . date('Y') . '-0001')); ?>" placeholder="PH-2026-0001" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0"><small style="color:#64748b">Must start with <strong>PH-</strong></small></div>
+<div class="form-group"><label>Expiry Date</label><input name="expiry" type="date" value="<?php echo htmlspecialchars($_POST['expiry'] ?? date('Y-m-d', strtotime('+1 year'))); ?>" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0"><br><small style="color:var(--text-secondary)">Leave blank or enter any date. Use <strong>never</strong> for lifetime.</small></div>
 <div class="form-group"><label>License Type</label>
-<select name="type">
+<select name="type" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#e0e0e0">
 <option value="full" <?php echo ($_POST['type'] ?? '') === 'full' ? 'selected' : ''; ?>>Full — Everything</option>
 <option value="hosting" <?php echo ($_POST['type'] ?? '') === 'hosting' ? 'selected' : ''; ?>>Hosting — Accounts, DNS, Email, FTP, Databases, SSL</option>
 <option value="icecast" <?php echo ($_POST['type'] ?? '') === 'icecast' ? 'selected' : ''; ?>>Icecast — Radio Streaming, AutoDJ, Transcoding</option>
 </select>
 </div>
+
+<div style="margin:16px 0;padding:16px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);border-radius:8px">
+<h4 style="color:var(--accent);margin:0 0 12px;font-size:13px">Feature Selection</h4>
+
+<div style="margin-bottom:14px">
+<div style="font-size:11px;font-weight:700;color:#4ade80;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">✓ Auto-Enabled (always included)</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px">
+<?php
+$autoLabels = [
+  'accounts'=>'Hosting Accounts','packages'=>'Packages','dns'=>'DNS Zones','email'=>'Email','ftp'=>'FTP','databases'=>'Databases','backups'=>'Automated Backups','ssl'=>'SSL','domains'=>'Domains',
+  'shared_hosting'=>'Shared Hosting','radio_hosting'=>'Radio Hosting','email_hosting'=>'Email Hosting','ftp_hosting'=>'FTP Hosting','database_hosting'=>'Database Hosting','ssl_auto'=>'Auto SSL','monitoring'=>'Monitoring','dns_clustering'=>'DNS Clustering','multi_server'=>'Multi-Server','ssl_wildcard'=>'Wildcard SSL'
+];
+foreach ($autoLabels as $k=>$label): ?>
+<label style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.12);border-radius:4px;color:#4ade80"><input type="checkbox" checked disabled style="accent-color:#4ade80"> <?php echo $label; ?> <span style="margin-left:auto;font-size:9px;color:#4ade80">AUTO</span></label>
+<?php endforeach; ?>
+</div>
+</div>
+
+<div>
+<div style="font-size:11px;font-weight:700;color:#facc15;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">◯ Selectable (YES / NO)</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px">
+<?php
+$selectLabels = [
+  'streams'=>'Stream Management','radio'=>'Radio Streaming','autodj'=>'AutoDJ','streaming_icecast'=>'Icecast Streaming','streaming_shoutcast_v1'=>'SHOUTcast v1','streaming_shoutcast_v2'=>'SHOUTcast v2','streaming_autodj'=>'AutoDJ Streaming',
+  'api_access'=>'API Access','desktop_app'=>'Desktop App','reseller_hosting'=>'Reseller Hosting','vps_hosting'=>'VPS Hosting','game_hosting'=>'Game Hosting','white_label'=>'White Label','marketplace'=>'Marketplace','streaming_rtmp'=>'RTMP Video','streaming_rtsp'=>'RTSP Cameras','streaming_relay'=>'Audio Relay','support'=>'Support System','billing'=>'Billing System','chat'=>'Chat System','installers'=>'One-Click Installers'
+];
+foreach ($selectLabels as $k=>$label):
+  $checked = isset($_POST['feat_'.$k]) ? ($_POST['feat_'.$k]==='1' ? 'checked' : '') : (in_array($k, ['streaming_icecast','streaming_shoutcast_v1','streaming_shoutcast_v2','api_access','desktop_app']) ? 'checked' : '');
+?>
+<label style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.08);border-radius:4px;cursor:pointer"><input type="checkbox" name="feat_<?php echo $k; ?>" value="1" <?php echo $checked; ?> style="accent-color:#0A84FF"> <?php echo $label; ?></label>
+<?php endforeach; ?>
+</div>
+</div>
+</div>
+
 <button type="submit" class="btn primary">Generate License</button>
 </form>
 </div>
