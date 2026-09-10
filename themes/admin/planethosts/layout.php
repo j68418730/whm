@@ -1,3 +1,7 @@
+<?php
+// Strip terminal escape sequences (kitty protocol, focus reporting) that leak from sudo/systemctl calls
+ob_start(function($html) { return preg_replace("/\x1b\[(\?[0-9]+[hl]|[0-9]+[A-D])/", "", $html); });
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -223,3 +227,4 @@ document.querySelectorAll('.nav-section').forEach(function(section) {
 </script>
 </body>
 </html>
+<?php ob_end_flush(); ?>

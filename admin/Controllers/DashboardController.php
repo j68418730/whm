@@ -7,6 +7,7 @@ use Core\Controller;
 class DashboardController extends Controller
 {
     protected $auth;
+    protected $request;
     protected $response;
     protected $db;
 
@@ -14,6 +15,7 @@ class DashboardController extends Controller
     {
         $app = \Core\Application::getInstance();
         $this->auth = $app->get('auth');
+        $this->request = $app->get('request');
         $this->response = $app->get('response');
         $this->db = $app->get('db');
     }
