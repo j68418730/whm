@@ -127,9 +127,4 @@ fi
 
 rm -f "$LOCK_FILE"
 log "Update complete. Current: $(cd "$BASE_PATH" && git rev-parse --short HEAD 2>/dev/null)"
-# Update Masterinstall
-if [ -d "/mnt/k_site_del_Masterinstall" ]; then
-    log "Updating Masterinstall..."
-    cd "/mnt/k_site_del_Masterinstall" && git pull origin master 2>&1 | tee -a "$LOG_FILE" || true
-fi
 exit 0

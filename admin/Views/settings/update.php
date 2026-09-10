@@ -37,11 +37,6 @@
 <pre style="background:rgba(0,0,0,.3);padding:12px;border-radius:6px;font-size:11px;white-space:pre-wrap;color:#94a3b8;max-height:300px;overflow:auto"><?php echo htmlspecialchars($logContent ?: 'No log yet. Check or install to generate log at storage/update.log'); ?></pre>
 <a href="/admin/update/log" target="_blank" style="font-size:11px;color:#0A84FF">Open raw log →</a>
 </div>
-
-<div class="set-card">
-<h4><i class="bi bi-shield-check"></i> Master Install</h4>
-<p style="font-size:12px;color:#94a3b8">After update, Masterinstall at <code>K:\site_del\Masterinstall</code> is auto-synced via <code>scripts/update.sh</code> last step. Verify with <code>git log --oneline -5</code> on both.</p>
-</div>
 </div>
 </div>
 </div>
