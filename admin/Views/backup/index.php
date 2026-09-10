@@ -52,6 +52,27 @@
 
 <?php elseif (!empty($restorePointsView)): ?>
 <h3 style="color:var(--accent);margin-bottom:12px">🔖 Restore Points</h3>
+
+<div class="card" style="margin-bottom:16px">
+<h4 style="color:var(--accent);margin-bottom:12px">Create Restore Point</h4>
+<form method="POST" action="/admin/backup/restore-points/create">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Scope</label><select name="scope" id="rpScope" class="form-control" onchange="rpScopeChange(this.value)"><option value="core">Core — Full system (all accounts, DB, configs)</option><option value="system">System — OS configs, services, firewall</option><option value="user">User — Single hosting account</option><option value="domain">Domain — Single domain/zone</option></select></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Name</label><input name="name" required class="form-control" placeholder="Pre-update 2026-09-10"></div>
+</div>
+<div id="rpUserPicker" style="display:none;margin-top:10px"><div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Select User</label><select name="user_id" class="form-control"><option value="0">— Select user —</option><?php $allUsers = $this->db->table('hosting_users')->orderBy('username','ASC')->get() ?: []; foreach ($allUsers as $u): ?><option value="<?php echo $u->id; ?>"><?php echo htmlspecialchars($u->username . ' - ' . ($u->domain ?: 'no domain') . ' (' . $u->email . ')'); ?></option><?php endforeach; ?></select></div></div>
+<div id="rpDomainPicker" style="display:none;margin-top:10px"><div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Select Domain</label><select name="domain" class="form-control"><option value="">— Select domain —</option><?php $allDomains = $this->db->table('dns_zones')->orderBy('domain','ASC')->get() ?: []; foreach ($allDomains as $d): ?><option value="<?php echo htmlspecialchars($d->domain); ?>"><?php echo htmlspecialchars($d->domain); ?></option><?php endforeach; ?></select></div></div>
+<div class="form-group" style="margin-top:10px"><label style="font-size:12px;color:var(--text-secondary)">Notes</label><textarea name="notes" class="form-control" rows="2" placeholder="Optional notes..."></textarea></div>
+<button type="submit" class="btn primary">Create Restore Point</button>
+</form>
+<script>
+function rpScopeChange(v){
+  document.getElementById('rpUserPicker').style.display = v==='user' ? 'block' : 'none';
+  document.getElementById('rpDomainPicker').style.display = v==='domain' ? 'block' : 'none';
+}
+</script>
+</div>
+
 <?php if (empty($points)): ?>
 <div class="card" style="text-align:center;padding:24px;color:#64748b">No restore points yet.</div>
 <?php else: ?>
@@ -69,8 +90,9 @@
 </div>
 </div>
 <div style="font-size:10px;color:#64748b;margin-top:4px">
-User: <?php echo htmlspecialchars($pt['user_id'] ?? ''); ?> · <?php echo $pt['created_at'] ?? ''; ?>
+Scope: <?php echo htmlspecialchars($pt['type'] ?? ''); ?> · User: <?php echo htmlspecialchars($pt['user_id'] ?? ''); ?> · <?php echo $pt['created_at'] ?? ''; ?>
 </div>
+<?php if (!empty($pt['notes'])): ?><div style="font-size:11px;color:#94a3b8;margin-top:4px"><?php echo htmlspecialchars($pt['notes']); ?></div><?php endif; ?>
 </div>
 <?php endforeach; ?>
 </div>
