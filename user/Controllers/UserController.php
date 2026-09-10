@@ -37,11 +37,15 @@ class UserController extends Controller
         if (!$this->hostingUser && !empty($user->name)) {
             foreach ($hostings as $h) { if ($h->username === $user->name || $h->first_name === $user->name) { $this->hostingUser = $h; break; } }
         }
-        if (!$this->hostingUser && !empty($hostings)) {
+        $isSudo = !empty($_SESSION['sudo_login']);
+        if (!$this->hostingUser && !empty($hostings) && $isSudo) {
             $this->hostingUser = $hostings[0];
         }
+        if (!$this->hostingUser) {
+            $this->response->redirect('/?login=notfound');
+            exit;
+        }
         // Block suspended accounts EXCEPT when root is viewing (sudo/login-as mode)
-        $isSudo = !empty($_SESSION['sudo_login']);
         if ($this->hostingUser && !$isSudo && ($this->hostingUser->status ?? 'active') === 'suspended') {
             $this->response->redirect('/?login=suspended');
             exit;
@@ -188,9 +192,9 @@ class UserController extends Controller
         if ($this->hostingUser) {
             $services[] = ['icon' => '🌐', 'name' => 'Web Hosting', 'type' => 'web', 'status' => $this->hostingUser->status ?? 'active', 'detail' => 'Username: ' . $username . ' | Domain: ' . ($this->hostingUser->domain ?? '-'), 'link' => '/user/services/web'];
             try { $streams = $this->db->table('streaming_stations')->where('user_id', $uid)->get() ?: []; foreach ($streams as $s) { $services[] = ['icon' => '📻', 'name' => $s->name ?: 'Radio Stream', 'type' => 'radio', 'status' => $s->status ?? 'stopped', 'detail' => ($s->engine ?? 'icecast') . ' | Port: ' . $s->port, 'link' => '/user/radio?station_id=' . (10000 + $s->id)]; } } catch (\Exception $e) {}
-            try { $domains = $this->db->table('dns_zones')->where('domain', 'LIKE', '%' . ($this->hostingUser->domain ?? '') . '%')->get() ?: []; foreach ($domains as $d) { $services[] = ['icon' => '🔗', 'name' => $d->domain, 'type' => 'dns', 'status' => 'active', 'detail' => 'DNS managed', 'link' => '/user/domains/zone/' . $d->id]; } } catch (\Exception $e) {}
+            if (!empty($this->hostingUser->domain)) { try { $domains = $this->db->table('dns_zones')->where('domain', $this->hostingUser->domain)->get() ?: []; foreach ($domains as $d) { $services[] = ['icon' => '🔗', 'name' => $d->domain, 'type' => 'dns', 'status' => 'active', 'detail' => 'DNS managed', 'link' => '/user/domains/zone/' . $d->id]; } } catch (\Exception $e) {} }
             try { $ftps = $this->db->table('ftp_accounts')->where('hosting_user_id', $uid)->get() ?: []; foreach ($ftps as $f) { $services[] = ['icon' => '📁', 'name' => 'FTP: ' . $f->username, 'type' => 'ftp', 'status' => $f->is_active ? 'active' : 'suspended', 'detail' => 'Dir: ' . $f->directory, 'link' => '/user/ftp']; } } catch (\Exception $e) {}
-            try { $zones = $this->db->table('dns_zones')->where('domain', 'LIKE', '%' . ($this->hostingUser->domain ?? '') . '%')->get() ?: []; foreach ($zones as $z) { $recs = $this->db->table('dns_records')->where('zone_id', $z->id)->where('type', 'A')->where('is_user_subdomain', 1)->get() ?: []; foreach ($recs as $r) { $services[] = ['icon' => '🌍', 'name' => $r->name . '.' . $z->domain, 'type' => 'dns', 'status' => 'active', 'detail' => 'Subdomain', 'link' => '/user/domains/zone/' . $z->id]; } } } catch (\Exception $e) {}
+            if (!empty($this->hostingUser->domain)) { try { $zones = $this->db->table('dns_zones')->where('domain', $this->hostingUser->domain)->get() ?: []; foreach ($zones as $z) { $recs = $this->db->table('dns_records')->where('zone_id', $z->id)->where('type', 'A')->where('is_user_subdomain', 1)->get() ?: []; foreach ($recs as $r) { $services[] = ['icon' => '🌍', 'name' => $r->name . '.' . $z->domain, 'type' => 'dns', 'status' => 'active', 'detail' => 'Subdomain', 'link' => '/user/domains/zone/' . $z->id]; } } } catch (\Exception $e) {} }
             try { $sites = $this->db->table('wb_sites')->where('user_id', $uid)->get() ?: []; foreach ($sites as $s) { $services[] = ['icon' => '🏗️', 'name' => $s->name ?: 'Website', 'type' => 'builder', 'status' => $s->published ? 'active' : 'pending', 'detail' => 'Builder site', 'link' => '/user/websitebuilder']; } } catch (\Exception $e) {}
         }
         return $services;
@@ -317,6 +321,7 @@ class UserController extends Controller
     public function backupCreate() { $u=$this->loadUser();if($this->hostingUser){$d='/home/'.$this->hostingUser->username;$f=$d.'/backup_'.date('Y-m-d_H-i-s').'.tar.gz';@exec("sudo tar czf '{$f}' -C '{$d}/public_html' . 2>/dev/null");$_SESSION['success']='Backup created.';}header('Location: /user/backup');exit;}
     public function backupRestore() { $u=$this->loadUser();if($this->hostingUser){$f='/home/'.$this->hostingUser->username.'/'.basename($_GET['file']??'');if(is_file($f)){@exec("sudo tar xzf '{$f}' -C '/home/{$this->hostingUser->username}/public_html' 2>/dev/null");$_SESSION['success']='Backup restored.';}else $_SESSION['error']='File not found.';}header('Location: /user/backup');exit;}
     public function backupDownload() { $u=$this->loadUser();$f='/home/'.($this->hostingUser->username??'').'/'.basename($_GET['file']??'');if(is_file($f)){header('Content-Type: application/octet-stream');header('Content-Disposition: attachment; filename="'.basename($f).'"');readfile($f);exit;}header('Location: /user/backup');exit;}
+    public function downloadLicense() { $u=$this->loadUser(); if(!$this->hostingUser){ header('Location: /user/login'); exit; } $licFile = BASE_PATH . '/storage/licenses/' . $this->hostingUser->username . '/license.key'; if(is_file($licFile)){ header('Content-Type: application/octet-stream'); header('Content-Disposition: attachment; filename="license.key"'); header('Content-Length: '.filesize($licFile)); readfile($licFile); exit; } try { $lic=$this->db->table('account_licenses')->where('account_id',$this->hostingUser->id)->where('status','active')->first(); if(!$lic){ $_SESSION['error_message']='No license found for your account. Please contact support.'; header('Location: /user/'); exit; } } catch(\Exception $e){ $_SESSION['error_message']='No license found.'; header('Location: /user/'); exit; } $_SESSION['error_message']='License file not found on server. Please contact support to regenerate.'; header('Location: /user/'); exit; }
     public function backupDelete() { $u=$this->loadUser();if($this->hostingUser){$f='/home/'.$this->hostingUser->username.'/'.basename($_GET['file']??'');if(is_file($f)){unlink($f);$_SESSION['success']='Backup deleted.';}}header('Location: /user/backup');exit;}
     public function cron() { $u = $this->loadUser(); return $this->view('user.cron', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Cron Jobs']); }
     public function git() { $u = $this->loadUser(); return $this->view('user.git', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Git Deployments']); }

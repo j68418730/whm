@@ -4,6 +4,7 @@ if (!isset($router)) {
 }
 
 $router->get('/user', 'User\Controllers\UserController@index');
+$router->get('/user/license/download', 'User\Controllers\UserController@downloadLicense');
 $router->get('/user/services', 'User\Controllers\UserController@services');
 $router->get('/user/usage', 'User\Controllers\UserController@usage');
 $router->get('/user/profile', 'User\Controllers\UserController@profile');
