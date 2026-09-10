@@ -230,6 +230,26 @@ class SettingsController extends Controller
         $this->response->redirect('/admin/settings/localization');
     }
 
+    public function update()
+    {
+        $this->guard();
+        $current = trim(@shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git rev-parse --short HEAD 2>/dev/null') ?: 'unknown');
+        $behind = 0; $commits = []; $upstream = 'unknown';
+        try {
+            @shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git fetch origin 2>/dev/null');
+            $behind = (int)trim(@shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git rev-list HEAD..origin/master --count 2>/dev/null') ?: '0');
+            $upstream = trim(@shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git rev-parse --short origin/master 2>/dev/null') ?: 'unknown');
+            $log = @shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git log HEAD..origin/master --oneline -5 2>/dev/null') ?: '';
+            foreach (explode("\n", trim($log)) as $line) { if ($line) $commits[] = $line; }
+        } catch (\Throwable $e) {}
+        $hasBackup = is_file(BASE_PATH . '/storage/update_backup.tar.gz');
+        $logContent = is_file(BASE_PATH . '/storage/update.log') ? file_get_contents(BASE_PATH . '/storage/update.log') : '';
+        return $this->view('admin.settings.update', [
+            'user' => $this->user(), 'title' => 'System Update', 'theme_settings' => $this->theme(), 'currentTab' => 'update',
+            'current' => $current, 'upstream' => $upstream, 'behind' => $behind, 'commits' => $commits, 'hasBackup' => $hasBackup, 'logContent' => $logContent,
+        ]);
+    }
+
     public function index()
     {
         $this->guard();
