@@ -128,7 +128,7 @@ class LicensingController extends Controller
                 $payload = json_encode([
                     'license_id' => $licenseId, 'licensee' => $licensee,
                     'issued' => date('Y-m-d'), 'expiry' => $expiry,
-                    'product' => 'Planet-Hosts WHM Panel', 'version' => '1.0.0',
+                    'product' => 'Planet-Hosts WHM Panel', 'version' => 'Ph- V1.3Beta-Whm',
                     'type' => $type,
                     'features' => $selected,
                 ], JSON_PRETTY_PRINT);
