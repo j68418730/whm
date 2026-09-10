@@ -101,6 +101,15 @@ ob_start(function($html) { return preg_replace("/\x1b\[(\?[0-9]+[hl]|[0-9]+[A-D]
 </style>
 </head>
 <body>
+<?php
+$__updFile = BASE_PATH . '/storage/update_available.json';
+if (is_file($__updFile)) {
+  $__upd = json_decode(@file_get_contents($__updFile), true);
+  if (!empty($__upd['behind']) && $__upd['behind'] > 0) {
+    echo '<div style="background:linear-gradient(90deg,#f59e0b,#facc15);color:#000;text-align:center;padding:8px 16px;font-size:13px;font-weight:600;position:sticky;top:0;z-index:9999">🔔 Update available — ' . (int)$__upd['behind'] . ' commit(s) behind — <a href="/admin/settings/update" style="color:#000;text-decoration:underline;font-weight:700">Update now</a> <span style="margin-left:12px;cursor:pointer" onclick="this.parentElement.style.display=\'none\'">✕</span></div>';
+  }
+}
+?>
 <div class="admin-shell d-flex">
   <!-- Sidebar -->
   <div class="sidebar" id="sidebar">
