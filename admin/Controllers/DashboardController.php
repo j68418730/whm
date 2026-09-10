@@ -224,7 +224,7 @@ class DashboardController extends Controller
     public function version()
     {
         $this->response->json([
-            'version' => '1.0.0',
+            'version' => 'Ph- V1.3Beta-Whm',
             'name' => 'Planet Hosts Panel',
             'php' => phpversion(),
         ])->send();

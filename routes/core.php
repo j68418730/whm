@@ -229,6 +229,12 @@ $router->get('/admin/licensing/suspend/{id}', 'Admin\Controllers\LicensingContro
 $router->get('/admin/licensing/unsuspend/{id}', 'Admin\Controllers\LicensingController@unsuspend');
 $router->get('/admin/licensing/remove/{id}', 'Admin\Controllers\LicensingController@remove');
 $router->get('/admin/licensing/regenerate/{id}', 'Admin\Controllers\LicensingController@regenerate');
+$router->get('/admin/update', 'Admin\Controllers\UpdateController@index');
+$router->post('/admin/update/check', 'Admin\Controllers\UpdateController@check');
+$router->post('/admin/update/install', 'Admin\Controllers\UpdateController@install');
+$router->post('/admin/update/rollback', 'Admin\Controllers\UpdateController@rollback');
+$router->get('/admin/update/log', 'Admin\Controllers\UpdateController@log');
+$router->get('/admin/settings/update', 'Admin\Controllers\SettingsController@update');
 $router->get('/livechat', 'Admin\Controllers\LiveChatController@portal');
 $router->post('/livechat', 'Admin\Controllers\LiveChatController@portal');
 $router->get('/admin/livechat', 'Admin\Controllers\LiveChatController@index');

@@ -51,6 +51,7 @@
 <a href="/admin/settings/security" class="settings-tab<?php echo ($currentTab ?? '') === 'security' ? ' active' : ''; ?>"><span class="sicon">🔒</span><span class="sname">Security</span></a>
 <a href="/admin/settings/api" class="settings-tab<?php echo ($currentTab ?? '') === 'api' ? ' active' : ''; ?>"><span class="sicon">🔌</span><span class="sname">API</span></a>
 <a href="/admin/settings/localization" class="settings-tab<?php echo ($currentTab ?? '') === 'localization' ? ' active' : ''; ?>"><span class="sicon">🌐</span><span class="sname">Localization</span></a>
+<a href="/admin/settings/update" class="settings-tab<?php echo ($currentTab ?? '') === 'update' ? ' active' : ''; ?>"><span class="sicon">🔄</span><span class="sname">Update</span></a>
 </div>
 <?php if (isset($_SESSION['success_message'])): ?><div class="set-alert-ok"><?php echo htmlspecialchars($_SESSION['success_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['success_message']); ?></div><?php endif; ?>
 <?php if (isset($_SESSION['error_message'])): ?><div class="set-alert-err"><?php echo htmlspecialchars($_SESSION['error_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['error_message']); ?></div><?php endif; ?>
