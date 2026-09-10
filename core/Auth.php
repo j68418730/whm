@@ -38,6 +38,7 @@ class Auth
             // Set user in session
             $user = (object)[
                 'id' => $admin->id,
+                'username' => $admin->username,
                 'email' => $admin->email,
                 'name' => $admin->name,
                 'theme_settings' => $admin->theme_settings ?? '{}',

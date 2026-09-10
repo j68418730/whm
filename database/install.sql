@@ -169,11 +169,11 @@ INSERT INTO radio_settings (user_id, reseller_id, global_enabled, enabled)
 VALUES (NULL, NULL, FALSE, FALSE)
 ON DUPLICATE KEY UPDATE global_enabled=VALUES(global_enabled), enabled=VALUES(enabled);
 
--- Insert a default admin user (email: admin@example.com, password: admin) - hashed
+-- Insert a default admin user (username: root, email: root@planet-hosts.com, password: admin) - hashed
 -- In production, you should change this password immediately after first login.
-INSERT INTO admins (name, email, password_hash, theme_settings) 
-VALUES ('Administrator', 'admin@example.com', '$2y$10$F46vzX9GSw/7b6Ul65Jj1uYBBy/QYmCuxC6NdwOKiwXf6W0DxX4gy', '{}')
-ON DUPLICATE KEY UPDATE email=VALUES(email);
+INSERT INTO admins (username, name, email, password_hash, theme_settings) 
+VALUES ('root', 'root', 'root@planet-hosts.com', '$2y$10$F46vzX9GSw/7b6Ul65Jj1uYBBy/QYmCuxC6NdwOKiwXf6W0DxX4gy', '{}')
+ON DUPLICATE KEY UPDATE email=VALUES(email), username=VALUES(username), name=VALUES(name);
 
 -- Resellers Table
 CREATE TABLE IF NOT EXISTS resellers (
