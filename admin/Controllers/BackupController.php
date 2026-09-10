@@ -165,6 +165,45 @@ class BackupController extends Controller
         ]);
     }
 
+    public function createRestorePoint()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $scope = $this->request->post('scope', 'core');
+        $name = $this->request->post('name', 'Restore Point ' . date('Y-m-d H:i'));
+        $userId = (int)$this->request->post('user_id', 0);
+        $domain = $this->request->post('domain', '');
+        $notes = $this->request->post('notes', '');
+
+        // Map scope to type and handle user/domain specific
+        $type = $scope;
+        $backupFile = null;
+        $items = [$scope];
+
+        if ($scope === 'user' && $userId > 0) {
+            $hu = $this->db->table('hosting_users')->where('id', $userId)->first();
+            if ($hu) {
+                $name = $name ?: "User {$hu->username} " . date('Y-m-d');
+                $items = ['user:' . $userId];
+                // Create backup for this user
+                $backupFile = $this->backup->createBackup($hu->username);
+            }
+        } elseif ($scope === 'domain' && $domain) {
+            $items = ['domain:' . $domain];
+            $name = $name ?: "Domain {$domain} " . date('Y-m-d');
+        } elseif ($scope === 'system') {
+            $items = ['system'];
+        } elseif ($scope === 'core') {
+            $items = ['core'];
+            $backupFile = $this->backup->createBackup(null);
+        }
+
+        $restoreManager = new \Admin\Services\Migration\RestoreManager();
+        $restoreManager->createRestorePoint($userId, $name, $backupFile, $items, 'active', $notes);
+        $_SESSION['success_message'] = "Restore point '{$name}' created for scope '{$scope}'.";
+        $this->response->redirect('/admin/backup/restore-points');
+        exit;
+    }
+
     public function deleteRestorePoint($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }

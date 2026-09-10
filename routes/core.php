@@ -111,6 +111,7 @@ $router->get('/admin/backup/settings', 'Admin\Controllers\BackupController@setti
 $router->post('/admin/backup/settings/save', 'Admin\Controllers\BackupController@saveSettings');
 $router->get('/admin/backup/reports', 'Admin\Controllers\BackupController@reports');
 $router->get('/admin/backup/restore-points', 'Admin\Controllers\BackupController@restorePoints');
+$router->post('/admin/backup/restore-points/create', 'Admin\Controllers\BackupController@createRestorePoint');
 $router->get('/admin/backup/restore-points/delete/{id}', 'Admin\Controllers\BackupController@deleteRestorePoint');
 $router->get('/admin/backup/restore-points/favorite/{id}', 'Admin\Controllers\BackupController@toggleFavoriteRestorePoint');
 $router->get('/admin/restore', 'Admin\Controllers\RestoreController@index');
