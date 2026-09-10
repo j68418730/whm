@@ -123,41 +123,205 @@ Scope: <?php echo htmlspecialchars($pt['type'] ?? ''); ?> · User: <?php echo ht
 <?php endif; ?>
 
 <?php elseif (!empty($destinationsView)): ?>
-<h3 style="color:var(--accent);margin-bottom:12px">Backup Destinations</h3>
-<div style="margin-bottom:16px">
-<a href="#" onclick="document.getElementById('newDestForm').style.display='block';return false" class="btn primary">+ Add Destination</a>
+<?php
+$__dfmt = function($b) use (&$__dfmt) {
+    $units = ['B','KB','MB','GB','TB'];
+    $b = max(0, (float)$b);
+    $pow = min((int)floor($b ? log($b)/log(1024) : 0), count($units)-1);
+    return round($b / pow(1024, $pow), 2) . ' ' . $units[$pow];
+};
+if (!empty($destDetail)): ?>
+<h3 style="color:var(--accent);margin-bottom:12px">📤 Destination: <?php echo htmlspecialchars($destDetail->name); ?></h3>
+<div style="margin-bottom:14px"><a href="/admin/backup/destinations" class="btn btn-sm secondary" style="padding:6px 12px">← Back to Destinations</a></div>
+<div class="stats-grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));margin-bottom:16px">
+<div class="stat-card"><h3>Type</h3><div class="value" style="font-size:14px"><?php echo htmlspecialchars(strtoupper($destDetail->type)); ?></div></div>
+<div class="stat-card"><h3>Host</h3><div class="value" style="font-size:14px"><?php echo htmlspecialchars($destDetail->host ?: ($destDetail->bucket ?: '-')); ?></div></div>
+<div class="stat-card"><h3>Uploads</h3><div class="value"><?php echo $destUsage['count'] ?? 0; ?></div></div>
+<div class="stat-card"><h3>Stored</h3><div class="value" style="font-size:16px"><?php echo $__dfmt($destUsage['bytes'] ?? 0); ?></div></div>
+<div class="stat-card"><h3>Quota</h3><div class="value" style="font-size:16px"><?php echo ($destUsage['quota'] ?? 0) > 0 ? $__dfmt($destUsage['quota']) : 'Unlimited'; ?></div></div>
 </div>
+<div class="card" style="margin-bottom:16px">
+<h4 style="color:var(--accent);margin:0 0 10px;font-size:14px">Transfer History</h4>
+<?php if (empty($destHistory)): ?><div style="color:#64748b;padding:10px;font-size:12px">No transfers yet.</div>
+<?php else: ?>
+<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
+<thead><tr style="background:var(--bg-card);border-bottom:1px solid rgba(255,255,255,.06)">
+<th style="padding:6px;text-align:left">ID</th><th style="padding:6px;text-align:left">Action</th><th style="padding:6px;text-align:left">File</th><th style="padding:6px;text-align:left">Status</th><th style="padding:6px;text-align:left">Size</th><th style="padding:6px;text-align:left">Duration</th><th style="padding:6px;text-align:left">Message</th><th style="padding:6px;text-align:left">Date</th></tr></thead>
+<tbody>
+<?php foreach ($destHistory as $h): ?>
+<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+<td style="padding:6px">#<?php echo $h['id'] ?? '-'; ?></td>
+<td style="padding:6px"><?php echo htmlspecialchars($h['action'] ?? '-'); ?></td>
+<td style="padding:6px;max-width:180px;overflow:hidden;text-overflow:ellipsis"><?php echo htmlspecialchars($h['file_path'] ?? '-'); ?></td>
+<td style="padding:6px"><span class="status-badge status-<?php echo ($h['status']??'')==='completed' ? 'active' : 'terminated'; ?>"><?php echo $h['status'] ?? '-'; ?></span></td>
+<td style="padding:6px"><?php echo $__dfmt($h['file_size'] ?? 0); ?></td>
+<td style="padding:6px"><?php echo isset($h['duration_ms']) && $h['duration_ms'] ? round($h['duration_ms']/1000, 1) . 's' : '-'; ?></td>
+<td style="padding:6px;max-width:220px;overflow:hidden;text-overflow:ellipsis"><?php echo htmlspecialchars($h['message'] ?? ''); ?></td>
+<td style="padding:6px"><?php echo $h['created_at'] ?? '-'; ?></td>
+</tr>
+<?php endforeach; ?>
+</tbody></table></div>
+<?php endif; ?>
+</div>
+<div class="card">
+<h4 style="color:var(--accent);margin:0 0 10px;font-size:14px">Errors</h4>
+<?php if (empty($destErrors)): ?><div style="color:#64748b;padding:10px;font-size:12px">No errors recorded.</div>
+<?php else: ?>
+<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
+<thead><tr style="background:var(--bg-card);border-bottom:1px solid rgba(255,255,255,.06)">
+<th style="padding:6px;text-align:left">ID</th><th style="padding:6px;text-align:left">File</th><th style="padding:6px;text-align:left">Message</th><th style="padding:6px;text-align:left">Date</th></tr></thead>
+<tbody>
+<?php foreach ($destErrors as $h): ?>
+<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+<td style="padding:6px">#<?php echo $h['id'] ?? '-'; ?></td>
+<td style="padding:6px;max-width:180px;overflow:hidden;text-overflow:ellipsis"><?php echo htmlspecialchars($h['file_path'] ?? '-'); ?></td>
+<td style="padding:6px;max-width:360px;overflow:hidden;text-overflow:ellipsis;color:#f87171"><?php echo htmlspecialchars($h['message'] ?? '-'); ?></td>
+<td style="padding:6px"><?php echo $h['created_at'] ?? '-'; ?></td>
+</tr>
+<?php endforeach; ?>
+</tbody></table></div>
+<?php endif; ?>
+</div>
+
+<?php else: ?>
+<h3 style="color:var(--accent);margin-bottom:12px">📤 Backup Destinations</h3>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+<a href="#" onclick="document.getElementById('newDestForm').style.display='block';return false" class="btn primary">+ Add Destination</a>
+<a href="#" onclick="document.getElementById('restorePanel').style.display='block';return false" class="btn secondary">⬇ Restore From Remote</a>
+</div>
+
+<?php if (!empty($editDest)): ?>
+<div class="card" style="margin-bottom:16px;border-color:rgba(0,191,255,.35)" id="editDestCard">
+<h4 style="color:var(--accent);margin:0 0 12px;font-size:14px">✏️ Edit Destination: <?php echo htmlspecialchars($editDest->name); ?></h4>
+<form method="POST" action="/admin/backup/destination/update/<?php echo $editDest->id; ?>" onsubmit="return true">
+<div class="form-row-3">
+<div class="form-group"><label>Name</label><input name="name" required class="inp inp-sm" value="<?php echo htmlspecialchars($editDest->name); ?>"></div>
+<div class="form-group"><label>Type</label><select name="type" class="inp inp-sm" onchange="destTypeFields('<?php echo 'edit'; ?>',this.value)">
+<?php foreach (($destTypes ?? []) as $tv=>$tl): ?><option value="<?php echo $tv; ?>" <?php echo $editDest->type===$tv?'selected':''; ?>><?php echo $tl; ?></option><?php endforeach; ?>
+</select></div>
+<div class="form-group"><label>Host / URL</label><input name="host" class="inp inp-sm" value="<?php echo htmlspecialchars($editDest->host ?? ''); ?>" placeholder="ftp.example.com or https://dav.example.com"></div>
+</div>
+<div class="form-row-3">
+<div class="form-group fld" data-dtype="ftp ftps sftp rsync webdav"><label>Port</label><input name="port" type="number" class="inp inp-sm" value="<?php echo htmlspecialchars($editDest->port ?? ''); ?>"></div>
+<div class="form-group fld" data-dtype="googledrive"><label>Rclone Remote Name</label><input name="username" class="inp inp-sm" value="<?php echo htmlspecialchars($editDest->username ?? ''); ?>" placeholder="gdrive:"></div>
+<div class="form-group fld" data-dtype="ftp ftps sftp rsync webdav"><label>Username</label><input name="username" class="inp inp-sm" value="<?php echo htmlspecialchars($editDest->username ?? ''); ?>"></div>
+<div class="form-group fld" data-dtype="ftp ftps sftp rsync webdav"><label>Password</label><input name="password" type="password" class="inp inp-sm" placeholder="Leave blank to keep current"></div>
+</div>
+<div class="form-row-3">
+<div class="form-group fld" data-dtype="sftp rsync"><label>SSH Key Path</label><input name="private_key" class="inp inp-sm" value="<?php echo htmlspecialchars($editDest->private_key ?? ''); ?>" placeholder="/root/.ssh/id_rsa"></div>
+<div class="form-group fld" data-dtype="ftp ftps sftp rsync local googledrive webdav"><label>Remote / Local Path</label><input name="path" class="inp inp-sm" value="<?php echo htmlspecialchars($editDest->path ?? '/'); ?>"></div>
+<div class="form-group fld" data-dtype="ftp ftps"><label>Options</label>
+<div style="display:flex;gap:10px;padding-top:6px">
+<label style="font-size:11px;color:var(--text-secondary)"><input type="checkbox" name="passive" value="1" <?php echo !empty($editDest->passive)?'checked':''; ?>> Passive</label>
+<label style="font-size:11px;color:var(--text-secondary)"><input type="checkbox" name="ssl" value="1" <?php echo !empty($editDest->ssl)?'checked':''; ?>> SSL/TLS</label>
+</div></div>
+</div>
+<div class="form-row-3">
+<div class="form-group fld" data-dtype="s3 s3-compat b2"><label>Bucket</label><input name="bucket" class="inp inp-sm" value="<?php echo htmlspecialchars($editDest->bucket ?? ''); ?>"></div>
+<div class="form-group fld" data-dtype="s3 s3-compat"><label>Region</label><input name="region" class="inp inp-sm" value="<?php echo htmlspecialchars($editDest->region ?? 'us-east-1'); ?>"></div>
+<div class="form-group fld" data-dtype="s3 s3-compat b2"><label>Access Key / Key ID</label><input name="access_key" class="inp inp-sm" value="<?php echo htmlspecialchars($editDest->access_key ?? ''); ?>"></div>
+</div>
+<div class="form-row-3">
+<div class="form-group fld" data-dtype="s3 s3-compat b2"><label>Secret Key</label><input name="secret_key" type="password" class="inp inp-sm" placeholder="Leave blank to keep current"></div>
+<div class="form-group fld" data-dtype="s3 s3-compat b2"><label>Endpoint</label><input name="endpoint" class="inp inp-sm" value="<?php echo htmlspecialchars($editDest->endpoint ?? ''); ?>" placeholder="https://s3.custom.com (optional for AWS)"></div>
+<div class="form-group fld" data-dtype="custom"><label>Command Template</label><input name="command_template" class="inp inp-sm" value="<?php echo htmlspecialchars($editDest->command_template ?? ''); ?>" placeholder="rclone copy {local} {host}:{path}/ 2>/dev/null"></div>
+</div>
+<div class="form-group fld" data-dtype="custom"><label>Custom Hints</label><div style="font-size:10px;color:#64748b">Placeholders: {local} {remote}/{file} {path} {user} {host} {port} {password} {op}</div></div>
+<div class="form-row-3">
+<div class="form-group"><label>Retain Daily</label><input name="retention_daily" type="number" class="inp inp-sm" value="<?php echo htmlspecialchars($editDest->retention_daily ?? 7); ?>"></div>
+<div class="form-group"><label>Retain Weekly</label><input name="retention_weekly" type="number" class="inp inp-sm" value="<?php echo htmlspecialchars($editDest->retention_weekly ?? 4); ?>"></div>
+<div class="form-group"><label>Retain Monthly</label><input name="retention_monthly" type="number" class="inp inp-sm" value="<?php echo htmlspecialchars($editDest->retention_monthly ?? 3); ?>"></div>
+</div>
+<div class="form-row-3">
+<div class="form-group"><label>Retain Yearly</label><input name="retention_yearly" type="number" class="inp inp-sm" value="<?php echo htmlspecialchars($editDest->retention_yearly ?? 1); ?>"></div>
+<div class="form-group"><label>Max Retries</label><input name="max_retries" type="number" class="inp inp-sm" value="<?php echo htmlspecialchars($editDest->max_retries ?? 3); ?>"></div>
+<div class="form-group"><label>Default</label><div style="padding-top:8px"><label style="font-size:11px;color:var(--text-secondary)"><input type="checkbox" name="is_default" value="1" <?php echo !empty($editDest->is_default)?'checked':''; ?>> Set as default</label></div></div>
+</div>
+<div class="form-group"><label>Notes</label><textarea name="notes" class="inp inp-sm" rows="2"><?php echo htmlspecialchars($editDest->notes ?? ''); ?></textarea></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button type="submit" class="btn btn-sm primary">Save Changes</button>
+<a href="/admin/backup/destinations" class="btn btn-sm secondary">Cancel</a>
+</div>
+</form>
+<script>document.addEventListener('DOMContentLoaded', function(){ destTypeFields('edit', <?php echo json_encode($editDest->type); ?>); });</script>
+</div>
+<?php endif; ?>
+
 <div id="newDestForm" style="display:none;margin-bottom:16px">
 <div class="card">
-<h4 style="color:var(--accent);margin-bottom:10px">New Destination</h4>
+<h4 style="color:var(--accent);margin:0 0 12px;font-size:14px">New Destination</h4>
 <form method="POST" action="/admin/backup/destination/store">
 <div class="form-row-3">
 <div class="form-group"><label>Name</label><input name="name" required class="inp inp-sm" placeholder="My Backup Server"></div>
-<div class="form-group"><label>Type</label><select name="type" class="inp inp-sm"><option value="ftp">FTP</option><option value="ftps">FTPS</option><option value="sftp">SFTP</option></select></div>
-<div class="form-group"><label>Host</label><input name="host" required class="inp inp-sm" placeholder="ftp.example.com"></div>
+<div class="form-group"><label>Type</label><select name="type" id="dtypeSel" class="inp inp-sm" onchange="destTypeFields('create',this.value)"><?php foreach (($destTypes ?? []) as $tv=>$tl): ?><option value="<?php echo $tv; ?>"><?php echo $tl; ?></option><?php endforeach; ?></select></div>
+<div class="form-group fld" data-dtype="ftp ftps sftp rsync webdav"><label>Host / URL</label><input name="host" class="inp inp-sm" placeholder="ftp.example.com or https://dav.example.com"></div>
 </div>
 <div class="form-row-3">
-<div class="form-group"><label>Port</label><input name="port" type="number" value="21" class="inp inp-sm"></div>
-<div class="form-group"><label>Username</label><input name="username" class="inp inp-sm"></div>
-<div class="form-group"><label>Password</label><input name="password" type="password" class="inp inp-sm"></div>
+<div class="form-group fld" data-dtype="ftp ftps sftp rsync webdav"><label>Port</label><input name="port" type="number" class="inp inp-sm" value="21"></div>
+<div class="form-group fld" data-dtype="ftp ftps sftp rsync webdav"><label>Username</label><input name="username" class="inp inp-sm"></div>
+<div class="form-group fld" data-dtype="googledrive"><label>Rclone Remote Name</label><input name="username" class="inp inp-sm" placeholder="gdrive:"></div>
+<div class="form-group fld" data-dtype="ftp ftps sftp rsync webdav"><label>Password</label><input name="password" type="password" class="inp inp-sm"></div>
 </div>
 <div class="form-row-3">
-<div class="form-group"><label>Remote Path</label><input name="path" value="/" class="inp inp-sm" placeholder="/backups/planet-hosts"></div>
-<div class="form-group" style="display:flex;gap:10px;align-items:center;padding-top:18px">
-<label><input type="checkbox" name="passive" value="1" checked> Passive Mode</label>
-<label><input type="checkbox" name="ssl" value="1"> SSL/TLS</label>
+<div class="form-group fld" data-dtype="sftp rsync"><label>SSH Key Path</label><input name="private_key" class="inp inp-sm" placeholder="/root/.ssh/id_rsa (optional)"></div>
+<div class="form-group fld" data-dtype="ftp ftps sftp rsync googledrive webdav"><label>Remote Path</label><input name="path" class="inp inp-sm" value="/" placeholder="/backups"></div>
+<div class="form-group fld" data-dtype="ftp ftps"><label>Options</label>
+<div style="display:flex;gap:10px;padding-top:6px">
+<label style="font-size:11px;color:var(--text-secondary)"><input type="checkbox" name="passive" value="1" checked> Passive</label>
+<label style="font-size:11px;color:var(--text-secondary)"><input type="checkbox" name="ssl" value="1"> SSL/TLS</label>
+</div></div>
 </div>
-<div class="form-group" style="display:flex;gap:10px;align-items:center;padding-top:18px">
-<label><input type="checkbox" name="is_default" value="1"> Default</label>
-<label><input type="checkbox" name="test_after_create" value="1" checked> Test</label>
+<div class="form-row-3">
+<div class="form-group fld" data-dtype="s3 s3-compat b2"><label>Bucket</label><input name="bucket" class="inp inp-sm" placeholder="my-backups"></div>
+<div class="form-group fld" data-dtype="s3 s3-compat"><label>Region</label><input name="region" class="inp inp-sm" value="us-east-1" placeholder="us-east-1"></div>
+<div class="form-group fld" data-dtype="s3 s3-compat b2"><label>Access Key / Key ID</label><input name="access_key" class="inp inp-sm"></div>
+</div>
+<div class="form-row-3">
+<div class="form-group fld" data-dtype="s3 s3-compat b2"><label>Secret Key</label><input name="secret_key" type="password" class="inp inp-sm"></div>
+<div class="form-group fld" data-dtype="s3 s3-compat b2"><label>Endpoint</label><input name="endpoint" class="inp inp-sm" placeholder="https://s3.custom.com (required for S3-compat / B2)"></div>
+<div class="form-group fld" data-dtype="custom"><label>Command Template</label><input name="command_template" class="inp inp-sm" placeholder="rclone copy {local} {host}:{path}/ 2>/dev/null"></div>
+</div>
+<div class="form-row-3">
+<div class="form-group fld" data-dtype="custom" style="grid-column:1/-1"><label>Custom Hints</label><div style="font-size:10px;color:#64748b">Placeholders: {local} {remote}/{file} {path} {user} {host} {port} {password} {op}</div></div>
+<div class="form-group fld" data-dtype="local"><label>Local Path</label><input name="path" class="inp inp-sm" value="/var/backups/offsite" placeholder="/var/backups/offsite"></div>
+</div>
+<div class="form-row-3">
+<div class="form-group"><label>Retain Daily</label><input name="retention_daily" type="number" value="7" class="inp inp-sm" min="1" max="365"></div>
+<div class="form-group"><label>Retain Weekly</label><input name="retention_weekly" type="number" value="4" class="inp inp-sm" min="1" max="365"></div>
+<div class="form-group"><label>Retain Monthly</label><input name="retention_monthly" type="number" value="3" class="inp inp-sm" min="1" max="365"></div>
+</div>
+<div class="form-row-3">
+<div class="form-group"><label>Retain Yearly</label><input name="retention_yearly" type="number" value="1" class="inp inp-sm" min="1" max="365"></div>
+<div class="form-group"><label>Max Retries</label><input name="max_retries" type="number" value="3" class="inp inp-sm" min="1" max="10"></div>
+<div class="form-group" style="display:flex;gap:12px;align-items:end;flex-wrap:wrap">
+<div style="padding-top:6px"><label style="font-size:11px;color:var(--text-secondary)"><input type="checkbox" name="is_default" value="1"> Default</label></div>
+<div style="padding-top:6px"><label style="font-size:11px;color:var(--text-secondary)"><input type="checkbox" name="test_after_create" value="1" checked> Test after create</label></div>
 </div>
 </div>
 <div class="form-group"><label>Notes</label><textarea name="notes" class="inp inp-sm" rows="2"></textarea></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
 <button type="submit" class="btn btn-sm primary">Create Destination</button>
 <a href="#" onclick="document.getElementById('newDestForm').style.display='none';return false" class="btn btn-sm secondary">Cancel</a>
+</div>
 </form>
 </div>
 </div>
+
+<div id="restorePanel" style="display:none;margin-bottom:16px">
+<div class="card">
+<h4 style="color:var(--accent);margin:0 0 12px;font-size:14px">⬇ Restore From Remote</h4>
+<div class="form-row-3">
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Destination</label>
+<select id="restoreDestSel" class="inp inp-sm" onchange="loadRemoteFiles(this.value)"><option value="">— Select destination —</option><?php foreach ($destinations as $d): ?><option value="<?php echo $d->id; ?>"><?php echo htmlspecialchars($d->name); ?> (<?php echo strtoupper($d->type); ?>)</option><?php endforeach; ?></select></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Remote File</label>
+<select id="restoreFileSel" name="remote_file" form="restoreForm" class="inp inp-sm" disabled><option>Select a destination first</option></select></div>
+<div class="form-group" style="align-self:end"><form id="restoreForm" method="POST" action="/admin/backup/destination/restore"><input type="hidden" name="destination_id" id="restoreDestId"><button type="submit" class="btn btn-sm primary" onclick="return confirm('Download, verify and stage this backup for restore?')">Download & Stage</button></form></div>
+</div>
+<div style="font-size:10px;color:#64748b;margin-top:4px">Restore flow: Remote Download → Checksum/Archive Verify → Staging → appears under Backups for Restore.</div>
+</div>
+</div>
+
 <?php if (empty($destinations)): ?>
 <div class="card" style="text-align:center;padding:24px;color:#64748b">No destinations configured yet.</div>
 <?php else: ?>
@@ -170,22 +334,88 @@ Scope: <?php echo htmlspecialchars($pt['type'] ?? ''); ?> · User: <?php echo ht
 <?php if ($d->is_default): ?><span class="status-badge status-running" style="margin-left:6px">Default</span><?php endif; ?>
 <span class="status-badge <?php echo $d->is_active ? 'status-running' : 'status-stopped'; ?>" style="margin-left:4px"><?php echo $d->is_active ? 'Active' : 'Inactive'; ?></span>
 </div>
-<div style="display:flex;gap:4px">
+<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+<a href="/admin/backup/destination/history/<?php echo $d->id; ?>" class="btn btn-sm btn-primary" title="History & Errors">📜</a>
+<a href="/admin/backup/destination/edit/<?php echo $d->id; ?>" class="btn btn-sm btn-secondary" title="Edit">✏️</a>
+<a href="/admin/backup/destination/toggle/<?php echo $d->id; ?>" class="btn btn-sm <?php echo $d->is_active ? 'btn-warning' : 'btn-success'; ?>" title="<?php echo $d->is_active ? 'Disable' : 'Enable'; ?>"><?php echo $d->is_active ? '⏸' : '▶'; ?></a>
 <a href="/admin/backup/destination/test/<?php echo $d->id; ?>" class="btn btn-sm btn-primary" title="Test Connection">Test</a>
-<a href="/admin/backup/destination/upload/<?php echo $d->id; ?>" class="btn btn-sm btn-success" title="Upload Latest Backup" onclick="return confirm('Upload latest backup to this destination?')">Upload</a>
-<a href="/admin/backup/destination/delete/<?php echo $d->id; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete this destination?')">Delete</a>
+<a href="/admin/backup/destination/run/<?php echo $d->id; ?>" class="btn btn-sm btn-success" title="Upload latest backup now">Run</a>
+<a href="/admin/backup/destination/retention/<?php echo $d->id; ?>" class="btn btn-sm btn-secondary" title="Enforce retention">🧹</a>
+<a href="/admin/backup/destination/delete/<?php echo $d->id; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete this destination?')" title="Delete">🗑</a>
 </div>
 </div>
 <div style="margin-top:8px;font-size:12px;color:#94a3b8">
-<?php echo strtoupper($d->type); ?> · <?php echo htmlspecialchars($d->host); ?>:<?php echo $d->port; ?>
+<?php echo htmlspecialchars(strtoupper($d->type)); ?> · <?php echo htmlspecialchars($d->host ?: ($d->bucket ?: ($d->type === 'local' ? 'local' : '-')) ); ?><?php if (!empty($d->port) && (int)$d->port > 0): ?>:<?php echo (int)$d->port; ?><?php endif; ?>
 <?php if ($d->path && $d->path !== '/'): ?> · Path: <?php echo htmlspecialchars($d->path); ?><?php endif; ?>
 </div>
 <div style="margin-top:4px;font-size:11px;color:#64748b">
-User: <?php echo htmlspecialchars($d->username); ?> · Created: <?php echo $d->created_at; ?>
+Retention: <?php echo (int)($d->retention_daily ?? 7); ?>/<?php echo (int)($d->retention_weekly ?? 4); ?>/<?php echo (int)($d->retention_monthly ?? 3); ?> (D/W/M) · User: <?php echo htmlspecialchars($d->username ?: '-'); ?>
 </div>
+<?php if (!empty($d->last_test_message)): ?>
+<div style="margin-top:4px;font-size:10px;color:#64748b">Last test: <?php echo htmlspecialchars($d->last_test_message); ?> <?php echo $d->last_tested_at ? '(' . $d->last_tested_at . ')' : ''; ?></div>
+<?php endif; ?>
 </div>
 <?php endforeach; ?>
 </div>
+<?php endif; ?>
+
+<div class="card" style="margin-top:16px">
+<h4 style="color:var(--accent);margin:0 0 6px;font-size:14px">📤 Transfer Queue</h4>
+<div style="font-size:11px;color:#64748b;margin-bottom:10px">Transfers are processed automatically. Use <strong>Run</strong> on a destination card to push the latest backup now, or the Restore panel to pull remote backups back.</div>
+<?php if (empty($queue)): ?>
+<div style="color:#64748b;padding:10px;font-size:12px">Queue is empty.</div>
+<?php else: ?>
+<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
+<thead><tr style="background:var(--bg-card);border-bottom:1px solid rgba(255,255,255,.06)">
+<th style="padding:6px;text-align:left">ID</th><th style="padding:6px;text-align:left">Dest</th><th style="padding:6px;text-align:left">Action</th><th style="padding:6px;text-align:left">File</th><th style="padding:6px;text-align:left">Status</th><th style="padding:6px;text-align:left">Stage</th><th style="padding:6px;text-align:left">Att</th><th style="padding:6px;text-align:left">Error</th><th style="padding:6px;text-align:left">Date</th></tr></thead>
+<tbody>
+<?php foreach ($queue as $t): ?>
+<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+<td style="padding:6px">#<?php echo $t['id'] ?? '-'; ?></td>
+<td style="padding:6px;max-width:120px;overflow:hidden;text-overflow:ellipsis"><?php echo htmlspecialchars($t['destination_id'] ?? '-'); ?></td>
+<td style="padding:6px"><?php echo isset($t['action']) ? strtoupper($t['action']) : '-'; ?></td>
+<td style="padding:6px;max-width:180px;overflow:hidden;text-overflow:ellipsis"><?php echo htmlspecialchars($t['filename'] ?? '-'); ?></td>
+<td style="padding:6px"><span class="status-badge status-<?php echo ($t['status']??'')==='completed' ? 'active' : (($t['status']??'')==='failed' ? 'terminated' : 'pending'); ?>"><?php echo $t['status'] ?? '-'; ?></span></td>
+<td style="padding:6px"><?php echo htmlspecialchars($t['stage'] ?? '-'); ?></td>
+<td style="padding:6px"><?php echo $t['attempts'] ?? 0; ?>/<?php echo $t['max_attempts'] ?? 3; ?></td>
+<td style="padding:6px;max-width:200px;overflow:hidden;text-overflow:ellipsis;color:#f87171"><?php echo htmlspecialchars($t['error_message'] ?? ''); ?></td>
+<td style="padding:6px"><?php echo $t['created_at'] ?? '-'; ?></td>
+</tr>
+<?php endforeach; ?>
+</tbody></table></div>
+<?php endif; ?>
+</div>
+
+<script>
+function destTypeFields(scope, type){
+  var root = scope === 'edit' ? document.getElementById('editDestCard') : document.getElementById('newDestForm');
+  if (!root) return;
+  var flds = root.querySelectorAll('.fld');
+  Array.prototype.forEach.call(flds, function(el){
+    el.style.display = el.getAttribute('data-dtype').split(' ').indexOf(type) >= 0 ? 'block' : 'none';
+  });
+}
+function loadRemoteFiles(id){
+  var sel = document.getElementById('restoreFileSel');
+  document.getElementById('restoreDestId').value = id;
+  if (!id){ sel.disabled = true; sel.innerHTML = '<option>Select a destination first</option>'; return; }
+  sel.disabled = true;
+  sel.innerHTML = '<option>Loading…</option>';
+  fetch('/admin/backup/destination/list-remote/' + id).then(function(r){ return r.json(); }).then(function(d){
+    sel.innerHTML = '';
+    if (!d.files || !d.files.length){ sel.innerHTML = '<option value="">No backups found on remote</option>'; }
+    else {
+      d.files.forEach(function(f){ var o = document.createElement('option'); o.value = f; o.textContent = f; sel.appendChild(o); });
+    }
+    sel.disabled = false;
+  }).catch(function(){ sel.innerHTML = '<option value="">Failed to list remote files</option>'; sel.disabled = false; });
+}
+document.addEventListener('DOMContentLoaded', function(){
+  var s = document.getElementById('dtypeSel');
+  if (s) destTypeFields('create', s.value);
+  if (document.getElementById('editDestCard')) destTypeFields('edit', <?php echo isset($editDest) ? json_encode($editDest->type) : '""'; ?>);
+});
+</script>
 <?php endif; ?>
 
 <?php elseif (!empty($settingsView)): ?>

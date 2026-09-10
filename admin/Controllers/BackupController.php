@@ -235,6 +235,24 @@ class BackupController extends Controller
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         return $this->view('admin.backup.index', [
             'user' => $user, 'destinations' => $destinations, 'destinationsView' => true,
+            'destTypes' => $this->backup->getDestinationTypes(),
+            'queue' => $this->backup->getQueue(null, 20),
+            'theme_settings' => $theme_settings,
+        ]);
+    }
+
+    public function destinationEdit($id)
+    {
+        $this->guard();
+        $user = $this->auth->user();
+        $destinations = $this->backup->getDestinations();
+        $queue = $this->backup->getQueue(null, 20);
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        return $this->view('admin.backup.index', [
+            'user' => $user, 'destinations' => $destinations, 'destinationsView' => true,
+            'destTypes' => $this->backup->getDestinationTypes(),
+            'queue' => $queue,
+            'editDest' => $this->backup->getDestination((int)$id),
             'theme_settings' => $theme_settings,
         ]);
     }
@@ -274,6 +292,15 @@ class BackupController extends Controller
         exit;
     }
 
+    public function destinationToggle($id)
+    {
+        $this->guard();
+        $ok = $this->backup->toggleDestination((int)$id);
+        $_SESSION[$ok ? 'success_message' : 'error_message'] = $ok ? 'Destination toggled.' : 'Toggle failed.';
+        $this->response->redirect('/admin/backup/destinations');
+        exit;
+    }
+
     public function destinationTest($id)
     {
         $this->guard();
@@ -283,19 +310,91 @@ class BackupController extends Controller
         exit;
     }
 
-    public function destinationUpload($id)
+    public function destinationRunNow($id)
     {
         $this->guard();
-        $backups = $this->backup->getBackups();
-        if (!empty($backups)) {
-            $latest = $backups[0];
-            $result = $this->backup->uploadToDestination($latest['path'], (int)$id);
-            $_SESSION[$result['success'] ? 'success_message' : 'error_message'] = $result['message'] ?? 'Upload attempted.';
+        $result = $this->backup->runNow((int)$id);
+        $_SESSION[!empty($result['success']) ? 'success_message' : 'error_message'] = $result['message'] ?? 'Upload completed.';
+        $this->response->redirect('/admin/backup/destinations');
+        exit;
+    }
+
+    public function destinationRetention($id)
+    {
+        $this->guard();
+        $result = $this->backup->enforceDestinationRetention((int)$id);
+        if (!empty($result['success'])) {
+            $_SESSION['success_message'] = "Retention enforced: {$result['deleted']} deleted, {$result['kept']} kept.";
         } else {
-            $_SESSION['error_message'] = 'No backups available to upload.';
+            $_SESSION['error_message'] = $result['message'] ?? 'Retention failed.';
         }
         $this->response->redirect('/admin/backup/destinations');
         exit;
+    }
+
+    public function destinationQueue($id)
+    {
+        $this->guard();
+        $backups = $this->backup->getBackups();
+        $filenames = $this->request->post('filename', '');
+        $files = $filenames ? array_map('trim', explode(',', $filenames)) : (!empty($backups) ? [$backups[0]['name']] : []);
+        if (empty($files)) {
+            $_SESSION['error_message'] = 'No backups available to queue.';
+        } else {
+            $queued = 0;
+            foreach ($files as $f) {
+                if ($f && $this->backup->queueTransfer((int)$id, basename($f), 'upload')) $queued++;
+            }
+            $this->backup->processQueue(20);
+            $_SESSION['success_message'] = "{$queued} backup(s) queued and processed.";
+        }
+        $this->response->redirect('/admin/backup/destinations');
+        exit;
+    }
+
+    public function destinationRestore()
+    {
+        $this->guard();
+        $destId = (int)$this->request->post('destination_id', 0);
+        $remoteFile = basename($this->request->post('remote_file', ''));
+        if (!$destId || !$remoteFile) {
+            $_SESSION['error_message'] = 'Destination and remote file are required.';
+        } else {
+            $result = $this->backup->restoreFromRemote($destId, $remoteFile);
+            if (!empty($result['success'])) {
+                $_SESSION['success_message'] = $result['message'] . ' → ready under Backups. Now use Restore from the Dashboard.';
+            } else {
+                $_SESSION['error_message'] = $result['message'] ?? 'Restore failed.';
+            }
+        }
+        $this->response->redirect('/admin/backup/destinations');
+        exit;
+    }
+
+    public function destinationListRemote($id)
+    {
+        $this->guard();
+        $files = $this->backup->listRemoteFiles((int)$id);
+        $this->response->json(['files' => $files]);
+        $this->response->send();
+        exit;
+    }
+
+    public function destinationHistory($id)
+    {
+        $this->guard();
+        $user = $this->auth->user();
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        return $this->view('admin.backup.index', [
+            'user' => $user, 'destinationsView' => true,
+            'destTypes' => $this->backup->getDestinationTypes(),
+            'queue' => $this->backup->getQueue(null, 20),
+            'destDetail' => $this->backup->getDestination((int)$id),
+            'destHistory' => $this->backup->getDestinationHistory((int)$id, 100),
+            'destErrors' => $this->backup->getDestinationErrors((int)$id, 50),
+            'destUsage' => $this->backup->getDestinationUsage((int)$id),
+            'theme_settings' => $theme_settings,
+        ]);
     }
 
     // ── Settings ──
