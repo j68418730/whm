@@ -19,7 +19,20 @@
 <div class="set-card" id="update-actions">
 <h4><i class="bi bi-download"></i> Actions</h4>
 <div style="display:flex;gap:8px;flex-wrap:wrap">
-<form method="POST" action="/admin/update/check" style="display:inline"><button type="submit" class="btn set-btn-ghost">🔍 Check for Updates</button></form>
+<button type="button" class="btn set-btn-ghost" onclick="checkUpdates(this)">🔍 Check for Updates</button> <span id="checkSpinner" style="display:none;color:#0A84FF;font-size:12px"><i class="bi bi-arrow-repeat" style="display:inline-block;animation:spin 1s linear infinite"></i> Checking...</span>
+<style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>
+<script>
+function checkUpdates(btn){
+  var s=document.getElementById('checkSpinner');
+  s.style.display=''; btn.disabled=true; btn.style.opacity='.5';
+  fetch('/admin/update/check', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'_csrf_token=<?php echo htmlspecialchars($_SESSION["_csrf_token"] ?? ""); ?>'})
+    .then(function(r){return r.json()}).then(function(d){
+      s.innerHTML = d.update_available ? '✓ ' + d.behind + ' update(s) found' : '✓ Up to date';
+      s.style.color = d.update_available ? '#facc15' : '#4ade80';
+      setTimeout(function(){ location.reload(); }, 800);
+    }).catch(function(){ s.textContent='✗ Check failed'; s.style.color='#f87171'; btn.disabled=false; btn.style.opacity='1'; });
+}
+</script>
 <?php if ($behind > 0): ?>
 <form method="POST" action="/admin/update/install" style="display:inline" onsubmit="return confirm('Install update? This will backup, pull, migrate, and reload services. Continue?')"><input type="hidden" name="confirm" value="yes"><button type="submit" class="btn set-btn-save">⬇ Install Update (<?php echo $behind; ?>)</button></form>
 <?php endif; ?>
