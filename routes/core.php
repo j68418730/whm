@@ -104,9 +104,16 @@ $router->get('/admin/backup/history', 'Admin\Controllers\BackupController@histor
 $router->get('/admin/backup/destinations', 'Admin\Controllers\BackupController@destinations');
 $router->post('/admin/backup/destination/store', 'Admin\Controllers\BackupController@destinationStore');
 $router->post('/admin/backup/destination/update/{id}', 'Admin\Controllers\BackupController@destinationUpdate');
+$router->get('/admin/backup/destination/edit/{id}', 'Admin\Controllers\BackupController@destinationEdit');
 $router->get('/admin/backup/destination/delete/{id}', 'Admin\Controllers\BackupController@destinationDelete');
+$router->get('/admin/backup/destination/toggle/{id}', 'Admin\Controllers\BackupController@destinationToggle');
 $router->get('/admin/backup/destination/test/{id}', 'Admin\Controllers\BackupController@destinationTest');
-$router->get('/admin/backup/destination/upload/{id}', 'Admin\Controllers\BackupController@destinationUpload');
+$router->get('/admin/backup/destination/run/{id}', 'Admin\Controllers\BackupController@destinationRunNow');
+$router->get('/admin/backup/destination/retention/{id}', 'Admin\Controllers\BackupController@destinationRetention');
+$router->post('/admin/backup/destination/queue/{id}', 'Admin\Controllers\BackupController@destinationQueue');
+$router->get('/admin/backup/destination/list-remote/{id}', 'Admin\Controllers\BackupController@destinationListRemote');
+$router->post('/admin/backup/destination/restore', 'Admin\Controllers\BackupController@destinationRestore');
+$router->get('/admin/backup/destination/history/{id}', 'Admin\Controllers\BackupController@destinationHistory');
 $router->get('/admin/backup/settings', 'Admin\Controllers\BackupController@settings');
 $router->post('/admin/backup/settings/save', 'Admin\Controllers\BackupController@saveSettings');
 $router->get('/admin/backup/reports', 'Admin\Controllers\BackupController@reports');
