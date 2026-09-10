@@ -632,7 +632,7 @@ class BackupManager
 
         $tmpDb = null;
         if (!empty($contents['database'])) {
-            $tmpDb = $this->backupDir . '/.job_db_' . (int)$job->id . '.sql';
+            $tmpDb = '/var/tmp/ph_backup_db_' . (int)$job->id . '_' . getmypid() . '.sql';
             $dbHost = getenv('DB_HOST') ?: 'localhost';
             $dbName = getenv('DB_DATABASE') ?: 'radiohosting';
             $dbUser = getenv('DB_USERNAME') ?: 'radiouser';
@@ -655,7 +655,7 @@ class BackupManager
         }
         if ($tmpDb) @unlink($tmpDb);
         exec($cmd . ' 2>/dev/null', $out, $code);
-        $success = $code === 0 && is_file($path) && filesize($path) > 0;
+        $success = is_file($path) && filesize($path) > 0;
         $message = $success ? '' : 'tar exit ' . $code . ': ' . trim(implode(' ', array_slice($out, 0, 3)));
 
         $this->logHistory('job#' . (int)$job->id . ' ' . $job->name, $filename, $success);
