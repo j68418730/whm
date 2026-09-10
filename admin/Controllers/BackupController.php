@@ -159,9 +159,12 @@ class BackupController extends Controller
         $restoreManager = new \Admin\Services\Migration\RestoreManager();
         $points = $restoreManager->getRestorePoints();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        $allUsers = $this->db->table('hosting_users')->orderBy('username','ASC')->get() ?: [];
+        $allDomains = $this->db->table('dns_zones')->orderBy('domain','ASC')->get() ?: [];
         return $this->view('admin.backup.index', [
             'user' => $user, 'theme_settings' => $theme_settings,
             'points' => $points, 'restorePointsView' => true,
+            'allUsers' => $allUsers, 'allDomains' => $allDomains,
         ]);
     }
 
