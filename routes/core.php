@@ -114,6 +114,13 @@ $router->post('/admin/backup/destination/queue/{id}', 'Admin\Controllers\BackupC
 $router->get('/admin/backup/destination/list-remote/{id}', 'Admin\Controllers\BackupController@destinationListRemote');
 $router->post('/admin/backup/destination/restore', 'Admin\Controllers\BackupController@destinationRestore');
 $router->get('/admin/backup/destination/history/{id}', 'Admin\Controllers\BackupController@destinationHistory');
+$router->get('/admin/backup/jobs', 'Admin\Controllers\BackupController@jobs');
+$router->get('/admin/backup/job/edit/{id}', 'Admin\Controllers\BackupController@jobEdit');
+$router->post('/admin/backup/job/store', 'Admin\Controllers\BackupController@jobStore');
+$router->post('/admin/backup/job/update/{id}', 'Admin\Controllers\BackupController@jobUpdate');
+$router->get('/admin/backup/job/delete/{id}', 'Admin\Controllers\BackupController@jobDelete');
+$router->get('/admin/backup/job/toggle/{id}', 'Admin\Controllers\BackupController@jobToggle');
+$router->get('/admin/backup/job/run/{id}', 'Admin\Controllers\BackupController@jobRunNow');
 $router->get('/admin/backup/settings', 'Admin\Controllers\BackupController@settings');
 $router->post('/admin/backup/settings/save', 'Admin\Controllers\BackupController@saveSettings');
 $router->get('/admin/backup/reports', 'Admin\Controllers\BackupController@reports');

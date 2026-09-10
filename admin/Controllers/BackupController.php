@@ -397,6 +397,85 @@ class BackupController extends Controller
         ]);
     }
 
+    // ── Scheduled Jobs ──
+    public function jobs()
+    {
+        $this->guard();
+        $user = $this->auth->user();
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        return $this->view('admin.backup.index', [
+            'user' => $user, 'jobsView' => true,
+            'jobs' => $this->backup->getJobs(),
+            'destinations' => $this->backup->getDestinations(),
+            'catalog' => $this->backup->getContentsCatalog(),
+            'theme_settings' => $theme_settings,
+        ]);
+    }
+
+    public function jobEdit($id)
+    {
+        $this->guard();
+        $user = $this->auth->user();
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        return $this->view('admin.backup.index', [
+            'user' => $user, 'jobsView' => true,
+            'jobs' => $this->backup->getJobs(),
+            'destinations' => $this->backup->getDestinations(),
+            'catalog' => $this->backup->getContentsCatalog(),
+            'editJob' => $this->backup->getJob((int)$id),
+            'theme_settings' => $theme_settings,
+        ]);
+    }
+
+    public function jobStore()
+    {
+        $this->guard();
+        $id = $this->backup->createJob($this->request->post());
+        $_SESSION[ $id ? 'success_message' : 'error_message' ] = $id ? 'Scheduled backup job created.' : 'Failed to create job.';
+        $this->response->redirect('/admin/backup/jobs');
+        exit;
+    }
+
+    public function jobUpdate($id)
+    {
+        $this->guard();
+        $ok = $this->backup->updateJob((int)$id, $this->request->post());
+        $_SESSION[ $ok ? 'success_message' : 'error_message' ] = $ok ? 'Scheduled backup job updated.' : 'Failed to update job.';
+        $this->response->redirect('/admin/backup/jobs');
+        exit;
+    }
+
+    public function jobDelete($id)
+    {
+        $this->guard();
+        $this->backup->deleteJob((int)$id);
+        $_SESSION['success_message'] = 'Scheduled backup job deleted.';
+        $this->response->redirect('/admin/backup/jobs');
+        exit;
+    }
+
+    public function jobToggle($id)
+    {
+        $this->guard();
+        $ok = $this->backup->toggleJob((int)$id);
+        $_SESSION[ $ok ? 'success_message' : 'error_message' ] = $ok ? 'Job toggled.' : 'Toggle failed.';
+        $this->response->redirect('/admin/backup/jobs');
+        exit;
+    }
+
+    public function jobRunNow($id)
+    {
+        $this->guard();
+        $result = $this->backup->runJobNow((int)$id);
+        if (!empty($result['success'])) {
+            $_SESSION['success_message'] = $result['message'] . " ('" . ($result['filename'] ?? '') . "')";
+        } else {
+            $_SESSION['error_message'] = $result['message'] ?? 'Run failed.';
+        }
+        $this->response->redirect('/admin/backup/jobs');
+        exit;
+    }
+
     // ── Settings ──
     public function settings()
     {
