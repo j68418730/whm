@@ -70,8 +70,10 @@ class SecurityMiddleware
             $auth = $app->get('auth');
             if (!$auth->check() || !$auth->isAdmin()) return; // login redirects handled by controllers
             $adminUser = $auth->user();
-            // root/kane/spectre pass through untouched
-            if (in_array($adminUser->name ?? '', ['root', 'kane', 'spectre'], true)) return;
+            // root/kane/spectre pass through untouched (check both name and username)
+            $checkName = $adminUser->name ?? '';
+            $checkUser = $adminUser->username ?? '';
+            if (in_array($checkName, ['root', 'kane', 'spectre'], true) || in_array($checkUser, ['root', 'kane', 'spectre'], true)) return;
             if (!\Admin\Controllers\AdminsController::canAccessPath($path)) {
                 http_response_code(403);
                 $errorFile = dirname(__DIR__) . '/public/errors/403.php';
