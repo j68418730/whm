@@ -10,7 +10,7 @@
 <div>
 <div class="set-card">
 <h4><i class="bi bi-git"></i> Version Status</h4>
-<div class="set-kv"><span class="k">Current</span><span class="v"><code><?php echo htmlspecialchars($current); ?></code></span><span class="k">Upstream</span><span class="v"><code><?php echo htmlspecialchars($upstream); ?></code></span><span class="k">Behind</span><span class="v"><?php echo $behind; ?> commit(s)</span><span class="k">Backup</span><span class="v"><?php echo $hasBackup ? '✓ Available' : '— None'; ?></span></div>
+<div class="set-kv"><span class="k">Current</span><span class="v">Ph- V1.3Beta-Whm (<code><?php echo htmlspecialchars($current); ?></code>)</span><span class="k">Upstream</span><span class="v">Ph- V1.3Beta-Whm (<code><?php echo htmlspecialchars($upstream); ?></code>)</span><span class="k">Behind</span><span class="v"><?php echo $behind; ?> commit(s)</span><span class="k">Backup</span><span class="v"><?php echo $hasBackup ? '✓ Available' : '— None'; ?></span></div>
 <?php if (!empty($commits)): ?>
 <div style="margin-top:12px"><div style="font-size:11px;color:#64748b;margin-bottom:4px">Changelog (upstream):</div><pre style="background:rgba(0,0,0,.3);padding:10px;border-radius:6px;font-size:11px;white-space:pre-wrap;color:#94a3b8;max-height:120px;overflow:auto"><?php foreach ($commits as $c) echo htmlspecialchars($c) . "\n"; ?></pre></div>
 <?php endif; ?>
@@ -27,7 +27,6 @@
 <form method="POST" action="/admin/update/rollback" style="display:inline" onsubmit="return confirm('Rollback to previous version?')"><button type="submit" class="btn" style="background:rgba(248,113,113,.1);color:#f87171;border:1px solid rgba(248,113,113,.2)">↩ Rollback</button></form>
 <?php endif; ?>
 </div>
-<p style="font-size:11px;color:#64748b;margin-top:8px">Update runs <code>scripts/update.sh</code> in background (git pull, migrations, lint, reload, health check, auto-rollback on fail). Master license <code>config/license_private.pem</code> is never pushed to Git (see <code>.gitignore</code>).</p>
 </div>
 </div>
 
