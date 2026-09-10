@@ -108,16 +108,29 @@ $featureLabels = [
 <?php endforeach; ?></table>
 </div>
 
+<?php if (!empty($_SESSION['generatedKey'])): ?>
+<div class="card" style="border-color:rgba(74,222,128,.2)"><h3 style="color:#4ade80;margin-bottom:8px">Regenerated License Key</h3><p style="font-size:12px;color:#94a3b8;margin-bottom:8px">Copy the entire block below.</p><textarea readonly style="width:100%;height:160px;font-family:monospace;font-size:11px;background:rgba(0,0,0,.3);border:1px solid rgba(74,222,128,.2);color:#4ade80;border-radius:6px;padding:10px" onclick="this.select()"><?php echo htmlspecialchars($_SESSION['generatedKey']); unset($_SESSION['generatedKey']); ?></textarea></div>
+<?php endif; ?>
+
 <?php if (!empty($activations)): ?>
 <div class="card">
-<h3 style="color:var(--accent);margin-bottom:12px">Activation History</h3>
-<table><tr><th>Date</th><th>License Key</th><th>Type</th><th>Status</th></tr>
+<h3 style="color:var(--accent);margin-bottom:12px">Activation History — Key Controls</h3>
+<table><tr><th>Date</th><th>License Key</th><th>Type</th><th>Status</th><th>Actions</th></tr>
 <?php foreach ($activations as $a): ?>
 <tr>
   <td><?php echo htmlspecialchars($a->activation_date ?? $a->created_at ?? ''); ?></td>
   <td style="font-family:monospace;font-size:11px"><?php echo htmlspecialchars(substr($a->license_key, 0, 20) . '...'); ?></td>
   <td><?php echo htmlspecialchars($a->license_type ?? ''); ?></td>
   <td><span class="status-badge status-<?php echo $a->license_status === 'active' ? 'active' : 'terminated'; ?>"><?php echo htmlspecialchars($a->license_status ?? ''); ?></span></td>
+  <td style="white-space:nowrap;display:flex;gap:4px">
+    <?php if (($a->license_status ?? '') === 'active'): ?>
+      <a href="/admin/licensing/suspend/<?php echo $a->id; ?>" class="btn" style="padding:4px 8px;font-size:10px;background:rgba(248,113,113,.1);color:#f87171;border:1px solid rgba(248,113,113,.2);text-decoration:none" onclick="return confirm('Suspend this license?')">Suspend</a>
+    <?php else: ?>
+      <a href="/admin/licensing/unsuspend/<?php echo $a->id; ?>" class="btn" style="padding:4px 8px;font-size:10px;background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2);text-decoration:none">Activate</a>
+    <?php endif; ?>
+    <a href="/admin/licensing/regenerate/<?php echo $a->id; ?>" class="btn" style="padding:4px 8px;font-size:10px;background:rgba(250,204,21,.1);color:#facc15;border:1px solid rgba(250,204,21,.2);text-decoration:none">Regen</a>
+    <a href="/admin/licensing/remove/<?php echo $a->id; ?>" class="btn" style="padding:4px 8px;font-size:10px;background:rgba(100,116,139,.1);color:#94a3b8;border:1px solid rgba(100,116,139,.2);text-decoration:none" onclick="return confirm('Remove this license? This cannot be undone.')">Remove</a>
+  </td>
 </tr>
 <?php endforeach; ?></table>
 </div>

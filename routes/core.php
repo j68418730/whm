@@ -225,6 +225,10 @@ $router->post('/admin/licensing/activate', 'Admin\Controllers\LicensingControlle
 $router->get('/admin/licensing/refresh', 'Admin\Controllers\LicensingController@refresh');
 $router->get('/admin/licensing/deactivate', 'Admin\Controllers\LicensingController@deactivate');
 $router->post('/admin/licensing/transfer', 'Admin\Controllers\LicensingController@transfer');
+$router->get('/admin/licensing/suspend/{id}', 'Admin\Controllers\LicensingController@suspend');
+$router->get('/admin/licensing/unsuspend/{id}', 'Admin\Controllers\LicensingController@unsuspend');
+$router->get('/admin/licensing/remove/{id}', 'Admin\Controllers\LicensingController@remove');
+$router->get('/admin/licensing/regenerate/{id}', 'Admin\Controllers\LicensingController@regenerate');
 $router->get('/livechat', 'Admin\Controllers\LiveChatController@portal');
 $router->post('/livechat', 'Admin\Controllers\LiveChatController@portal');
 $router->get('/admin/livechat', 'Admin\Controllers\LiveChatController@index');
