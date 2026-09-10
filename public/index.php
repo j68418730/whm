@@ -54,7 +54,7 @@ if (!is_file($lockFile) && !$isSetupExcluded) {
 $isLicensePage = str_starts_with($path, '/admin/licensing') || str_starts_with($path, '/admin/login') || str_starts_with($path, '/admin/support-status') || str_starts_with($path, '/api/') || str_starts_with($path, '/livechat') || str_starts_with($path, '/radio/') || str_starts_with($path, '/setup');
 $license = new Core\License(BASE_PATH);
 $licenseResult = $license->verify();
-if (!$licenseResult['valid'] && !$isLicensePage) {
+if (!$licenseResult['valid'] && !($licenseResult['trial'] ?? false) && !$isLicensePage) {
     http_response_code(403);
     include BASE_PATH . '/public/errors/403.php';
     exit;

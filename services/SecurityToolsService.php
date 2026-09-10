@@ -89,7 +89,7 @@ class SecurityToolsService
         foreach ($paths as $p) {
             if (is_file($p . $bin) || is_executable($p . $bin)) return true;
         }
-        return trim(shell_exec('command -v ' . escapeshellarg($bin) . ' 2>/dev/null')) !== '';
+        return trim(shell_exec('command -v ' . escapeshellarg($bin) . ' 2>/dev/null') ?? '') !== '';
     }
 
     public function version($tool)

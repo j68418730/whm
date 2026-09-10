@@ -126,11 +126,18 @@ log "UPDATE" "system" "OK" "System updated"
 # 2. Full LAMP + services
 echo "[2/10] Installing Apache, PHP, MariaDB, services, and jailkit..."
 log "STACK" "install" "RUNNING" "Installing web stack"
+# Detect Debian version and set PHP package names
+DEBIAN_VERSION=$(lsb_release -sc)
+if [[ "$DEBIAN_VERSION" == "trixie" ]] || [[ "$DEBIAN_VERSION" == "bookworm" ]]; then
+    # Debian 12/13 - PHP 8.2+ packages are in php8.2-* format
+    PHP_PKGS="php8.2 php8.2-cli php8.2-common php8.2-curl php8.2-gd php8.2-intl php8.2-mbstring php8.2-mysql php8.2-xml php8.2-zip php8.2-bcmath php8.2-bz2 php8.2-ctype php8.2-exif php8.2-fileinfo php8.2-ftp php8.2-imap php8.2-ldap php8.2-opcache php8.2-redis php8.2-sockets php8.2-tokenizer php8.2-xmlreader php8.2-xsl php8.2-apcu php8.2-imagick php8.2-soap php8.2-fpm"
+else
+    # Older Debian
+    PHP_PKGS="php php-cli php-common php-curl php-gd php-intl php-mbstring php-mysql php-xml php-zip php-bcmath php-bz2 php-ctype php-exif php-fileinfo php-ftp php-imap php-ldap php-opcache php-redis php-sockets php-tokenizer php-xmlreader php-xsl php-apcu php-imagick php-soap"
+fi
+
 install_required "Web stack" apache2 mariadb-server jailkit quota quotatool \
-  php php-cli php-common php-curl php-gd php-intl php-mbstring php-mysql \
-  php-xml php-zip php-bcmath php-bz2 php-ctype php-exif php-fileinfo \
-  php-ftp php-imap php-ldap php-opcache php-redis php-sockets php-tokenizer \
-  php-xmlreader php-xsl php-apcu php-imagick php-soap \
+  $PHP_PKGS \
   postfix dovecot-imapd dovecot-pop3d vsftpd bind9 \
   unzip wget curl git openssl \
   firewalld fail2ban clamav-daemon rspamd aide rkhunter chkrootkit lynis \
@@ -150,6 +157,7 @@ install_required "Icecast" icecast2 && ICECAST_INSTALLED=1
 systemctl enable --now icecast2 2>/dev/null || true
 
 # Configure nginx on port 8080 (avoids Apache conflict on port 80)
+mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled
 cat > /etc/nginx/sites-available/planet-proxy << "NGINX"
 server {
     listen 8080 default_server;
@@ -161,7 +169,7 @@ server {
         try_files $uri $uri/ /index.php?$args;
     }
     location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_pass unix:/run/php/php8.2-fpm.sock;
         fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         include fastcgi_params;
@@ -274,7 +282,7 @@ RSYSLOGEOF
 systemctl restart rsyslog 2>/dev/null || true
 log "RSYSLOG" "shoutcast" "OK" "SHOUTcast logs redirected to /var/log/shoutcast/sc_syslog.log"
 
-install_optional "Liquidsoap" liquidsoap && LIQUIDSOAP_INSTALLED=1
+install_optional "Liquidsoap" liquidsoap && LIQUIDSOAP_INSTALLED=1 || log "LIQUIDSOAP" "install" "WARNING" "Liquidsoap not available in repos, will skip"
 # Liquidsoap systemd service
 if command -v liquidsoap >/dev/null 2>&1; then
     mkdir -p /etc/liquidsoap /var/log/liquidsoap /var/run/liquidsoap
@@ -306,7 +314,10 @@ LSEOF
     systemctl enable --now liquidsoap 2>/dev/null || true
     log "LIQUIDSOAP" "service" "OK" "Liquidsoap systemd service created"
 fi
-install_optional "ezstream" ezstream-ffmpeg && EZSTREAM_INSTALLED=1
+install_optional "ezstream" ezstream-ffmpeg && EZSTREAM_INSTALLED=1 || log "EZSTREAM" "install" "WARNING" "ezstream-ffmpeg not available, trying ezstream"
+if ! command -v ezstream >/dev/null 2>&1; then
+    install_optional "ezstream" ezstream && EZSTREAM_INSTALLED=1 || log "EZSTREAM" "install" "WARNING" "ezstream not available"
+fi
 install_optional "FFmpeg" ffmpeg && FFMPEG_INSTALLED=1
 
 # Log rotation configs (prevent disk exhaustion)
@@ -390,6 +401,13 @@ if [ -f crs.tar.gz ] && [ -s crs.tar.gz ]; then
     rm -f crs.tar.gz
 fi
 log "SECURITY" "install" "OK" "Security tools installed"
+
+# Fix ModSecurity CRS duplicate rule ID issue
+log "SECURITY" "crs" "RUNNING" "Fixing ModSecurity CRS duplicate rule IDs"
+if [ -d /usr/share/modsecurity-crs/rules ]; then
+    mv /usr/share/modsecurity-crs/rules/REQUEST-934-APPLICATION-ATTACK-NODEJS.conf /usr/share/modsecurity-crs/rules/REQUEST-934-APPLICATION-ATTACK-NODEJS.conf.disabled 2>/dev/null || true
+fi
+log "SECURITY" "crs" "OK" "ModSecurity CRS fixed"
 
 # DDoS iptables rules
 log "SECURITY" "iptables" "RUNNING" "Configuring DDoS iptables rules"
@@ -697,7 +715,7 @@ SMCFG
 fi
 
 # Create panel ports vhost config
-log "APACHE" "panel-ports" "RUNNING" "Creating panel ports vhost"
+log "APACHE" "panel-ports" "RUNNING" "Creating panel ports vhost config"
 cat > /etc/apache2/sites-available/panel-ports.conf <<VHOSTS
 <VirtualHost *:2082>
     DocumentRoot $PANEL_DIR/public
@@ -707,28 +725,38 @@ cat > /etc/apache2/sites-available/panel-ports.conf <<VHOSTS
         AllowOverride All
         Require all granted
     </Directory>
-    RewriteEngine On; RewriteRule ^/$ /portal_user.php [L]
+    RewriteEngine On
+    RewriteRule ^/$ /portal_user.php [L]
 </VirtualHost>
 <VirtualHost *:2086>
     DocumentRoot $PANEL_DIR/public; ServerName $SERVER_IP
     <Directory $PANEL_DIR/public>
-        Options Indexes FollowSymLinks; AllowOverride All; Require all granted
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
     </Directory>
-    RewriteEngine On; RewriteRule ^/$ /portal_reseller.php [L]
+    RewriteEngine On
+    RewriteRule ^/$ /portal_reseller.php [L]
 </VirtualHost>
 <VirtualHost *:2087>
     DocumentRoot $PANEL_DIR/public; ServerName $SERVER_IP
     <Directory $PANEL_DIR/public>
-        Options Indexes FollowSymLinks; AllowOverride All; Require all granted
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
     </Directory>
-    RewriteEngine On; RewriteRule ^/$ /admin/login [L,R=302]
+    RewriteEngine On
+    RewriteRule ^/$ /admin/login [L,R=302]
 </VirtualHost>
 <VirtualHost *:2096>
     DocumentRoot $PANEL_DIR/public; ServerName $SERVER_IP
     <Directory $PANEL_DIR/public>
-        Options Indexes FollowSymLinks; AllowOverride All; Require all granted
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
     </Directory>
-    RewriteEngine On; RewriteRule ^/$ /portal_webmail.php [L]
+    RewriteEngine On
+    RewriteRule ^/$ /portal_webmail.php [L]
 </VirtualHost>
 VHOSTS
 a2ensite panel-ports 2>/dev/null || true
@@ -798,7 +826,9 @@ cat > /etc/apache2/sites-available/radiohosting.conf <<VHOST
     ServerAdmin webmaster@localhost
     DocumentRoot $PANEL_DIR/public
     <Directory $PANEL_DIR/public>
-        Options Indexes FollowSymLinks; AllowOverride All; Require all granted
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
         DirectoryIndex index.php index.html
     </Directory>
     ErrorLog /var/log/apache2/radiohosting_error.log
@@ -806,8 +836,14 @@ cat > /etc/apache2/sites-available/radiohosting.conf <<VHOST
 </VirtualHost>
 VHOST
 a2dissite 000-default 2>/dev/null || true
-a2ensite radiohosting; a2enmod rewrite; a2enconf phpmyadmin
-for port in 2082 2086 2087 2096; do
+a2ensite radiohosting; a2enmod rewrite
+# phpmyadmin conf name varies by Debian version
+if [ -f /etc/apache2/conf-available/phpmyadmin.conf ]; then
+    a2enconf phpmyadmin
+elif [ -f /etc/apache2/conf-available/phpmyadmin-php8.2.conf ]; then
+    a2enconf phpmyadmin-php8.2
+fi
+for port in 2082 2086 2087 2089 2096; do
   grep -q "Listen $port" /etc/apache2/ports.conf || echo "Listen $port" >> /etc/apache2/ports.conf
 done
 log "APACHE" "vhost" "OK" "Virtual host created"
