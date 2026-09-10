@@ -143,6 +143,10 @@ body{font-family:'Inter',sans-serif;background:#020817;color:#e0e0e0;min-height:
 </div>
 <div class="form-group"><label>PHP Version</label><select name="php_version"><option value="8.2">PHP 8.2</option><option value="8.1">PHP 8.1</option><option value="8.0">PHP 8.0</option><option value="7.4">PHP 7.4</option></select></div>
 </div>
+<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.04)">
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="has_software" value="1" style="accent-color:#0A84FF"> <span style="font-size:13px;color:#e0e0e0">Includes PlanetHost Software License</span></label>
+<div class="help" style="font-size:11px;color:#64748b;margin-top:4px">If checked, clients with this package can download their encrypted license file (license.key) in their portal at <code>/user/license/download</code>.</div>
+</div>
 </div>
 
 <!-- SUBMIT -->

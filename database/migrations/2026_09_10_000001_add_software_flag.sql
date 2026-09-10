@@ -1,0 +1,2 @@
+ALTER TABLE hosting_packages ADD COLUMN IF NOT EXISTS has_software TINYINT(1) NOT NULL DEFAULT 0 AFTER is_active;
+ALTER TABLE hosting_packages ADD COLUMN IF NOT EXISTS software_product VARCHAR(100) NOT NULL DEFAULT '' AFTER has_software;

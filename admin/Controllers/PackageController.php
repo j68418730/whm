@@ -119,6 +119,7 @@ class PackageController extends Controller
             'bitrate' => (int)$this->request->post('bitrate', 0),
             'dj_accounts' => (int)$this->request->post('dj_accounts', 0),
             'is_active' => 1,
+            'has_software' => $this->request->post('has_software', '0') === '1' ? 1 : 0,
         ];
         $this->db->table('hosting_packages')->insertGetId($data);
         $_SESSION['success_message'] = 'Package created.';
@@ -162,6 +163,7 @@ class PackageController extends Controller
             'bitrate' => (int)$this->request->post('bitrate', 0),
             'dj_accounts' => (int)$this->request->post('dj_accounts', 0),
             'is_active' => $this->request->post('is_active') === 'on' ? 1 : (($this->request->post('is_active') ?? '') === '1' ? 1 : 0),
+            'has_software' => $this->request->post('has_software', '0') === '1' ? 1 : 0,
         ];
         $this->db->table('hosting_packages')->where('id', $id)->update($data);
         $_SESSION['success_message'] = 'Package updated.';

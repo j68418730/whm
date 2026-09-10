@@ -326,6 +326,11 @@ $gameGroups = [
 </select></div>
 </div>
 
+<div style="margin:12px 0;padding:12px;background:rgba(10,132,255,.06);border:1px solid rgba(10,132,255,.12);border-radius:8px">
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="has_software" value="1" <?php echo !empty($package->has_software) ? 'checked' : ''; ?> style="accent-color:#0A84FF"> <span style="font-size:13px;font-weight:600;color:#e0e0e0">Includes PlanetHost Software License</span></label>
+<div style="font-size:11px;color:#64748b;margin-top:4px">If checked, clients with this package can download their encrypted license file (license.key) in their portal at <code>/user/license/download</code>. The license is generated via <code>/admin/licensing/generate</code> when you select their username.</div>
+</div>
+
 <div style="margin:12px 0">
 <h4 style="color:var(--accent);font-size:14px;margin-bottom:8px">General Features</h4>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:12px">

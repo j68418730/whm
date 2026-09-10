@@ -142,6 +142,31 @@ class LicensingController extends Controller
                 $generatedKey .= $payload . "\n";
                 $generatedKey .= "-----END LICENSE DATA-----\n";
                 $generatedKey .= "-----END PLANET HOSTS LICENSE-----\n";
+                // Create account license and save file for download if licensee matches a hosting user
+                try {
+                    $hu = $this->db->table('hosting_users')->where('username', $licensee)->first();
+                    if (!$hu) $hu = $this->db->table('hosting_users')->where('email', $licensee)->first();
+                    if ($hu) {
+                        $accountId = $hu->id;
+                        $packageId = $hu->package_id ?? 0;
+                        $productKey = $licenseId;
+                        $accountKey = hash('sha256', $licenseId . $licensee . $accountId . time());
+                        try {
+                            $this->db->table('account_licenses')->insertGetId([
+                                'account_id' => $accountId,
+                                'package_id' => $packageId,
+                                'product_key' => $productKey,
+                                'account_key' => $accountKey,
+                                'status' => 'active',
+                                'expires_at' => $expiry === 'never' ? null : $expiry,
+                            ]);
+                        } catch (\Exception $e) {}
+                        $licDir = BASE_PATH . '/storage/licenses/' . $hu->username;
+                        if (!is_dir($licDir)) mkdir($licDir, 0755, true);
+                        file_put_contents($licDir . '/license.key', $generatedKey);
+                        @chmod($licDir . '/license.key', 0644);
+                    }
+                } catch (\Exception $e) {}
                 $_SESSION['success_message'] = "License generated for {$licensee} ({$type})";
             } else {
                 $_SESSION['success_message'] = 'Private key not found on this server.';

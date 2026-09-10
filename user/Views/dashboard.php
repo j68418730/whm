@@ -108,6 +108,24 @@ fetch('/admin/support-status/public').then(function(r){return r.json()}).then(fu
 <div class="bar"><div class="fill" style="width:<?php echo min(100, $diskPct ?? 0); ?>%;background:<?php echo ($diskPct ?? 0) > 90 ? '#f87171' : '#fb923c'; ?>"></div></div></div>
 </div>
 
+<?php
+$hasSoftware = !empty($package->has_software) && $package->has_software == 1;
+$licFile = BASE_PATH . '/storage/licenses/' . ($hosting->username ?? '') . '/license.key';
+$hasLicense = $hasSoftware && is_file($licFile);
+if ($hasSoftware):
+?>
+<div class="dash-card" style="border-color:rgba(74,222,128,.2);background:rgba(74,222,128,.06)">
+<h3 class="section-title">🔑 Your Software License</h3>
+<?php if ($hasLicense): ?>
+<p style="font-size:13px;color:#94a3b8;margin-bottom:12px">Your package includes PlanetHost Software. Your encrypted license file is ready for download.</p>
+<a href="/user/license/download" class="btn" style="background:linear-gradient(135deg,#0A84FF,#00C6FF);color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:8px">📥 Download License File (license.key)</a>
+<p style="font-size:11px;color:#64748b;margin-top:8px">Save this file to your software's config directory. Keep it secure — do not share.</p>
+<?php else: ?>
+<p style="font-size:13px;color:#facc15">Your package includes PlanetHost Software, but your license file is not yet generated. Please contact support to generate your license.</p>
+<?php endif; ?>
+</div>
+<?php endif; ?>
+
 <!-- Bottom Row -->
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
 <div>
