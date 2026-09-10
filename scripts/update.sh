@@ -94,6 +94,17 @@ for m in "$BASE_PATH/database/migrations/"*.php; do
     php "$m" 2>&1 | tee -a "$LOG_FILE" || log "Migration $m failed"
 done
 
+# Scheduled backup runner (idempotent)
+log "Installing backup cron..."
+CRON_FILE=/etc/cron.d/planet-hosts-backup
+if [ ! -f "$CRON_FILE" ]; then
+    echo "* * * * * root /usr/bin/php $BASE_PATH/scripts/backup_cron.php > /dev/null 2>&1" > "$CRON_FILE"
+    chmod 644 "$CRON_FILE"
+    log "Backup cron installed at $CRON_FILE"
+else
+    log "Backup cron already present."
+fi
+
 # Lint
 log "Linting PHP files..."
 if ! php -l "$BASE_PATH/public/index.php" 2>&1 | tee -a "$LOG_FILE"; then

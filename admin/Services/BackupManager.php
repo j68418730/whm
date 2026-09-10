@@ -385,6 +385,334 @@ class BackupManager
         return ['success' => true, 'deleted' => $result['deleted'] ?? 0, 'kept' => $result['kept'] ?? 0];
     }
 
+    // ── Scheduled Jobs (Contents / Matrix) ──
+
+    public function getContentsCatalog(): array
+    {
+        $users = [];
+        try {
+            foreach ($this->db->table('hosting_users')->orderBy('username', 'ASC')->get() ?: [] as $u) {
+                $users[] = ['id' => (int)$u->id, 'username' => $u->username ?? '', 'domain' => $u->domain ?? ''];
+            }
+        } catch (\Exception $e) {}
+        $stations = [];
+        try {
+            foreach ($this->db->table('streaming_stations')->orderBy('name', 'ASC')->get() ?: [] as $s) {
+                $stations[] = ['id' => (int)$s->id, 'name' => $s->name ?? 'Station', 'config_path' => $s->config_path ?? '', 'status' => $s->status ?? ''];
+            }
+        } catch (\Exception $e) {}
+        return ['users' => $users, 'stations' => $stations];
+    }
+
+    public function getJobs(): array
+    {
+        try {
+            $rows = $this->db->pdo()->query("
+                SELECT j.*, d.name AS destination_name, d.type AS destination_type
+                FROM backup_jobs j
+                LEFT JOIN backup_destinations d ON j.destination_id = d.id
+                ORDER BY j.is_active DESC, j.name ASC
+            ")->fetchAll() ?: [];
+            $jobs = [];
+            foreach ($rows as $r) {
+                $r->contents = json_decode($r->contents ?: '{}', true) ?: [];
+                $jobs[] = $r;
+            }
+            return $jobs;
+        } catch (\Exception $e) { return []; }
+    }
+
+    public function getJobRow($id)
+    {
+        try {
+            return $this->db->table('backup_jobs')->where('id', (int)$id)->first();
+        } catch (\Exception $e) { return null; }
+    }
+
+    public function getJob($id)
+    {
+        $job = $this->getJobRow($id);
+        if ($job) $job->contents = json_decode($job->contents ?: '{}', true) ?: [];
+        return $job;
+    }
+
+    protected function jobFields(array $data): array
+    {
+        $contents = [
+            'full'     => !empty($data['contents_full']),
+            'users'    => array_values(array_filter(array_map('intval', (array)($data['contents_users'] ?? [])))),
+            'stations' => array_values(array_filter(array_map('intval', (array)($data['contents_stations'] ?? [])))),
+            'games'    => !empty($data['contents_games']),
+            'database' => !empty($data['contents_database']),
+            'configs'  => !empty($data['contents_configs']),
+            'paths'    => trim((string)($data['contents_paths'] ?? '')),
+        ];
+        $schedule = in_array($data['schedule_type'] ?? '', ['daily', 'weekly', 'monthly'], true) ? $data['schedule_type'] : 'daily';
+        $runDay = null;
+        if ($schedule === 'weekly') $runDay = min(7, max(1, (int)($data['run_day'] ?? 1)));
+        elseif ($schedule === 'monthly') $runDay = min(31, max(1, (int)($data['run_day'] ?? 1)));
+        $fields = [
+            'name'           => $data['name'] ?? 'Backup Job',
+            'contents'       => json_encode($contents),
+            'schedule_type'  => $schedule,
+            'run_time'       => preg_match('/^\d{1,2}:\d{2}$/', (string)($data['run_time'] ?? '')) ? date('H:i', strtotime($data['run_time'])) : '03:00',
+            'run_day'        => $runDay,
+            'destination_id' => !empty($data['destination_id']) ? (int)$data['destination_id'] : null,
+        ];
+        if (array_key_exists('is_active', $data)) $fields['is_active'] = !empty($data['is_active']) ? 1 : 0;
+        return $fields;
+    }
+
+    public function createJob(array $data)
+    {
+        try {
+            $fields = $this->jobFields($data);
+            $id = $this->db->table('backup_jobs')->insertGetId($fields);
+            $fields['id'] = $id;
+            $this->setNextRun($fields);
+            return $id;
+        } catch (\Exception $e) { return 0; }
+    }
+
+    public function updateJob($id, array $data)
+    {
+        try {
+            $fields = $this->jobFields($data);
+            $fields['id'] = (int)$id;
+            $this->setNextRun($fields);
+            $this->db->table('backup_jobs')->where('id', (int)$id)->update($fields);
+            return true;
+        } catch (\Exception $e) { return false; }
+    }
+
+    public function deleteJob($id)
+    {
+        try {
+            $this->db->table('backup_jobs')->where('id', (int)$id)->delete();
+            return true;
+        } catch (\Exception $e) { return false; }
+    }
+
+    public function toggleJob($id)
+    {
+        $job = $this->getJobRow($id);
+        if (!$job) return false;
+        try {
+            $this->db->table('backup_jobs')->where('id', (int)$id)->update(['is_active' => $job->is_active ? 0 : 1]);
+            return true;
+        } catch (\Exception $e) { return false; }
+    }
+
+    public function scheduleLabel($job): string
+    {
+        $s = $job->schedule_type ?? 'daily';
+        $t = $job->run_time ?? '03:00';
+        if ($s === 'monthly') return "Monthly on day " . (int)($job->run_day ?? 1) . " at {$t}";
+        if ($s === 'weekly') {
+            $days = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            return "Weekly on " . ($days[(int)($job->run_day ?? 1)] ?? 'Monday') . " at {$t}";
+        }
+        return "Daily at {$t}";
+    }
+
+    public function contentsSummary(array $c): string
+    {
+        $bits = [];
+        if (!empty($c['full'])) $bits[] = 'Full system';
+        if (!empty($c['users'])) $bits[] = 'Users (' . count($c['users']) . ')';
+        if (!empty($c['stations'])) $bits[] = 'Stations (' . count($c['stations']) . ')';
+        if (!empty($c['games'])) $bits[] = 'Games';
+        if (!empty($c['database'])) $bits[] = 'Database';
+        if (!empty($c['configs'])) $bits[] = 'Panel config';
+        if (!empty($c['paths'])) $bits[] = 'Custom paths';
+        return $bits ? implode(', ', $bits) : 'Nothing selected';
+    }
+
+    protected function setNextRun(array $job)
+    {
+        try {
+            $next = $this->computeNextRun((object)$job);
+            $this->db->table('backup_jobs')->where('id', (int)$job['id'])->update(['next_run_at' => $next['next']]);
+        } catch (\Exception $e) {}
+    }
+
+    protected function computeNextRun($job): array
+    {
+        $runTime = preg_match('/^\d{1,2}:\d{2}$/', (string)($job->run_time ?? '')) ? $job->run_time : '03:00';
+        [$h, $m] = array_map('intval', explode(':', $runTime));
+        $scheme = $job->schedule_type ?? 'daily';
+        $day = max(1, (int)($job->run_day ?? 1));
+        $now = new \DateTime('now');
+        $now->setTime((int)$now->format('H'), (int)$now->format('i'), 0);
+
+        if ($scheme === 'monthly') {
+            $day = min(31, $day);
+            $next = clone $now;
+            $next->setDate((int)$now->format('Y'), (int)$now->format('n'), min((int)$now->format('t'), $day));
+            $next->setTime($h, $m, 0);
+            if ($next <= $now) {
+                $next = clone $now;
+                $next->modify('first day of next month');
+                $next->setDate((int)$next->format('Y'), (int)$next->format('n'), min((int)$next->format('t'), $day));
+                $next->setTime($h, $m, 0);
+            }
+        } elseif ($scheme === 'weekly') {
+            $target = min(7, $day);
+            $delta = $target - (int)$now->format('N');
+            if ($delta < 0) $delta += 7;
+            $next = clone $now;
+            $next->modify('+' . $delta . ' days')->setTime($h, $m, 0);
+            if ($next <= $now) $next->modify('+7 days');
+        } else {
+            $next = clone $now;
+            $next->setTime($h, $m, 0);
+            if ($next <= $now) $next->modify('+1 day');
+        }
+        return ['next' => $next->format('Y-m-d H:i:s')];
+    }
+
+    public function runJobNow($id)
+    {
+        $res = $this->runJob($id);
+        return $res;
+    }
+
+    public function runJob($id)
+    {
+        $job = $this->getJobRow($id);
+        if (!$job) return ['success' => false, 'message' => 'Job not found'];
+        $contents = json_decode($job->contents ?: '{}', true) ?: [];
+        $app = \Core\Application::getInstance();
+        $base = $app->getBasePath();
+
+        $includes = [];
+        if (!empty($contents['full'])) {
+            $includes[] = ['base' => '/', 'rel' => 'home'];
+            $includes[] = ['base' => '/', 'rel' => 'var/www/radiohosting'];
+            $contents['database'] = true;
+        }
+        if (!empty($contents['users'])) {
+            foreach ((array)$contents['users'] as $uid) {
+                $u = $this->db->table('hosting_users')->where('id', (int)$uid)->first();
+                if ($u && !empty($u->username) && is_dir('/home/' . $u->username)) {
+                    $includes[] = ['base' => '/', 'rel' => 'home/' . $u->username];
+                }
+            }
+        }
+        if (!empty($contents['stations'])) {
+            $seen = [];
+            foreach ((array)$contents['stations'] as $sid) {
+                $s = $this->db->table('streaming_stations')->where('id', (int)$sid)->first();
+                if (!$s || empty($s->config_path)) continue;
+                $dir = strpos((string)$s->config_path, '/') === 0 ? dirname($s->config_path) : '';
+                if ($dir && $dir !== '/' && is_dir($dir) && !isset($seen[$dir])) {
+                    $seen[$dir] = 1;
+                    $includes[] = ['base' => '/', 'rel' => ltrim($dir, '/')];
+                }
+            }
+        }
+        if (!empty($contents['games']) && is_dir('/home/gameservers')) {
+            $includes[] = ['base' => '/', 'rel' => 'home/gameservers'];
+        }
+        if (!empty($contents['configs'])) {
+            foreach (['.env', 'config', 'storage/branding', 'public/uploads'] as $p) {
+                if (is_dir($base . '/' . $p) || is_file($base . '/' . $p)) {
+                    $includes[] = ['base' => $base, 'rel' => $p];
+                }
+            }
+        }
+        if (!empty($contents['paths'])) {
+            foreach (preg_split('/[;\n]+/', (string)$contents['paths']) as $p) {
+                $p = trim($p);
+                if ($p !== '' && (is_dir($p) || is_file($p))) {
+                    $includes[] = ['base' => '/', 'rel' => ltrim(rtrim($p, '/'), '/')];
+                }
+            }
+        }
+
+        $tmpDb = null;
+        if (!empty($contents['database'])) {
+            $tmpDb = $this->backupDir . '/.job_db_' . (int)$job->id . '.sql';
+            $dbHost = getenv('DB_HOST') ?: 'localhost';
+            $dbName = getenv('DB_DATABASE') ?: 'radiohosting';
+            $dbUser = getenv('DB_USERNAME') ?: 'radiouser';
+            $dbPass = getenv('DB_PASSWORD') ?: '';
+            exec("mysqldump -h {$dbHost} -u {$dbUser} -p" . escapeshellarg($dbPass) . " {$dbName} > " . escapeshellarg($tmpDb) . " 2>/dev/null", $o, $dbCode);
+            if ($dbCode === 0 && is_file($tmpDb)) {
+                $includes[] = ['base' => '/', 'rel' => ltrim($tmpDb, '/')];
+            }
+        }
+
+        if (empty($includes)) {
+            return ['success' => false, 'message' => 'No contents selected for this job'];
+        }
+
+        $filename = 'job_' . (int)$job->id . '_' . date('Ymd_His') . '.tar.gz';
+        $path = $this->backupDir . '/' . $filename;
+        $cmd = 'tar -czf ' . escapeshellarg($path);
+        foreach ($includes as $inc) {
+            $cmd .= ' -C ' . escapeshellarg($inc['base']) . ' ' . escapeshellarg($inc['rel']);
+        }
+        if ($tmpDb) @unlink($tmpDb);
+        exec($cmd . ' 2>/dev/null', $out, $code);
+        $success = $code === 0 && is_file($path) && filesize($path) > 0;
+        $message = $success ? '' : 'tar exit ' . $code . ': ' . trim(implode(' ', array_slice($out, 0, 3)));
+
+        $this->logHistory('job#' . (int)$job->id . ' ' . $job->name, $filename, $success);
+
+        $overall = $success;
+        $uploadResult = null;
+        if ($success && $job->destination_id) {
+            $uploadResult = $this->uploadToDestination($path, (int)$job->destination_id);
+            if (!empty($uploadResult['success'])) {
+                $this->enforceDestinationRetention((int)$job->destination_id);
+            } else {
+                $overall = false;
+            }
+            if (!empty($uploadResult['message'])) $message .= ($message ? ' | ' : '') . $uploadResult['message'];
+        }
+
+        $status = $overall ? 'completed' : 'failed';
+        $next = $this->computeNextRun($job);
+        try {
+            $this->db->table('backup_jobs')->where('id', (int)$job->id)->update([
+                'last_run_at' => date('Y-m-d H:i:s'),
+                'last_status' => $status,
+                'last_message' => substr($message, 0, 500),
+                'next_run_at' => $next['next'],
+            ]);
+        } catch (\Exception $e) {}
+
+        return [
+            'success' => $success,
+            'overall' => $overall,
+            'message' => $message ?: 'Backup created' . ($job->destination_id && $overall ? ' and uploaded' : ''),
+            'filename' => $filename,
+            'next_run_at' => $next['next'],
+        ];
+    }
+
+    public function processJobs(): array
+    {
+        $ran = [];
+        try {
+            $rows = $this->db->pdo()->query("
+                SELECT id FROM backup_jobs
+                WHERE is_active = 1 AND (next_run_at IS NULL OR next_run_at <= NOW())
+                ORDER BY next_run_at ASC
+            ")->fetchAll() ?: [];
+        } catch (\Exception $e) { return $ran; }
+        foreach ($rows as $r) {
+            $res = $this->runJob((int)$r->id);
+            $ran[] = [
+                'job_id' => (int)$r->id,
+                'success' => !empty($res['success']) && !empty($res['overall']),
+                'message' => $res['message'] ?? '',
+            ];
+        }
+        return $ran;
+    }
+
     // ── Transfer Queue ──
 
     public function getQueue($status = null, $limit = 50)

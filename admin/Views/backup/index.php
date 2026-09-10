@@ -8,10 +8,11 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:8px">
-<a href="/admin/backup" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;<?php echo empty($historyView) && empty($settingsView) && empty($reportView) && empty($restorePointsView) && empty($editProfile) ? 'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff' : 'color:var(--text-secondary)'; ?>">📊 Dashboard</a>
+<a href="/admin/backup" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;<?php echo empty($historyView) && empty($settingsView) && empty($reportView) && empty($restorePointsView) && empty($jobsView) && empty($editProfile) ? 'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff' : 'color:var(--text-secondary)'; ?>">📊 Dashboard</a>
 <a href="/admin/backup/history" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;<?php echo !empty($historyView) ? 'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff' : 'color:var(--text-secondary)'; ?>">📋 History</a>
 <a href="/admin/backup/reports" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;<?php echo !empty($reportView) ? 'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff' : 'color:var(--text-secondary)'; ?>">📈 Reports</a>
 <a href="/admin/backup/restore-points" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;<?php echo !empty($restorePointsView) ? 'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff' : 'color:var(--text-secondary)'; ?>">🔖 Restore Points</a>
+<a href="/admin/backup/jobs" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;<?php echo !empty($jobsView) ? 'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff' : 'color:var(--text-secondary)'; ?>">⏰ Jobs</a>
 <a href="/admin/backup/destinations" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;<?php echo !empty($destinationsView) ? 'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff' : 'color:var(--text-secondary)'; ?>">📤 Destinations</a>
 <a href="/admin/backup/settings" style="padding:8px 14px;border-radius:6px 6px 0 0;text-decoration:none;font-size:13px;<?php echo !empty($settingsView) ? 'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff' : 'color:var(--text-secondary)'; ?>">⚙️ Settings</a>
 </div>
@@ -417,6 +418,142 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 </script>
 <?php endif; ?>
+
+<?php elseif (!empty($jobsView)): ?>
+<h3 style="color:var(--accent);margin-bottom:6px">⏰ Scheduled Backup Jobs</h3>
+<div style="font-size:12px;color:#64748b;margin-bottom:14px">Each job creates a backup of the <strong>contents</strong> you select below and can push it to a <strong>destination</strong> automatically (runner fires every minute via cron). Retention is enforced after each upload using the destination's rules.</div>
+
+<?php if (!empty($editJob)): ?>
+<div class="card" id="editJobCard" style="margin-bottom:16px">
+<h4 style="color:var(--accent);margin:0 0 12px;font-size:14px">✏️ Edit Job: <?php echo htmlspecialchars($editJob->name); ?></h4>
+<form method="POST" action="/admin/backup/job/update/<?php echo $editJob->id; ?>" id="ejJobForm">
+<div class="form-row-3">
+<div class="form-group"><label>Job Name</label><input name="name" required class="inp inp-sm" value="<?php echo htmlspecialchars($editJob->name); ?>"></div>
+<div class="form-group"><label>Schedule</label><select name="schedule_type" id="ejSchedule" class="inp inp-sm" onchange="jobSchedule('ej',this.value)"><?php foreach (['daily'=>'Daily','weekly'=>'Weekly','monthly'=>'Monthly'] as $sv=>$sl): ?><option value="<?php echo $sv; ?>" <?php echo ($editJob->schedule_type??'daily')===$sv?'selected':''; ?>><?php echo $sl; ?></option><?php endforeach; ?></select></div>
+<div class="form-group"><label>Run Time</label><input name="run_time" type="time" class="inp inp-sm" value="<?php echo htmlspecialchars(substr($editJob->run_time ?? '03:00', 0, 5)); ?>"></div>
+</div>
+<div id="ejWeekly" style="display:none">
+<div class="form-group"><label>Day of Week</label><select name="run_day" class="inp inp-sm"><?php foreach ([1=>'Monday',2=>'Tuesday',3=>'Wednesday',4=>'Thursday',5=>'Friday',6=>'Saturday',7=>'Sunday'] as $dv=>$dl): ?><option value="<?php echo $dv; ?>" <?php echo (int)($editJob->run_day ?? 1)===$dv?'selected':''; ?>><?php echo $dl; ?></option><?php endforeach; ?></select></div>
+</div>
+<div id="ejMonthly" style="display:none">
+<div class="form-group"><label>Day of Month</label><input name="run_day" type="number" class="inp inp-sm" min="1" max="31" value="<?php echo (int)($editJob->run_day ?? 1); ?>"></div>
+</div>
+<div class="form-row-3">
+<div class="form-group" style="grid-column:1/2"><label>Upload To</label><select name="destination_id" class="inp inp-sm"><option value="">— Local only (no upload) —</option><?php foreach ($destinations as $d): ?><option value="<?php echo $d->id; ?>" <?php echo (int)($editJob->destination_id ?? 0)===(int)$d->id?'selected':''; ?>><?php echo htmlspecialchars($d->name); ?> (<?php echo strtoupper($d->type); ?>)</option><?php endforeach; ?></select></div>
+</div>
+<?php $ejUsers = (array)($editJob->contents['users'] ?? []); $ejStations = (array)($editJob->contents['stations'] ?? []); ?>
+<div style="margin-top:10px;border-top:1px solid rgba(255,255,255,.06);padding-top:10px">
+<div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;font-weight:600">📦 Backup Contents</div>
+<div class="form-group" style="margin-bottom:6px"><label style="font-size:12px;color:var(--text-secondary)"><input type="checkbox" name="contents_full" value="1" <?php echo !empty($editJob->contents['full'])?'checked':''; ?>> Full System <span style="color:#64748b">(entire /home, panel files + database)</span></label></div>
+<div class="form-group" style="margin-bottom:6px"><label style="font-size:12px;color:var(--text-secondary)"><input type="checkbox" name="contents_users" value="1" onchange="jobWrap('ej','Users',this.checked)" <?php echo !empty($ejUsers)?'checked':''; ?>> Hosting Accounts</label>
+<div id="ejUsersWrap" style="display:<?php echo !empty($ejUsers)?'block':'none'; ?>;margin-top:4px"><select name="contents_users[]" multiple size="5" class="inp inp-sm" style="width:100%"><?php foreach (($catalog['users'] ?? []) as $u): ?><option value="<?php echo $u['id']; ?>" <?php echo in_array($u['id'], $ejUsers)?'selected':''; ?>><?php echo htmlspecialchars($u['username'] . ' — ' . ($u['domain'] ?: 'no domain')); ?></option><?php endforeach; ?></select></div>
+</div>
+<div class="form-group" style="margin-bottom:6px"><label style="font-size:12px;color:var(--text-secondary)"><input type="checkbox" name="contents_stations" value="1" onchange="jobWrap('ej','Stations',this.checked)" <?php echo !empty($ejStations)?'checked':''; ?>> Streaming Stations</label>
+<div id="ejStationsWrap" style="display:<?php echo !empty($ejStations)?'block':'none'; ?>;margin-top:4px"><select name="contents_stations[]" multiple size="5" class="inp inp-sm" style="width:100%"><?php foreach (($catalog['stations'] ?? []) as $s): ?><option value="<?php echo $s['id']; ?>" <?php echo in_array($s['id'], $ejStations)?'selected':''; ?>><?php echo htmlspecialchars($s['name']); ?></option><?php endforeach; ?></select></div>
+</div>
+<div class="form-group" style="margin-bottom:6px"><label style="font-size:12px;color:var(--text-secondary)"><input type="checkbox" name="contents_games" value="1" <?php echo !empty($editJob->contents['games'])?'checked':''; ?>> Game Servers</label></div>
+<div class="form-group" style="margin-bottom:6px"><label style="font-size:12px;color:var(--text-secondary)"><input type="checkbox" name="contents_database" value="1" <?php echo !empty($editJob->contents['database'])?'checked':''; ?>> Panel Database</label></div>
+<div class="form-group" style="margin-bottom:6px"><label style="font-size:12px;color:var(--text-secondary)"><input type="checkbox" name="contents_configs" value="1" <?php echo !empty($editJob->contents['configs'])?'checked':''; ?>> Panel Config <span style="color:#64748b">(.env, config/, branding, uploads)</span></label></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Custom Paths <span style="color:#64748b">(absolute, separated by ; or newline)</span></label><textarea name="contents_paths" class="inp inp-sm" rows="2"><?php echo htmlspecialchars($editJob->contents['paths'] ?? ''); ?></textarea></div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+<button type="submit" class="btn btn-sm primary">Save Changes</button>
+<a href="/admin/backup/jobs" class="btn btn-sm secondary">Cancel</a>
+</div>
+</form>
+<script>document.addEventListener('DOMContentLoaded', function(){ jobSchedule('ej', <?php echo json_encode($editJob->schedule_type ?? 'daily'); ?>); });</script>
+</div>
+<?php endif; ?>
+
+<div id="newJobForm" style="display:none;margin-bottom:16px">
+<div class="card">
+<h4 style="color:var(--accent);margin:0 0 12px;font-size:14px">＋ New Scheduled Job</h4>
+<form method="POST" action="/admin/backup/job/store" id="njJobForm">
+<div class="form-row-3">
+<div class="form-group"><label>Job Name</label><input name="name" required class="inp inp-sm" placeholder="Nightly full backup"></div>
+<div class="form-group"><label>Schedule</label><select name="schedule_type" id="njSchedule" class="inp inp-sm" onchange="jobSchedule('nj',this.value)"><?php foreach (['daily'=>'Daily','weekly'=>'Weekly','monthly'=>'Monthly'] as $sv=>$sl): ?><option value="<?php echo $sv; ?>"><?php echo $sl; ?></option><?php endforeach; ?></select></div>
+<div class="form-group"><label>Run Time</label><input name="run_time" type="time" class="inp inp-sm" value="03:00"></div>
+</div>
+<div id="njWeekly" style="display:none">
+<div class="form-group"><label>Day of Week</label><select name="run_day" class="inp inp-sm"><?php foreach ([1=>'Monday',2=>'Tuesday',3=>'Wednesday',4=>'Thursday',5=>'Friday',6=>'Saturday',7=>'Sunday'] as $dv=>$dl): ?><option value="<?php echo $dv; ?>"><?php echo $dl; ?></option><?php endforeach; ?></select></div>
+</div>
+<div id="njMonthly" style="display:none">
+<div class="form-group"><label>Day of Month</label><input name="run_day" type="number" class="inp inp-sm" min="1" max="31" value="1"></div>
+</div>
+<div class="form-group"><label>Upload To</label><select name="destination_id" class="inp inp-sm"><option value="">— Local only (no upload) —</option><?php foreach ($destinations as $d): ?><option value="<?php echo $d->id; ?>"><?php echo htmlspecialchars($d->name); ?> (<?php echo strtoupper($d->type); ?>)</option><?php endforeach; ?></select></div>
+<div style="margin-top:10px;border-top:1px solid rgba(255,255,255,.06);padding-top:10px">
+<div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;font-weight:600">📦 Backup Contents</div>
+<div class="form-group" style="margin-bottom:6px"><label style="font-size:12px;color:var(--text-secondary)"><input type="checkbox" name="contents_full" value="1"> Full System <span style="color:#64748b">(entire /home, panel files + database)</span></label></div>
+<div class="form-group" style="margin-bottom:6px"><label style="font-size:12px;color:var(--text-secondary)"><input type="checkbox" name="contents_users" value="1" onchange="jobWrap('nj','Users',this.checked)"> Hosting Accounts</label>
+<div id="njUsersWrap" style="display:none;margin-top:4px"><select name="contents_users[]" multiple size="5" class="inp inp-sm" style="width:100%"><?php foreach (($catalog['users'] ?? []) as $u): ?><option value="<?php echo $u['id']; ?>"><?php echo htmlspecialchars($u['username'] . ' — ' . ($u['domain'] ?: 'no domain')); ?></option><?php endforeach; ?></select></div>
+</div>
+<div class="form-group" style="margin-bottom:6px"><label style="font-size:12px;color:var(--text-secondary)"><input type="checkbox" name="contents_stations" value="1" onchange="jobWrap('nj','Stations',this.checked)"> Streaming Stations</label>
+<div id="njStationsWrap" style="display:none;margin-top:4px"><select name="contents_stations[]" multiple size="5" class="inp inp-sm" style="width:100%"><?php foreach (($catalog['stations'] ?? []) as $s): ?><option value="<?php echo $s['id']; ?>"><?php echo htmlspecialchars($s['name']); ?></option><?php endforeach; ?></select></div>
+</div>
+<div class="form-group" style="margin-bottom:6px"><label style="font-size:12px;color:var(--text-secondary)"><input type="checkbox" name="contents_games" value="1"> Game Servers</label></div>
+<div class="form-group" style="margin-bottom:6px"><label style="font-size:12px;color:var(--text-secondary)"><input type="checkbox" name="contents_database" value="1"> Panel Database</label></div>
+<div class="form-group" style="margin-bottom:6px"><label style="font-size:12px;color:var(--text-secondary)"><input type="checkbox" name="contents_configs" value="1"> Panel Config <span style="color:#64748b">(.env, config/, branding, uploads)</span></label></div>
+<div class="form-group"><label style="font-size:12px;color:var(--text-secondary)">Custom Paths <span style="color:#64748b">(absolute, separated by ; or newline)</span></label><textarea name="contents_paths" class="inp inp-sm" rows="2"></textarea></div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+<button type="submit" class="btn btn-sm primary">Create Job</button>
+<a href="#" onclick="document.getElementById('newJobForm').style.display='none';return false" class="btn btn-sm secondary">Cancel</a>
+</div>
+</form>
+</div>
+</div>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+<a href="#" onclick="document.getElementById('newJobForm').style.display=document.getElementById('newJobForm').style.display==='none'?'block':'none';return false" class="btn btn-sm primary">＋ New Job</a>
+</div>
+
+<?php if (empty($jobs)): ?>
+<div class="card" style="text-align:center;padding:24px;color:#64748b">No scheduled jobs yet. Create one above.</div>
+<?php else: ?>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:12px">
+<?php foreach ($jobs as $j): $jf = (array)($j->contents ?? []); ?>
+<div class="card" style="margin-bottom:0">
+<div style="display:flex;justify-content:space-between;align-items:start">
+<div>
+<strong style="font-size:14px;color:#e0e0e0"><?php echo htmlspecialchars($j->name); ?></strong>
+<span class="status-badge <?php echo $j->is_active ? 'status-running' : 'status-stopped'; ?>" style="margin-left:4px"><?php echo $j->is_active ? 'Active' : 'Paused'; ?></span>
+</div>
+<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+<a href="/admin/backup/job/run/<?php echo $j->id; ?>" class="btn btn-sm btn-success" title="Run now">▶</a>
+<a href="/admin/backup/job/toggle/<?php echo $j->id; ?>" class="btn btn-sm <?php echo $j->is_active ? 'btn-warning' : 'btn-success'; ?>" title="<?php echo $j->is_active ? 'Pause' : 'Resume'; ?>"><?php echo $j->is_active ? '⏸' : '▶'; ?></a>
+<a href="/admin/backup/job/edit/<?php echo $j->id; ?>" class="btn btn-sm btn-secondary" title="Edit">✏️</a>
+<a href="/admin/backup/job/delete/<?php echo $j->id; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Delete this job?')" title="Delete">🗑</a>
+</div>
+</div>
+<div style="margin-top:8px;font-size:12px;color:#94a3b8">⏰ <?php echo htmlspecialchars(strtoupper($j->schedule_type) . ' @ ' . $j->run_time . (($j->schedule_type==='weekly' || $j->schedule_type==='monthly') ? ' (day ' . (int)$j->run_day . ')' : '')); ?> · 📤 <?php echo htmlspecialchars($j->destination_name ?: 'Local only'); ?></div>
+<?php $cb = []; if (!empty($jf['full'])) $cb[] = 'Full system'; if (!empty($jf['users'])) $cb[] = 'Users (' . count($jf['users']) . ')'; if (!empty($jf['stations'])) $cb[] = 'Stations (' . count($jf['stations']) . ')'; if (!empty($jf['games'])) $cb[] = 'Games'; if (!empty($jf['database'])) $cb[] = 'Database'; if (!empty($jf['configs'])) $cb[] = 'Config'; if (!empty($jf['paths'])) $cb[] = 'Paths'; ?>
+<div style="margin-top:4px;font-size:11px;color:#64748b">📦 <?php echo htmlspecialchars($cb ? implode(', ', $cb) : 'Nothing selected'); ?></div>
+<?php if (!empty($j->last_run_at)): ?>
+<div style="margin-top:4px;font-size:10px;color:#94a3b8">Last run: <?php echo $j->last_run_at; ?> — <span class="status-badge <?php echo ($j->last_status??'')==='completed'?'status-active':(($j->last_status??'')==='failed'?'status-terminated':'status-pending'); ?>"><?php echo $j->last_status ?? '-'; ?></span><?php if (!empty($j->last_message)): ?> · <?php echo htmlspecialchars($j->last_message); ?><?php endif; ?></div>
+<?php endif; ?>
+<div style="margin-top:4px;font-size:10px;color:#64748b">Next run: <?php echo $j->next_run_at ?? 'not scheduled'; ?></div>
+</div>
+<?php endforeach; ?>
+</div>
+<?php endif; ?>
+
+<script>
+function jobSchedule(scope, val){
+  var w = document.getElementById(scope + 'Weekly');
+  var m = document.getElementById(scope + 'Monthly');
+  if (!w || !m) return;
+  w.style.display = val === 'weekly' ? 'block' : 'none';
+  m.style.display = val === 'monthly' ? 'block' : 'none';
+}
+function jobWrap(scope, kind, checked){
+  var el = document.getElementById(scope + kind + 'Wrap');
+  if (el) el.style.display = checked ? 'block' : 'none';
+}
+document.addEventListener('DOMContentLoaded', function(){
+  if (document.getElementById('njSchedule')) jobSchedule('nj', document.getElementById('njSchedule').value);
+  if (document.getElementById('ejSchedule')) jobSchedule('ej', document.getElementById('ejSchedule').value);
+});
+</script>
 
 <?php elseif (!empty($settingsView)): ?>
 <h3 style="color:var(--accent);margin-bottom:12px">⚙️ Settings</h3>
