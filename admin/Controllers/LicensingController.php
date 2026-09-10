@@ -180,6 +180,68 @@ class LicensingController extends Controller
         ]);
     }
 
+    public function suspend($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        try {
+            $this->db->table('license_activations')->where('id', (int)$id)->update(['license_status' => 'suspended']);
+            $_SESSION['success_message'] = 'License suspended.';
+        } catch (\Exception $e) { $_SESSION['error_message'] = 'Suspend failed: ' . $e->getMessage(); }
+        $this->response->redirect('/admin/licensing');
+        exit;
+    }
+
+    public function unsuspend($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        try {
+            $this->db->table('license_activations')->where('id', (int)$id)->update(['license_status' => 'active', 'last_validated' => date('Y-m-d H:i:s')]);
+            $_SESSION['success_message'] = 'License activated.';
+        } catch (\Exception $e) { $_SESSION['error_message'] = 'Activate failed: ' . $e->getMessage(); }
+        $this->response->redirect('/admin/licensing');
+        exit;
+    }
+
+    public function remove($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        try {
+            $this->db->table('license_activations')->where('id', (int)$id)->delete();
+            $_SESSION['success_message'] = 'License removed.';
+        } catch (\Exception $e) { $_SESSION['error_message'] = 'Remove failed: ' . $e->getMessage(); }
+        $this->response->redirect('/admin/licensing');
+        exit;
+    }
+
+    public function regenerate($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $privateKeyFile = BASE_PATH . '/config/license_private.pem';
+        if (!is_file($privateKeyFile)) { $_SESSION['error_message'] = 'Private key not found.'; $this->response->redirect('/admin/licensing'); exit; }
+        try {
+            $act = $this->db->table('license_activations')->where('id', (int)$id)->first();
+            if (!$act) { $_SESSION['error_message'] = 'License not found.'; $this->response->redirect('/admin/licensing'); exit; }
+            $payload = json_encode([
+                'license_id' => $act->license_key, 'licensee' => $act->customer_name ?: 'Customer',
+                'issued' => date('Y-m-d'), 'expiry' => $act->expiration_date ? date('Y-m-d', strtotime($act->expiration_date)) : 'never',
+                'product' => 'Planet-Hosts WHM Panel', 'version' => '1.0.0',
+                'type' => $act->license_type ?? 'full',
+                'features' => json_decode($act->features ?? '[]', true) ?: [],
+            ], JSON_PRETTY_PRINT);
+            $privKey = file_get_contents($privateKeyFile);
+            openssl_sign($payload, $signature, $privKey, OPENSSL_ALGO_SHA256);
+            $sigB64 = base64_encode($signature);
+            $newKey = "-----BEGIN PLANET HOSTS LICENSE-----\n" . chunk_split($sigB64, 64, "\n") . "-----BEGIN LICENSE DATA-----\n" . $payload . "\n-----END LICENSE DATA-----\n-----END PLANET HOSTS LICENSE-----\n";
+            // Save to temp for download
+            $_SESSION['generatedKey'] = $newKey;
+            $_SESSION['success_message'] = 'License regenerated for ' . ($act->customer_name ?: $act->license_key);
+            // Update last_validated
+            $this->db->table('license_activations')->where('id', (int)$id)->update(['last_validated' => date('Y-m-d H:i:s')]);
+        } catch (\Exception $e) { $_SESSION['error_message'] = 'Regenerate failed: ' . $e->getMessage(); }
+        $this->response->redirect('/admin/licensing');
+        exit;
+    }
+
     public function upload()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
