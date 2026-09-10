@@ -231,7 +231,7 @@ class License
         $all = ['accounts','packages','dns','email','ftp','databases','backups','ssl','domains','radio','streams','autodj',
                  'shared_hosting','radio_hosting','streaming_icecast','streaming_shoutcast_v1','streaming_shoutcast_v2',
                  'streaming_autodj','email_hosting','ftp_hosting','database_hosting','ssl_auto','backups','monitoring',
-                 'api_access','desktop_app'];
+                 'api_access','desktop_app','support','billing','chat','installers'];
 
         switch ($type) {
             case 'trial':

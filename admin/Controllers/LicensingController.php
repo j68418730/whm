@@ -30,7 +30,7 @@ class LicensingController extends Controller
                        'shared_hosting','radio_hosting','streaming_icecast','streaming_shoutcast_v1','streaming_shoutcast_v2',
                        'streaming_autodj','email_hosting','ftp_hosting','database_hosting','ssl_auto','backups','monitoring',
                        'api_access','desktop_app','reseller_hosting','vps_hosting','game_hosting','dns_clustering',
-                       'multi_server','white_label','ssl_wildcard','marketplace','streaming_rtmp','streaming_rtsp','streaming_relay'];
+                       'multi_server','white_label','ssl_wildcard','marketplace','streaming_rtmp','streaming_rtsp','streaming_relay','support','billing','chat','installers'];
         foreach ($allChecks as $f) {
             $features[$f] = $license->hasFeature($f);
         }
@@ -93,13 +93,36 @@ class LicensingController extends Controller
         $generatedKey = '';
         $privateKeyFile = BASE_PATH . '/config/license_private.pem';
 
+        // Fetch clients for dropdown
+        $clients = [];
+        try {
+            $clients = $this->db->table('hosting_users')->orderBy('username', 'ASC')->get() ?: [];
+        } catch (\Exception $e) {}
+
         if ($_POST && isset($_POST['licensee'])) {
-            $licensee = $this->request->post('licensee', 'Customer');
+            $licensee = $this->request->post('licensee_custom', '');
+            if (empty($licensee)) $licensee = $this->request->post('licensee', 'Customer');
+            if (empty($licensee)) $licensee = 'Customer';
             $licenseId = $this->request->post('license_id', 'PH-' . date('Y') . '-' . str_pad(rand(1,9999),4,'0',STR_PAD_LEFT));
+            // Ensure PH- prefix
+            if (!str_starts_with($licenseId, 'PH-')) $licenseId = 'PH-' . ltrim($licenseId, '-');
             $expiry = $this->request->post('expiry', 'never');
+            if (empty($expiry)) $expiry = 'never';
             $type = $this->request->post('type', 'full');
             $validTypes = ['trial','monthly','yearly','lifetime','internal','reseller','enterprise','hosting','icecast','full'];
             if (!in_array($type, $validTypes)) $type = 'full';
+
+            // Handle selectable features
+            $autoFeatures = ['accounts','packages','dns','email','ftp','databases','backups','ssl','domains','shared_hosting','radio_hosting','email_hosting','ftp_hosting','database_hosting','ssl_auto','monitoring','dns_clustering','multi_server','ssl_wildcard'];
+            $selectableKeys = ['streams','radio','autodj','streaming_icecast','streaming_shoutcast_v1','streaming_shoutcast_v2','streaming_autodj','api_access','desktop_app','reseller_hosting','vps_hosting','game_hosting','white_label','marketplace','streaming_rtmp','streaming_rtsp','streaming_relay','support','billing','chat','installers'];
+            $selected = $autoFeatures;
+            foreach ($selectableKeys as $k) {
+                if ($this->request->post('feat_' . $k, '0') === '1') $selected[] = $k;
+            }
+            // Also include base streaming features if any sub-feature selected
+            if (in_array('streaming_icecast', $selected) || in_array('streaming_shoutcast_v1', $selected) || in_array('streaming_shoutcast_v2', $selected)) {
+                if (!in_array('radio', $selected)) $selected[] = 'radio';
+            }
 
             if (is_file($privateKeyFile)) {
                 $payload = json_encode([
@@ -107,6 +130,7 @@ class LicensingController extends Controller
                     'issued' => date('Y-m-d'), 'expiry' => $expiry,
                     'product' => 'Planet-Hosts WHM Panel', 'version' => '1.0.0',
                     'type' => $type,
+                    'features' => $selected,
                 ], JSON_PRETTY_PRINT);
 
                 $privKey = file_get_contents($privateKeyFile);
@@ -127,6 +151,7 @@ class LicensingController extends Controller
         return $this->view('admin.licensing.generate', [
             'user' => $user, 'title' => 'Generate License', 'theme_settings' => $theme_settings,
             'generatedKey' => $generatedKey, 'hasPrivateKey' => is_file($privateKeyFile),
+            'clients' => $clients,
         ]);
     }
 
