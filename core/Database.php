@@ -234,6 +234,26 @@ class Database
         return $this->pdo;
     }
 
+    protected static $instance = null;
+
+    public static function getInstance()
+    {
+        if (self::$instance) {
+            return self::$instance;
+        }
+        if (class_exists(\Core\Application::class)
+            && ($app = \Core\Application::getInstance())
+            && ($db = $app->get('db'))) {
+            self::$instance = $db;
+            return self::$instance;
+        }
+        $cfgFile = defined('BASE_PATH') ? BASE_PATH . '/config/database.php' : __DIR__ . '/../config/database.php';
+        if (is_file($cfgFile)) {
+            self::$instance = new self(require $cfgFile);
+        }
+        return self::$instance;
+    }
+
     public function orderBy($column, $direction = 'ASC')
     {
         return $this->table($this->table)->orderBy($column, $direction);
