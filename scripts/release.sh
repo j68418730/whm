@@ -44,8 +44,8 @@ fi
 LATEST_TAG=$(git tag --sort=-version:refname | head -1 || true)
 [ -n "$LATEST_TAG" ] && PREV_TAG="$LATEST_TAG"
 
-# Migrations shipped by this release
-MIGS=$(git diff --name-only "${PREV_TAG:-$(git rev-list --max-parents=0 HEAD)}..HEAD" -- database/migrations 2>/dev/null | sed 's|database/migrations/||' | grep -E '\.(sql|php)$' | tac | awk '!seen[$0]++' | head -50)
+# Migrations shipped by this release (only files that still exist on disk)
+MIGS=$(git diff --name-only "${PREV_TAG:-$(git rev-list --max-parents=0 HEAD)}..HEAD" -- database/migrations 2>/dev/null | sed 's|database/migrations/||' | grep -E '\.(sql|php)$' | while IFS= read -r rel; do [ -n "$rel" ] && [ -f "database/migrations/$rel" ] && echo "$rel"; done | sort -u | head -50)
 if [ -z "$MIGS" ]; then MIGLIST="[]"; else
   MIGLIST="["
   first=1
