@@ -39,10 +39,10 @@ if [ "$1" = "--check" ]; then
     if [ "$BEHIND" -gt 0 ]; then
         log "Update available: $BEHIND commits behind origin/master"
         git log HEAD..origin/master --oneline -5 2>&1 | tee -a "$LOG_FILE"
-        echo "{\"behind\":$BEHIND,\"checked_at\":\"$(date -c)\"}" > "$BASE_PATH/storage/update_available.json"
+        echo "{\"behind\":$BEHIND,\"checked_at\":\"$(date '+%Y-%m-%d %H:%M:%S')\"}" > "$BASE_PATH/storage/update_available.json"
     else
         log "No update available."
-        echo "{\"behind\":0,\"checked_at\":\"$(date -c)\"}" > "$BASE_PATH/storage/update_available.json"
+        echo "{\"behind\":0,\"checked_at\":\"$(date '+%Y-%m-%d %H:%M:%S')\"}" > "$BASE_PATH/storage/update_available.json"
     fi
     exit 0
 fi
@@ -155,7 +155,14 @@ systemctl reload nginx 2>&1 | tee -a "$LOG_FILE" || true
 # Health check
 log "Health check..."
 sleep 2
-if curl -sk http://localhost:2087/admin/login 2>&1 | grep -q "Admin Login"; then
+HEALTH_OK=0
+for scheme in https http; do
+    if curl -sk -m 10 "${scheme}://localhost:2087/admin/login" 2>/dev/null | grep -q "Admin Login"; then
+        HEALTH_OK=1
+        break
+    fi
+done
+if [ "$HEALTH_OK" = "1" ]; then
     log "Health check passed."
 else
     log "Health check failed, rolling back."
