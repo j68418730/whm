@@ -32,7 +32,7 @@ if [ ! -f "$BASE_PATH/public/index.php" ]; then
     exit 1
 fi
 
-PIN="${PIN:-993e84ae7e492f2c1c4baec8e9c3225d27e3f7d1}"
+PIN="${PIN:-993e84af8a93f1fa87bb3c7977f5e4b3a0bb9154}"
 RAW="https://raw.githubusercontent.com/j68418730/whm/$PIN"
 BK="$BASE_PATH/storage/updater_patch_backup_$(date +%Y%m%d_%H%M%S)"
 
