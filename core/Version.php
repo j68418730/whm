@@ -1,29 +1,29 @@
 <?php
-// Version check system
-// Returns current version info. Run daily via cron to check for updates.
+// Version check system - release manifest based.
+// Installed release comes from storage/current_release.json (written on update)
+// or VERSION.json in the app tree. Available release comes from the update source.
 define('PANEL_VERSION', '1.0.0-beta');
-define('PANEL_VERSION_CODE', 1);
-define('PANEL_VERSION_NAME', 'v1 Beta');
+define('PANEL_VERSION_CODE', 100);
+define('PANEL_VERSION_NAME', 'Ph-Whm v1 Beta');
 define('PANEL_SERIAL', 'PH-' . strtoupper(substr(md5('PlanetHosts2026'), 0, 12)));
 
 function checkVersion() {
-    $current = PANEL_VERSION_CODE;
-    $updateUrl = 'https://raw.githubusercontent.com/j68418730/whm/main/VERSION';
-    $remote = @file_get_contents($updateUrl, false, stream_context_create(['http' => ['timeout' => 5]]));
-    if ($remote) {
-        $data = json_decode($remote, true);
-        if ($data && isset($data['version_code']) && $data['version_code'] > $current) {
-            return [
-                'update_available' => true,
-                'current_version' => PANEL_VERSION_NAME,
-                'new_version' => $data['version_name'] ?? 'Unknown',
-                'new_version_code' => $data['version_code'],
-                'changelog' => $data['changelog'] ?? '',
-                'download_url' => $data['download_url'] ?? '/',
-            ];
-        }
+    require_once BASE_PATH . '/core/Updates.php';
+    $installed = \Core\Updates::installedManifest();
+    $currentName = $installed['version'] ?? PANEL_VERSION_NAME;
+    $remote = \Core\Updates::fetchRemoteManifest();
+    if (\Core\Updates::isAvailable($remote)) {
+        return [
+            'update_available' => true,
+            'current_version' => $currentName,
+            'new_version' => $remote['version'] ?? 'Unknown',
+            'new_version_code' => (int)($remote['version_code'] ?? 0),
+            'channel' => $remote['channel'] ?? 'stable',
+            'changelog' => $remote['release_notes'] ?? '',
+            'download_url' => '/admin/settings/update',
+        ];
     }
-    return ['update_available' => false, 'current_version' => PANEL_VERSION_NAME];
+    return ['update_available' => false, 'current_version' => $currentName];
 }
 
 // API endpoint: /api/version
@@ -34,6 +34,7 @@ function versionApi() {
         'version' => PANEL_VERSION_NAME,
         'version_code' => PANEL_VERSION_CODE,
         'serial' => PANEL_SERIAL,
+        'channel' => \Core\Updates::channel(),
         'update' => $check,
     ]);
     exit;

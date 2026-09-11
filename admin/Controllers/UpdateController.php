@@ -2,6 +2,7 @@
 namespace Admin\Controllers;
 
 use Core\Controller;
+use Core\Updates;
 
 class UpdateController extends Controller
 {
@@ -16,45 +17,12 @@ class UpdateController extends Controller
         $this->db = $app->get('db');
     }
 
-    public function index()
-    {
-        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $user = $this->auth->user();
-        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
-
-        $current = trim(@shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git rev-parse --short HEAD 2>/dev/null') ?: 'unknown');
-        $behind = 0;
-        $commits = [];
-        $upstream = 'unknown';
-        try {
-            @shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git fetch origin 2>/dev/null');
-            $behind = (int)trim(@shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git rev-list HEAD..origin/master --count 2>/dev/null') ?: '0');
-            $upstream = trim(@shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git rev-parse --short origin/master 2>/dev/null') ?: 'unknown');
-            $log = @shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git log HEAD..origin/master --oneline -5 2>/dev/null') ?: '';
-            foreach (explode("\n", trim($log)) as $line) { if ($line) $commits[] = $line; }
-        } catch (\Throwable $e) {}
-
-        $hasBackup = is_file(BASE_PATH . '/storage/update_backup.tar.gz') || is_file(BASE_PATH . '/storage/update_backup.sql');
-        $lastCheck = @file_get_contents(BASE_PATH . '/storage/update_available.json');
-        $lastCheckData = $lastCheck ? json_decode($lastCheck, true) : null;
-
-        return $this->view('admin.update.index', [
-            'user' => $user, 'title' => 'System Update', 'theme_settings' => $theme_settings,
-            'current' => $current, 'upstream' => $upstream, 'behind' => $behind, 'commits' => $commits,
-            'hasBackup' => $hasBackup, 'lastCheck' => $lastCheckData,
-        ]);
-    }
-
+    // POST /admin/update/check - refresh and return alert state (JSON)
     public function check()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        @shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git fetch origin 2>/dev/null');
-        $behind = (int)trim(@shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git rev-list HEAD..origin/master --count 2>/dev/null') ?: '0');
-        $upstream = trim(@shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git rev-parse --short origin/master 2>/dev/null') ?: 'unknown');
-        $current = trim(@shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git rev-parse --short HEAD 2>/dev/null') ?: 'unknown');
-        $data = ['current' => $current, 'upstream' => $upstream, 'behind' => $behind, 'update_available' => $behind > 0, 'checked_at' => date('c')];
-        @file_put_contents(BASE_PATH . '/storage/update_available.json', json_encode($data));
-        $this->response->json($data)->send();
+        $state = Updates::refreshAlertState();
+        $this->response->json($state)->send();
         exit;
     }
 
@@ -66,12 +34,12 @@ class UpdateController extends Controller
             $this->response->redirect('/admin/update');
             exit;
         }
-        // Run update script in background and redirect to log
+        // Run update script (downloads package, verifies checksum, migrates) in background
         $logFile = BASE_PATH . '/storage/update.log';
         @file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Update started by " . ($this->auth->user()->name ?? 'admin') . "\n", FILE_APPEND);
         $cmd = 'cd ' . escapeshellarg(BASE_PATH) . ' && sudo bash scripts/update.sh 2>&1 | tee -a ' . escapeshellarg($logFile) . ' > /dev/null 2>&1 &';
         @shell_exec($cmd);
-        $_SESSION['success_message'] = 'Update started in background. Check log at storage/update.log';
+        $_SESSION['success_message'] = 'Update started in background. It downloads the release package, verifies the checksum, and migrates. Check the log at storage/update.log';
         $this->response->redirect('/admin/update');
         exit;
     }

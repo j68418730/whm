@@ -233,20 +233,18 @@ class SettingsController extends Controller
     public function update()
     {
         $this->guard();
-        $current = trim(@shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git rev-parse --short HEAD 2>/dev/null') ?: 'unknown');
-        $behind = 0; $commits = []; $upstream = 'unknown';
-        try {
-            @shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git fetch origin 2>/dev/null');
-            $behind = (int)trim(@shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git rev-list HEAD..origin/master --count 2>/dev/null') ?: '0');
-            $upstream = trim(@shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git rev-parse --short origin/master 2>/dev/null') ?: 'unknown');
-            $log = @shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git log HEAD..origin/master --oneline -5 2>/dev/null') ?: '';
-            foreach (explode("\n", trim($log)) as $line) { if ($line) $commits[] = $line; }
-        } catch (\Throwable $e) {}
-        $hasBackup = is_file(BASE_PATH . '/storage/update_backup.tar.gz');
+        $installed = \Core\Updates::installedManifest();
+        $remote = \Core\Updates::fetchRemoteManifest();
+        $available = $remote && \Core\Updates::isAvailable($remote) ? $remote : null;
+        $behind = $available ? 1 : 0;
+        $channel = \Core\Updates::channel();
+        $gitSha = trim((string)@shell_exec('cd ' . escapeshellarg(BASE_PATH) . ' && git rev-parse --short HEAD 2>/dev/null')) ?: ($installed['target_sha'] ?? '');
+        $hasBackup = is_file(BASE_PATH . '/storage/update_backup.tar.gz') || is_file(BASE_PATH . '/storage/update_backup.sql');
         $logContent = is_file(BASE_PATH . '/storage/update.log') ? file_get_contents(BASE_PATH . '/storage/update.log') : '';
         return $this->view('admin.settings.update', [
             'user' => $this->user(), 'title' => 'System Update', 'theme_settings' => $this->theme(), 'currentTab' => 'update',
-            'current' => $current, 'upstream' => $upstream, 'behind' => $behind, 'commits' => $commits, 'hasBackup' => $hasBackup, 'logContent' => $logContent,
+            'installed' => $installed, 'available' => $available, 'behind' => $behind, 'channel' => $channel,
+            'gitSha' => $gitSha, 'hasBackup' => $hasBackup, 'logContent' => $logContent,
         ]);
     }
 
