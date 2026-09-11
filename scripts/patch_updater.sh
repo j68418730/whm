@@ -13,8 +13,26 @@
 #   PIN=<sha> sudo bash scripts/patch_updater.sh  # pull updater files from another commit
 set -e
 
-BASE_PATH="$(cd "$(dirname "$0")/.." && pwd)"
-PIN="${PIN:-0df28eff7ca6c6ac8d9bb8dc01aef6d437d93758}"
+# Locate the app root. Works whether this script runs from scripts/, the app
+# root, or anywhere else (e.g. /tmp) - we walk up until we find public/index.php.
+SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+BASE_PATH=""
+cur="${SCRIPT_DIR:-$(pwd)}"
+while [ -n "$cur" ]; do
+    if [ -f "$cur/public/index.php" ]; then BASE_PATH="$cur"; break; fi
+    parent="$(dirname "$cur")"
+    [ "$parent" = "$cur" ] && break
+    cur="$parent"
+done
+[ -n "$BASE_PATH" ] || BASE_PATH="/var/www/radiohosting"
+echo "==> App root: $BASE_PATH"
+
+if [ ! -f "$BASE_PATH/public/index.php" ]; then
+    echo "ERROR: no app found at $BASE_PATH (public/index.php missing)." >&2
+    exit 1
+fi
+
+PIN="${PIN:-993e84ae7e492f2c1c4baec8e9c3225d27e3f7d1}"
 RAW="https://raw.githubusercontent.com/j68418730/whm/$PIN"
 BK="$BASE_PATH/storage/updater_patch_backup_$(date +%Y%m%d_%H%M%S)"
 
