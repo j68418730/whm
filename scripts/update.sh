@@ -12,6 +12,22 @@ LOCK_FILE="$BASE_PATH/storage/update.lock"
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"; }
 
+# Ensure the web user can trigger self-updates from the WHM UI (idempotent).
+if [ "$(id -u)" = "0" ]; then
+    SUDOERS_FILE=/etc/sudoers.d/radiohosting-update
+    mkdir -p "$BASE_PATH/storage"
+    {
+        echo "# Allow WHM UI triggered self-update/rollback"
+        echo "www-data ALL=(root) NOPASSWD: /bin/bash $BASE_PATH/scripts/update.sh"
+    } > "$SUDOERS_FILE"
+    chmod 440 "$SUDOERS_FILE"
+    if ! visudo -c >/dev/null 2>&1; then
+        log "sudoers validation failed; removing $SUDOERS_FILE"
+        rm -f "$SUDOERS_FILE"
+        visudo -c >/dev/null 2>&1 || true
+    fi
+fi
+
 if [ -f "$LOCK_FILE" ]; then
     log "Update already in progress (lock file exists). Aborting."
     exit 1
@@ -105,6 +121,18 @@ else
     log "Backup cron already present."
 fi
 
+# Update check runner (idempotent) - refreshes storage/update_available.json so
+# the dashboard alert appears without a manual "Check for Updates" click.
+log "Installing update-check cron..."
+UPD_CRON_FILE=/etc/cron.d/planet-hosts-updates
+if [ ! -f "$UPD_CRON_FILE" ]; then
+    echo "*/5 * * * * root /bin/bash $BASE_PATH/scripts/check_update.sh >/dev/null 2>&1" > "$UPD_CRON_FILE"
+    chmod 644 "$UPD_CRON_FILE"
+    log "Update-check cron installed at $UPD_CRON_FILE"
+else
+    log "Update-check cron already present."
+fi
+
 # Lint
 log "Linting PHP files..."
 if ! php -l "$BASE_PATH/public/index.php" 2>&1 | tee -a "$LOG_FILE"; then
@@ -138,4 +166,11 @@ fi
 
 rm -f "$LOCK_FILE"
 log "Update complete. Current: $(cd "$BASE_PATH" && git rev-parse --short HEAD 2>/dev/null)"
+
+# Refresh the dashboard alert so a stale "update available" banner never lingers.
+CURRENT_HASH=$(cd "$BASE_PATH" && git rev-parse --short HEAD 2>/dev/null || echo unknown)
+echo "{\"current\":\"$CURRENT_HASH\",\"upstream\":\"$CURRENT_HASH\",\"behind\":0,\"update_available\":false,\"checked_at\":\"$(date '+%Y-%m-%d %H:%M:%S')\"}" > "$BASE_PATH/storage/update_available.json"
+chown www-data:www-data "$BASE_PATH/storage/update_available.json" 2>/dev/null
+chmod 644 "$BASE_PATH/storage/update_available.json" 2>/dev/null
+
 exit 0
