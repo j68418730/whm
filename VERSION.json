@@ -1,0 +1,17 @@
+{
+  "version": "1.3.0",
+  "version_code": 1300,
+  "channel": "stable",
+  "release_date": "2026-09-11",
+  "release_type": "Core Release",
+  "security": false,
+  "require_version_code": 0,
+  "php_required": ">=7.4",
+  "requires_reboot": false,
+  "requires_services_restart": ["apache2"],
+  "migrations": ["011_add_credit_usage.sql","012_expand_gateways.sql","013_add_api_key_user_assignment.sql","2026_07_05_autodj_config.sql","2026_07_05_create_radio_streams.sql","2026_07_12_backup_system.sql","2026_07_12_setup_wizard.sql","2026_07_14_01_streaming_stations.sql","2026_07_14_02_radio_stations.sql","2026_07_14_03_streaming_stations_sync.sql","2026_07_14_04_hosting_users_status_active.sql","2026_07_14_dj_auth.php","2026_07_15_backfill_plain_passwords.sql","2026_07_15_last_stopped_column.sql","2026_07_15_missing_streaming_cols.sql","2026_07_15_radio_dj_streams.sql","2026_07_15_sync_radio_streams.sql","2026_07_16_game_tables.sql","2026_07_16_global_playlists.sql","2026_07_16_seed_templates_themes.sql","2026_07_16_set_test_password.sql","2026_07_16_visitor_logs.sql","2026_07_19_radio_fixes.sql","2026_07_20_dj_port_system.sql","2026_07_20_station_dj_port.sql","2026_07_21_dj_api_config.sql","2026_07_21_dj_schedule_calendar.sql","2026_07_21_liquidsoap_connections.sql","2026_07_21_radio_downloads.sql","2026_07_22_dj_messages.sql","2026_07_22_dj_profile_cols.sql","2026_07_22_dj_reports.sql","2026_07_23_ai_build_settings.sql","2026_07_23_dj_queue.sql","2026_08_01_api_keys_is_active.sql","2026_08_01_autodj_playlists.sql","2026_08_01_dj_api_per_station.sql","2026_08_01_dj_statuses.sql","2026_08_01_game_seed.sql","2026_08_01_game_tables_fix.sql","2026_08_06_chatbox_tokens.sql","2026_08_06_client_security_center.sql","2026_08_06_playlist_account_share.sql","2026_08_07_livechat_tables.sql","2026_08_07_mail_tables_fix.sql","2026_08_07_radio_branding.sql","2026_08_12_billing_products_upgrade.php","2026_08_17_admin_upgrades.php","2026_08_17_create_user_alerts_table.php","2026_08_19_admin_management_columns.php"],
+  "download": "https://codeload.github.com/j68418730/whm/tar.gz/3e17d9ea8d17663840e1bcb5e38101a2066f3a51",
+  "checksum": "db6479355e5a65cdee493b63cfc776879096a552a63dea5216a1d366fd7b32e0",
+  "target_sha": "3e17d9ea8d17663840e1bcb5e38101a2066f3a51",
+  "release_notes": "Backup jobs + destinations v2; release-based updater with checksum-verified package downloads; updater self-healing fixes."
+}
