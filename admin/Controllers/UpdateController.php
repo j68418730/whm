@@ -35,9 +35,10 @@ class UpdateController extends Controller
             exit;
         }
         // Run update script (downloads package, verifies checksum, migrates) in background
+        // Use the ABSOLUTE script path: sudoers NOPASSWD matches full paths, not relative argv.
         $logFile = BASE_PATH . '/storage/update.log';
         @file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Update started by " . ($this->auth->user()->name ?? 'admin') . "\n", FILE_APPEND);
-        $cmd = 'cd ' . escapeshellarg(BASE_PATH) . ' && sudo bash scripts/update.sh 2>&1 | tee -a ' . escapeshellarg($logFile) . ' > /dev/null 2>&1 &';
+        $cmd = 'sudo /bin/bash ' . escapeshellarg(BASE_PATH . '/scripts/update.sh') . ' 2>&1 | tee -a ' . escapeshellarg($logFile) . ' > /dev/null 2>&1 &';
         @shell_exec($cmd);
         $_SESSION['success_message'] = 'Update started in background. It downloads the release package, verifies the checksum, and migrates. Check the log at storage/update.log';
         $this->response->redirect('/admin/update');
@@ -48,7 +49,7 @@ class UpdateController extends Controller
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $logFile = BASE_PATH . '/storage/update.log';
-        $cmd = 'cd ' . escapeshellarg(BASE_PATH) . ' && sudo bash scripts/update.sh --rollback 2>&1 | tee -a ' . escapeshellarg($logFile) . ' > /dev/null 2>&1 &';
+        $cmd = 'sudo /bin/bash ' . escapeshellarg(BASE_PATH . '/scripts/update.sh') . ' --rollback 2>&1 | tee -a ' . escapeshellarg($logFile) . ' > /dev/null 2>&1 &';
         @shell_exec($cmd);
         $_SESSION['success_message'] = 'Rollback started in background.';
         $this->response->redirect('/admin/update');
