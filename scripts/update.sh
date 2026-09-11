@@ -242,7 +242,7 @@ run_one_migration() {
     local f="$1"
     case "$f" in
         *.sql) mysql -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < "$f" 2>&1 | tee -a "$LOG_FILE" || log "Migration $f failed (may already be applied)";;
-        *.php) php "$f" 2>&1 | tee -a "$LOG_FILE" || log "Migration $f failed";;
+        *.php) php "$BASE_PATH/scripts/migrate.php" "$f" 2>&1 | tee -a "$LOG_FILE" || log "Migration $f failed (see log above)";;
     esac
 }
 MIGS=$(JSON_GET "$REMOTE_JSON" migrations)
