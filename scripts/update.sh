@@ -34,8 +34,11 @@ JSON_GET() { # $1=file $2=key
     /usr/bin/php -r '$d=json_decode(file_get_contents($argv[1]),true); echo isset($d[$argv[2]])?(is_array($d[$argv[2]])?json_encode($d[$argv[2]]):$d[$argv[2]]):"";' "$1" "$2"
 }
 
+# System-level actions (sudoers/cron/services) only run for a real install path.
+SYSTEM_PATH="${PH_SYSTEM_PATH:-/var/www/radiohosting}"
+
 # Ensure the web user can trigger self-updates from the WHM UI (idempotent).
-if [ "$(id -u)" = "0" ]; then
+if [ "$(id -u)" = "0" ] && [ "$BASE_PATH" = "$SYSTEM_PATH" ]; then
     SUDOERS_FILE=/etc/sudoers.d/radiohosting-update
     mkdir -p "$BASE_PATH/storage" "$UPDATE_DIR"
     {
@@ -258,8 +261,9 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Cron (backup runner + update check) - idempotent
+# Cron (backup runner + update check) - idempotent (system installs only)
 # ---------------------------------------------------------------------------
+if [ "$BASE_PATH" = "$SYSTEM_PATH" ]; then
 log "Installing crons..."
 CRON_FILE=/etc/cron.d/planet-hosts-backup
 if [ ! -f "$CRON_FILE" ]; then
@@ -270,6 +274,7 @@ UPD_CRON_FILE=/etc/cron.d/planet-hosts-updates
 if [ ! -f "$UPD_CRON_FILE" ]; then
     echo "*/5 * * * * root /bin/bash $BASE_PATH/scripts/check_update.sh >/dev/null 2>&1" > "$UPD_CRON_FILE"
     chmod 644 "$UPD_CRON_FILE"
+fi
 fi
 
 # ---------------------------------------------------------------------------
@@ -282,7 +287,7 @@ chown -R www-data:www-data "$BASE_PATH" 2>&1 | tee -a "$LOG_FILE" || true
 bash "$BASE_PATH/scripts/setup_storage.sh" 2>&1 | tee -a "$LOG_FILE" || true
 
 log "Reloading services..."
-if echo "$SERVICES" | grep -q 'apache2'; then
+if [ "$BASE_PATH" = "$SYSTEM_PATH" ] && echo "$SERVICES" | grep -q 'apache2'; then
     systemctl reload apache2 2>&1 | tee -a "$LOG_FILE" || log "Apache reload failed"
 fi
 [ "$RBOOT" = "true" ] && log "This release requires a server reboot."
