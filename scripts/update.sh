@@ -41,17 +41,24 @@ SYSTEM_PATH="${PH_SYSTEM_PATH:-/var/www/radiohosting}"
 if [ "$(id -u)" = "0" ] && [ "$BASE_PATH" = "$SYSTEM_PATH" ]; then
     SUDOERS_FILE=/etc/sudoers.d/radiohosting-update
     mkdir -p "$BASE_PATH/storage" "$UPDATE_DIR"
-    {
-        echo "# Allow WHM UI triggered self-update/rollback"
-        echo "# Panel invokes: sudo /bin/bash $BASE_PATH/scripts/update.sh [--rollback]"
-        echo "www-data ALL=(root) NOPASSWD: /bin/bash $BASE_PATH/scripts/update.sh"
-        echo "www-data ALL=(root) NOPASSWD: /bin/bash $BASE_PATH/scripts/update.sh *"
-    } > "$SUDOERS_FILE"
-    chmod 440 "$SUDOERS_FILE"
-    if ! visudo -c >/dev/null 2>&1; then
-        log "sudoers validation failed; removing $SUDOERS_FILE"
-        rm -f "$SUDOERS_FILE"
-        visudo -c >/dev/null 2>&1 || true
+    # Only (re)write when missing or out of date; tolerate read-only /etc (do NOT abort an update
+    # because the sudoers file cannot be rewritten - panel-updated servers usually already have it).
+    if [ ! -f "$SUDOERS_FILE" ] || ! grep -q "NOPASSWD: /bin/bash $BASE_PATH/scripts/update.sh" "$SUDOERS_FILE" 2>/dev/null; then
+        if {
+            echo "# Allow WHM UI triggered self-update/rollback"
+            echo "# Panel invokes: sudo /bin/bash $BASE_PATH/scripts/update.sh [--rollback]"
+            echo "www-data ALL=(root) NOPASSWD: /bin/bash $BASE_PATH/scripts/update.sh"
+            echo "www-data ALL=(root) NOPASSWD: /bin/bash $BASE_PATH/scripts/update.sh *"
+        } > "$SUDOERS_FILE" 2>/dev/null; then
+            chmod 440 "$SUDOERS_FILE"
+            if ! visudo -c >/dev/null 2>&1; then
+                log "sudoers validation failed; removing $SUDOERS_FILE"
+                rm -f "$SUDOERS_FILE"
+                visudo -c >/dev/null 2>&1 || true
+            fi
+        else
+            log "WARNING: could not write $SUDOERS_FILE (continuing; panel-triggered updates may prompt for a password)"
+        fi
     fi
 fi
 
