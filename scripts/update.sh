@@ -43,7 +43,9 @@ if [ "$(id -u)" = "0" ] && [ "$BASE_PATH" = "$SYSTEM_PATH" ]; then
     mkdir -p "$BASE_PATH/storage" "$UPDATE_DIR"
     {
         echo "# Allow WHM UI triggered self-update/rollback"
+        echo "# Panel invokes: sudo /bin/bash $BASE_PATH/scripts/update.sh [--rollback]"
         echo "www-data ALL=(root) NOPASSWD: /bin/bash $BASE_PATH/scripts/update.sh"
+        echo "www-data ALL=(root) NOPASSWD: /bin/bash $BASE_PATH/scripts/update.sh *"
     } > "$SUDOERS_FILE"
     chmod 440 "$SUDOERS_FILE"
     if ! visudo -c >/dev/null 2>&1; then
