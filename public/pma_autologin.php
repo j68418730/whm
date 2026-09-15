@@ -2,12 +2,28 @@
 require_once __DIR__ . '/../core/ServerCreds.php';
 /**
  * phpMyAdmin Auto-Login for Planet-Hosts
- * Users get read-only access to their own database only.
- * Admins get full root access.
+ * Only panel-authenticated sessions are granted access (signon auth).
+ * Anonymous visitors are redirected to the panel login page.
  */
 session_start();
 
 $isAdmin = !empty($_SESSION['is_admin']);
+$user    = $_SESSION['user'] ?? null;
+$userId  = is_object($user) ? ($user->id ?? 0) : ($user['id'] ?? 0);
+
+// No valid panel session -> login page, never wide-open access.
+if (!$isAdmin && empty($userId)) {
+    $port = (int)($_SERVER['SERVER_PORT'] ?? 0);
+    $login = match ($port) {
+        2086 => '/portal_reseller.php',
+        2083 => '/portal_user.php',
+        2082 => '/portal_user.php',
+        default => '/admin/login',
+    };
+    header('Location: ' . $login);
+    exit;
+}
+
 $dbUser = \db_user();
 $dbPass = \db_pass();
 
@@ -16,16 +32,14 @@ if ($isAdmin) {
     $dbPass = \db_root_pass();
 } else {
     // For regular users, find their specific database and create a scoped user
-    $user = $_SESSION['user'] ?? null;
     $email = is_object($user) ? ($user->email ?? '') : ($user['email'] ?? '');
     $uname = is_object($user) ? ($user->name ?? '') : ($user['name'] ?? '');
-    $uid = is_object($user) ? ($user->id ?? 0) : ($user['id'] ?? 0);
 
     try {
         $pdo = db_pdo();
         // Find hosting user
         $stmt = $pdo->prepare("SELECT id, username FROM hosting_users WHERE id = ? OR email = ? OR username = ? LIMIT 1");
-        $stmt->execute([$uid, $email, $uname]);
+        $stmt->execute([$userId, $email, $uname]);
         $hosting = $stmt->fetch(PDO::FETCH_OBJ);
         if (!$hosting) {
             $stmt2 = $pdo->query("SELECT id, username FROM hosting_users ORDER BY id ASC LIMIT 1");
@@ -62,11 +76,16 @@ if ($isAdmin) {
 }
 
 // Store in session for phpMyAdmin signon to pick up
+// (new key names used by phpMyAdmin 5.2+, old keys kept for safety)
+$_SESSION['PMA_single_signon_user'] = $dbUser;
+$_SESSION['PMA_single_signon_password'] = $dbPass;
+$_SESSION['PMA_single_signon_host'] = 'localhost';
 $_SESSION['PMA_signon_username'] = $dbUser;
 $_SESSION['PMA_signon_password'] = $dbPass;
 $_SESSION['PMA_signon_server'] = 1;
 session_write_close();
 
-// Redirect to phpMyAdmin with signon
-header('Location: /phpmyadmin/index.php?route=/&server=1');
+// Redirect back to phpMyAdmin with signon
+$dest = $_GET['destination'] ?? '/phpmyadmin/index.php?route=/&server=1';
+header('Location: ' . (str_starts_with($dest, '/') ? $dest : '/phpmyadmin/index.php?route=/&server=1'));
 exit;
