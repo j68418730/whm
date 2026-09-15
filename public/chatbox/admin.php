@@ -5,13 +5,73 @@ $action = $_GET['action'] ?? 'dashboard';
 $error = '';
 $pdo = new PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
 
+function chatbox_no_tenants_page() { ?>
+<!DOCTYPE html><html><head><title>Chat Admin</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>body{background:#02050e;color:#fff;font-family:Inter,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh}
+.card{background:rgba(8,16,28,.95);border:1px solid rgba(0,191,255,.12);border-radius:16px;padding:36px;max-width:420px;width:92%;text-align:center}
+h1{font-size:18px;margin:0 0 10px}h1 span{color:#008cff}p{color:#94a3b8;font-size:13px;margin:0}
+</style></head><body><div class="card"><h1>Chat <span>Admin</span></h1>
+<p>No chatboxes have been created yet. Add one from the hosting account's Chat settings first.</p>
+</div></body></html>
+<?php exit;
+}
+
+function chatbox_chooser_page($tenants) { ?>
+<!DOCTYPE html><html><head><title>Chatboxes</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>body{background:#02050e;color:#fff;font-family:Inter,sans-serif;padding:40px 16px;max-width:760px;margin:0 auto}
+h1{font-size:20px;margin:0 0 4px}h1 span{color:#008cff}.sub{color:#94a3b8;font-size:13px;margin:0 0 20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.card{background:rgba(8,16,28,.95);border:1px solid rgba(0,191,255,.14);border-radius:14px;padding:18px;text-decoration:none;color:#fff;transition:.15s}
+.card:hover{border-color:#008cff;transform:translateY(-2px)}
+.card h3{margin:0 0 6px;font-size:15px;color:#e2e8f0}
+.card p{margin:2px 0;font-size:12px;color:#94a3b8}
+.card .count{display:inline-block;margin-top:8px;font-size:11px;background:rgba(0,191,255,.12);color:#38bdf8;border-radius:20px;padding:3px 10px}
+</style></head><body>
+<h1>Chat <span>Admin</span></h1>
+<p class="sub">Pick a chatbox to manage.</p>
+<div class="grid">
+<?php foreach ($tenants as $t):
+$u = $pdo2->query("SELECT COUNT(*) FROM chatbox_users WHERE tenant_id = " . (int)$t->id)->fetchColumn();
+$r = $pdo2->query("SELECT COUNT(*) FROM chatbox_rooms WHERE tenant_id = " . (int)$t->id)->fetchColumn();
+?>
+<a class="card" href="/chatbox/admin.php?tenant_id=<?php echo (int)$t->id; ?>">
+<h3>💬 <?php echo htmlspecialchars($t->name ?: $t->widget_title); ?></h3>
+<p>Owner: <?php echo htmlspecialchars($t->owner_username ?: '—'); ?></p>
+<p><?php echo htmlspecialchars($t->owner_email ?: ''); ?></p>
+<span class="count"><?php echo (int)$u; ?> users · <?php echo (int)$r; ?> rooms</span>
+</a>
+<?php endforeach; ?>
+</div></body></html>
+<?php exit;
+}
+
 // Check panel auth first (super admin bypass)
 $bypassTenantId = 0;
+$panelSessionUser = null;
 if (isset($_SESSION['user']) && !empty($_SESSION['user']->id)) {
     $panelUser = $_SESSION['user'];
+    $panelSessionUser = $panelUser;
     if (!empty($panelUser->is_admin)) {
-        // Admin can access any tenant - check query param
-        $bypassTenantId = (int)($_GET['tenant_id'] ?? 0);
+        $reqTenantId = (int)($_GET['tenant_id'] ?? 0);
+        if ($reqTenantId) {
+            $bypassTenantId = $reqTenantId;
+        } else {
+            // Super admin without a tenant chosen: single tenant loads directly,
+            // several tenants show a chooser, none shows an empty state.
+            $allTenants = $pdo->query("SELECT t.*, hu.username AS owner_username, hu.email AS owner_email FROM chatbox_tenants t LEFT JOIN hosting_users hu ON hu.id = t.hosting_user_id ORDER BY t.id")->fetchAll(PDO::FETCH_OBJ);
+            if (count($allTenants) === 1) {
+                $bypassTenantId = (int)$allTenants[0]->id;
+            } elseif (count($allTenants) === 0) {
+                chatbox_no_tenants_page();
+            } else {
+                $pdo2 = $pdo;
+                chatbox_chooser_page($allTenants);
+            }
+        }
     } else {
         // Regular user - find their tenant
         $q = $pdo->prepare("SELECT id FROM chatbox_tenants WHERE hosting_user_id = ?");
@@ -37,7 +97,7 @@ if ($action === 'login' && $_POST && !$bypassTenantId) {
 
 // Use bypass tenant
 if ($bypassTenantId) {
-    $_SESSION['chatbox_admin'] = ['id' => 0, 'tenant_id' => $bypassTenantId, 'username' => 'Admin', 'role' => 'owner'];
+    $_SESSION['chatbox_admin'] = ['id' => 0, 'tenant_id' => $bypassTenantId, 'username' => 'Admin', 'role' => 'owner', 'user_id' => $panelSessionUser ? (int)$panelSessionUser->id : 0];
 }
 
 if (!isset($_SESSION['chatbox_admin']) && !$bypassTenantId) {
