@@ -85,7 +85,11 @@ if ($pkg && !empty($pkg->feature_list_id)) {
 if (($features['radio'] ?? 0) || ($pkg->shoutcast_enabled ?? 0)) $features['radio'] = 1;
 if (($features['dj_panel'] ?? 0) || ($pkg->dj_panel_enabled ?? 0)) $features['dj_panel'] = 1;
 if (($features['livechat'] ?? ($features['chatbox'] ?? 0)) || ($pkg->live_chat_enabled ?? 0)) $features['livechat'] = 1;
-if (($features['game'] ?? 0) || ($pkg->game_enabled ?? 0)) $features['game'] = 1;
+if (($features['game'] ?? 0) || ($pkg->game_enabled ?? 0) || ($pkgType === 'game_server')) $features['game'] = 1;
+if (!$features['game'] && $pkg) {
+    $pkgFeat = is_string($pkg->features ?? null) ? json_decode($pkg->features, true) ?? [] : ($pkg->features ?? []);
+    if (!empty($pkgFeat['game_package'])) $features['game'] = 1;
+}
 if ($hosting) {
     $pdo = \Core\Application::getInstance()->get('db')->pdo();
     // Radio: check for actual streams
