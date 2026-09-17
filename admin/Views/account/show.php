@@ -55,7 +55,7 @@
 </div>
 
 <div class="stats-grid">
-<div class="stat-card"><h3>Services</h3><div class="value" style="font-size:20px"><?php echo count($services ?? []); ?></div></div>
+<div class="stat-card"><h3>Services</h3><div class="value" style="font-size:20px"><?php echo count($ownedServices ?? []); ?></div></div>
 <div class="stat-card"><h3>Orders</h3><div class="value" style="font-size:20px"><?php echo count($orders ?? []); ?></div></div>
 <div class="stat-card"><h3>Disk Usage</h3><div class="value" style="font-size:20px"><?php echo $disk_usage; ?></div></div>
 <div class="stat-card"><h3>Bandwidth</h3><div class="value" style="font-size:20px"><?php echo $bandwidth_usage; ?></div></div>
@@ -96,30 +96,53 @@
 
 <div class="account-grid">
 <div class="action-card">
-<h4><i class="bi bi-box-seam" style="color:#0A84FF"></i> Services (<?php echo count($services ?? []); ?>)</h4>
-<?php if (!empty($services)): ?>
+<h4><i class="bi bi-box-seam" style="color:#0A84FF"></i> Products & Services (<?php echo count($ownedServices ?? []); ?>)</h4>
+<?php
+$kindIcon = ['hosting'=>'bi-house-gear','radio'=>'bi-broadcast','chatbox'=>'bi-chat-dots','game'=>'bi-controller','billing'=>'bi-receipt'];
+$kindColor = ['hosting'=>'#38bdf8','radio'=>'#a78bfa','chatbox'=>'#4ade80','game'=>'#fb923c','billing'=>'#94a3b8'];
+$kindLabel = ['hosting'=>'Hosting','radio'=>'Radio','chatbox'=>'Chatbox','game'=>'Game','billing'=>'Billing'];
+?>
+<?php if (!empty($ownedServices)): ?>
 <table class="mini-table">
-<tr><th>Product</th><th>Status</th><th>Due</th><th>Price</th><th></th></tr>
-<?php foreach ($services as $s): ?>
+<tr><th>Type</th><th>Product / Service</th><th>Status</th><th>Details</th><th></th></tr>
+<?php foreach ($ownedServices as $s):
+    $kind = $s->kind ?? 'billing';
+    $icon = $kindIcon[$kind] ?? 'bi-box';
+    $col = $kindColor[$kind] ?? '#94a3b8';
+    $lbl = $kindLabel[$kind] ?? ucfirst($kind);
+    $status = $s->status ?? 'pending';
+    $statusBadge = in_array($status, ['active','running']) ? 'success' : ($status === 'suspended' ? 'warning' : 'secondary');
+?>
 <tr>
+<td style="white-space:nowrap"><span class="chip" style="background:rgba(<?php echo $kind==='hosting'?'56,189,248':($kind==='radio'?'167,139,250':($kind==='chatbox'?'74,222,128':($kind==='game'?'251,146,60':'148,163,184'))); ?>,.12);color:<?php echo $col; ?>;border:1px solid rgba(<?php echo $kind==='hosting'?'56,189,248':($kind==='radio'?'167,139,250':($kind==='chatbox'?'74,222,128':($kind==='game'?'251,146,60':'148,163,184'))); ?>,.25)"><i class="bi <?php echo $icon; ?>"></i> <?php echo $lbl; ?></span></td>
 <td>
-<div style="font-weight:600"><?php echo htmlspecialchars($s->product_name ?? 'Service #' . $s->id); ?></div>
-<div style="color:#64748b;font-size:11px"><?php echo htmlspecialchars($s->billing_cycle ?? ''); ?> · #<?php echo $s->id; ?><?php if ($s->order_id): ?> · Order #<?php echo $s->order_id; ?><?php endif; ?></div>
+<div style="font-weight:600"><?php echo htmlspecialchars($s->name ?? ''); ?></div>
+<?php if ($s->product_id): ?><a href="/admin/billing/products" style="color:#38bdf8;font-size:11px" title="View product list"><i class="bi bi-box-seam"></i> Product #<?php echo (int)$s->product_id; ?> →</a>
+<?php elseif (!empty($s->manage_url)): ?><a href="<?php echo htmlspecialchars($s->manage_url); ?>" style="color:#38bdf8;font-size:11px" title="Manage this service"><i class="bi bi-arrow-right-circle"></i> Manage →</a><?php endif; ?>
 </td>
 <td>
-<form method="POST" action="/admin/account/service/status/<?php echo (int)$account->id; ?>/<?php echo (int)$s->id; ?>" style="display:flex;align-items:center;gap:4px">
+<?php if ($kind === 'billing'): ?>
+<form method="POST" action="/admin/account/service/status/<?php echo (int)$account->id; ?>/<?php echo (int)$s->ref_id; ?>" style="display:flex;align-items:center;gap:4px">
 <select name="status" class="form-select" style="width:auto;padding:3px 6px;font-size:11px" onchange="this.form.submit()">
-<option value="active" <?php echo $s->status==='active'?'selected':''; ?>>Active</option>
-<option value="pending" <?php echo $s->status==='pending'?'selected':''; ?>>Pending</option>
-<option value="suspended" <?php echo $s->status==='suspended'?'selected':''; ?>>Suspended</option>
-<option value="terminated" <?php echo $s->status==='terminated'?'selected':''; ?>>Terminated</option>
+<option value="active" <?php echo $status==='active'?'selected':''; ?>>Active</option>
+<option value="pending" <?php echo $status==='pending'?'selected':''; ?>>Pending</option>
+<option value="suspended" <?php echo $status==='suspended'?'selected':''; ?>>Suspended</option>
+<option value="terminated" <?php echo $status==='terminated'?'selected':''; ?>>Terminated</option>
 </select>
 <input type="hidden" name="next_due_date" value="<?php echo htmlspecialchars($s->next_due_date ?? ''); ?>">
 </form>
+<?php else: ?>
+<span class="badge bg-<?php echo $statusBadge; ?>"><?php echo htmlspecialchars(ucfirst((string)$status)); ?></span>
+<?php endif; ?>
 </td>
-<td style="white-space:nowrap"><?php echo htmlspecialchars($s->next_due_date ?? '-'); ?></td>
-<td style="white-space:nowrap">$<?php echo number_format((float)$s->price, 2); ?></td>
-<td><a href="/admin/account/service/delete/<?php echo (int)$account->id; ?>/<?php echo (int)$s->id; ?>" class="btn btn-sm" style="background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.2)" onclick="return confirm('Remove this service?')"><i class="bi bi-trash"></i></a></td>
+<td style="white-space:nowrap;font-size:11px;color:#94a3b8"><?php echo htmlspecialchars($s->detail ?? ''); ?><?php if ($s->next_due_date): ?><br>Due <?php echo htmlspecialchars($s->next_due_date); ?><?php endif; ?></td>
+<td>
+<?php if ($kind === 'billing'): ?>
+<a href="/admin/account/service/delete/<?php echo (int)$account->id; ?>/<?php echo (int)$s->ref_id; ?>" class="btn btn-sm" style="background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.2)" onclick="return confirm('Remove this service?')"><i class="bi bi-trash"></i></a>
+<?php elseif (!empty($s->manage_url)): ?>
+<a href="<?php echo htmlspecialchars($s->manage_url); ?>" class="btn btn-sm" style="background:rgba(56,189,248,.1);color:#38bdf8;border:1px solid rgba(56,189,248,.2)"><i class="bi bi-arrow-right"></i></a>
+<?php endif; ?>
+</td>
 </tr>
 <?php endforeach; ?>
 </table>
