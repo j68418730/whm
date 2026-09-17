@@ -227,6 +227,26 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 </div>
 </header>
 
+<!-- ===== UNDER CONSTRUCTION BANNER ===== -->
+<div id="construction-banner" role="alert">
+<div class="cb-inner">
+<span class="cb-icon">&#9888;</span>
+<div class="cb-text">
+<strong>Site Under Construction</strong>
+<span>Some functions are still being created &mdash; please check back soon.</span>
+</div>
+</div>
+</div>
+<style>
+#construction-banner{position:relative;z-index:999;background:#1a0b0b;border-bottom:3px solid #ff2b2b;padding:14px 18px;text-align:center;box-shadow:0 4px 20px rgba(255,43,43,.35)}
+#construction-banner .cb-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+#construction-banner .cb-icon{font-size:26px;animation:cbFlash .8s infinite alternate;line-height:1}
+#construction-banner .cb-text{display:flex;flex-direction:column;align-items:center;line-height:1.35}
+#construction-banner strong{font-size:clamp(18px,3vw,28px);text-transform:uppercase;letter-spacing:2px;animation:cbFlash .8s infinite alternate}
+#construction-banner .cb-text span{font-size:clamp(12px,1.6vw,15px);color:#cbd5e1}
+@keyframes cbFlash{0%{color:#ff2b2b;text-shadow:0 0 12px rgba(255,43,43,.9)}100%{color:#ffd400;text-shadow:0 0 12px rgba(255,212,0,.9)}}
+</style>
+
 <!-- ===== HERO ===== -->
 <section class="hero container">
 <div class="hero-text">
