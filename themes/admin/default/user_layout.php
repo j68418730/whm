@@ -94,7 +94,11 @@ if ($hosting) {
     try { $st = $pdo->prepare("SELECT id FROM chatbox_tenants WHERE hosting_user_id = ? AND is_active = 1 LIMIT 1"); $st->execute([$hosting->id]); if ($st->fetch()) $features['livechat'] = 1; } catch (\Exception $e) {}
     // DJ Panel: check if user has any DJs
     try { $st = $pdo->prepare("SELECT d.id FROM radio_djs d JOIN streaming_stations s ON d.stream_id = s.id WHERE s.user_id = ? AND d.status = 'active' LIMIT 1"); $st->execute([$hosting->id]); if ($st->fetch()) $features['dj_panel'] = 1; } catch (\Exception $e) {}
+    // Games: check for owned game servers
+    try { $st = $pdo->prepare("SELECT id FROM game_servers WHERE user_id = ? AND is_active = 1 LIMIT 1"); $st->execute([$hosting->id]); if ($st->fetch()) $features['game'] = 1; } catch (\Exception $e) {}
 }
+$features['email'] = ($isWeb && (int)($pkg->email_accounts ?? 0) > 0) ? 1 : 0;
+$features['chat'] = ($features['livechat'] ?? 0) ? 1 : 0;
 $features['web'] = $isWeb;
 require_once BASE_PATH . '/core/UserMenu.php';
 echo render_user_sidebar($currentUrl, $features); ?>
