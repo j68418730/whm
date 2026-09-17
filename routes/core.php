@@ -373,6 +373,11 @@ $router->get('/admin/account/terminate/{id}', 'Admin\Controllers\AccountControll
 $router->post('/admin/account/password/{id}', 'Admin\Controllers\AccountController@password');
 $router->get('/admin/account/search', 'Admin\Controllers\AccountController@index');
 $router->post('/admin/account/change-owner/{id}', 'Admin\Controllers\AccountController@changeOwner');
+$router->post('/admin/account/order/create/{id}', 'Admin\Controllers\AccountController@orderCreate');
+$router->get('/admin/account/order/delete/{id}/{orderId}', 'Admin\Controllers\AccountController@orderDelete');
+$router->post('/admin/account/order/status/{id}/{orderId}', 'Admin\Controllers\AccountController@orderStatus');
+$router->post('/admin/account/service/status/{id}/{serviceId}', 'Admin\Controllers\AccountController@serviceStatus');
+$router->get('/admin/account/service/delete/{id}/{serviceId}', 'Admin\Controllers\AccountController@serviceDelete');
 $router->post('/admin/account/ssh/access/{id}', 'Admin\Controllers\AccountController@sshAccess');
 $router->post('/admin/account/ssh/key-generate/{id}', 'Admin\Controllers\AccountController@sshKeyGenerate');
 $router->post('/admin/account/ssh/key-delete/{id}', 'Admin\Controllers\AccountController@sshKeyDelete');

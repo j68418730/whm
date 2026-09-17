@@ -30,17 +30,32 @@ class AccountController extends Controller
         $user = $this->auth->user();
 
         $resellerId = (int)$this->request->get('reseller_id', 0);
+        $search = trim((string)$this->request->get('search', ''));
+
+        $sql = "SELECT * FROM hosting_users";
+        $where = [];
+        $params = [];
         if ($resellerId) {
-            $stmt = $this->db->pdo()->prepare("SELECT * FROM hosting_users WHERE reseller_id = ?");
-            $stmt->execute([$resellerId]);
-            $accounts = $stmt->fetchAll(\PDO::FETCH_OBJ);
-        } else {
-            $accounts = $this->db->table('hosting_users')->get();
+            $where[] = "reseller_id = ?";
+            $params[] = $resellerId;
         }
+        if ($search) {
+            $where[] = "(username LIKE ? OR domain LIKE ? OR email LIKE ? OR first_name LIKE ? OR last_name LIKE ?)";
+            $like = '%' . $search . '%';
+            array_push($params, $like, $like, $like, $like, $like);
+        }
+        if ($where) $sql .= " WHERE " . implode(' AND ', $where);
+        $sql .= " ORDER BY id DESC";
+        $stmt = $this->db->pdo()->prepare($sql);
+        $stmt->execute($params);
+        $accounts = $stmt->fetchAll(\PDO::FETCH_OBJ);
 
         $packages = $this->db->table('hosting_packages')->get();
+        $packageMap = [];
+        foreach ($packages as $p) $packageMap[$p->id] = $p;
+        $resellers = $this->db->table('resellers')->get() ?: [];
         $owners = [];
-        foreach ($this->db->table('resellers')->get() ?: [] as $r) {
+        foreach ($resellers as $r) {
             $owners[(int)$r->id] = $r->company_name ?: $r->name ?: ('Reseller #' . $r->id);
         }
         $accountGroups = [];
@@ -54,14 +69,53 @@ class AccountController extends Controller
             'suspended_accounts' => count(array_filter($accounts, function($a) { return $a->status === 'suspended'; })),
             'terminated_accounts' => count(array_filter($accounts, function($a) { return $a->status === 'terminated'; })),
         ];
+
+        // Products / services per account
+        $servicesByUser = [];
+        $productsMap = [];
+        try { $productsMap = $this->db->table('billing_products')->get() ?: []; } catch (\Exception $e) {}
+        $productsById = [];
+        foreach ($productsMap as $bp) $productsById[$bp->id] = $bp;
+        try {
+            $services = $this->db->table('billing_services')->get() ?: [];
+            foreach ($services as $s) $servicesByUser[$s->user_id][] = $s;
+        } catch (\Exception $e) {}
+
+        // Latest order per account
+        $latestOrderByUser = [];
+        try {
+            $orders = $this->db->table('billing_orders')->orderBy('id', 'ASC')->get() ?: [];
+            foreach ($orders as $o) $latestOrderByUser[$o->user_id] = $o;
+        } catch (\Exception $e) {}
+
+        // Disk usage (bulk du across /home)
+        $diskUsageByUser = [];
+        $duOut = @shell_exec('du -sk /home/*/ 2>/dev/null');
+        foreach (preg_split('/\R+/', trim((string)$duOut)) ?: [] as $line) {
+            if (!trim($line)) continue;
+            $parts = preg_split('/\s+/', trim($line), 2);
+            if (count($parts) !== 2) continue;
+            $sizeKb = (int)$parts[0];
+            $path = rtrim($parts[1], '/');
+            $username = basename($path);
+            $diskUsageByUser[$username] = $sizeKb > 0 ? round($sizeKb / 1024, 1) . ' MB' : '0 KB';
+        }
+
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         return $this->view('admin.account.index', [
             'user' => $user,
             'accounts' => $accounts,
             'accountGroups' => $accountGroups,
             'packages' => $packages,
+            'packageMap' => $packageMap,
             'accountsStats' => $accountsStats,
             'reseller_id' => $resellerId,
+            'search' => $search,
+            'resellers' => $resellers,
+            'servicesByUser' => $servicesByUser,
+            'productsById' => $productsById,
+            'latestOrderByUser' => $latestOrderByUser,
+            'diskUsageByUser' => $diskUsageByUser,
             'theme_settings' => $theme_settings
         ]);
     }
@@ -370,6 +424,31 @@ class AccountController extends Controller
             $history = $this->db->table('activity_log')->where('target_id', (int)$id)->orderBy('created_at', 'DESC')->limit(10)->get() ?: [];
         } catch (\Exception $e) { $history = []; }
         $resellers = $this->db->table('resellers')->get() ?: [];
+
+        // Billing: products, services, orders for this account
+        $accountProduct = null;
+        if ($package && $package->product_id) {
+            try { $accountProduct = $this->db->table('billing_products')->where('id', $package->product_id)->first(); } catch (\Exception $e) {}
+        }
+        $services = [];
+        try {
+            $services = $this->db->pdo()->query("
+                SELECT s.*, bp.name AS product_name, bp.price AS product_price, bp.billing_cycle AS product_cycle
+                FROM billing_services s
+                LEFT JOIN billing_products bp ON s.product_id = bp.id
+                WHERE s.user_id = " . (int)$id . "
+                ORDER BY s.id DESC
+            ")->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        } catch (\Exception $e) {}
+        $orders = [];
+        try {
+            $orders = $this->db->table('billing_orders')->where('user_id', $id)->orderBy('id', 'DESC')->get() ?: [];
+        } catch (\Exception $e) {}
+        $allProducts = [];
+        try { $allProducts = $this->db->table('billing_products')->where('is_active', 1)->orderBy('name', 'ASC')->get() ?: []; } catch (\Exception $e) {}
+        $activePackages = [];
+        try { $activePackages = $this->db->table('hosting_packages')->where('is_active', 1)->get() ?: []; } catch (\Exception $e) {}
+
         return $this->view('admin.account.show', [
             'user' => $user,
             'account' => $account,
@@ -382,7 +461,155 @@ class AccountController extends Controller
             'history' => $history,
             'resellers' => $resellers,
             'packages' => $packages,
+            'accountProduct' => $accountProduct,
+            'services' => $services,
+            'orders' => $orders,
+            'allProducts' => $allProducts,
+            'activePackages' => $activePackages,
         ]);
+    }
+
+    public function orderCreate($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $account = $this->db->table('hosting_users')->where('id', (int)$id)->first();
+        if (!$account) { $_SESSION['error_message'] = 'Account not found.'; $this->response->redirect('/admin/account'); exit; }
+
+        $productId = (int)$this->request->post('product_id', 0);
+        $packageIdRaw = $this->request->post('package_id');
+        $packageId = $packageIdRaw ? (int)$packageIdRaw : null;
+        $total = (float)$this->request->post('total', 0);
+        $type = $this->request->post('type', 'new');
+        $status = $this->request->post('status', 'pending');
+        $paymentMethod = $this->request->post('payment_method', 'manual');
+        $description = trim((string)$this->request->post('description', ''));
+        $createService = $this->request->post('create_service') === '1';
+
+        $product = null;
+        $items = [];
+        if ($productId) {
+            try { $product = $this->db->table('billing_products')->where('id', $productId)->first(); } catch (\Exception $e) {}
+        }
+        if ($product) {
+            $items[] = [
+                'product_id' => $product->id,
+                'name' => $product->name,
+                'price' => (float)$product->price,
+                'billing_cycle' => $product->billing_cycle ?? 'monthly',
+                'qty' => 1,
+                'domain' => $account->domain ?? '',
+            ];
+        }
+
+        try {
+            $orderId = $this->db->table('billing_orders')->insertGetId([
+                'user_id' => (int)$id,
+                'product_id' => $productId ?: null,
+                'package_id' => $packageId,
+                'items' => json_encode($items),
+                'total' => $total,
+                'type' => in_array($type, ['new','renewal','upgrade','downgrade']) ? $type : 'new',
+                'status' => in_array($status, ['pending','active','suspended','cancelled']) ? $status : 'pending',
+                'payment_method' => $paymentMethod,
+                'description' => $description,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        } catch (\Exception $e) {
+            $_SESSION['error_message'] = 'Failed to create order: ' . $e->getMessage();
+            $this->response->redirect('/admin/account/show/' . (int)$id);
+            exit;
+        }
+
+        if ($createService && $orderId) {
+            $cycle = $product->billing_cycle ?? 'monthly';
+            if (!in_array($cycle, ['monthly','quarterly','semiannual','annual','biennial'])) $cycle = 'monthly';
+            try {
+                $this->db->table('billing_services')->insert([
+                    'user_id' => (int)$id,
+                    'product_id' => $productId ?: null,
+                    'order_id' => $orderId,
+                    'domain' => $account->domain ?? '',
+                    'status' => ($status === 'active') ? 'active' : 'pending',
+                    'billing_cycle' => $cycle,
+                    'price' => $total,
+                    'next_due_date' => $this->request->post('next_due_date', date('Y-m-d', strtotime('+30 days'))),
+                    'created_at' => date('Y-m-d H:i:s'),
+                ]);
+            } catch (\Exception $e) {}
+        }
+
+        try {
+            $this->db->table('activity_logs')->insert([
+                'account_id' => (int)$id, 'admin_id' => $this->auth->user()->id,
+                'action' => 'order_created',
+                'details' => "Created order #{$orderId} for {$account->username}" . ($createService ? ' (service activated)' : ''),
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
+            ]);
+        } catch (\Exception $e) {}
+
+        $_SESSION['success_message'] = "Order #{$orderId} created." . ($createService ? ' Service activated.' : '');
+        $this->response->redirect('/admin/account/show/' . (int)$id);
+        exit;
+    }
+
+    public function orderDelete($id, $orderId)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        try {
+            $this->db->table('billing_services')->where('order_id', (int)$orderId)->delete();
+            $this->db->table('billing_orders')->where('id', (int)$orderId)->delete();
+            $_SESSION['success_message'] = "Order #{$orderId} deleted (linked services removed).";
+        } catch (\Exception $e) {
+            $_SESSION['error_message'] = 'Failed to delete order: ' . $e->getMessage();
+        }
+        $this->response->redirect('/admin/account/show/' . (int)$id);
+        exit;
+    }
+
+    public function orderStatus($id, $orderId)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $status = $this->request->post('status', 'pending');
+        if (!in_array($status, ['pending','active','suspended','cancelled'])) $status = 'pending';
+        try {
+            $this->db->table('billing_orders')->where('id', (int)$orderId)->update(['status' => $status]);
+            $_SESSION['success_message'] = "Order #{$orderId} set to {$status}.";
+        } catch (\Exception $e) {
+            $_SESSION['error_message'] = 'Failed to update order: ' . $e->getMessage();
+        }
+        $this->response->redirect('/admin/account/show/' . (int)$id);
+        exit;
+    }
+
+    public function serviceStatus($id, $serviceId)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $status = $this->request->post('status', 'active');
+        if (!in_array($status, ['active','suspended','terminated','pending'])) $status = 'active';
+        try {
+            $this->db->table('billing_services')->where('id', (int)$serviceId)->update([
+                'status' => $status,
+                'next_due_date' => $this->request->post('next_due_date', ''),
+            ]);
+            $_SESSION['success_message'] = "Service #{$serviceId} set to {$status}.";
+        } catch (\Exception $e) {
+            $_SESSION['error_message'] = 'Failed to update service: ' . $e->getMessage();
+        }
+        $this->response->redirect('/admin/account/show/' . (int)$id);
+        exit;
+    }
+
+    public function serviceDelete($id, $serviceId)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        try {
+            $this->db->table('billing_services')->where('id', (int)$serviceId)->delete();
+            $_SESSION['success_message'] = "Service #{$serviceId} removed.";
+        } catch (\Exception $e) {
+            $_SESSION['error_message'] = 'Failed to remove service: ' . $e->getMessage();
+        }
+        $this->response->redirect('/admin/account/show/' . (int)$id);
+        exit;
     }
 
     public function suspend($id)
