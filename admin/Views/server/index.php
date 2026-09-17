@@ -1,54 +1,5606 @@
-<?php if (isset($_SESSION['success_message'])): ?>
-<div class="alert alert-success"><?php echo htmlspecialchars($_SESSION['success_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['success_message']); ?></div>
-<?php endif; ?>
-<?php if (isset($_SESSION['error_message'])): ?>
-<div class="alert alert-danger"><?php echo htmlspecialchars($_SESSION['error_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['error_message']); ?></div>
-<?php endif; ?>
-
-<div class="page-header">
-<div class="d-flex justify-content-between align-items-center">
-<h2 style="margin:0; color:var(--accent, #008cff)">🖥️ Server Overview</h2>
-<a href="/admin/dashboard" class="btn btn-secondary"><i class="bi bi-arrow-left me-2"></i> Dashboard</a>
-</div>
-</div>
-
 <div class="stats-grid">
-<div class="stat-card"><h3>Hostname</h3><div class="value" style="font-size:16px"><?php echo htmlspecialchars($serverStats['hostname'] ?? 'N/A'); ?></div></div>
-<div class="stat-card"><h3>Server IP</h3><div class="value" style="font-size:16px"><?php echo htmlspecialchars($serverStats['public_ip'] ?? 'N/A'); ?></div></div>
-<div class="stat-card"><h3>Uptime</h3><div class="value" style="font-size:14px"><?php echo htmlspecialchars(trim(shell_exec('uptime -p 2>/dev/null') ?: 'N/A')); ?></div></div>
-<div class="stat-card"><h3>Load</h3><div class="value" style="font-size:14px"><?php echo htmlspecialchars(trim(shell_exec('cat /proc/loadavg 2>/dev/null | awk "{print \$1\" / \"\$2\" / \"\$3}"') ?: 'N/A')); ?></div></div>
-<div class="stat-card"><h3>RAM</h3><div class="value" style="font-size:14px"><?php echo htmlspecialchars(trim(shell_exec('free -h 2>/dev/null | grep Mem | awk "{print \$3\" / \"\$2}"') ?: 'N/A')); ?></div></div>
-<div class="stat-card"><h3>Disk</h3><div class="value" style="font-size:14px"><?php echo htmlspecialchars(trim(shell_exec('df -h / 2>/dev/null | tail -1 | awk "{print \$3\" / \"\$2}"') ?: 'N/A')); ?></div></div>
+<div class="stat-card" style="grid-column:1/-1;text-align:left">
+<h3>System Information</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:12px">
+<div><strong style="color:var(--text-secondary);font-size:12px;text-transform:uppercase">Hostname</strong><br><?php echo htmlspecialchars($serverStats['hostname'] ?? 'N/A', ENT_QUOTES, 'UTF-8'); ?><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
 </div>
-</div>
-
-<div class="table-responsive">
-<table class="table table-bordered align-middle mb-0">
-<thead><tr><th>Service</th><th>Status</th></tr></thead>
-<tbody>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
 <?php
-$serviceNames = ['apache2' => 'Apache', 'mariadb' => 'MariaDB', 'icecast2' => 'Icecast', 'postfix' => 'Postfix', 'dovecot' => 'Dovecot', 'named' => 'DNS', 'vsftpd' => 'FTP', 'firewalld' => 'Firewall'];
-foreach ($serviceNames as $sName => $sLabel) {
-    $active = trim(shell_exec("systemctl is-active {$sName} 2>/dev/null") ?: '') === 'active';
-    echo '<tr><td>' . $sLabel . '</td><td><span class="status-badge status-' . ($active ? 'active' : 'terminated') . '">' . ($active ? 'active' : 'inactive') . '</span></td></tr>';
-}
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
 ?>
-</tbody>
-</table>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
 </div>
-
-<div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
-<div class="card">
-<h3 style="color:var(--accent, #008cff);margin-bottom:16px">System Resources</h3>
-<p>Hostname: <?php echo htmlspecialchars($serverStats['hostname'] ?? 'N/A'); ?></p>
-<p>IP: <?php echo htmlspecialchars($serverStats['public_ip'] ?? 'N/A'); ?></p>
-<p>Uptime: <?php echo htmlspecialchars(trim(shell_exec('uptime -p 2>/dev/null') ?: 'N/A')); ?></p>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div><strong style="color:var(--text-secondary);font-size:12px;text-transform:uppercase">OS</strong><br><?php echo htmlspecialchars($serverStats['os'] ?? 'N/A', ENT_QUOTES, 'UTF-8'); ?><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div><strong style="color:var(--text-secondary);font-size:12px;text-transform:uppercase">Kernel</strong><br><?php echo htmlspecialchars($serverStats['kernel'] ?? 'N/A', ENT_QUOTES, 'UTF-8'); ?><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div><strong style="color:var(--text-secondary);font-size:12px;text-transform:uppercase">CPU</strong><br><?php echo htmlspecialchars($serverStats['cpu_model'] ?? 'N/A', ENT_QUOTES, 'UTF-8'); ?><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div><strong style="color:var(--text-secondary);font-size:12px;text-transform:uppercase">Uptime</strong><br><?php echo $serverStats['uptime'] ?? 'N/A'; ?><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="stat-card"><h3>CPU Load</h3><div class="value"><?php echo $serverStats['cpu_load']; ?>%<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div><div class="label">Load: <?php echo $serverStats['load_average']['1min'] ?? '?'; ?> / <?php echo $serverStats['load_average']['5min'] ?? '?'; ?> / <?php echo $serverStats['load_average']['15min'] ?? '?'; ?><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="stat-card"><h3>RAM Usage</h3><div class="value"><?php echo $serverStats['ram_usage']; ?>%<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div><div class="label"><?php echo $serverStats['ram_total']; ?> GB total<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="stat-card"><h3>Disk Usage</h3><div class="value"><?php echo $serverStats['disk_usage']; ?>%<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div><div class="label"><?php echo $serverStats['disk_total']; ?> total<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="stat-card"><h3>Active Accounts</h3><div class="value"><?php echo $serverStats['active_accounts']; ?><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div><div class="label">Hosting accounts<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
 </div>
 <div class="card">
-<h3 style="color:var(--accent, #008cff);margin-bottom:16px">Streaming Engines</h3>
-<p>SHOUTcast v2: <?php echo file_exists('/opt/planethosts/shoutcast/sc_serv') ? 'Installed' : 'Not Installed'; ?></p>
-<p>SHOUTcast v1: <?php echo file_exists('/opt/planethosts/shoutcast1/sc_serv') ? 'Installed' : 'Not Installed'; ?></p>
-<p>Icecast: <?php echo trim(shell_exec('systemctl is-active icecast2 2>/dev/null') ?: '') === 'active' ? 'Running' : 'Not Running'; ?></p>
+<h3 style="color:var(--accent);margin-bottom:16px">Service Status</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px">
+<?php foreach ($serverStats['service_status'] as $label => $st): ?>
+<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,.02);border-radius:6px">
+<span style="font-size:14px"><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></span>
+<span style="font-size:12px;padding:2px 10px;border-radius:4px;<?php echo $st === 'active' ? 'background:#1a3a2a;color:#4ade80' : 'background:#3a1a1a;color:#f87171'; ?>"><?php echo $st; ?></span>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<?php endforeach; ?>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card">
+<h3 style="color:var(--accent);margin-bottom:16px">📹 Voice & Camera Services</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px">
+<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,.02);border-radius:6px"><span>WebRTC Voice (SignalR)</span><span style="font-size:12px;padding:2px 10px;border-radius:4px;background:#1a3a2a;color:#4ade80">active</span><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,.02);border-radius:6px"><span>WebRTC Camera</span><span style="font-size:12px;padding:2px 10px;border-radius:4px;background:#1a3a2a;color:#4ade80">available</span><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,.02);border-radius:6px"><span>STUN Server</span><span style="font-size:12px;padding:2px 10px;border-radius:4px;background:#1a3a2a;color:#4ade80">Google STUN</span><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label><input name="main_domain" value="" placeholder="example.com" style="width:100%"><div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:20px">
+<h3 style="color:var(--accent);margin-bottom:16px">🔧 Server Configuration</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<form method="POST" action="/admin/serverconfig/hostname" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>System Hostname</label><input name="hostname" value="<?php echo htmlspecialchars($serverStats['hostname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Hostname</button>
+</form>
+</div>
+<div>
+<form method="POST" action="/admin/serverconfig/main-domain" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:200px"><label>Main Domain</label>
+<?php
+$md = '';
+try {
+    $pdo = \Core\Application::getInstance()->get('db')->pdo();
+    $q = $pdo->query("SELECT setting_value FROM automation_settings WHERE setting_key='main_domain' LIMIT 1");
+    if ($q) { $v = $q->fetchColumn(); if ($v) $md = $v; }
+} catch (\Exception $e) {}
+?>
+<input name="main_domain" value="<?php echo htmlspecialchars($md, ENT_QUOTES, 'UTF-8'); ?>" placeholder="example.com" style="width:100%"></div>
+<button type="submit" class="btn btn-sm primary">Set Main Domain</button>
+</form>
 </div>
 </div>
 </div>
