@@ -302,6 +302,11 @@ $router->get('/admin/restore-center/browse/{filename}', 'Admin\Controllers\Resto
 $router->post('/admin/restore-center/restore-item', 'Admin\Controllers\RestoreCenterController@restoreItem');
 $router->get('/admin/restore-center/quick/{type}/{userId}', 'Admin\Controllers\RestoreCenterController@quick');
 $router->get('/admin/chat-dashboard', 'Admin\Controllers\ChatDashboardController@index');
+$router->get('/admin/chat-dashboard/create', 'Admin\Controllers\ChatDashboardController@createTenant');
+$router->post('/admin/chat-dashboard/delete', 'Admin\Controllers\ChatDashboardController@deleteTenant');
+$router->post('/admin/chat-dashboard/toggle', 'Admin\Controllers\ChatDashboardController@toggleTenant');
+$router->get('/admin/chat-dashboard/manage/{id}', 'Admin\Controllers\ChatDashboardController@manageTenant');
+$router->post('/admin/chat-dashboard/manage/{id}', 'Admin\Controllers\ChatDashboardController@manageTenant');
 $router->get('/admin/firewall', 'Admin\Controllers\FirewallController@index');
 $router->get('/admin/firewall/service/{action}/{svc}', 'Admin\Controllers\FirewallController@service');
 $router->get('/admin/firewall/modsec/{action}', 'Admin\Controllers\FirewallController@modsec');

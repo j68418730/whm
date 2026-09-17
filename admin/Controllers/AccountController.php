@@ -39,6 +39,15 @@ class AccountController extends Controller
         }
 
         $packages = $this->db->table('hosting_packages')->get();
+        $owners = [];
+        foreach ($this->db->table('resellers')->get() ?: [] as $r) {
+            $owners[(int)$r->id] = $r->company_name ?: $r->name ?: ('Reseller #' . $r->id);
+        }
+        $accountGroups = [];
+        foreach ($accounts as $a) {
+            $owner = $owners[(int)($a->reseller_id ?? 0)] ?? 'Root';
+            $accountGroups[$owner][] = $a;
+        }
         $accountsStats = [
             'total_accounts' => count($accounts),
             'active_accounts' => count(array_filter($accounts, function($a) { return $a->status === 'active'; })),
@@ -49,6 +58,7 @@ class AccountController extends Controller
         return $this->view('admin.account.index', [
             'user' => $user,
             'accounts' => $accounts,
+            'accountGroups' => $accountGroups,
             'packages' => $packages,
             'accountsStats' => $accountsStats,
             'reseller_id' => $resellerId,
