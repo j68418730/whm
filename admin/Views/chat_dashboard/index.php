@@ -106,13 +106,13 @@ for ($i = 0; $i < $shown; $i++): ?>
 </form>
 </td>
 <td style="white-space:nowrap">
-<a href="/chatbox/admin.php?tenant_id=<?php echo (int)$t['id']; ?>" class="btn btn-sm primary"><i class="bi bi-gear"></i> Manage</a>
+<a href="/admin/chat-dashboard/manage/<?php echo (int)$t['id']; ?>" class="btn btn-sm primary"><i class="bi bi-gear"></i> Manage</a>
 </td>
 </tr>
+<?php endforeach; ?>
 </tbody>
 </table>
 </div>
 
 <p style="margin-top:12px;color:#64748b;font-size:12px">Voice = enable/disable voice in chatbox. Cam = enable webcam streaming. Theme = prebuilt accent/color scheme. Emotes = quick-select smiley icons.</p>
-<?php endforeach; ?>
 <?php endif; ?>

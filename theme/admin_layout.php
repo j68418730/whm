@@ -135,7 +135,7 @@ function filterSidebar(val) {
 <a href="/admin/dns" class="<?php echo str_contains($currentUrl,'/admin/dns')?'active':''; ?>"><i class="bi bi-globe2"></i> DNS Zones</a>
 <a href="/admin/email" class="<?php echo str_contains($currentUrl,'/admin/email')?'active':''; ?>"><i class="bi bi-envelope"></i> Email</a>
 <a href="https://planet-hosts.com:2096/" target="_blank"><i class="bi bi-envelope-open"></i> Webmail <span class="nav-ext">↗</span></a>
-<a href="/admin/mysql" class="<?php echo str_contains($currentUrl,'/admin/mysql')?'active':''; ?>"><i class="bi bi-database"></i> Databases</a>
+<a href="/admin/mysql" class="<?php echo str_contains($currentUrl,'/admin/mysql')?'active':''; ?>"><i class="bi bi-database"></i> phpMyAdmin</a>
 <a href="/admin/ftp" class="<?php echo str_contains($currentUrl,'/admin/ftp')?'active':''; ?>"><i class="bi bi-folder2"></i> FTP</a>
 <a href="/admin/ip" class="<?php echo str_contains($currentUrl,'/admin/ip')?'active':''; ?>"><i class="bi bi-ethernet"></i> IP Management</a>
 <a href="/admin/backup" class="<?php echo str_contains($currentUrl,'/admin/backup')?'active':''; ?>"><i class="bi bi-cloud-arrow-down"></i> Backups</a>

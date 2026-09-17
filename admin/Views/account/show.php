@@ -16,6 +16,15 @@
 <div class="stat-card"><h3>Domain</h3><div class="value" style="font-size:20px"><?php echo htmlspecialchars($account->domain ?? '-'); ?></div></div>
 </div>
 
+<div class="card" style="margin-top:14px;border-color:rgba(250,204,21,.25);background:linear-gradient(135deg,rgba(250,204,21,.05),rgba(8,16,28,.6))">
+<h3 style="margin-bottom:12px;display:flex;align-items:center;gap:8px"><i class="bi bi-crown" style="color:#facc15"></i> Master Owner</h3>
+<div style="display:grid;grid-template-columns:160px 1fr;gap:6px;font-size:13px">
+<span style="color:var(--text_muted)">Owner</span><span><strong>Root</strong> <span style="color:#64748b">(Master Owner)</span></span>
+<span style="color:var(--text_muted)">Reseller</span><span><?php if ($account->reseller_id): $resellerName = ''; foreach (($resellers ?? []) as $rr) { if ((int)$rr->id === (int)$account->reseller_id) { $resellerName = ($rr->company_name ?? $rr->contact_name ?? 'Reseller #' . $rr->id); break; } } echo htmlspecialchars($resellerName) . ' <a href="/admin/reseller/show/' . (int)$account->reseller_id . '" style="color:#38bdf8;font-size:12px">View →</a>'; else: ?><strong>Root</strong> <span style="color:#4ade80">(direct, no reseller)</span><?php endif; ?></span>
+<span style="color:var(--text_muted)">Owner Email</span><span>admin@planet-hosts.com</span>
+</div>
+</div>
+
 <div class="card">
 <h3 style="margin-bottom:12px">Account Details</h3>
 <div style="display:grid;grid-template-columns:160px 1fr;gap:6px;font-size:13px">

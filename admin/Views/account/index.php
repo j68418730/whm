@@ -10,19 +10,20 @@
 <h2 style="margin:0; color:var(--accent, #008cff)">👥 Account Management</h2>
 <a href="/admin/account/create" class="btn btn-primary"><i class="bi bi-plus me-2"></i> Create Account</a>
 </div>
+<div style="margin-top:8px;font-size:13px;color:var(--text_muted)">Group by <strong style="color:var(--accent)">Ownership</strong> — accounts are listed under their <strong>Owner</strong> (Root, or the reseller that manages them).</div>
 </div>
 
 <?php
 $totalAccounts = count($accountGroups ?? []);
-$activeCount = count(array_filter(array_values(array_reduce($accountGroups ?? [], function($carry, $group) {
-    return $carry + count(array_filter($group, function($a) { return ($a->status ?? 'active') === 'active'; });
-}), []);
-$suspendedCount = count(array_filter(array_values(array_reduce($accountGroups ?? [], function($carry, $group) {
-    return $carry + count(array_filter($group, function($a) { return ($a->status ?? 'active') === 'suspended'; });
-}), []));
-$terminatedCount = count(array_filter(array_values(array_reduce($accountGroups ?? [], function($carry, $group) {
-    return $carry + count(array_filter($group, function($a) { return ($a->status ?? 'active') === 'terminated'; });
-}), []));
+$activeCount = 0; $suspendedCount = 0; $terminatedCount = 0;
+foreach (($accountGroups ?? []) as $group) {
+    foreach ($group as $a) {
+        $st = $a->status ?? 'active';
+        if ($st === 'active') $activeCount++;
+        elseif ($st === 'suspended') $suspendedCount++;
+        elseif ($st === 'terminated') $terminatedCount++;
+    }
+}
 ?>
 <div class="stats-grid">
 <div class="stat-card"><h3>Total Accounts</h3><div class="value"><?php echo $totalAccounts; ?></div></div>
@@ -40,7 +41,7 @@ $terminatedCount = count(array_filter(array_values(array_reduce($accountGroups ?
 <tr><td colspan="6" style="background:rgba(0,191,255,.1);border-top:1px solid rgba(0,191,255,.2);padding:12px;font-weight:600;color:var(--primary, #008cff);font-size:13px;"><?php echo htmlspecialchars($ownerName); ?> <span class="badge bg-primary"><?php echo count($group); ?> accounts</span></td></tr>
 <?php foreach ($group as $a): ?>
 <tr>
-<td style="width:120px"><?php echo htmlspecialchars($a->reseller_id ? 'Reseller ' . $a->reseller_id : 'Unassigned'); ?></td>
+<td style="width:120px"><?php echo htmlspecialchars($a->reseller_id ? 'Reseller ' . $a->reseller_id : 'Root'); ?></td>
 <td><strong><?php echo htmlspecialchars($a->username); ?></strong></td>
 <td><?php echo htmlspecialchars($a->domain ?: '—'); ?></td>
 <td><?php echo $a->package_id ? 'Package ' . $a->package_id : 'Free'; ?></td>
