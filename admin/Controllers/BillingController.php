@@ -406,19 +406,40 @@ JS;
         $user = $this->auth->user();
         $products = $this->db->table('billing_products')->orderBy('sort_order', 'ASC')->get() ?: [];
 
-        // Order/service counts per product
+        // Order/people/service counts per product.
+        // Note: billing_orders.product_id is usually NULL; the product ref lives in the items JSON column.
         $orderCounts = [];
+        $peopleCounts = [];
         try {
-            foreach ($this->db->pdo()->query("SELECT product_id, COUNT(*) c FROM billing_orders GROUP BY product_id")->fetchAll(\PDO::FETCH_OBJ) as $r) {
-                $orderCounts[(int)$r->product_id] = (int)$r->c;
+            $rows = $this->db->pdo()->query("SELECT id, user_id, items FROM billing_orders")->fetchAll(\PDO::FETCH_OBJ);
+            foreach ($rows as $r) {
+                $items = json_decode((string)($r->items ?? ''), true);
+                if (!is_array($items)) continue;
+                $orderSeen = [];
+                foreach ($items as $it) {
+                    $pid = (int)($it['product_id'] ?? 0);
+                    if ($pid <= 0) continue;
+                    if (!isset($orderSeen[$pid])) {
+                        $orderSeen[$pid] = true;
+                        $orderCounts[$pid] = ($orderCounts[$pid] ?? 0) + 1;
+                    }
+                    if (!isset($peopleCounts[$pid])) $peopleCounts[$pid] = [];
+                    $peopleCounts[$pid][(int)$r->user_id] = true;
+                }
             }
         } catch (\Exception $e) {}
         $serviceCounts = [];
         try {
-            foreach ($this->db->pdo()->query("SELECT product_id, COUNT(*) c FROM billing_services GROUP BY product_id")->fetchAll(\PDO::FETCH_OBJ) as $r) {
-                $serviceCounts[(int)$r->product_id] = (int)$r->c;
+            $rows = $this->db->pdo()->query("SELECT product_id, user_id FROM billing_services WHERE product_id IS NOT NULL")->fetchAll(\PDO::FETCH_OBJ);
+            foreach ($rows as $r) {
+                $pid = (int)$r->product_id;
+                if ($pid <= 0) continue;
+                $serviceCounts[$pid] = ($serviceCounts[$pid] ?? 0) + 1;
+                if (!isset($peopleCounts[$pid])) $peopleCounts[$pid] = [];
+                $peopleCounts[$pid][(int)$r->user_id] = true;
             }
         } catch (\Exception $e) {}
+        foreach ($peopleCounts as $pid => $users) $peopleCounts[$pid] = count($users);
 
         // Available hosting packages for linking (package_id)
         $packages = [];
@@ -430,7 +451,7 @@ JS;
 
         return $this->view('admin.billing.products', [
             'user' => $user, 'title' => 'Billing Products', 'theme_settings' => $this->theme(),
-            'products' => $products, 'orderCounts' => $orderCounts, 'serviceCounts' => $serviceCounts,
+            'products' => $products, 'orderCounts' => $orderCounts, 'serviceCounts' => $serviceCounts, 'peopleCounts' => $peopleCounts,
             'packages' => $packages, 'billingCats' => $billingCats,
         ]);
     }
