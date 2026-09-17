@@ -1,34 +1,36 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Edit Package - Planet Hosts</title>
-<link rel="stylesheet" href="/theme/assets/css/style.css">
+<?php if (isset($_SESSION['error_message'])): ?>
+<div class="alert alert-danger"><?php echo htmlspecialchars($_SESSION['error_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['error_message']); ?></div>
+<?php endif; ?>
 <style>
-body{font-family:Inter,sans-serif;background:#000;color:#fff;margin:0;padding:40px}
-.bg-overlay{position:fixed;inset:0;background:linear-gradient(rgba(2,8,23,.88),rgba(2,8,23,.96)),url(/theme/assets/img/background.png);background-size:cover;z-index:-2}
-.card{background:rgba(8,16,28,.9);border:1px solid rgba(0,191,255,.12);border-radius:16px;padding:40px;max-width:900px;margin:auto;position:relative;z-index:1}
-h1{color:#0A84FF;margin-bottom:24px}
-.form-group{margin-bottom:14px}
-label{display:block;margin-bottom:4px;color:#94a3b8;font-weight:600;font-size:13px}
-input,select,textarea{width:100%;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.4);color:#e0e0e0;font-size:13px;outline:none;box-sizing:border-box}
-input:focus,select:focus{border-color:#0A84FF}
-.row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.btn{padding:10px 20px;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;transition:.3s;text-decoration:none;display:inline-block}
-.btn.primary{background:linear-gradient(135deg,#008cff,#3bb8ff);color:#fff}
-.btn.primary:hover{transform:translateY(-2px)}
-.btn.secondary{background:rgba(255,255,255,.06);color:#ccc;border:1px solid rgba(255,255,255,.1);text-decoration:none}
-.feature-check {display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:2px 4px;border-radius:4px}
-.feature-check:hover {background:rgba(0,140,255,.06)}
+.pkg-wrap{max-width:1100px}
+.pkg-card{background:var(--card_bg,rgba(8,16,28,.6));border:1px solid var(--border,rgba(0,191,255,.08));border-radius:12px;padding:18px;margin-bottom:16px}
+.pkg-card h4{font-size:13px;font-weight:700;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.pkg-card h4 small{font-size:11px;color:var(--text_muted,#64748b);font-weight:400}
+.pkg-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.pkg-grid .full{grid-column:1/-1}
+.pkg-feat{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:4px;font-size:12px}
+.pkg-feat label.feature-check{display:flex;align-items:center;gap:6px;cursor:pointer;padding:3px 6px;border-radius:6px;font-size:12px}
+.pkg-feat label.feature-check:hover{background:rgba(0,140,255,.06)}
+.pkg-feat label.feature-check input{width:auto;accent-color:var(--primary,#008cff)}
+.pkg-sub{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:10px 12px;margin:8px 0}
+.pkg-sub h6{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text_muted,#64748b);margin:0 0 6px;font-weight:700}
+.pkg-sub .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 12px;font-size:12px}
+.pkg-tog{width:100%;text-align:left;background:transparent;border:none;cursor:pointer;padding:0;font:inherit;color:inherit;display:flex;align-items:center;gap:8px}
+.pkg-note{grid-column:1/-1;font-size:11px;color:var(--text_muted,#64748b);padding:2px 0}
 </style>
-</head>
-<body>
-<div class="bg-overlay"></div>
-<div class="card">
-<h1>Edit Package</h1>
-<form method="POST" action="/admin/package/edit/<?php echo $package->id; ?>">
+
+<div class="pkg-wrap">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+<div>
+<h3 style="margin:0;color:var(--accent,#008cff)">✏️ Edit Package</h3>
+<div style="font-size:12px;color:var(--text_muted,#64748b);margin-top:4px">#<?php echo (int)$package->id; ?> · <?php echo htmlspecialchars($package->type ?? 'web_hosting'); ?> · <?php echo $package->is_active ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-secondary">Inactive</span>'; ?></div>
+</div>
+<a href="/admin/packages" class="btn btn-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back to Packages</a>
+</div>
+
+<form method="POST" action="/admin/package/edit/<?php echo (int)$package->id; ?>">
 <?php
-$featuresRaw = isset($package->features) ? $package->features : null;
+$featuresRaw = $package->features ?? null;
 $feats = is_string($featuresRaw) ? json_decode($featuresRaw, true) ?? [] : (is_array($featuresRaw) ? $featuresRaw : []);
 $strPkg = $feats['streaming_package'] ?? [];
 $gamePkg = $feats['game_package'] ?? [];
@@ -271,9 +273,11 @@ $gameGroups = [
     ],
 ];
 ?>
-<div class="row">
-<div class="form-group"><label>Name</label><input name="name" value="<?php echo htmlspecialchars($package->name ?? '', ENT_QUOTES, 'UTF-8'); ?>" required></div>
-<div class="form-group"><label>Server Type</label><select name="type" id="pkgType" onchange="toggleStreaming()">
+<div class="pkg-card">
+<h4><i class="bi bi-info-circle" style="color:var(--primary,#008cff)"></i> Basic Info</h4>
+<div class="pkg-grid">
+<div class="form-group"><label class="form-label">Name *</label><input name="name" class="form-control" value="<?php echo htmlspecialchars($package->name ?? '', ENT_QUOTES, 'UTF-8'); ?>" required></div>
+<div class="form-group"><label class="form-label">Server Type</label><select name="type" class="form-select" id="pkgType" onchange="toggleStreaming()">
 <option value="web_hosting" <?php echo ($package->type ?? '') === 'web_hosting' ? 'selected' : ''; ?>>Web Hosting</option>
 <option value="web_reseller" <?php echo ($package->type ?? '') === 'web_reseller' ? 'selected' : ''; ?>>Web Reseller</option>
 <option value="icecast" <?php echo ($package->type ?? '') === 'icecast' ? 'selected' : ''; ?>>Icecast Streaming</option>
@@ -285,55 +289,49 @@ $gameGroups = [
 <option value="dedicated" <?php echo ($package->type ?? '') === 'dedicated' ? 'selected' : ''; ?>>Dedicated</option>
 <option value="dev" <?php echo ($package->type ?? '') === 'dev' ? 'selected' : ''; ?>>Dev</option>
 </select></div>
-</div>
-<div class="row">
-<div class="form-group"><label>Disk Space (GB)</label><input name="disk_space" type="number" value="<?php echo $package->disk_space ?? 0; ?>"><small style="color:#64748b">Shared by all services</small></div>
-<div class="form-group"><label>Bandwidth (GB)</label><input name="bandwidth" type="number" value="<?php echo $package->bandwidth ?? 0; ?>"></div>
-<div class="form-group"><label>Max Domains</label><input name="max_domains" type="number" value="<?php echo $package->max_domains ?? 1; ?>"></div>
-<div class="form-group"><label>Max Subdomains</label><input name="max_subdomains" type="number" value="<?php echo $package->max_subdomains ?? 0; ?>"></div>
-<div class="form-group"><label>Email Accounts</label><input name="email_accounts" type="number" value="<?php echo $package->email_accounts ?? 0; ?>"></div>
-<div class="form-group"><label>FTP Accounts</label><input name="ftp_accounts" type="number" value="<?php echo $package->ftp_accounts ?? 0; ?>"></div>
-<div class="form-group"><label>MySQL Databases</label><input name="databases" type="number" value="<?php echo $package->databases ?? 0; ?>"></div>
-<div class="form-group"><label>Parked Domains</label><input name="parked_domains" type="number" value="<?php echo $package->parked_domains ?? 0; ?>"></div>
-<div class="form-group"><label>Addon Domains</label><input name="addon_domains" type="number" value="<?php echo $package->addon_domains ?? 0; ?>"></div>
-</div>
-
-<div class="form-group"><label>Feature List <a href="/admin/feature-lists" style="color:#0A84FF;font-size:12px">(Manage)</a></label>
-<select name="feature_list_id">
+<div class="form-group"><label class="form-label">Feature List <a href="/admin/feature-lists" style="color:var(--primary,#008cff);font-size:11px">(Manage)</a></label>
+<select name="feature_list_id" class="form-select">
 <option value="">— None —</option>
 <?php foreach ($featureLists as $fl): ?>
 <option value="<?php echo $fl->id; ?>" <?php echo ($package->feature_list_id ?? '') == $fl->id ? 'selected' : ''; ?>><?php echo htmlspecialchars($fl->name); ?></option>
 <?php endforeach; ?>
-</select>
-</div>
-
-<div style="margin:12px 0;border:1px solid rgba(0,191,255,.15);border-radius:8px;padding:12px" id="streamingSection">
-<h4 style="color:var(--accent);font-size:14px;margin-bottom:8px">Streaming Limits</h4>
-<div class="row">
-<div class="form-group"><label>Listener Limit</label><input name="listener_limit" type="number" value="<?php echo $package->listener_limit ?? 0; ?>"></div>
-<div class="form-group"><label>Bitrate (kbps)</label><input name="bitrate" type="number" value="<?php echo $package->bitrate ?? 0; ?>"></div>
-<div class="form-group"><label>DJ Accounts</label><input name="dj_accounts" type="number" value="<?php echo $package->dj_accounts ?? 0; ?>"></div>
-</div>
-</div>
-
-<div style="margin:12px 0;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:12px">
-<h4 style="color:#94a3b8;font-size:14px;margin-bottom:8px">PHP Version</h4>
-<div class="form-group"><select name="php_version">
+</select></div>
+<div class="form-group"><label class="form-label">PHP Version</label><select name="php_version" class="form-select">
 <option value="8.2" <?php echo ($package->php_version ?? '') === '8.2' ? 'selected' : ''; ?>>PHP 8.2</option>
 <option value="8.1" <?php echo ($package->php_version ?? '') === '8.1' ? 'selected' : ''; ?>>PHP 8.1</option>
 <option value="8.0" <?php echo ($package->php_version ?? '') === '8.0' ? 'selected' : ''; ?>>PHP 8.0</option>
 <option value="7.4" <?php echo ($package->php_version ?? '') === '7.4' ? 'selected' : ''; ?>>PHP 7.4</option>
 </select></div>
 </div>
-
-<div style="margin:12px 0;padding:12px;background:rgba(10,132,255,.06);border:1px solid rgba(10,132,255,.12);border-radius:8px">
-<label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="has_software" value="1" <?php echo !empty($package->has_software) ? 'checked' : ''; ?> style="accent-color:#0A84FF"> <span style="font-size:13px;font-weight:600;color:#e0e0e0">Includes PlanetHost Software License</span></label>
-<div style="font-size:11px;color:#64748b;margin-top:4px">If checked, clients with this package can download their encrypted license file (license.key) in their portal at <code>/user/license/download</code>. The license is generated via <code>/admin/licensing/generate</code> when you select their username.</div>
 </div>
 
-<div style="margin:12px 0">
-<h4 style="color:var(--accent);font-size:14px;margin-bottom:8px">General Features</h4>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:12px">
+<div class="pkg-card">
+<h4><i class="bi bi-hdd-stack" style="color:#facc15"></i> Resources <small>disk is shared by all services</small></h4>
+<div class="pkg-grid">
+<div class="form-group"><label class="form-label">Disk Space (GB)</label><input name="disk_space" type="number" class="form-control" value="<?php echo $package->disk_space ?? 0; ?>"></div>
+<div class="form-group"><label class="form-label">Bandwidth (GB)</label><input name="bandwidth" type="number" class="form-control" value="<?php echo $package->bandwidth ?? 0; ?>"></div>
+<div class="form-group"><label class="form-label">Max Domains</label><input name="max_domains" type="number" class="form-control" value="<?php echo $package->max_domains ?? 1; ?>"></div>
+<div class="form-group"><label class="form-label">Max Subdomains</label><input name="max_subdomains" type="number" class="form-control" value="<?php echo $package->max_subdomains ?? 0; ?>"></div>
+<div class="form-group"><label class="form-label">Email Accounts</label><input name="email_accounts" type="number" class="form-control" value="<?php echo $package->email_accounts ?? 0; ?>"></div>
+<div class="form-group"><label class="form-label">FTP Accounts</label><input name="ftp_accounts" type="number" class="form-control" value="<?php echo $package->ftp_accounts ?? 0; ?>"></div>
+<div class="form-group"><label class="form-label">MySQL Databases</label><input name="databases" type="number" class="form-control" value="<?php echo $package->databases ?? 0; ?>"></div>
+<div class="form-group"><label class="form-label">Parked Domains</label><input name="parked_domains" type="number" class="form-control" value="<?php echo $package->parked_domains ?? 0; ?>"></div>
+<div class="form-group"><label class="form-label">Addon Domains</label><input name="addon_domains" type="number" class="form-control" value="<?php echo $package->addon_domains ?? 0; ?>"></div>
+</div>
+</div>
+
+<div class="pkg-card" id="streamingSection">
+<h4><i class="bi bi-broadcast" style="color:#a78bfa"></i> Streaming Limits <small>listener/bitrate/dj quotas</small></h4>
+<div class="pkg-grid">
+<div class="form-group"><label class="form-label">Listener Limit</label><input name="listener_limit" type="number" class="form-control" value="<?php echo $package->listener_limit ?? 0; ?>"></div>
+<div class="form-group"><label class="form-label">Bitrate (kbps)</label><input name="bitrate" type="number" class="form-control" value="<?php echo $package->bitrate ?? 0; ?>"></div>
+<div class="form-group"><label class="form-label">DJ Accounts</label><input name="dj_accounts" type="number" class="form-control" value="<?php echo $package->dj_accounts ?? 0; ?>"></div>
+</div>
+</div>
+
+<div class="pkg-card">
+<h4><i class="bi bi-toggles" style="color:var(--primary,#008cff)"></i> General Features</h4>
+<div class="pkg-feat">
 <?php
 $genFeatures = ['cron'=>'Cron','ssh'=>'SSH','ssl'=>'SSL','git'=>'Git','nodejs'=>'Node.js','python'=>'Python','ruby'=>'Ruby','terminal'=>'Terminal','backups'=>'Backups','installer'=>'Installer','builder'=>'Website Builder','ai_builder'=>'AI Builder','ai_assistant'=>'AI Assistant','marketplace'=>'Marketplace','api'=>'API','webhooks'=>'Webhooks','chat'=>'Chatbox','chat_voice'=>'+ Voice','chat_video'=>'+ Video','dj_panel'=>'DJ Panel'];
 foreach ($genFeatures as $k=>$l):
@@ -344,97 +342,93 @@ foreach ($genFeatures as $k=>$l):
 </label>
 <?php endforeach; ?>
 </div>
+<div style="margin-top:12px;padding:10px 12px;background:rgba(10,132,255,.06);border:1px solid rgba(10,132,255,.12);border-radius:8px">
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:#e0e0e0"><input type="checkbox" name="has_software" value="1" <?php echo !empty($package->has_software) ? 'checked' : ''; ?> style="accent-color:var(--primary,#008cff)"> Includes PlanetHost Software License</label>
+<div style="font-size:11px;color:var(--text_muted,#64748b);margin-top:4px">Clients get their encrypted license file (license.key) in the portal at <code>/user/license/download</code>. Generated via <code>/admin/licensing/generate</code>.</div>
+</div>
 </div>
 
 <!-- Streaming Package -->
-<div style="margin:12px 0;border:1px solid rgba(10,132,255,.2);border-radius:8px;overflow:hidden">
-<div style="background:rgba(10,132,255,.06);padding:8px 12px;font-size:13px;font-weight:600;color:var(--accent)">
-<label style="cursor:pointer"><input type="checkbox" name="custom_streaming_enabled" value="1" onchange="toggleSection(this,'str-pkg')" <?php echo !empty($strPkg) ? 'checked' : ''; ?>> Streaming Package</label>
-</div>
-<div id="str-pkg" style="display:<?php echo !empty($strPkg) ? 'block' : 'none'; ?>;padding:10px 12px">
-<?php foreach ($streamingGroups ?? [] as $gName=>$gFields): ?>
-<h6 style="margin:10px 0 4px;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase"><?php echo $gName; ?></h6>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 12px;font-size:12px;padding:4px 8px;background:rgba(255,255,255,.02);border-radius:4px">
+<div class="pkg-card" style="border-color:rgba(167,139,250,.2)">
+<h4><i class="bi bi-broadcast-pin" style="color:#a78bfa"></i> Streaming Package</h4>
+<label class="pkg-tog"><input type="checkbox" name="custom_streaming_enabled" value="1" onchange="toggleSection(this,'str-pkg')" <?php echo !empty($strPkg) ? 'checked' : ''; ?> style="accent-color:#a78bfa;width:auto"> Enable streaming feature set</label>
+<div id="str-pkg" style="display:<?php echo !empty($strPkg) ? 'block' : 'none'; ?>;margin-top:10px">
+<?php foreach ($streamingGroups as $gName=>$gFields): ?>
+<div class="pkg-sub"><h6><?php echo $gName; ?></h6><div class="row3">
 <?php foreach ($gFields as $f):
     if ($f['type']==='note'): ?>
-<div style="grid-column:1/-1;font-size:11px;color:#64748b;padding:2px 0"><em><?php echo $f['label']; ?>: <?php echo $f['note']; ?></em></div>
+<div class="pkg-note"><em><?php echo $f['label']; ?>: <?php echo $f['note']; ?></em></div>
 <?php else:
-    $fn = substr($f['name'] ?? '', 4); // remove "str_" prefix
+    $fn = substr($f['name'] ?? '', 4);
     if ($f['type']==='checkbox'): ?>
 <label class="feature-check"><input type="checkbox" name="custom_pkg[<?php echo $f['name']; ?>]" value="1" <?php echo ck($strPkg, $fn); ?>> <?php echo $f['label']; ?></label>
 <?php elseif ($f['type']==='number'): ?>
-<div class="form-group" style="margin:2px 0"><label style="font-size:11px"><?php echo $f['label']; ?></label>
-<input type="number" name="custom_pkg[<?php echo $f['name']; ?>]" value="<?php echo val($strPkg, $fn, $f['val']); ?>" style="width:100%;padding:3px 6px;font-size:11px"></div>
+<div class="form-group" style="margin:2px 0"><label class="form-label" style="font-size:11px"><?php echo $f['label']; ?></label>
+<input type="number" name="custom_pkg[<?php echo $f['name']; ?>]" value="<?php echo val($strPkg, $fn, $f['val']); ?>" class="form-control" style="padding:5px 8px;font-size:11px"></div>
 <?php elseif ($f['type']==='select'): ?>
-<div class="form-group" style="margin:2px 0"><label style="font-size:11px"><?php echo $f['label']; ?></label>
-<select name="custom_pkg[<?php echo $f['name']; ?>]" style="width:100%;padding:3px 6px;font-size:11px">
+<div class="form-group" style="margin:2px 0"><label class="form-label" style="font-size:11px"><?php echo $f['label']; ?></label>
+<select name="custom_pkg[<?php echo $f['name']; ?>]" class="form-select" style="padding:5px 8px;font-size:11px">
 <?php foreach ($f['options'] as $fv=>$fl): ?>
 <option value="<?php echo $fv; ?>" <?php echo sl($strPkg, $fn, $fv); ?>><?php echo $fl; ?></option>
 <?php endforeach; ?>
 </select></div>
 <?php endif; endif; endforeach; ?>
-</div>
+</div></div>
 <?php endforeach; ?>
-<div style="margin-top:6px;padding:4px 8px;background:rgba(255,255,255,.03);border-radius:4px;font-size:11px;color:#64748b"><strong>Note:</strong> Storage uses disk allocation above.</div>
 </div>
 </div>
 
 <!-- Game Server Package -->
-<div style="margin:10px 0;border:1px solid rgba(255,149,0,.2);border-radius:8px;overflow:hidden">
-<div style="background:rgba(255,149,0,.06);padding:8px 12px;font-size:13px;font-weight:600;color:#FF9500">
-<label style="cursor:pointer"><input type="checkbox" name="custom_game_enabled" value="1" onchange="toggleSection(this,'game-pkg')" <?php echo !empty($gamePkg) ? 'checked' : ''; ?>> Game Server Package</label>
-</div>
-<div id="game-pkg" style="display:<?php echo !empty($gamePkg) ? 'block' : 'none'; ?>;padding:10px 12px">
-<?php foreach ($gameGroups ?? [] as $gName=>$gFields): ?>
-<h6 style="margin:10px 0 4px;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase"><?php echo $gName; ?></h6>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 12px;font-size:12px;padding:4px 8px;background:rgba(255,255,255,.02);border-radius:4px">
+<div class="pkg-card" style="border-color:rgba(251,146,60,.2)">
+<h4><i class="bi bi-controller" style="color:#fb923c"></i> Game Server Package</h4>
+<label class="pkg-tog"><input type="checkbox" name="custom_game_enabled" value="1" onchange="toggleSection(this,'game-pkg')" <?php echo !empty($gamePkg) ? 'checked' : ''; ?> style="accent-color:#fb923c;width:auto"> Enable game server feature set</label>
+<div id="game-pkg" style="display:<?php echo !empty($gamePkg) ? 'block' : 'none'; ?>;margin-top:10px">
+<?php foreach ($gameGroups as $gName=>$gFields): ?>
+<div class="pkg-sub"><h6><?php echo $gName; ?></h6><div class="row3">
 <?php foreach ($gFields as $f):
     if ($f['type']==='note'): ?>
-<div style="grid-column:1/-1;font-size:11px;color:#64748b;padding:2px 0"><em><?php echo $f['label']; ?>: <?php echo $f['note']; ?></em></div>
+<div class="pkg-note"><em><?php echo $f['label']; ?>: <?php echo $f['note']; ?></em></div>
 <?php else:
-    $fn = substr($f['name'] ?? '', 5); // remove "game_" prefix
+    $fn = substr($f['name'] ?? '', 5);
     if ($f['type']==='checkbox'): ?>
 <label class="feature-check"><input type="checkbox" name="custom_pkg[<?php echo $f['name']; ?>]" value="1" <?php echo ck($gamePkg, $fn); ?>> <?php echo $f['label']; ?></label>
 <?php elseif ($f['type']==='number'): ?>
-<div class="form-group" style="margin:2px 0"><label style="font-size:11px"><?php echo $f['label']; ?></label>
-<input type="number" name="custom_pkg[<?php echo $f['name']; ?>]" value="<?php echo val($gamePkg, $fn, $f['val']); ?>" style="width:100%;padding:3px 6px;font-size:11px"></div>
+<div class="form-group" style="margin:2px 0"><label class="form-label" style="font-size:11px"><?php echo $f['label']; ?></label>
+<input type="number" name="custom_pkg[<?php echo $f['name']; ?>]" value="<?php echo val($gamePkg, $fn, $f['val']); ?>" class="form-control" style="padding:5px 8px;font-size:11px"></div>
 <?php endif; endif; endforeach; ?>
-</div>
+</div></div>
 <?php endforeach; ?>
-<div style="margin-top:6px;padding:4px 8px;background:rgba(255,255,255,.03);border-radius:4px;font-size:11px;color:#64748b"><strong>Note:</strong> Storage uses disk allocation above.</div>
 </div>
 </div>
 
-<div style="margin-top:16px;border:1px solid rgba(74,222,128,.15);border-radius:8px;padding:12px">
-<h4 style="color:#4ade80;font-size:14px;margin-bottom:8px">Products Using This Package</h4>
+<div class="pkg-card" style="border-color:rgba(74,222,128,.15)">
+<h4><i class="bi bi-box-seam" style="color:#4ade80"></i> Products Using This Package</h4>
 <?php if (!empty($billingProducts)): ?>
 <div style="display:grid;gap:8px">
 <?php foreach ($billingProducts as $bp): ?>
 <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,.03);border-radius:6px">
-<div>
-<span style="font-weight:600;font-size:13px"><?php echo htmlspecialchars($bp->name); ?></span>
-<span style="color:#64748b;font-size:11px;margin-left:8px"><?php echo htmlspecialchars($bp->billing_cycle); ?></span>
-</div>
+<div><span style="font-weight:600;font-size:13px"><?php echo htmlspecialchars($bp->name); ?></span><span style="color:var(--text_muted,#64748b);font-size:11px;margin-left:8px"><?php echo htmlspecialchars($bp->billing_cycle); ?></span></div>
 <div style="color:#4ade80;font-weight:700;font-size:14px">$<?php echo number_format($bp->price, 2); ?></div>
 </div>
 <?php endforeach; ?>
 </div>
 <?php else: ?>
-<p style="color:#64748b;font-size:12px">No billing products linked to this package.</p>
+<p style="color:var(--text_muted,#64748b);font-size:12px;margin:0">No billing products linked to this package.</p>
 <?php endif; ?>
 </div>
 
-<div style="margin-top:20px;border-top:1px solid rgba(255,255,255,.06);padding-top:16px">
-<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:16px">
-<input type="checkbox" name="is_active" value="1" <?php echo ($package->is_active ?? 1) ? 'checked' : ''; ?>> Package is Active (visible in store)
+<div class="pkg-card" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:0">
+<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+<input type="checkbox" name="is_active" value="1" <?php echo ($package->is_active ?? 1) ? 'checked' : ''; ?> style="accent-color:var(--primary,#008cff);width:auto"> Package is Active (visible in store)
 </label>
-<div style="display:flex;gap:12px">
-<button type="submit" class="btn primary">Update Package</button>
-<a href="/admin/packages" class="btn secondary">Cancel</a>
+<div style="flex:1;display:flex;gap:12px;justify-content:flex-end">
+<button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Update Package</button>
+<a href="/admin/packages" class="btn btn-secondary">Cancel</a>
 </div>
 </div>
 </form>
 </div>
+
 <script>
 function toggleSection(cb, id) {
     document.getElementById(id).style.display = cb.checked ? 'block' : 'none';
@@ -442,9 +436,7 @@ function toggleSection(cb, id) {
 function toggleStreaming() {
     var t = document.getElementById('pkgType').value;
     var s = document.getElementById('streamingSection');
-    s.style.display = (t === 'icecast' || t === 'icecast_reseller') ? '' : 'none';
+    if (s) s.style.display = (t === 'icecast' || t === 'icecast_reseller') ? '' : 'none';
 }
 toggleStreaming();
 </script>
-</body>
-</html>

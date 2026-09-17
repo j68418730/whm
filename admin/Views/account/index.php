@@ -91,6 +91,7 @@ $disk = $diskUsageByUser[$a->username] ?? '-';
 <form method="POST" style="display:inline" action="/admin/account/suspend/<?php echo (int)$a->id; ?>" onsubmit="return confirm('Suspend this account?')">
 <button class="btn btn-sm btn-danger">Suspend</button>
 </form>
+<a href="/admin/account/delete/<?php echo (int)$a->id; ?>" class="btn btn-sm" style="background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.3)" onclick="return confirm('DELETE account <?php echo htmlspecialchars($a->username); ?> permanently? This cannot be undone.')"><i class="bi bi-trash"></i> Delete</a>
 </td>
 </tr>
 <?php endforeach; ?>

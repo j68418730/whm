@@ -440,6 +440,82 @@ class AccountController extends Controller
                 ORDER BY s.id DESC
             ")->fetchAll(\PDO::FETCH_OBJ) ?: [];
         } catch (\Exception $e) {}
+        // Aggregate real services from every subsystem for this account
+        $ownedServices = [];
+        // 1. Hosting package itself
+        if ($package) {
+            $ownedServices[] = (object)[
+                'kind' => 'hosting', 'id' => 'pkg' . $package->id, 'ref_id' => $package->id,
+                'name' => $package->name, 'product_name' => $package->name,
+                'status' => $account->status, 'billing_cycle' => 'monthly',
+                'price' => $accountProduct->price ?? 0, 'next_due_date' => null,
+                'manage_url' => '/admin/package/edit/' . (int)$package->id,
+                'product_id' => $accountProduct->id ?? null,
+                'detail' => 'Web Hosting Package',
+            ];
+        }
+        // 2. Streaming stations (radio)
+        try {
+            $stations = $this->db->table('streaming_stations')->where('user_id', $id)->get() ?: [];
+            foreach ($stations as $st) {
+                $ownedServices[] = (object)[
+                    'kind' => 'radio', 'id' => 'st' . $st->id, 'ref_id' => $st->id,
+                    'name' => ($st->name ?: 'Station') . ' (' . strtoupper((string)$st->engine) . ')',
+                    'product_name' => ($st->name ?: 'Radio Station') . ' — ' . strtoupper((string)$st->engine),
+                    'status' => $st->status, 'billing_cycle' => 'monthly',
+                    'price' => 0, 'next_due_date' => null,
+                    'manage_url' => '/admin/streams/edit/' . (int)$st->id,
+                    'product_id' => null,
+                    'detail' => 'Streaming on port ' . (int)$st->port . ' · ' . (int)$st->max_listeners . ' listeners · ' . (int)$st->bitrate . ' kbps',
+                ];
+            }
+        } catch (\Exception $e) {}
+        // 3. Chatbox tenant
+        try {
+            $tenant = $this->db->table('chatbox_tenants')->where('hosting_user_id', $id)->first();
+            if ($tenant) {
+                $ownedServices[] = (object)[
+                    'kind' => 'chatbox', 'id' => 'cb' . $tenant->id, 'ref_id' => $tenant->id,
+                    'name' => ($tenant->name ?: 'Chatbox') . ' Chatbox',
+                    'product_name' => ($tenant->name ?: 'Chatbox'),
+                    'status' => $tenant->is_active ? 'active' : 'suspended',
+                    'billing_cycle' => 'monthly',
+                    'price' => 0, 'next_due_date' => null,
+                    'manage_url' => '/admin/chat-dashboard/manage/' . (int)$tenant->id,
+                    'product_id' => null,
+                    'detail' => 'Chat widget · ' . (int)$tenant->max_rooms . ' rooms · ' . ($tenant->voice_enabled ? 'voice' : 'text'),
+                ];
+            }
+        } catch (\Exception $e) {}
+        // 4. Game servers
+        try {
+            $gs = $this->db->table('game_servers')->where('user_id', $id)->get() ?: [];
+            foreach ($gs as $g) {
+                $ownedServices[] = (object)[
+                    'kind' => 'game', 'id' => 'g' . $g->id, 'ref_id' => $g->id,
+                    'name' => ($g->name ?: $g->server_name) . ' Game Server',
+                    'product_name' => ($g->name ?: $g->server_name) . ' Game Server',
+                    'status' => $g->is_active ? ($g->status ?: 'active') : 'suspended',
+                    'billing_cycle' => 'monthly',
+                    'price' => 0, 'next_due_date' => null,
+                    'manage_url' => '/admin/games/servers',
+                    'product_id' => null,
+                    'detail' => ($g->game_type ?: 'Game') . ' · ' . (int)$g->max_players . ' slots' . ($g->game_port ? ' · :' . (int)$g->game_port : ''),
+                ];
+            }
+        } catch (\Exception $e) {}
+        // Merge billing services in with their kind labels
+        foreach ($services as $bs) {
+            $ownedServices[] = (object)[
+                'kind' => 'billing', 'id' => 'svc' . $bs->id, 'ref_id' => $bs->id,
+                'name' => ($bs->product_name ?? ('Service #' . $bs->id)),
+                'product_name' => ($bs->product_name ?? ('Service #' . $bs->id)),
+                'status' => $bs->status, 'billing_cycle' => $bs->billing_cycle ?? '',
+                'price' => $bs->price ?? 0, 'next_due_date' => $bs->next_due_date ?? null,
+                'manage_url' => null, 'product_id' => $bs->product_id ?? null,
+                'detail' => ($bs->order_id ? ('Order #' . $bs->order_id . ' · ') : '') . ($bs->billing_cycle ?? ''),
+            ];
+        }
         $orders = [];
         try {
             $orders = $this->db->table('billing_orders')->where('user_id', $id)->orderBy('id', 'DESC')->get() ?: [];
@@ -463,6 +539,7 @@ class AccountController extends Controller
             'packages' => $packages,
             'accountProduct' => $accountProduct,
             'services' => $services,
+            'ownedServices' => $ownedServices,
             'orders' => $orders,
             'allProducts' => $allProducts,
             'activePackages' => $activePackages,
@@ -1045,6 +1122,11 @@ class AccountController extends Controller
             $this->db->table('domains')->where('account_id', $id)->delete();
             $this->db->table('backup_settings')->where('account_id', $id)->delete();
             $this->db->table('activity_logs')->where('account_id', $id)->delete();
+            // Cascade billing data
+            $this->db->table('billing_services')->where('user_id', $id)->delete();
+            $this->db->table('billing_orders')->where('user_id', $id)->delete();
+            $this->db->table('billing_payments')->where('user_id', $id)->delete();
+            $this->db->table('invoices')->where('user_id', $id)->delete();
         } catch (\Exception $e) {}
 
         try {
@@ -1055,6 +1137,12 @@ class AccountController extends Controller
                 'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
             ]);
         } catch (\Exception $e) {}
+        // Finally delete the account row itself (the previous bug: row never removed)
+        try {
+            $this->db->table('hosting_users')->where('id', (int)$id)->delete();
+        } catch (\Exception $e) {
+            $_SESSION['error_message'] = 'Account cleaned but row removal failed: ' . $e->getMessage();
+        }
 
         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
             header('Content-Type: application/json'); echo json_encode(['success' => true, 'message' => "Account '{$account->username}' permanently deleted."]); exit;
