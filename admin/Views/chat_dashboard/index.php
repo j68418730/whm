@@ -11,7 +11,7 @@
 <p style="color:#64748b;margin:4px 0 0">All chatboxes, their owners, rooms, and users.</p>
 </div>
 <div>
-<a href="/chatbox/admin.php" class="btn primary"><i class="bi bi-phone"></i> Chat Admin</a>
+<a href="/admin/chat-dashboard" class="btn primary"><i class="bi bi-phone"></i> Chat Admin</a>
 <a href="/admin/licensing" class="btn secondary"><i class="bi bi-shield-check"></i> Licensing</a>
 </div>
 </div>
