@@ -114,5 +114,5 @@ for ($i = 0; $i < $shown; $i++): ?>
 </div>
 
 <p style="margin-top:12px;color:#64748b;font-size:12px">Voice = enable/disable voice in chatbox. Cam = enable webcam streaming. Theme = prebuilt accent/color scheme. Emotes = quick-select smiley icons.</p>
-
+<?php endforeach; ?>
 <?php endif; ?>

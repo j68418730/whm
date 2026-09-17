@@ -18,7 +18,7 @@ h1{font-size:18px;margin:0 0 10px}h1 span{color:#008cff}p{color:#94a3b8;font-siz
 <?php exit;
 }
 
-function chatbox_chooser_page($tenants) { ?>
+function chatbox_chooser_page($tenants, $pdo) { ?>
 <!DOCTYPE html><html><head><title>Chatboxes</title>
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -35,8 +35,8 @@ h1{font-size:20px;margin:0 0 4px}h1 span{color:#008cff}.sub{color:#94a3b8;font-s
 <p class="sub">Pick a chatbox to manage.</p>
 <div class="grid">
 <?php foreach ($tenants as $t):
-$u = $pdo2->query("SELECT COUNT(*) FROM chatbox_users WHERE tenant_id = " . (int)$t->id)->fetchColumn();
-$r = $pdo2->query("SELECT COUNT(*) FROM chatbox_rooms WHERE tenant_id = " . (int)$t->id)->fetchColumn();
+$u = $pdo->query("SELECT COUNT(*) FROM chatbox_users WHERE tenant_id = " . (int)$t->id)->fetchColumn();
+$r = $pdo->query("SELECT COUNT(*) FROM chatbox_rooms WHERE tenant_id = " . (int)$t->id)->fetchColumn();
 ?>
 <a class="card" href="/chatbox/admin.php?tenant_id=<?php echo (int)$t->id; ?>">
 <h3>💬 <?php echo htmlspecialchars($t->name ?: $t->widget_title); ?></h3>
@@ -52,10 +52,13 @@ $r = $pdo2->query("SELECT COUNT(*) FROM chatbox_rooms WHERE tenant_id = " . (int
 // Check panel auth first (super admin bypass)
 $bypassTenantId = 0;
 $panelSessionUser = null;
-if (isset($_SESSION['user']) && !empty($_SESSION['user']->id)) {
-    $panelUser = $_SESSION['user'];
+$panelUser = $_SESSION['user'] ?? null;
+$panelId = is_object($panelUser) ? ($panelUser->id ?? 0) : ($panelUser['id'] ?? 0);
+$panelIsAdmin = !empty($_SESSION['is_admin'])
+    || (is_object($panelUser) ? !empty($panelUser->is_admin) : !empty($panelUser['is_admin']));
+if ($panelId || $panelIsAdmin) {
     $panelSessionUser = $panelUser;
-    if (!empty($panelUser->is_admin)) {
+    if ($panelIsAdmin) {
         $reqTenantId = (int)($_GET['tenant_id'] ?? 0);
         if ($reqTenantId) {
             $bypassTenantId = $reqTenantId;
@@ -68,14 +71,13 @@ if (isset($_SESSION['user']) && !empty($_SESSION['user']->id)) {
             } elseif (count($allTenants) === 0) {
                 chatbox_no_tenants_page();
             } else {
-                $pdo2 = $pdo;
-                chatbox_chooser_page($allTenants);
+                chatbox_chooser_page($allTenants, $pdo);
             }
         }
     } else {
         // Regular user - find their tenant
         $q = $pdo->prepare("SELECT id FROM chatbox_tenants WHERE hosting_user_id = ?");
-        $q->execute([$panelUser->id]);
+        $q->execute([$panelId]);
         $bypassTenantId = (int)$q->fetchColumn();
     }
 }
@@ -97,7 +99,7 @@ if ($action === 'login' && $_POST && !$bypassTenantId) {
 
 // Use bypass tenant
 if ($bypassTenantId) {
-    $_SESSION['chatbox_admin'] = ['id' => 0, 'tenant_id' => $bypassTenantId, 'username' => 'Admin', 'role' => 'owner', 'user_id' => $panelSessionUser ? (int)$panelSessionUser->id : 0];
+    $_SESSION['chatbox_admin'] = ['id' => 0, 'tenant_id' => $bypassTenantId, 'username' => 'Admin', 'role' => 'owner', 'user_id' => $panelSessionUser ? (is_object($panelSessionUser) ? (int)$panelSessionUser->id : (int)($panelSessionUser['id'] ?? 0)) : 0];
 }
 
 if (!isset($_SESSION['chatbox_admin']) && !$bypassTenantId) {
