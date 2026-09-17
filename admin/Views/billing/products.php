@@ -75,6 +75,7 @@
 $products = $products ?? [];
 $orderCounts = $orderCounts ?? [];
 $serviceCounts = $serviceCounts ?? [];
+$peopleCounts = $peopleCounts ?? [];
 $packages = $packages ?? [];
 $billingCats = $billingCats ?? [];
 $pkgMap = [];
@@ -97,6 +98,7 @@ foreach ($catNames as $cat):
 <?php foreach ($items as $p):
     $oc = $orderCounts[$p->id] ?? 0;
     $sc = $serviceCounts[$p->id] ?? 0;
+    $pc = $peopleCounts[$p->id] ?? 0;
     $catVal = trim((string)($p->category ?? '')) ?: ($p->type ?? 'hosting');
     $vis = $p->is_visible ?? 1;
 ?>
@@ -112,7 +114,7 @@ foreach ($catNames as $cat):
 </div>
 <?php if (isset($pkgMap[$p->package_id])): ?><div style="font-size:10px;color:#38bdf8;margin-top:4px">📦 <?php echo htmlspecialchars($pkgMap[$p->package_id]); ?></div><?php endif; ?>
 <div class="bp-price">$<?php echo number_format((float)$p->price, 2); ?><small><?php echo (float)$p->setup_fee > 0 ? ' + $'.number_format((float)$p->setup_fee,2).' setup' : ' / '.$p->billing_cycle; ?></small></div>
-<div class="bp-stats"><span>🛒 <?php echo $oc; ?> orders</span><span>🖥 <?php echo $sc; ?> services</span></div>
+<div class="bp-stats"><span>👤 <?php echo $pc; ?> people</span><span>🛒 <?php echo $oc; ?> orders</span><span>🖥 <?php echo $sc; ?> services</span></div>
 <div class="bp-actions">
 <a class="btn btn-sm secondary" style="background:rgba(0,140,255,.1);color:#38bdf8" onclick="openEdit(<?php echo $p->id; ?>,'<?php echo htmlspecialchars(addslashes($p->name)); ?>','<?php echo htmlspecialchars(addslashes($p->description ?? '')); ?>','<?php echo $p->type; ?>','<?php echo htmlspecialchars(addslashes($catVal)); ?>',<?php echo (float)$p->price; ?>,<?php echo (float)$p->setup_fee ?? 0; ?>,'<?php echo $p->billing_cycle; ?>',<?php echo (int)$p->is_active; ?>,<?php echo (int)($p->package_id ?? 0); ?>,'<?php echo htmlspecialchars(addslashes($p->license_key ?? '')); ?>','<?php echo htmlspecialchars(addslashes($p->image ?? '')); ?>',<?php echo (int)$vis; ?>)">✏ Edit</a>
 <a href="/admin/billing/products/clone/<?php echo $p->id; ?>" style="background:rgba(74,222,128,.1);color:#4ade80" onclick="return confirm('Clone this product?')">⧉ Clone</a>
