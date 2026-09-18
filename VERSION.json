@@ -1,6 +1,6 @@
 {
-  "version": "1.3.6",
-  "version_code": 1360,
+  "version": "1.3.7",
+  "version_code": 1370,
   "channel": "stable",
   "release_date": "2026-09-18",
   "release_type": "Core Release",
@@ -9,9 +9,9 @@
   "php_required": ">=7.4",
   "requires_reboot": false,
   "requires_services_restart": ["apache2"],
-  "migrations": ["2026_07_15_sync_radio_streams.sql"],
-  "download": "https://codeload.github.com/j68418730/whm/tar.gz/007eade",
-  "checksum": "8586397006ed474ebc9af8829d50533d0f7f92c566fbb3690be029754d0aa288",
-  "target_sha": "007eade",
-  "release_notes": "Terminal rework: real interactive PTY terminal (no fake command box). Browser -> SSE stream -> PTY session daemon (proc_open pty) -> Linux shell. ROOT sessions unrestricted; customer/reseller sessions run as that Linux account via runuser (OS-enforced isolation, verified: cannot read /etc/shadow or other homes). Session lifecycle: create/stream/input/resize/kill/list. New UI with ANSI color renderer + full keyboard (Ctrl+C/D/Z, arrows, Tab, Home/End). Wired into /admin/terminal, /admin/server/terminal, /user/terminal. Audit logging, Security Center entry, Server Health PTY test (actually opens a PTY), installer sudoers + Setup Wizard verification. Legacy exec() endpoints disabled."
+  "migrations": ["2026_09_18_terminal_package_access.sql"],
+  "download": "https://codeload.github.com/j68418730/whm/tar.gz/638e794",
+  "checksum": "f367e991b7a2896d0a92ab961a2885b08703afd94e40f0103c0731ad9341bb11",
+  "target_sha": "638e794",
+  "release_notes": "Terminal package access controls: hosting_packages now carries shell_access (disabled/jailed/normal), terminal, ssh_access, sftp, api_shell, cron. Package editor (edit + create) has a Shell & Terminal Access card. /user/terminal is gated on the package permission (denied view + API block when disabled). Feature lists already had ssh_access/terminal/cron_jobs/git_access/api_access flags. Verified: testacct (jailed+terminal) gets real PTY shell; with terminal=0 the customer sees 'Terminal Not Available' and session create returns an error. Migration 2026_09_18_terminal_package_access."
 }
