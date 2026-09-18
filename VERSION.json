@@ -1,6 +1,6 @@
 {
-  "version": "1.3.4",
-  "version_code": 1340,
+  "version": "1.3.5",
+  "version_code": 1350,
   "channel": "stable",
   "release_date": "2026-09-18",
   "release_type": "Core Release",
@@ -10,8 +10,8 @@
   "requires_reboot": false,
   "requires_services_restart": ["apache2"],
   "migrations": ["2026_07_15_sync_radio_streams.sql"],
-  "download": "https://codeload.github.com/j68418730/whm/tar.gz/43f0a83",
-  "checksum": "f03847bfef13b34ea3b1d028998bf1413bbf77384e4d51df523d3da546ac124a",
-  "target_sha": "43f0a83",
-  "release_notes": "Updater + radio fix release: framework-aware migration runner (--run/--run-all ledger, idempotent, SQL+PHP), update.sh/check_update.sh auto-select PHP CLI with pdo_mysql (fixes 'could not find driver' on php8.5 default), FK-safe radio_streams sync migration (widens server_type/status to varchar, no more 1265/1701 errors), ships database/bootstrap.sql (api_keys/feature_lists base tables fix 'table doesn't exist' on fresh installs), helpers branding, installer PHP pinning, chat dashboard create, server overview checks."
+  "download": "https://codeload.github.com/j68418730/whm/tar.gz/623cac1",
+  "checksum": "9d4ca21986d5fce962e00a8c66e84d7a68a49d9279a2b3d7b47fe9969821217e",
+  "target_sha": "623cac1",
+  "release_notes": "Security Center 8-state detection: every required component (firewalld, fail2ban, ModSecurity+OWASP CRS, YARA, ClamAV, Trivy, OSV, Lynis, AIDE, rkhunter, chkrootkit, testssl, Logwatch, GoAccess, log watchdog, SpamAssassin, OpenDKIM, Apache, Nginx, Icecast, SHOUTcast v1/v2) reports missing/installed/configured/running/healthy/update/failed/not-detected with reliable binary+service+config probes. New installer modules 16-web-server/17-streaming/18-mail-security. Installer (RHEL) now installs Postfix+Dovecot (Maildir) + SHOUTcast. Fixed live mail delivery (home_mailbox Maildir + Dovecot mail_location). Webmail menu port fixed to 2096. /api/version exposes update state so the dashboard alert banner works. Updater install button uses unquoted sudo path (matches sudoers NOPASSWD). Setup wizard validates required components."
 }
