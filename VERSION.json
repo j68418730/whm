@@ -1,6 +1,6 @@
 {
-  "version": "1.3.3",
-  "version_code": 1330,
+  "version": "1.3.4",
+  "version_code": 1340,
   "channel": "stable",
   "release_date": "2026-09-18",
   "release_type": "Core Release",
@@ -10,8 +10,8 @@
   "requires_reboot": false,
   "requires_services_restart": ["apache2"],
   "migrations": ["2026_07_15_sync_radio_streams.sql"],
-  "download": "https://codeload.github.com/j68418730/whm/tar.gz/03588bf",
-  "checksum": "9268965a0cbb8a71cd5018cc40af0e93a07f35a3ee6d5be19f33dc9cbd1c3b46",
-  "target_sha": "03588bf",
-  "release_notes": "UPDATER FIX RELEASE: framework-aware migration runner (scripts/migrate.php supports --run/--run-all ledger-based idempotent batch; SQL + PHP migrations), update.sh + check_update.sh now auto-select a PHP CLI that has pdo_mysql (fixes 'could not find driver' when /usr/bin/php defaults to php8.5), FK-safe radio_streams re-sync (no more TRUNCATE constraint error), installer pins PHP with pdo_mysql, helpers branding (company_name), chat dashboard create form, server overview SHOUTcast checks. Test server update flow now works end-to-end."
+  "download": "https://codeload.github.com/j68418730/whm/tar.gz/ce7e61c",
+  "checksum": "97c584d991d37a19d0d549fe616d42183098d433c15859615330190001ce8741",
+  "target_sha": "ce7e61c",
+  "release_notes": "Updater + radio fix release: framework-aware migration runner (--run/--run-all ledger, idempotent, SQL+PHP), update.sh/check_update.sh auto-select PHP CLI with pdo_mysql (fixes 'could not find driver' on php8.5 default), FK-safe radio_streams sync migration (widens server_type/status to varchar, no more 1265/1701 errors), helpers branding, installer PHP pinning, chat dashboard create, server overview checks. Verified end-to-end: migration runner applies cleanly on live."
 }
