@@ -207,6 +207,12 @@ $router->get('/admin/files/search', 'Admin\Controllers\FilesystemController@sear
 $router->get('/admin/files/archive', 'Admin\Controllers\FilesystemController@archive');
 $router->get('/admin/files/extract', 'Admin\Controllers\FilesystemController@extract');
 $router->get('/admin/terminal', 'Admin\Controllers\TerminalController@index');
+$router->post('/admin/terminal/session', 'Admin\Controllers\TerminalController@create');
+$router->get('/admin/terminal/stream/{sid}', 'Admin\Controllers\TerminalController@stream');
+$router->post('/admin/terminal/input/{sid}', 'Admin\Controllers\TerminalController@input');
+$router->post('/admin/terminal/resize/{sid}', 'Admin\Controllers\TerminalController@resize');
+$router->post('/admin/terminal/kill/{sid}', 'Admin\Controllers\TerminalController@kill');
+$router->get('/admin/terminal/sessions', 'Admin\Controllers\TerminalController@list');
 $router->get('/admin/widgets', 'Admin\Controllers\WidgetController@index');
 $router->get('/admin/metrics', 'Admin\Controllers\MetricsController@index');
 $router->get('/admin/installers', 'Admin\Controllers\InstallersController@index');
@@ -319,6 +325,12 @@ $router->get('/admin/server', 'Admin\Controllers\ServerOverviewController@index'
 $router->get('/admin/server/health', 'Admin\Controllers\ServerOverviewController@health');
 $router->get('/admin/server/terminal', 'Admin\Controllers\ServerController@terminal');
 $router->post('/admin/server/terminal/exec', 'Admin\Controllers\ServerController@exec');
+$router->post('/admin/server/terminal/session', 'Admin\Controllers\TerminalController@create');
+$router->get('/admin/server/terminal/stream/{sid}', 'Admin\Controllers\TerminalController@stream');
+$router->post('/admin/server/terminal/input/{sid}', 'Admin\Controllers\TerminalController@input');
+$router->post('/admin/server/terminal/resize/{sid}', 'Admin\Controllers\TerminalController@resize');
+$router->post('/admin/server/terminal/kill/{sid}', 'Admin\Controllers\TerminalController@kill');
+$router->get('/admin/server/terminal/sessions', 'Admin\Controllers\TerminalController@list');
 
 // -- IP Management routes --
 $router->get('/admin/ip', 'Admin\Controllers\IpController@index');

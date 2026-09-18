@@ -930,6 +930,11 @@ class SetupController extends Controller
         if ($shoutcastV1) $streaming[] = 'SHOUTcast v1';
         $results['streaming'] = ['label' => 'Streaming Services', 'status' => !empty($streaming) ? 'pass' : 'warning', 'message' => !empty($streaming) ? implode(', ', $streaming) : 'Not configured'];
 
+        // Terminal (PTY) — actually attempt a PTY session
+        $code = '$d=[0=>["pty","r"],1=>["pty","w"],2=>["pty","w"]]; $p=@proc_open(["/bin/bash","-c","echo PTTYOK"],$d,$pp); if(!$p){exit(1);} usleep(300000); $o=stream_get_contents($pp[1]); proc_close($p); echo str_contains($o,"PTTYOK")?"PTY_OK":"PTY_FAIL";';
+        $probe = @shell_exec('sudo -n /bin/bash -c ' . escapeshellarg('/usr/bin/php8.4 -r ' . escapeshellarg($code) . ' 2>/dev/null'));
+        $results['terminal'] = ['label' => 'Terminal (PTY shell)', 'status' => ($probe && str_contains($probe, 'PTY_OK')) ? 'pass' : 'warning', 'message' => ($probe && str_contains($probe, 'PTY_OK')) ? 'PTY session OK' : 'PTY unavailable — Terminal feature disabled'];
+
         // Storage
         $storageDir = '/var/www/radiohosting/storage/radio_downloads';
         $storageWritable = is_dir($storageDir) && is_writable($storageDir);

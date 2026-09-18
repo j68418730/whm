@@ -63,6 +63,8 @@ class ServerOverviewController extends Controller
         $checks[] = ['name' => 'Firewall', 'test' => $this->checkService('firewalld', 'ufw'), 'severity' => 'high'];
         $checks[] = ['name' => 'Fail2Ban', 'test' => $this->checkService('fail2ban'), 'severity' => 'medium'];
         $checks[] = ['name' => 'Redis', 'test' => $this->checkService('redis-server', 'redis'), 'severity' => 'low'];
+        // Terminal: actually verify a PTY session can be created
+        $checks[] = ['name' => 'Terminal (PTY)', 'test' => $this->checkTerminal(), 'severity' => 'medium'];
         $checks[] = ['name' => 'Disk Space', 'test' => $this->checkDisk(), 'severity' => 'high'];
         $checks[] = ['name' => 'Memory', 'test' => $this->checkMemory(), 'severity' => 'high'];
         $checks[] = ['name' => 'CPU Load', 'test' => $this->checkCpu(), 'severity' => 'medium'];
@@ -83,6 +85,24 @@ class ServerOverviewController extends Controller
             if ($s === 'inactive') return ['status' => 'fail', 'msg' => 'Stopped'];
         }
         return ['status' => 'fail', 'msg' => 'Not installed'];
+    }
+
+    /** Actually attempt to open a PTY + run a command (not just "file exists"). */
+    private function checkTerminal()
+    {
+        $code = '$d=[0=>["pty","r"],1=>["pty","w"],2=>["pty","w"]]; $p=@proc_open(["/bin/bash","-c","echo PTTYOK"],$d,$pp); if(!$p){exit(1);} usleep(300000); $o=stream_get_contents($pp[1]); proc_close($p); echo str_contains($o,"PTTYOK")?"PTY_OK":"PTY_FAIL";';
+        // www-data has NOPASSWD /bin/bash; wrap the php probe inside bash so it runs as root
+        $inner = '/usr/bin/php8.4 -r ' . escapeshellarg($code) . ' 2>/dev/null';
+        $probe = @shell_exec('sudo -n /bin/bash -c ' . escapeshellarg($inner));
+        if ($probe && str_contains($probe, 'PTY_OK')) {
+            return ['status' => 'pass', 'msg' => 'PTY session OK'];
+        }
+        $inner2 = '/usr/bin/php -r ' . escapeshellarg($code) . ' 2>/dev/null';
+        $probe2 = @shell_exec('sudo -n /bin/bash -c ' . escapeshellarg($inner2));
+        if ($probe2 && str_contains($probe2, 'PTY_OK')) {
+            return ['status' => 'pass', 'msg' => 'PTY session OK'];
+        }
+        return ['status' => 'fail', 'msg' => 'PTY unavailable'];
     }
 
     private function checkDisk()

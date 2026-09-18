@@ -41,38 +41,7 @@ class ServerController extends Controller
             $this->response->send();
             exit;
         }
-
-        $cmd = $this->request->post('command', '');
-        $cwd = $this->request->post('cwd', '');
-
-        if (empty($cmd)) {
-            $this->response->json(['output' => '', 'cwd' => $cwd ?: '/root']);
-            $this->response->send();
-            exit;
-        }
-
-        $cdCmd = $cwd ? "cd " . escapeshellarg($cwd) . " 2>/dev/null && " : "";
-        // Append pwd to track CWD in same shell session
-        $fullCmd = 'sudo bash -c ' . escapeshellarg($cdCmd . $cmd . ' 2>&1; echo "[CWD:"; pwd; echo ":CWD]"');
-        $output = [];
-        $returnVar = 0;
-        exec($fullCmd, $output, $returnVar);
-
-        $newCwd = $cwd ?: '/root';
-        $cmdOutput = [];
-        foreach ($output as $line) {
-            if (preg_match('/^\[CWD:(.+):CWD\]$/', $line, $m)) {
-                $newCwd = trim($m[1]);
-            } else {
-                $cmdOutput[] = $line;
-            }
-        }
-
-        $this->response->json([
-            'output' => implode("\n", $cmdOutput),
-            'code' => $returnVar,
-            'cwd' => $newCwd
-        ]);
+        $this->response->json(['error' => 'Direct exec is disabled. Use the real Terminal session at /admin/server/terminal.'], 400);
         $this->response->send();
         exit;
     }
