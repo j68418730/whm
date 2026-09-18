@@ -77,15 +77,29 @@ $anyFindings = !empty(array_filter($results ?? [], fn($r) => $r['found']));
 <?php foreach ($groups as $group => $tools): ?>
 <div class="sc-group"><?php echo htmlspecialchars(ucfirst($group)); ?></div>
 <div class="sc-tools">
-<?php foreach ($tools as $t): $state = $t['state']; $inst = $t['installed']; $fr = $findingsMap[$t['key']] ?? null; $found = $fr && $fr['found']; ?>
+<?php foreach ($tools as $t): $state = $t['state']; $inst = $t['installed']; $fr = $findingsMap[$t['key']] ?? null; $found = $fr && $fr['found'];
+    $health = $t['health'] ?? ($inst ? 'installed' : 'not_installed');
+    $healthMeta = [
+        'not_installed' => ['Missing', '#f87171'],
+        'installed' => ['Installed', '#94a3b8'],
+        'configured' => ['Configured', '#38bdf8'],
+        'running' => ['Running', '#facc15'],
+        'healthy' => ['Healthy', '#4ade80'],
+        'update_available' => ['Update', '#a78bfa'],
+        'failed' => ['Failed', '#f87171'],
+        'not_detected' => ['Not detected', '#64748b'],
+    ];
+    $hm = $healthMeta[$health] ?? $healthMeta['not_detected'];
+    $dotClass = ['healthy'=>'ok','running'=>'warn','configured'=>'warn','installed'=>'warn','update_available'=>'warn','failed'=>'missing','not_installed'=>'missing','not_detected'=>'missing'][$health] ?? 'missing';
+?>
 <div class="sc-tool" style="<?php echo $found ? 'border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.04)' : ''; ?>">
   <h4><?php echo htmlspecialchars($t['label']); ?>
     <?php if ($found): ?><span style="color:#f87171;font-size:11px;margin-left:6px">⚠️</span><?php endif; ?>
   </h4>
-  <div class="sub"><?php echo htmlspecialchars($t['version'] ?: 'Not detected'); ?></div>
+  <div class="sub"><?php echo htmlspecialchars($t['version'] ?: ''); ?></div>
   <div class="status-row">
-    <span class="sc-dot <?php echo $inst ? 'ok' : 'missing'; ?>"></span>
-    <span style="font-size:12px;color:<?php echo $inst ? '#4ade80' : '#f87171'; ?>"><?php echo $inst ? 'Installed' : 'Not installed'; ?></span>
+    <span class="sc-dot <?php echo $dotClass; ?>"></span>
+    <span style="font-size:12px;color:<?php echo $hm[1]; ?>;font-weight:600"><?php echo $hm[0]; ?></span>
     <?php if ($found): ?><span style="font-size:11px;color:#f87171;margin-left:auto;font-weight:600"><?php echo htmlspecialchars($fr['detail']); ?></span>
     <?php elseif ($t['updated']): ?><span style="font-size:10px;color:#64748b;margin-left:auto"><?php echo htmlspecialchars($t['updated']); ?></span><?php endif; ?>
   </div>

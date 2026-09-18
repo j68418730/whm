@@ -25,10 +25,41 @@ class SecurityToolsService
         $this->tools = [
             'firewall' => ['label' => 'Firewall (firewalld + fail2ban)', 'binary' => 'firewall-cmd',
                 'script' => '01-firewall', 'status' => 'firewall', 'log' => 'security-center',
-                'scan' => 'systemctl is-active firewalld && systemctl is-active fail2ban', 'group' => 'core'],
+                'scan' => 'systemctl is-active firewalld && systemctl is-active fail2ban', 'group' => 'core',
+                'service' => 'firewalld', 'config' => '/etc/firewalld/firewalld.conf'],
+            'apache' => ['label' => 'Apache Web Server', 'binary' => 'apache2',
+                'script' => '16-web-server', 'status' => 'apache', 'log' => 'security-center',
+                'scan' => 'systemctl is-active apache2 || systemctl is-active httpd', 'group' => 'core',
+                'service' => 'apache2', 'service_alt' => 'httpd', 'altbin' => ['httpd']],
+            'nginx' => ['label' => 'Nginx (Reverse Proxy :8080)', 'binary' => 'nginx',
+                'script' => '16-web-server', 'status' => 'nginx', 'log' => 'security-center',
+                'scan' => 'systemctl is-active nginx', 'group' => 'core',
+                'service' => 'nginx', 'config' => '/etc/nginx/nginx.conf'],
+            'modsecurity' => ['label' => 'ModSecurity (WAF)', 'binary' => 'modsec_rules_file',
+                'script' => '16-web-server', 'status' => 'modsecurity', 'log' => 'security-center',
+                'scan' => 'systemctl is-active apache2 || systemctl is-active httpd', 'group' => 'core',
+                'service' => 'apache2', 'service_alt' => 'httpd',
+                'config' => '/etc/modsecurity/modsecurity.conf', 'config2' => '/etc/httpd/conf.d/mod_security.conf', 'altbin' => ['apache2', 'httpd']],
+            'crs' => ['label' => 'OWASP Core Rule Set', 'binary' => '',
+                'script' => '16-web-server', 'status' => 'crs', 'log' => 'security-center',
+                'scan' => '', 'group' => 'core',
+                'config' => '/usr/share/modsecurity-crs', 'config2' => '/usr/share/modsecurity_crs'],
+            'icecast' => ['label' => 'Icecast Streaming Server', 'binary' => 'icecast2',
+                'script' => '17-streaming', 'status' => 'icecast', 'log' => 'security-center',
+                'scan' => 'systemctl is-active icecast2 || systemctl is-active icecast', 'group' => 'streaming',
+                'service' => 'icecast2', 'service_alt' => 'icecast', 'altbin' => ['icecast']],
+            'shoutcast_v2' => ['label' => 'SHOUTcast DNAS v2', 'binary' => 'sc_serv',
+                'script' => '17-streaming', 'status' => 'shoutcast_v2', 'log' => 'security-center',
+                'scan' => 'systemctl is-active shoutcast', 'group' => 'streaming',
+                'service' => 'shoutcast', 'config' => '/opt/planethosts/shoutcast/sc_serv.conf'],
+            'shoutcast_v1' => ['label' => 'SHOUTcast DNAS v1 (legacy)', 'binary' => 'sc_serv',
+                'script' => '17-streaming', 'status' => 'shoutcast_v1', 'log' => 'security-center',
+                'scan' => 'systemctl is-active shoutcast-v1', 'group' => 'streaming',
+                'service' => 'shoutcast-v1', 'config' => '/opt/planethosts/shoutcast1/sc_serv.conf', 'config2' => '/opt/planethosts/shoutcast-v1/sc_serv.conf'],
             'clamav' => ['label' => 'Malware Scanner (ClamAV)', 'binary' => 'clamscan',
                 'script' => '02-clamav', 'status' => 'clamav', 'log' => 'clamscan',
-                'scan' => 'sudo /usr/local/bin/ph-clamscan /home', 'group' => 'malware'],
+                'scan' => 'sudo /usr/local/bin/ph-clamscan /home', 'group' => 'malware',
+                'service' => 'clamav-daemon', 'service_alt' => 'clamd'],
             'yara' => ['label' => 'Web Malware Rules (YARA)', 'binary' => 'yara',
                 'script' => '03-yara', 'status' => 'yara', 'log' => 'yarascan',
                 'scan' => 'sudo /usr/local/bin/ph-yarascan /home', 'group' => 'malware'],
@@ -61,10 +92,12 @@ class SecurityToolsService
                 'scan' => 'sudo /usr/local/bin/ph-testssl', 'group' => 'ssl'],
             'spamassassin' => ['label' => 'Email Filter (SpamAssassin)', 'binary' => 'spamc',
                 'script' => '13-spamassassin', 'status' => 'spamassassin', 'log' => 'spamassassin',
-                'scan' => 'sudo /usr/local/bin/ph-spamassassin', 'group' => 'email'],
+                'scan' => 'sudo /usr/local/bin/ph-spamassassin', 'group' => 'email',
+                'service' => 'spamassassin', 'service_alt' => 'spamd'],
             'opendkim' => ['label' => 'DKIM Signing (OpenDKIM)', 'binary' => 'opendkim',
                 'script' => '14-opendkim', 'status' => 'opendkim', 'log' => 'opendkim',
-                'scan' => 'systemctl is-active opendkim', 'group' => 'email'],
+                'scan' => 'systemctl is-active opendkim', 'group' => 'email',
+                'service' => 'opendkim'],
             'logwatchdog' => ['label' => 'Log Size Watchdog', 'binary' => 'find',
                 'script' => '15-logwatchdog', 'status' => 'logwatchdog', 'log' => 'logwatchdog',
                 'scan' => 'sudo /usr/local/bin/ph-logwatchdog', 'group' => 'logs'],
@@ -84,12 +117,76 @@ class SecurityToolsService
     public function isInstalled($tool)
     {
         $bin = $tool['binary'] ?? '';
-        if (!$bin) return false;
-        $paths = ['/usr/bin/', '/usr/local/bin/', '/bin/', '/usr/sbin/'];
+        if (!$bin) {
+            // No binary probe (e.g. OWASP CRS): fall back to config path existence
+            $cfg = $tool['config'] ?? '';
+            $cfg2 = $tool['config2'] ?? '';
+            if ($cfg && (is_dir($cfg) || is_file($cfg))) return true;
+            if ($cfg2 && (is_dir($cfg2) || is_file($cfg2))) return true;
+            return false;
+        }
+        $paths = ['/usr/bin/', '/usr/local/bin/', '/bin/', '/usr/sbin/', '/opt/planethosts/shoutcast/'];
         foreach ($paths as $p) {
             if (is_file($p . $bin) || is_executable($p . $bin)) return true;
         }
+        // altbin (e.g. httpd when apache2 is the canonical probe)
+        foreach (($tool['altbin'] ?? []) as $ab) {
+            foreach ($paths as $p) {
+                if (is_file($p . $ab) || is_executable($p . $ab)) return true;
+            }
+        }
         return trim(shell_exec('command -v ' . escapeshellarg($bin) . ' 2>/dev/null') ?? '') !== '';
+    }
+
+    /** Live service state: running / installed-not-running / not-installed. */
+    public function serviceState($tool)
+    {
+        $svc = $tool['service'] ?? '';
+        $svcAlt = $tool['service_alt'] ?? '';
+        if (!$svc) return '';
+        $names = array_filter([$svc, $svcAlt]);
+        foreach ($names as $n) {
+            $st = trim((string)@shell_exec('systemctl is-active ' . escapeshellarg($n) . ' 2>/dev/null'));
+            if ($st === 'active') return 'running';
+        }
+        // If any service unit exists but isn't active, report installed-but-stopped
+        foreach ($names as $n) {
+            $exists = trim((string)@shell_exec('systemctl list-unit-files ' . escapeshellarg($n) . ' 2>/dev/null'));
+            if (str_contains($exists, $n)) return 'stopped';
+        }
+        return 'no_service';
+    }
+
+    /** Config presence: configured when a config file/dir exists. */
+    public function configState($tool)
+    {
+        $cfg = $tool['config'] ?? '';
+        $cfg2 = $tool['config2'] ?? '';
+        if ($cfg && (is_dir($cfg) || is_file($cfg))) return 'configured';
+        if ($cfg2 && (is_dir($cfg2) || is_file($cfg2))) return 'configured';
+        return 'no_config';
+    }
+
+    /**
+     * Full health state for a component, combining the 8-state model:
+     * not_installed | installed | configured | running | healthy | update_available | failed | not_detected
+     */
+    public function healthState($tool)
+    {
+        $inst = $this->isInstalled($tool);
+        if (!$inst) {
+            // A status file may record an install attempt that failed
+            $st = $this->status($tool);
+            if (($st['state'] ?? '') === 'failed') return 'failed';
+            return 'not_installed';
+        }
+        $svc = $this->serviceState($tool);
+        if ($svc === 'running') {
+            $cfg = $this->configState($tool);
+            return $cfg === 'configured' ? 'healthy' : 'running';
+        }
+        if ($svc === 'stopped') return 'installed';
+        return 'configured';
     }
 
     public function version($tool)
@@ -144,6 +241,9 @@ class SecurityToolsService
                 'group' => $tool['group'],
                 'installed' => $this->isInstalled($tool),
                 'state' => $st['state'],
+                'health' => $this->healthState($tool),
+                'service' => $this->serviceState($tool),
+                'configured' => $this->configState($tool),
                 'version' => $st['value'] ?: $this->version($tool),
                 'updated' => $st['updated'],
             ];
@@ -157,7 +257,8 @@ class SecurityToolsService
         $tools = $this->summary();
         $groups = ['malware' => ['clamav', 'yara'], 'vuln' => ['trivy', 'osv'], 'integrity' => ['aide'],
                    'rootkit' => ['rkhunter', 'chkrootkit'], 'audit' => ['lynis'],
-                   'ssl' => ['testssl'], 'email' => ['spamassassin', 'opendkim'], 'core' => ['firewall']];
+                   'ssl' => ['testssl'], 'email' => ['spamassassin', 'opendkim'], 'core' => ['firewall'],
+                   'web' => ['apache', 'nginx', 'modsecurity', 'crs'], 'streaming' => ['icecast', 'shoutcast_v1', 'shoutcast_v2']];
         $installed = 0; $total = 0;
         foreach ($tools as $t) { $total++; if ($t['installed']) $installed++; }
         $base = $total > 0 ? round(($installed / $total) * 80) : 0;

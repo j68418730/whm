@@ -36,9 +36,12 @@ class UpdateController extends Controller
         }
         // Run update script (downloads package, verifies checksum, migrates) in background
         // Use the ABSOLUTE script path: sudoers NOPASSWD matches full paths, not relative argv.
+        // NOTE: path is deliberately unquoted so it matches the sudoers NOPASSWD rule
+        // (`www-data ALL=(root) NOPASSWD: /bin/bash /var/www/radiohosting/scripts/update.sh`)
         $logFile = BASE_PATH . '/storage/update.log';
         @file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] Update started by " . ($this->auth->user()->name ?? 'admin') . "\n", FILE_APPEND);
-        $cmd = 'sudo /bin/bash ' . escapeshellarg(BASE_PATH . '/scripts/update.sh') . ' 2>&1 | tee -a ' . escapeshellarg($logFile) . ' > /dev/null 2>&1 &';
+        $script = BASE_PATH . '/scripts/update.sh';
+        $cmd = 'sudo /bin/bash ' . $script . ' 2>&1 | tee -a ' . escapeshellarg($logFile) . ' > /dev/null 2>&1 &';
         @shell_exec($cmd);
         $_SESSION['success_message'] = 'Update started in background. It downloads the release package, verifies the checksum, and migrates. Check the log at storage/update.log';
         $this->response->redirect('/admin/update');

@@ -21,10 +21,13 @@ MARIADB_INSTALLED=0
 PHP_INSTALLED=0
 FIREWALLD_INSTALLED=0
 ICECAST_INSTALLED=0
+SHOUTCAST_INSTALLED=0
 LIQUIDSOAP_INSTALLED=0
 EZSTREAM_INSTALLED=0
 FFMPEG_INSTALLED=0
 PHPMYADMIN_INSTALLED=0
+POSTFIX_INSTALLED=0
+DOVECOT_INSTALLED=0
 
 PKG_MGR="yum"
 if command -v dnf >/dev/null 2>&1; then
@@ -174,6 +177,43 @@ firewall-cmd --reload || true
 FIREWALLD_INSTALLED=1
 log "FIREWALL" "setup" "OK" "Firewall configured"
 
+# --- Step 3b: Mail (Postfix SMTP + Dovecot IMAP/POP3) ---
+echo ""
+echo "[3b/12] Installing Mail Server (Postfix + Dovecot)..."
+log "MAIL" "install" "RUNNING" "Installing Postfix + Dovecot"
+install_required "Mail stack" postfix dovecot dovecot-mysql cyrus-sasl-plain mailx
+systemctl enable --now postfix 2>/dev/null || true
+systemctl enable --now dovecot 2>/dev/null || true
+POSTFIX_INSTALLED=1
+DOVECOT_INSTALLED=1
+
+# Configure Postfix (Maildir delivery so Dovecot can read it)
+HOSTNAME_FQDN="$(hostname -f 2>/dev/null || hostname)"
+DOMAIN_NAME="${HOSTNAME_FQDN#*.}"
+[ "$DOMAIN_NAME" = "$HOSTNAME_FQDN" ] && DOMAIN_NAME="$HOSTNAME_FQDN"
+postconf -e "myhostname = $HOSTNAME_FQDN"
+postconf -e "mydomain = $DOMAIN_NAME"
+postconf -e "myorigin = \$mydomain"
+postconf -e "inet_interfaces = all"
+postconf -e "mydestination = \$myhostname, localhost.\$mydomain, localhost, \$mydomain"
+postconf -e "home_mailbox = Maildir/"
+postconf -e "smtpd_sasl_auth_enable = yes"
+postconf -e "smtpd_sasl_type = dovecot"
+postconf -e "smtpd_sasl_path = private/auth"
+postconf -e "smtpd_relay_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination"
+postconf -e "mailbox_command = /usr/libexec/dovecot/deliver -c /etc/dovecot/dovecot.conf" 2>/dev/null || true
+systemctl restart postfix 2>/dev/null || true
+
+# Configure Dovecot Maildir
+DOVECOT_MAIL="/etc/dovecot/conf.d/10-mail.conf"
+sed -i 's|^mail_location =.*|mail_location = maildir:~/Maildir|' "$DOVECOT_MAIL" 2>/dev/null || echo "mail_location = maildir:~/Maildir" >> "$DOVECOT_MAIL"
+# Ensure IMAP/POP3 are enabled
+if [ -f /etc/dovecot/dovecot.conf ]; then
+    grep -q "protocols = imap pop3" /etc/dovecot/dovecot.conf 2>/dev/null || sed -i 's|^#protocols = .*|protocols = imap pop3|' /etc/dovecot/dovecot.conf 2>/dev/null || true
+fi
+systemctl restart dovecot 2>/dev/null || true
+log "MAIL" "install" "OK" "Postfix + Dovecot configured (Maildir delivery)"
+
 # --- Step 4: Apache / PHP / MariaDB ---
 echo ""
 echo "[4/12] Installing Apache, PHP, MariaDB..."
@@ -246,6 +286,57 @@ else
         opus-devel curl-devel openssl-devel sqlite-devel autoconf-archive \
         m4 gettext gettext-devel git gcc gcc-c++ make automake autoconf libtool || true
     log "ICECAST" "install" "OK" "Icecast build deps installed"
+fi
+
+# --- Step 5b: SHOUTcast DNAS ---
+echo ""
+echo "[5b/12] Installing SHOUTcast DNAS..."
+log "SHOUTCAST" "install" "RUNNING" "Installing SHOUTcast DNAS v2"
+SC2_TAR=""
+for _cand in \
+    "$SCRIPT_DIR/sc_serv2_linux_x64-latest.tar.gz" \
+    "$SCRIPT_DIR/shoutcast-server/shoucast-v2/sc_serv2_linux_x64-latest.tar.gz" \
+    "$SCRIPT_DIR/shoutcast-server/shoucast-v2/sc_serv2_linux-latest.tar.gz"; do
+    if [ -f "$_cand" ]; then SC2_TAR="$_cand"; break; fi
+done
+if [ -n "$SC2_TAR" ]; then
+    mkdir -p /opt/planethosts/shoutcast /var/log/shoutcast
+    tar xzf "$SC2_TAR" -C /opt/planethosts/shoutcast 2>/dev/null
+    chmod 755 /opt/planethosts/shoutcast/sc_serv 2>/dev/null
+    cat > /opt/planethosts/shoutcast/sc_serv.conf << "SCEOF"
+adminpassword=ShoutcastAdmin171
+password=Shoutcast171
+requirestreamconfigs=1
+streamid=1
+streampath=/stream
+portbase=8000
+logfile=/var/log/shoutcast/sc_serv.log
+w3clog=/var/log/shoutcast/sc_w3c.log
+banfile=/opt/planethosts/shoutcast/sc_serv.ban
+ripfile=/var/log/shoutcast/sc_rip.log
+SCEOF
+    cat > /etc/systemd/system/shoutcast.service << "UNIT"
+[Unit]
+Description=SHOUTcast DNAS v2 Server
+After=network.target
+[Service]
+Type=simple
+User=shoutcast
+Group=shoutcast
+WorkingDirectory=/opt/planethosts/shoutcast
+ExecStart=/opt/planethosts/shoutcast/sc_serv /opt/planethosts/shoutcast/sc_serv.conf
+Restart=always
+[Install]
+WantedBy=multi-user.target
+UNIT
+    useradd -r -d /opt/planethosts/shoutcast -s /sbin/nologin shoutcast 2>/dev/null || true
+    chown -R shoutcast:shoutcast /opt/planethosts/shoutcast /var/log/shoutcast 2>/dev/null || true
+    systemctl daemon-reload 2>/dev/null || true
+    systemctl enable --now shoutcast 2>/dev/null || true
+    SHOUTCAST_INSTALLED=1
+    log "SHOUTCAST" "install" "OK" "SHOUTcast installed on port 8000"
+else
+    log "SHOUTCAST" "install" "WARNING" "SHOUTcast tarball not found in installer dir — skipping (install later via install_debian.sh or scripts/icecast_install_source.sh)"
 fi
 
 # --- Step 6: Liquidsoap / ezstream ---
@@ -440,6 +531,9 @@ echo "  MariaDB: $MARIADB_INSTALLED"
 echo "  PHP: $PHP_INSTALLED"
 echo "  Firewalld: $FIREWALLD_INSTALLED"
 echo "  Icecast: $ICECAST_INSTALLED"
+echo "  SHOUTcast: $SHOUTCAST_INSTALLED"
+echo "  Mail (Postfix): $POSTFIX_INSTALLED"
+echo "  Mail (Dovecot): $DOVECOT_INSTALLED"
 echo "  Liquidsoap: $LIQUIDSOAP_INSTALLED"
 echo "  ezstream: $EZSTREAM_INSTALLED"
 echo "  FFmpeg: $FFMPEG_INSTALLED"

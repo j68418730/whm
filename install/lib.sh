@@ -51,7 +51,7 @@ sc_status() {
 # ─── Run module scripts in order ───
 run_modules() {
     local dir="${1:-$(dirname "${BASH_SOURCE[0]}")}"
-    local modules=(00-prerequisites 01-firewall 02-clamav 03-yara 04-trivy 05-osv 06-lynis 07-aide 08-rkhunter 09-chkrootkit 10-logwatch 11-goaccess 12-testssl 13-spamassassin 14-opendkim 15-security-center)
+    local modules=(00-prerequisites 01-firewall 02-clamav 03-yara 04-trivy 05-osv 06-lynis 07-aide 08-rkhunter 09-chkrootkit 10-logwatch 11-goaccess 12-testssl 13-spamassassin 14-opendkim 15-logwatchdog 16-web-server 17-streaming 18-mail-security 15-security-center)
     for m in "${modules[@]}"; do
         local f="${dir}/${m}.sh"
         if [ -f "$f" ]; then

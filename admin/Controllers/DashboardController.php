@@ -223,10 +223,25 @@ class DashboardController extends Controller
 
     public function version()
     {
+        $upd = [];
+        try {
+            $remote = \Core\Updates::fetchRemoteManifest();
+            $available = $remote && \Core\Updates::isAvailable($remote);
+            $installed = \Core\Updates::installedManifest();
+            $upd = [
+                'update_available' => (bool)$available,
+                'current_version' => \Core\Updates::versionLabel($installed),
+                'new_version' => $remote ? \Core\Updates::versionLabel($remote) : '',
+                'new_version_code' => $remote ? (int)($remote['version_code'] ?? 0) : 0,
+                'download_url' => '/admin/update',
+                'checked_at' => date('c'),
+            ];
+        } catch (\Throwable $e) {}
         $this->response->json([
             'version' => 'Ph- V1.3Beta-Whm',
             'name' => 'Planet Hosts Panel',
             'php' => phpversion(),
+            'update' => $upd,
         ])->send();
         exit;
     }
