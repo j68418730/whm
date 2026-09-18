@@ -310,13 +310,39 @@ class UserController extends Controller
         exit;
     }
 
-    public function terminal() { $u = $this->loadUser(); return $this->view('user.terminal', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Terminal']); }
+    public function terminal() {
+        $u = $this->loadUser();
+        if (!$this->hostingUser) { header('Location: /user'); exit; }
+        if (!$this->terminalAllowed()) { return $this->view('user.terminal_denied', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Terminal']); }
+        return $this->view('user.terminal', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Terminal']);
+    }
+
+    /** Terminal allowed? package shell_access != disabled AND terminal=1 (admin/root bypass). */
+    protected function terminalAllowed()
+    {
+        if (!empty($_SESSION['is_admin']) || !empty($_SESSION['sudo_login'])) return true;
+        $pkg = $this->package;
+        if (!$pkg) return false;
+        $shell = $pkg->shell_access ?? 'disabled';
+        if ($shell === 'disabled') return false;
+        $term = (int)($pkg->terminal ?? 0);
+        if (!$term) {
+            // Fallback to feature list flag
+            try {
+                $fl = $this->db->table('feature_lists')->where('id', $pkg->feature_list_id)->first();
+                if ($fl && (int)($fl->terminal ?? 0)) return true;
+            } catch (\Exception $e) {}
+            return false;
+        }
+        return true;
+    }
 
     /** Create a PTY terminal session for the logged-in customer (runs as their Linux account). */
     public function terminalCreate()
     {
         $u = $this->loadUser();
         if (!$this->hostingUser) { $this->response->json(['ok' => false, 'error' => 'No hosting account'])->send(); exit; }
+        if (!$this->terminalAllowed()) { $this->response->json(['ok' => false, 'error' => 'Terminal is disabled for your package'])->send(); exit; }
         $cols = (int)($_POST['cols'] ?? 80);
         $rows = (int)($_POST['rows'] ?? 24);
         try {
