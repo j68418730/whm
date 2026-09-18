@@ -546,7 +546,11 @@ cat > /etc/cron.d/radiohosting <<EOF
 0 * * * * apache php $PANEL_DIR/artisan radio:restart-stopped-streams >> $PANEL_DIR/logs/cron.log 2>&1
 EOF
 chmod 644 /etc/cron.d/radiohosting
-log "CRON" "setup" "OK" "Cron jobs created"
+
+# AutoSSL monthly renewal sweep (checks + renews any cert expiring within 30d)
+echo "0 3 1 * * root /usr/bin/php $PANEL_DIR/scripts/autossl_cron.php >/dev/null 2>&1" > /etc/cron.d/planet-hosts-autossl
+chmod 644 /etc/cron.d/planet-hosts-autossl
+log "CRON" "setup" "OK" "Cron jobs created (incl. AutoSSL monthly renewal)"
 
 # --- License Activation ---
 echo ""
