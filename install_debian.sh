@@ -927,25 +927,82 @@ for port in 2082 2086 2087 2089 2096; do
 done
 log "APACHE" "vhost" "OK" "Virtual host created"
 
-# Firewall ports
-log "FIREWALL" "ports" "RUNNING" "Opening firewall ports"
+# Firewall ports — FULL production port map (matches live server firewall-cmd --list-ports)
+log "FIREWALL" "ports" "RUNNING" "Opening firewall ports (full production map)"
+
+# Web / panel / proxy
+firewall-cmd --permanent --add-service=http 2>/dev/null || true
+firewall-cmd --permanent --add-service=https 2>/dev/null || true
+firewall-cmd --permanent --add-service=ssh 2>/dev/null || true
+firewall-cmd --permanent --add-port={20/tcp,21/tcp,22/tcp,26/tcp,80/tcp,443/tcp,990/tcp} 2>/dev/null || true
+# Panel ports (cPanel-style)
+firewall-cmd --permanent --add-port={2082/tcp,2083/tcp,2086/tcp,2087/tcp,2089/tcp,2096/tcp,2097/tcp,2100/tcp,2101/tcp} 2>/dev/null || true
+# DNS (Bind9)
+firewall-cmd --permanent --add-port={53/tcp,53/udp} 2>/dev/null || true
+# Mail (Postfix SMTP + Dovecot IMAP/POP3 + ManageSieve)
+firewall-cmd --permanent --add-port={25/tcp,465/tcp,587/tcp,110/tcp,143/tcp,993/tcp,995/tcp,4190/tcp} 2>/dev/null || true
+# Database (MariaDB)
+firewall-cmd --permanent --add-port=3306/tcp 2>/dev/null || true
+# Dashboard / internal apps
 firewall-cmd --permanent --add-port={5000/tcp,5001/tcp} 2>/dev/null || true
-firewall-cmd --permanent --add-port=6000-10000/tcp 2>/dev/null || true
-firewall-cmd --permanent --add-port=27000-28000/tcp 2>/dev/null || true
-firewall-cmd --permanent --add-port=25560-25660/tcp 2>/dev/null || true
-firewall-cmd --permanent --add-port=10000-20000/tcp 2>/dev/null || true
-# Mail ports (Postfix SMTP + Dovecot IMAP/POP3)
-firewall-cmd --permanent --add-port={25/tcp,465/tcp,587/tcp,110/tcp,143/tcp,993/tcp,995/tcp} 2>/dev/null || true
-# Panel + DJ/Chat ports
-firewall-cmd --permanent --add-port={2089/tcp,2100/tcp,2101/tcp} 2>/dev/null || true
+# Streaming engines (Icecast / SHOUTcast / Liquidsoap / relay)
+firewall-cmd --permanent --add-port={8000/tcp,8001/tcp,8002/tcp,8004/tcp,8080/tcp,8081/tcp} 2>/dev/null || true
+# Streaming + media ranges (from port_ranges: dj, shoutcast v1/v2, icecast, autodj, rtmp, rtsp, webrtc, audio relay)
+firewall-cmd --permanent --add-port=10000-10999/tcp 2>/dev/null || true   # DJ source ports
+firewall-cmd --permanent --add-port=11000-11999/tcp 2>/dev/null || true   # SHOUTcast v1
+firewall-cmd --permanent --add-port=12000-13999/tcp 2>/dev/null || true   # SHOUTcast v2 (blocks of 2)
+firewall-cmd --permanent --add-port=14000-15999/tcp 2>/dev/null || true   # Icecast 2
+firewall-cmd --permanent --add-port=16000-16499/tcp 2>/dev/null || true   # AutoDJ / Liquidsoap
+firewall-cmd --permanent --add-port=17000-17999/tcp 2>/dev/null || true   # RTMP
+firewall-cmd --permanent --add-port=18000-18999/tcp 2>/dev/null || true   # RTSP
+firewall-cmd --permanent --add-port=19000-19999/tcp 2>/dev/null || true   # WebRTC control
+firewall-cmd --permanent --add-port=20000-20999/tcp 2>/dev/null || true   # Audio relay / transcoding
+# Game servers
+firewall-cmd --permanent --add-port=25560-25660/tcp 2>/dev/null || true   # Game servers (primary)
+firewall-cmd --permanent --add-port=27000-28000/tcp 2>/dev/null || true   # Game servers (Steam/query)
+firewall-cmd --permanent --add-port=30000-50000/tcp 2>/dev/null || true   # Game servers (extended)
+# WebRTC media (UDP)
+firewall-cmd --permanent --add-port=50000-55000/udp 2>/dev/null || true   # WebRTC UDP media
 firewall-cmd --reload 2>/dev/null || true
+
+# iptables fallback (covers firewalld being disabled)
+iptables -I INPUT -p tcp --dport 20 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 21 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 22 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 26 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 53 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 80 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 443 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 990 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 2082 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 2083 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 2086 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 2087 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 2089 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 2096 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 2097 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 2100 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 2101 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 3306 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 4190 -j ACCEPT 2>/dev/null || true
 iptables -I INPUT -p tcp --dport 5000 -j ACCEPT 2>/dev/null || true
 iptables -I INPUT -p tcp --dport 5001 -j ACCEPT 2>/dev/null || true
-iptables -I INPUT -p tcp --dport 6000:10000 -j ACCEPT 2>/dev/null || true
-iptables -I INPUT -p tcp --dport 27000:28000 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 8000:8001 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 8080:8081 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 10000:10999 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 11000:11999 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 12000:13999 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 14000:15999 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 16000:16499 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 17000:17999 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 18000:18999 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 19000:19999 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 20000:20999 -j ACCEPT 2>/dev/null || true
 iptables -I INPUT -p tcp --dport 25560:25660 -j ACCEPT 2>/dev/null || true
-iptables -I INPUT -p tcp --dport 10000:20000 -j ACCEPT 2>/dev/null || true
-log "FIREWALL" "ports" "OK" "Firewall ports opened"
+iptables -I INPUT -p tcp --dport 27000:28000 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p tcp --dport 30000:50000 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT -p udp --dport 50000:55000 -j ACCEPT 2>/dev/null || true
+log "FIREWALL" "ports" "OK" "Firewall ports opened (full production map)"
 systemctl restart apache2
 
 # Align Postfix + Dovecot to Maildir in each user's home (panel mail accounts are system users)

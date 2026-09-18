@@ -39,41 +39,46 @@ configure_default() {
     firewall-cmd --permanent --add-service=http || true
     firewall-cmd --permanent --add-service=https || true
     firewall-cmd --permanent --add-service=ssh || true
+    # Web / FTP / misc
+    for port in 20/tcp 21/tcp 22/tcp 26/tcp 80/tcp 443/tcp 990/tcp; do
+        firewall-cmd --permanent --add-port="$port" || true
+    done
+    # DNS (Bind9)
+    for port in 53/tcp 53/udp; do
+        firewall-cmd --permanent --add-port="$port" || true
+    done
+    # Database (MariaDB)
+    firewall-cmd --permanent --add-port=3306/tcp || true
+    # Dashboard / internal apps
+    for port in 5000/tcp 5001/tcp; do
+        firewall-cmd --permanent --add-port="$port" || true
+    done
     # Panel ports
-    firewall-cmd --permanent --add-port=2082/tcp || true
-    firewall-cmd --permanent --add-port=2083/tcp || true
-    firewall-cmd --permanent --add-port=2086/tcp || true
-    firewall-cmd --permanent --add-port=2087/tcp || true
-    firewall-cmd --permanent --add-port=2089/tcp || true
-    firewall-cmd --permanent --add-port=2096/tcp || true
-    # DJ / Chat / Icecast
-    firewall-cmd --permanent --add-port=2100/tcp || true
-    firewall-cmd --permanent --add-port=2101/tcp || true
-    firewall-cmd --permanent --add-port=8000/tcp || true
-    firewall-cmd --permanent --add-port=8001/tcp || true
-    firewall-cmd --permanent --add-port=8080/tcp || true
-    # Mail (Postfix + Dovecot)
-    firewall-cmd --permanent --add-port=25/tcp || true
-    firewall-cmd --permanent --add-port=465/tcp || true
-    firewall-cmd --permanent --add-port=587/tcp || true
-    firewall-cmd --permanent --add-port=110/tcp || true
-    firewall-cmd --permanent --add-port=143/tcp || true
-    firewall-cmd --permanent --add-port=993/tcp || true
-    firewall-cmd --permanent --add-port=995/tcp || true
+    for port in 2082/tcp 2083/tcp 2086/tcp 2087/tcp 2089/tcp 2096/tcp 2097/tcp 2100/tcp 2101/tcp; do
+        firewall-cmd --permanent --add-port="$port" || true
+    done
+    # DJ / Chat / Icecast / streaming engines
+    for port in 8000/tcp 8001/tcp 8002/tcp 8004/tcp 8080/tcp 8081/tcp; do
+        firewall-cmd --permanent --add-port="$port" || true
+    done
+    # Mail (Postfix + Dovecot + ManageSieve)
+    for port in 25/tcp 465/tcp 587/tcp 110/tcp 143/tcp 993/tcp 995/tcp 4190/tcp; do
+        firewall-cmd --permanent --add-port="$port" || true
+    done
     # FTP
     firewall-cmd --permanent --add-port=21/tcp || true
-    # Streaming / game ranges
-    firewall-cmd --permanent --add-port=11000-11999/tcp || true
-    firewall-cmd --permanent --add-port=12000-13999/tcp || true
-    firewall-cmd --permanent --add-port=14000-15999/tcp || true
-    firewall-cmd --permanent --add-port=16000-16499/tcp || true
-    firewall-cmd --permanent --add-port=17000-17999/tcp || true
-    firewall-cmd --permanent --add-port=18000-18999/tcp || true
-    firewall-cmd --permanent --add-port=19000-19999/tcp || true
-    firewall-cmd --permanent --add-port=20000-20999/tcp || true
+    # Streaming / media ranges (dj, shoutcast v1/v2, icecast, autodj, rtmp, rtsp, webrtc, audio relay)
+    for port in 10000-10999/tcp 11000-11999/tcp 12000-13999/tcp 14000-15999/tcp 16000-16499/tcp 17000-17999/tcp 18000-18999/tcp 19000-19999/tcp 20000-20999/tcp; do
+        firewall-cmd --permanent --add-port="$port" || true
+    done
+    # Game servers
+    for port in 25560-25660/tcp 27000-28000/tcp 30000-50000/tcp; do
+        firewall-cmd --permanent --add-port="$port" || true
+    done
+    # WebRTC media (UDP)
     firewall-cmd --permanent --add-port=50000-55000/udp || true
     firewall-cmd --reload || true
-    log "Default firewall rules applied."
+    log "Default firewall rules applied (full production port map)."
 }
 
 case "${1:-install}" in

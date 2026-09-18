@@ -159,23 +159,45 @@ systemctl enable --now firewalld
 firewall-cmd --permanent --add-service=http || true
 firewall-cmd --permanent --add-service=https || true
 firewall-cmd --permanent --add-service=ssh || true
-# Panel ports
-for port in 2082/tcp 2083/tcp 2086/tcp 2087/tcp 2089/tcp 2096/tcp 2100/tcp 2101/tcp; do
+# Panel ports (cPanel-style)
+for port in 2082/tcp 2083/tcp 2086/tcp 2087/tcp 2089/tcp 2096/tcp 2097/tcp 2100/tcp 2101/tcp; do
     firewall-cmd --permanent --add-port="$port" || true
 done
-# Mail (Postfix SMTP + Dovecot IMAP/POP3)
-for port in 25/tcp 465/tcp 587/tcp 110/tcp 143/tcp 993/tcp 995/tcp; do
+# Mail (Postfix SMTP + Dovecot IMAP/POP3 + ManageSieve)
+for port in 25/tcp 465/tcp 587/tcp 110/tcp 143/tcp 993/tcp 995/tcp 4190/tcp; do
     firewall-cmd --permanent --add-port="$port" || true
 done
-# Icecast / streaming
-firewall-cmd --permanent --add-port=8000/tcp || true
-firewall-cmd --permanent --add-port=8001/tcp || true
-firewall-cmd --permanent --add-port=8080/tcp || true
+# DNS (Bind9)
+for port in 53/tcp 53/udp; do
+    firewall-cmd --permanent --add-port="$port" || true
+done
+# Database (MariaDB)
+firewall-cmd --permanent --add-port=3306/tcp || true
+# Dashboard / internal apps
+for port in 5000/tcp 5001/tcp; do
+    firewall-cmd --permanent --add-port="$port" || true
+done
+# Icecast / streaming engines
+for port in 8000/tcp 8001/tcp 8002/tcp 8004/tcp 8080/tcp 8081/tcp; do
+    firewall-cmd --permanent --add-port="$port" || true
+done
 # FTP
-firewall-cmd --permanent --add-port=21/tcp || true
+for port in 20/tcp 21/tcp 26/tcp 990/tcp; do
+    firewall-cmd --permanent --add-port="$port" || true
+done
+# Streaming + media ranges (dj, shoutcast v1/v2, icecast, autodj, rtmp, rtsp, webrtc, audio relay)
+for port in 10000-10999/tcp 11000-11999/tcp 12000-13999/tcp 14000-15999/tcp 16000-16499/tcp 17000-17999/tcp 18000-18999/tcp 19000-19999/tcp 20000-20999/tcp; do
+    firewall-cmd --permanent --add-port="$port" || true
+done
+# Game servers
+for port in 25560-25660/tcp 27000-28000/tcp 30000-50000/tcp; do
+    firewall-cmd --permanent --add-port="$port" || true
+done
+# WebRTC media (UDP)
+firewall-cmd --permanent --add-port=50000-55000/udp || true
 firewall-cmd --reload || true
 FIREWALLD_INSTALLED=1
-log "FIREWALL" "setup" "OK" "Firewall configured"
+log "FIREWALL" "setup" "OK" "Firewall configured (full production port map)"
 
 # --- Step 3b: Mail (Postfix SMTP + Dovecot IMAP/POP3) ---
 echo ""
