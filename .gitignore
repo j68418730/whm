@@ -59,6 +59,7 @@ desktop-connector/node_modules/
 10000
 *.sql
 !database/migrations/*.sql
+!database/bootstrap.sql
 dj_panel_fixed.php
 patch_*.php
 update_*.php
