@@ -1,4 +1,7 @@
 <?php
+$brandName = function_exists('company_name') ? company_name() : 'Hosting Panel';
+list($brandA, $brandB) = function_exists('brand_wordmark') ? brand_wordmark($brandName) : [$brandName, 'Panel'];
+$brandLogo = function_exists('company_logo_url') ? company_logo_url() : '/theme/assets/img/logo.png';
 $showLogin = isset($_GET['login']);
 $loggedIn = isset($loggedIn) ? $loggedIn : false;
 $user = isset($user) ? $user : null;
@@ -27,7 +30,7 @@ try {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?php echo htmlspecialchars($title ?? 'Store - Planet Hosts', ENT_QUOTES, 'UTF-8'); ?></title>
+<title><?php echo htmlspecialchars($title ?? 'Store - ' . $brandName, ENT_QUOTES, 'UTF-8'); ?></title>
 <meta name="description" content="Browse our hosting plans and services.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -129,9 +132,9 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 <header class="header">
 <div class="container header-inner">
 <a href="/" class="logo">
-<img src="/theme/assets/img/logo.png" alt="Planet Hosts">
+<img src="<?php echo htmlspecialchars($brandLogo); ?>" alt="<?php echo htmlspecialchars($brandName); ?>">
 <div>
-<div class="logo-text">PLANET-<span>HOSTS</span></div>
+<div class="logo-text"><?php echo htmlspecialchars($brandA); ?><span><?php echo htmlspecialchars($brandB); ?></span></div>
 <div class="logo-sub">Hosting Panel</div>
 </div>
 </a>
@@ -221,8 +224,9 @@ $minPrice = ($gt->min_slots ?? 10) * ($gt->price_per_slot ?? 0.50) + ($gt->setup
 <div class="container">
 <div class="footer-grid">
 <div class="footer-brand">
-<h3>PLANET-<span>HOSTS</span></h3>
+<h3><?php echo htmlspecialchars($brandA); ?><span><?php echo htmlspecialchars($brandB); ?></span></h3>
 <p>Premium web hosting, radio streaming, and server solutions.</p>
+<div class="powered-by" style="margin-top:10px;font-size:12px;color:#94a3b8;letter-spacing:.5px">Powered By Planet-Hosts Panel</div>
 <div class="social-links">
 <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
 <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>

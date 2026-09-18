@@ -77,8 +77,88 @@ if (!function_exists('primary_domain')) {
         if ($domain === '' && !empty($_SERVER['HTTP_HOST'])) {
             $domain = preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST']);
         }
-        if ($domain === '') $domain = 'planet-hosts.com';
+        if ($domain === '') $domain = strtolower((string)($_SERVER['SERVER_NAME'] ?? gethostname()));
         return $cached = strtolower($domain);
+    }
+}
+
+if (!function_exists('company_name')) {
+    /**
+     * Brand/company name for the storefront + customer-facing pages.
+     * Sources: setup wizard (setup_settings.company_name), panel settings
+     * (automation_settings.company_name). Neutral fallback for fresh installs
+     * so the shipped pages never assume a specific host's brand.
+     */
+    function company_name(): string
+    {
+        static $cached = null;
+        if ($cached !== null) return $cached;
+        $name = '';
+        try {
+            if (!function_exists('db_pdo') && defined('BASE_PATH')) {
+                require_once base_path('core' . DIRECTORY_SEPARATOR . 'ServerCreds.php');
+            }
+            if (function_exists('db_pdo')) {
+                $pdo = \db_pdo();
+                foreach (
+                    [
+                        ['setup_settings', 'company_name'],
+                        ['automation_settings', 'company_name'],
+                    ] as [$table, $key]
+                ) {
+                    try {
+                        $st = $pdo->prepare("SELECT setting_value FROM {$table} WHERE setting_key = ? LIMIT 1");
+                        $st->execute([$key]);
+                        $v = $st->fetchColumn();
+                        if ($v) { $name = trim((string)$v); break; }
+                    } catch (\Throwable $e) { /* table may not exist yet */ }
+                }
+            }
+        } catch (\Throwable $e) { /* DB unavailable — fall through */ }
+        if ($name === '') $name = 'Hosting Panel';
+        return $cached = $name;
+    }
+}
+
+if (!function_exists('company_logo_url')) {
+    /**
+     * Public URL of the storefront brand logo. Source: automation_settings.company_logo,
+     * otherwise the shipped default theme logo.
+     */
+    function company_logo_url(string $fallback = '/theme/assets/img/logo.png'): string
+    {
+        static $cached = null;
+        if ($cached !== null) return $cached;
+        $logo = '';
+        try {
+            if (!function_exists('db_pdo') && defined('BASE_PATH')) {
+                require_once base_path('core' . DIRECTORY_SEPARATOR . 'ServerCreds.php');
+            }
+            if (function_exists('db_pdo')) {
+                $pdo = \db_pdo();
+                try {
+                    $st = $pdo->prepare("SELECT setting_value FROM automation_settings WHERE setting_key = ? LIMIT 1");
+                    $st->execute(['company_logo']);
+                    $v = $st->fetchColumn();
+                    if ($v) $logo = trim((string)$v);
+                } catch (\Throwable $e) { /* ignore */ }
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+        if ($logo === '') $logo = $fallback;
+        $path = BASE_PATH . '/' . ltrim($logo, '/');
+        if (!is_file($path)) $logo = $fallback;
+        return $cached = $logo;
+    }
+}
+
+if (!function_exists('brand_wordmark')) {
+    /**
+     * Split a brand name into [firstWord, rest] for two-tone wordmark styling.
+     */
+    function brand_wordmark(string $name): array
+    {
+        $parts = preg_split('/\s+/', trim($name), 2) ?: [$name];
+        return [$parts[0] ?: $name, isset($parts[1]) ? $parts[1] : 'Panel'];
     }
 }
 

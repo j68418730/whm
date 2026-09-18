@@ -8,7 +8,7 @@ return [
     'defaultSort' => 2,
     'height' => 1,
     'render' => function($uw) {
-        $serviceNames = ['apache2' => 'Apache', 'mariadb' => 'MariaDB', 'icecast2' => 'Icecast', 'postfix' => 'Postfix', 'dovecot' => 'Dovecot', 'firewalld' => 'Firewall', 'nginx' => 'Nginx'];
+        $serviceNames = ['apache2' => 'Apache', 'mariadb' => 'MariaDB', 'icecast2' => 'Icecast', 'postfix' => 'Postfix', 'dovecot' => 'Dovecot', 'named' => 'DNS', 'vsftpd' => 'FTP', 'firewalld' => 'Firewall', 'nginx' => 'Nginx', 'fail2ban' => 'Fail2Ban'];
         $services = [];
         foreach ($serviceNames as $sName => $sLabel) {
             $active = trim(shell_exec("systemctl is-active {$sName} 2>/dev/null") ?: '') === 'active';

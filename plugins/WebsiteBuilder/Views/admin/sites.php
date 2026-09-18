@@ -1,5 +1,6 @@
 <?php if (isset($_SESSION['success_message'])): ?><div class="alert alert-success"><?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?></div><?php endif; ?>
 <?php if (isset($_SESSION['error_message'])): ?><div class="alert alert-danger"><?php echo htmlspecialchars($_SESSION['error_message']); unset($_SESSION['error_message']); ?></div><?php endif; ?>
+<?php $ownerDomains = $ownerDomains ?? []; ?>
 
 <div class="card" style="margin-bottom:16px">
 <div style="display:flex;justify-content:space-between;align-items:center">
@@ -18,7 +19,7 @@ $pageCount = $db->table('wb_pages')->where('site_id', $s->id)->get() ?: [];
 ?>
 <tr>
 <td><strong><?php echo htmlspecialchars($s->name); ?></strong></td>
-<td><?php echo htmlspecialchars($s->domain ?: 'N/A'); ?></td>
+<td><?php $owner = $ownerDomains[(int)$s->user_id] ?? null; echo htmlspecialchars(($owner && $owner->domain) ? $owner->domain : ($s->domain ?: 'N/A')); ?></td>
 <td><span class="badge bg-<?php echo $s->status === 'published' ? 'success' : ($s->status === 'draft' ? 'warning' : 'secondary'); ?>"><?php echo $s->status ?: 'draft'; ?></span></td>
 <td><?php echo count($pageCount); ?></td>
 <td><?php echo $s->created_at; ?></td>

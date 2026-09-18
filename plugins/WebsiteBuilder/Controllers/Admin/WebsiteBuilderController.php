@@ -44,8 +44,15 @@ class WebsiteBuilderController extends Controller
     {
         $this->requireAdmin();
         $sites = $this->db->table('wb_sites')->orderBy('created_at', 'DESC')->get() ?: [];
+        $ownerDomains = [];
+        try {
+            $rows = $this->db->pdo()->query("SELECT id, username, email, domain FROM hosting_users")->fetchAll(PDO::FETCH_OBJ);
+            foreach ($rows as $u) $ownerDomains[(int)$u->id] = $u;
+        } catch (\Exception $e) {
+            $ownerDomains = [];
+        }
         return $this->view('Plugins.WebsiteBuilder.Views.admin.sites', [
-            'user' => $this->auth->user(), 'sites' => $sites, 'title' => 'All Websites',
+            'user' => $this->auth->user(), 'sites' => $sites, 'ownerDomains' => $ownerDomains, 'title' => 'All Websites',
         ]);
     }
 

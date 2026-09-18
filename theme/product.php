@@ -1,4 +1,7 @@
 <?php
+$brandName = function_exists('company_name') ? company_name() : 'Hosting Panel';
+list($brandA, $brandB) = function_exists('brand_wordmark') ? brand_wordmark($brandName) : [$brandName, 'Panel'];
+$brandLogo = function_exists('company_logo_url') ? company_logo_url() : '/theme/assets/img/logo.png';
 function ph_format_bytes($mb) {
     $mb = (float)$mb;
     if ($mb <= 0) return '';
@@ -19,7 +22,7 @@ endif;
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?php echo htmlspecialchars(($product->name ?? 'Product') . ' - Planet Hosts', ENT_QUOTES, 'UTF-8'); ?></title>
+<title><?php echo htmlspecialchars(($product->name ?? 'Product') . ' - ' . $brandName, ENT_QUOTES, 'UTF-8'); ?></title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -78,7 +81,7 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 <div class="bg-overlay"></div>
 <header class="header">
 <div class="container header-inner">
-<a href="/" class="logo"><img src="/theme/assets/img/logo.png" alt="Planet Hosts"><div><div class="logo-text">PLANET-<span>HOSTS</span></div><div class="logo-sub">Hosting Panel</div></div></a>
+<a href="/" class="logo"><img src="<?php echo htmlspecialchars($brandLogo); ?>" alt="<?php echo htmlspecialchars($brandName); ?>"><div><div class="logo-text"><?php echo htmlspecialchars($brandA); ?><span><?php echo htmlspecialchars($brandB); ?></span></div><div class="logo-sub">Hosting Panel</div></div></a>
 <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')"><i class="fa-solid fa-bars"></i></button>
 <nav class="nav-links">
 <a href="/">Home</a><a href="/hosting">Store</a><a href="?contact">Contact</a>
@@ -134,6 +137,6 @@ body{background:#020817;color:#fff;font-family:'Inter',sans-serif;overflow-x:hid
 </div>
 </section>
 
-<footer class="footer"><div class="container"><p>&copy; 2026 Planet-Hosts. All rights reserved.</p></div></footer>
+<footer class="footer"><div class="container"><p>&copy; 2026 <?php echo htmlspecialchars($brandName); ?>. All rights reserved. Powered By Planet-Hosts Panel.</p></div></footer>
 </body>
 </html>

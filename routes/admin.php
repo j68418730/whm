@@ -66,6 +66,13 @@ $router->get('/admin/reseller', 'Admin\Controllers\ResellerController@index');
 // Admin DNS Functions Routes
 $router->get('/admin/dns', 'Admin\Controllers\DnsController@index');
 
+// Admin Domain Manager Routes
+$router->get('/admin/domains', 'Admin\Controllers\DomainController@index');
+$router->post('/admin/domains/store', 'Admin\Controllers\DomainController@store');
+$router->get('/admin/domains/delete/{id}', 'Admin\Controllers\DomainController@delete');
+$router->get('/admin/domains/ssl/{id}', 'Admin\Controllers\DomainController@ssl');
+$router->get('/admin/domains/lock/{id}', 'Admin\Controllers\DomainController@lock');
+
 // Admin Email Administration Routes
 $router->get('/admin/email', 'Admin\Controllers\EmailController@index');
 

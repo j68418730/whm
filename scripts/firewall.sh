@@ -39,13 +39,39 @@ configure_default() {
     firewall-cmd --permanent --add-service=http || true
     firewall-cmd --permanent --add-service=https || true
     firewall-cmd --permanent --add-service=ssh || true
+    # Panel ports
+    firewall-cmd --permanent --add-port=2082/tcp || true
+    firewall-cmd --permanent --add-port=2083/tcp || true
+    firewall-cmd --permanent --add-port=2086/tcp || true
+    firewall-cmd --permanent --add-port=2087/tcp || true
+    firewall-cmd --permanent --add-port=2089/tcp || true
+    firewall-cmd --permanent --add-port=2096/tcp || true
+    # DJ / Chat / Icecast
+    firewall-cmd --permanent --add-port=2100/tcp || true
+    firewall-cmd --permanent --add-port=2101/tcp || true
     firewall-cmd --permanent --add-port=8000/tcp || true
     firewall-cmd --permanent --add-port=8001/tcp || true
     firewall-cmd --permanent --add-port=8080/tcp || true
-    firewall-cmd --permanent --add-port=2082/tcp || true
-    firewall-cmd --permanent --add-port=2083/tcp || true
-    firewall-cmd --permanent --add-port=2087/tcp || true
-    firewall-cmd --permanent --add-port=2096/tcp || true
+    # Mail (Postfix + Dovecot)
+    firewall-cmd --permanent --add-port=25/tcp || true
+    firewall-cmd --permanent --add-port=465/tcp || true
+    firewall-cmd --permanent --add-port=587/tcp || true
+    firewall-cmd --permanent --add-port=110/tcp || true
+    firewall-cmd --permanent --add-port=143/tcp || true
+    firewall-cmd --permanent --add-port=993/tcp || true
+    firewall-cmd --permanent --add-port=995/tcp || true
+    # FTP
+    firewall-cmd --permanent --add-port=21/tcp || true
+    # Streaming / game ranges
+    firewall-cmd --permanent --add-port=11000-11999/tcp || true
+    firewall-cmd --permanent --add-port=12000-13999/tcp || true
+    firewall-cmd --permanent --add-port=14000-15999/tcp || true
+    firewall-cmd --permanent --add-port=16000-16499/tcp || true
+    firewall-cmd --permanent --add-port=17000-17999/tcp || true
+    firewall-cmd --permanent --add-port=18000-18999/tcp || true
+    firewall-cmd --permanent --add-port=19000-19999/tcp || true
+    firewall-cmd --permanent --add-port=20000-20999/tcp || true
+    firewall-cmd --permanent --add-port=50000-55000/udp || true
     firewall-cmd --reload || true
     log "Default firewall rules applied."
 }

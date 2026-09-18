@@ -22,6 +22,20 @@ ALERT_FILE="$BASE_PATH/storage/update_available.json"
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"; }
 
+# Pick a PHP CLI that has pdo_mysql (migrations + manifest parsing need it).
+PHP_BIN="${PH_PHP_BIN:-}"
+if [ -z "$PHP_BIN" ] || [ ! -x "$PHP_BIN" ]; then
+    for c in php8.4 php8.3 php8.2 php8.1 php8.5 php; do
+        p="$(command -v "$c" 2>/dev/null || true)"
+        if [ -z "$p" ] && [ -x "/usr/bin/$c" ]; then p="/usr/bin/$c"; fi
+        if [ -n "$p" ] && "$p" -r 'exit(extension_loaded("pdo_mysql") ? 0 : 1);' >/dev/null 2>&1; then
+            PHP_BIN="$p"; break
+        fi
+    done
+    [ -n "$PHP_BIN" ] || PHP_BIN="$(command -v php || echo /usr/bin/php)"
+fi
+log "Using PHP: $PHP_BIN ("$("$PHP_BIN" -v 2>/dev/null | head -1 | cut -d' ' -f1-2)")"
+
 # ---------------------------------------------------------------------------
 # Config: update source + channel come from .env / AWS-less env (see Core\Updates)
 # ---------------------------------------------------------------------------
@@ -31,7 +45,7 @@ CHANNEL=$(grep -m1 '^UPDATE_CHANNEL=' "$BASE_PATH/.env" 2>/dev/null | cut -d= -f
 [ -n "$CHANNEL" ] || CHANNEL='stable'
 
 JSON_GET() { # $1=file $2=key
-    /usr/bin/php -r '$d=json_decode(file_get_contents($argv[1]),true); echo isset($d[$argv[2]])?(is_array($d[$argv[2]])?json_encode($d[$argv[2]]):$d[$argv[2]]):"";' "$1" "$2"
+    "$PHP_BIN" -r '$d=json_decode(file_get_contents($argv[1]),true); echo isset($d[$argv[2]])?(is_array($d[$argv[2]])?json_encode($d[$argv[2]]):$d[$argv[2]]):"";' "$1" "$2"
 }
 
 # System-level actions (sudoers/cron/services) only run for a real install path.
@@ -72,7 +86,7 @@ db_creds() {
 # --check : compare installed vs released version, update the alert state
 # ---------------------------------------------------------------------------
 if [ "$1" = "--check" ]; then
-    /usr/bin/php "$BASE_PATH/scripts/updates_check.php" 10 2>&1 | tail -1
+    "$PHP_BIN" "$BASE_PATH/scripts/updates_check.php" 10 2>&1 | tail -1
     chown www-data:www-data "$ALERT_FILE" 2>/dev/null || true
     chmod 644 "$ALERT_FILE" 2>/dev/null || true
     exit 0
@@ -89,7 +103,7 @@ if [ "$1" = "--rollback" ]; then
         tar xzf "$BACKUP_TAR" -C "$BASE_PATH" 2>&1 | tee -a "$LOG_FILE" || log "Restore tar failed"
     fi
     if [ -f "$STATE_BEFORE" ]; then
-        if /usr/bin/php -r '$d=json_decode(file_get_contents($argv[1]),true); echo is_array($d)?"ok":"";' "$STATE_BEFORE" | grep -q ok; then
+        if "$PHP_BIN" -r '$d=json_decode(file_get_contents($argv[1]),true); echo is_array($d)?"ok":"";' "$STATE_BEFORE" | grep -q ok; then
             cp "$STATE_BEFORE" "$STATE_FILE"
             log "Restored release state."
         fi
@@ -102,7 +116,7 @@ if [ "$1" = "--rollback" ]; then
     chown -R www-data:www-data "$BASE_PATH" 2>&1 | tee -a "$LOG_FILE" || true
     systemctl reload apache2 2>&1 | tee -a "$LOG_FILE" || log "Apache reload failed"
     rm -f "$LOCK_FILE"
-    /usr/bin/php "$BASE_PATH/scripts/updates_check.php" 10 > /dev/null 2>&1 || true
+    "$PHP_BIN" "$BASE_PATH/scripts/updates_check.php" 10 > /dev/null 2>&1 || true
     log "Rollback complete."
     exit 0
 fi
@@ -155,7 +169,7 @@ fi
 # Up to date?
 if [ "$RCODE" -le "$ICODE" ]; then
     log "Already up to date (installed $ICODE, latest $RCODE)."
-    /usr/bin/php "$BASE_PATH/scripts/updates_check.php" 10 > /dev/null 2>&1 || true
+    "$PHP_BIN" "$BASE_PATH/scripts/updates_check.php" 10 > /dev/null 2>&1 || true
     exit 0
 fi
 
@@ -173,7 +187,7 @@ if [ -n "$RREQ" ] && [ "$RREQ" != "0" ] && [ "$ICODE" -lt "$RREQ" ]; then
     exit 1
 fi
 
-[ -n "$RPHP" ] && log "Requires PHP: $RPHP (installed: $(php -r 'echo PHP_VERSION;'))"
+[ -n "$RPHP" ] && log "Requires PHP: $RPHP (installed: $("$PHP_BIN" -r 'echo PHP_VERSION;'))"
 
 # ---------------------------------------------------------------------------
 # Download + verify
@@ -243,30 +257,23 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Migrations
+# Migrations (ledger-based, idempotent; failures are reported, never fatal)
 # ---------------------------------------------------------------------------
 log "Running migrations..."
 db_creds
-run_one_migration() {
-    local f="$1"
-    case "$f" in
-        *.sql) mysql -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < "$f" 2>&1 | tee -a "$LOG_FILE" || log "Migration $f failed (may already be applied)";;
-        *.php) php "$BASE_PATH/scripts/migrate.php" "$f" 2>&1 | tee -a "$LOG_FILE" || log "Migration $f failed (see log above)";;
-    esac
-}
+MIG_LIST=""
 MIGS=$(JSON_GET "$REMOTE_JSON" migrations)
 if [ -n "$MIGS" ] && [ "$MIGS" != "[]" ] && [ "$MIGS" != "null" ]; then
-    echo "$MIGS" | /usr/bin/php -r '$d=json_decode(stream_get_contents(STDIN),true); foreach($d as $m) echo $m, "\n";' | while IFS= read -r rel; do
-        [ -n "$rel" ] || continue
-        log "Running $rel"
-        run_one_migration "$BASE_PATH/database/migrations/$rel"
-    done
+    MIG_LIST=$(echo "$MIGS" | "$PHP_BIN" -r '$d=json_decode(stream_get_contents(STDIN),true); foreach((array)$d as $m){ echo trim($m),"\n"; }' | while IFS= read -r rel; do
+        [ -n "$rel" ] && [ -f "$BASE_PATH/database/migrations/$rel" ] && printf '%s,' "$rel"
+    done | sed 's/,$//')
+fi
+if [ -n "$MIG_LIST" ]; then
+    log "Running manifest migrations..."
+    "$PHP_BIN" "$BASE_PATH/scripts/migrate.php" --run --db="$DB_NAME" --files="$MIG_LIST" 2>&1 | tee -a "$LOG_FILE"
 else
-    for m in "$BASE_PATH/database/migrations/"*.sql "$BASE_PATH/database/migrations/"*.php; do
-        [ -f "$m" ] || continue
-        log "Running $(basename "$m")"
-        run_one_migration "$m"
-    done
+    log "No manifest migration list - running all migrations in the tree..."
+    "$PHP_BIN" "$BASE_PATH/scripts/migrate.php" --run-all --db="$DB_NAME" 2>&1 | tee -a "$LOG_FILE"
 fi
 
 # ---------------------------------------------------------------------------
@@ -275,22 +282,38 @@ fi
 if [ "$BASE_PATH" = "$SYSTEM_PATH" ]; then
 log "Installing crons..."
 CRON_FILE=/etc/cron.d/planet-hosts-backup
-if [ ! -f "$CRON_FILE" ]; then
-    echo "* * * * * root /usr/bin/php $BASE_PATH/scripts/backup_cron.php > /dev/null 2>&1" > "$CRON_FILE"
-    chmod 644 "$CRON_FILE"
+if [ ! -f "$CRON_FILE" ] || ! grep -q "backup_cron.php" "$CRON_FILE" 2>/dev/null; then
+    if printf '* * * * * root %s %s/scripts/backup_cron.php > /dev/null 2>&1\n' "$PHP_BIN" "$BASE_PATH" > "$CRON_FILE" 2>/dev/null; then
+        chmod 644 "$CRON_FILE" 2>/dev/null || true
+        log "Backup cron installed."
+    else
+        log "WARNING: could not write $CRON_FILE (continuing)"
+    fi
 fi
 UPD_CRON_FILE=/etc/cron.d/planet-hosts-updates
-if [ ! -f "$UPD_CRON_FILE" ]; then
-    echo "*/5 * * * * root /bin/bash $BASE_PATH/scripts/check_update.sh >/dev/null 2>&1" > "$UPD_CRON_FILE"
-    chmod 644 "$UPD_CRON_FILE"
+if [ ! -f "$UPD_CRON_FILE" ] || ! grep -q "check_update.sh" "$UPD_CRON_FILE" 2>/dev/null; then
+    if printf '*/5 * * * * root /bin/bash %s/scripts/check_update.sh >/dev/null 2>&1\n' "$BASE_PATH" > "$UPD_CRON_FILE" 2>/dev/null; then
+        chmod 644 "$UPD_CRON_FILE" 2>/dev/null || true
+        log "Update-check cron installed."
+    else
+        log "WARNING: could not write $UPD_CRON_FILE (continuing)"
+    fi
 fi
+fi
+
+# ---------------------------------------------------------------------------
+# System config drift-repair (idempotent; non-fatal when they cannot run)
+# ---------------------------------------------------------------------------
+if [ "$BASE_PATH" = "$SYSTEM_PATH" ]; then
+    [ -f "$BASE_PATH/scripts/apply_phpmyadmin_signon.sh" ] && bash "$BASE_PATH/scripts/apply_phpmyadmin_signon.sh" >> "$LOG_FILE" 2>&1 || log "pma signon apply skipped/failed (non-fatal)"
+    [ -f "$BASE_PATH/scripts/apply_terminal_sudo.sh" ] && bash "$BASE_PATH/scripts/apply_terminal_sudo.sh" >> "$LOG_FILE" 2>&1 || log "terminal sudo apply skipped/failed (non-fatal)"
 fi
 
 # ---------------------------------------------------------------------------
 # Finalize
 # ---------------------------------------------------------------------------
 log "Linting PHP..."
-php -l "$BASE_PATH/public/index.php" 2>&1 | tee -a "$LOG_FILE"
+"$PHP_BIN" -l "$BASE_PATH/public/index.php" 2>&1 | tee -a "$LOG_FILE"
 
 chown -R www-data:www-data "$BASE_PATH" 2>&1 | tee -a "$LOG_FILE" || true
 bash "$BASE_PATH/scripts/setup_storage.sh" 2>&1 | tee -a "$LOG_FILE" || true
@@ -327,7 +350,7 @@ else
 fi
 
 # Refresh the dashboard alert
-/usr/bin/php "$BASE_PATH/scripts/updates_check.php" 10 > /dev/null 2>&1 || true
+"$PHP_BIN" "$BASE_PATH/scripts/updates_check.php" 10 > /dev/null 2>&1 || true
 rm -f "$LOCK_FILE"
 
 log "Update complete: Ph-Whm $RVER (code $RCODE)."
