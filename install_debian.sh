@@ -805,7 +805,8 @@ cat > /etc/apache2/sites-available/panel-ports.conf <<VHOSTS
     RewriteRule ^/$ /portal_user.php [L]
 </VirtualHost>
 <VirtualHost *:2086>
-    DocumentRoot $PANEL_DIR/public; ServerName $SERVER_IP
+    DocumentRoot $PANEL_DIR/public
+    ServerName $SERVER_IP
     <Directory $PANEL_DIR/public>
         Options Indexes FollowSymLinks
         AllowOverride All
@@ -815,7 +816,8 @@ cat > /etc/apache2/sites-available/panel-ports.conf <<VHOSTS
     RewriteRule ^/$ /portal_reseller.php [L]
 </VirtualHost>
 <VirtualHost *:2087>
-    DocumentRoot $PANEL_DIR/public; ServerName $SERVER_IP
+    DocumentRoot $PANEL_DIR/public
+    ServerName $SERVER_IP
     <Directory $PANEL_DIR/public>
         Options Indexes FollowSymLinks
         AllowOverride All
@@ -825,7 +827,8 @@ cat > /etc/apache2/sites-available/panel-ports.conf <<VHOSTS
     RewriteRule ^/$ /admin/login [L,R=302]
 </VirtualHost>
 <VirtualHost *:2096>
-    DocumentRoot $PANEL_DIR/public; ServerName $SERVER_IP
+    DocumentRoot $PANEL_DIR/public
+    ServerName $SERVER_IP
     <Directory $PANEL_DIR/public>
         Options Indexes FollowSymLinks
         AllowOverride All
