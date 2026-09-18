@@ -1,17 +1,17 @@
 {
-  "version": "1.3.2",
-  "version_code": 1320,
+  "version": "1.3.3",
+  "version_code": 1330,
   "channel": "stable",
-  "release_date": "2026-09-17",
+  "release_date": "2026-09-18",
   "release_type": "Core Release",
   "security": false,
   "require_version_code": 1300,
   "php_required": ">=7.4",
   "requires_reboot": false,
   "requires_services_restart": ["apache2"],
-  "migrations": [],
-  "download": "https://codeload.github.com/j68418730/whm/tar.gz/60a8d43",
-  "checksum": "515b7fe091550cb9c22792d01b42d2bc27085e3deedafd3331618fe85d9c811e",
-  "target_sha": "60a8d43",
-  "release_notes": "Full production tree sync: release now contains ALL live-server working-tree code (dashboard, server overview 299KB page, DNS, licensing, support KB, homepage banner) so the updater installs an identical panel to production. Includes: account management overhaul (aggregated services, working delete, billing counts), package edit redesign, chat dashboard in-panel manage, phpMyAdmin/webmail fixes, updater hardening."
+  "migrations": ["2026_07_15_sync_radio_streams.sql"],
+  "download": "https://codeload.github.com/j68418730/whm/tar.gz/03588bf",
+  "checksum": "9268965a0cbb8a71cd5018cc40af0e93a07f35a3ee6d5be19f33dc9cbd1c3b46",
+  "target_sha": "03588bf",
+  "release_notes": "UPDATER FIX RELEASE: framework-aware migration runner (scripts/migrate.php supports --run/--run-all ledger-based idempotent batch; SQL + PHP migrations), update.sh + check_update.sh now auto-select a PHP CLI that has pdo_mysql (fixes 'could not find driver' when /usr/bin/php defaults to php8.5), FK-safe radio_streams re-sync (no more TRUNCATE constraint error), installer pins PHP with pdo_mysql, helpers branding (company_name), chat dashboard create form, server overview SHOUTcast checks. Test server update flow now works end-to-end."
 }
