@@ -60,26 +60,59 @@ class SslController extends Controller
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+
         if ($this->request->method() === 'POST') {
-            $email = $this->request->post('email', '');
             $enabled = $this->request->post('enabled', '0');
-            if ($enabled === '1' && $email) {
-                shell_exec("certbot --apache --non-interactive --agree-tos --email " . escapeshellarg($email) . " 2>&1 &");
-                $_SESSION['success_message'] = 'AutoSSL enabled. Certificates will be provisioned in the background.';
+            $email = trim($this->request->post('email', ''));
+            $renewDays = max(7, (int)$this->request->post('renew_days', 30));
+            $intervalDays = max(1, (int)$this->request->post('interval_days', 30));
+            $settings = [
+                'autossl_enabled' => $enabled === '1' ? '1' : '0',
+                'autossl_email' => $email ?: 'admin@planet-hosts.com',
+                'autossl_renew_days' => (string)$renewDays,
+                'autossl_interval_days' => (string)$intervalDays,
+            ];
+            foreach ($settings as $k => $v) {
+                $existing = $this->db->table('automation_settings')->where('setting_key', $k)->first();
+                if ($existing) {
+                    $this->db->table('automation_settings')->where('setting_key', $k)->update(['setting_value' => $v]);
+                } else {
+                    $this->db->table('automation_settings')->insertGetId(['setting_key' => $k, 'setting_value' => $v]);
+                }
             }
+            $_SESSION['success_message'] = $enabled === '1'
+                ? 'AutoSSL enabled — monthly renewal sweep scheduled (every ' . $intervalDays . ' days, renews certs expiring within ' . $renewDays . ' days).'
+                : 'AutoSSL disabled.';
             $this->response->redirect('/admin/ssl/autossl');
             exit;
         }
+
+        // Load current settings
+        $settings = [];
+        foreach (($this->db->table('automation_settings')->get() ?: []) as $r) { $settings[$r->setting_key] = $r->setting_value; }
+        $lastRunRaw = (int)($settings['autossl_last_run'] ?? 0);
+        $lastRunFile = BASE_PATH . '/storage/autossl_last_run.json';
+        $lastRunData = is_file($lastRunFile) ? (json_decode((string)@file_get_contents($lastRunFile), true) ?: []) : [];
+
         return $this->view('admin.ssl.autossl', [
             'user' => $user, 'theme_settings' => $theme_settings, 'title' => 'AutoSSL',
+            'enabled' => ($settings['autossl_enabled'] ?? '0') === '1',
+            'email' => $settings['autossl_email'] ?? 'admin@planet-hosts.com',
+            'renew_days' => (int)($settings['autossl_renew_days'] ?? 30),
+            'interval_days' => (int)($settings['autossl_interval_days'] ?? 30),
+            'last_run' => $lastRunRaw ? date('Y-m-d H:i:s', $lastRunRaw) : ($lastRunData['last_run'] ?? 'Never'),
+            'last_run_data' => $lastRunData,
+            'last_certs' => $this->db->table('ssl_certs')->orderBy('expires_at', 'ASC')->limit(15)->get() ?: [],
         ]);
     }
 
     public function autosslRun()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $output = shell_exec("certbot renew --apache --non-interactive 2>&1");
-        $_SESSION['success_message'] = $output ? 'AutoSSL run completed.' : 'certbot command failed.';
+        // Manual sweep — bypass the monthly gate via --force
+        $cmd = 'sudo -n /bin/bash -c ' . escapeshellarg(BASE_PATH . '/scripts/autossl_cron.php --force');
+        $output = shell_exec($cmd);
+        $_SESSION['success_message'] = $output ? trim($output) : 'AutoSSL run completed (no output).';
         $this->response->redirect('/admin/ssl/autossl');
     }
 }

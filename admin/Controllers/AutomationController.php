@@ -44,6 +44,7 @@ class AutomationController extends Controller
             'email_notifications_enabled','smtp_host','smtp_port','smtp_username','smtp_password','smtp_from',
             'sms_notifications_enabled','sms_provider','sms_api_key','sms_from',
             'notify_admin_email','notify_admin_sms',
+            'autossl_enabled','autossl_email','autossl_renew_days','autossl_interval_days',
         ];
         foreach ($keys as $k) {
             $v = $this->request->post($k, '');

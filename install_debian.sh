@@ -1129,6 +1129,12 @@ chmod 644 /etc/cron.d/planet-hosts-automation
 echo "*/5 * * * * root /bin/bash $PANEL_DIR/scripts/check_update.sh >/dev/null 2>&1" > /etc/cron.d/planet-hosts-updates
 chmod 644 /etc/cron.d/planet-hosts-updates
 log "CRON" "update-check" "OK" "Update-check cron installed"
+
+# AutoSSL monthly renewal sweep (checks + renews any cert expiring within 30d;
+# self-gates to once per 30 days via automation_settings.autossl_last_run)
+echo "0 3 1 * * root $PHP_BIN $PANEL_DIR/scripts/autossl_cron.php >/dev/null 2>&1" > /etc/cron.d/planet-hosts-autossl
+chmod 644 /etc/cron.d/planet-hosts-autossl
+log "CRON" "autossl" "OK" "AutoSSL monthly renewal cron installed"
 log "DATABASE" "setup" "OK" "Database configured"
 
 # 8. License activation
