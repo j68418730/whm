@@ -886,8 +886,12 @@ class SetupController extends Controller
         }
 
         // Apache
-        $apacheUp = @exec('systemctl is-active apache2 2>/dev/null') === 'active';
+        $apacheUp = @exec('systemctl is-active apache2 2>/dev/null') === 'active' || @exec('systemctl is-active httpd 2>/dev/null') === 'active';
         $results['apache'] = ['label' => 'Apache', 'status' => $apacheUp ? 'pass' : 'warning', 'message' => $apacheUp ? 'Running' : 'Not running'];
+
+        // Nginx
+        $nginxUp = @exec('systemctl is-active nginx 2>/dev/null') === 'active';
+        $results['nginx'] = ['label' => 'Nginx (reverse proxy)', 'status' => $nginxUp ? 'pass' : 'warning', 'message' => $nginxUp ? 'Running on :8080' : 'Not running'];
 
         // DNS
         $namedUp = @exec('systemctl is-active named 2>/dev/null') === 'active';
@@ -903,19 +907,28 @@ class SetupController extends Controller
 
         // Mail
         $postfixUp = @exec('systemctl is-active postfix 2>/dev/null') === 'active';
-        $results['mail'] = ['label' => 'Mail (Postfix)', 'status' => $postfixUp ? 'pass' : 'warning', 'message' => $postfixUp ? 'Running' : 'Not running'];
+        $dovecotUp = @exec('systemctl is-active dovecot 2>/dev/null') === 'active';
+        $results['mail'] = ['label' => 'Mail (Postfix + Dovecot)', 'status' => ($postfixUp && $dovecotUp) ? 'pass' : 'warning', 'message' => ($postfixUp ? 'Postfix' : 'Postfix missing') . ($dovecotUp ? ' + Dovecot' : ' / Dovecot missing')];
 
         // Firewall
         $fwUp = @exec('systemctl is-active firewalld 2>/dev/null') === 'active';
-        $results['firewall'] = ['label' => 'Firewall', 'status' => $fwUp ? 'pass' : 'warning', 'message' => $fwUp ? 'Running' : 'Not running'];
+        $f2bUp = @exec('systemctl is-active fail2ban 2>/dev/null') === 'active';
+        $results['firewall'] = ['label' => 'Firewall (firewalld + fail2ban)', 'status' => ($fwUp && $f2bUp) ? 'pass' : 'warning', 'message' => ($fwUp ? 'firewalld' : 'firewalld missing') . ($f2bUp ? ' + fail2ban' : ' / fail2ban missing')];
+
+        // ModSecurity + OWASP CRS
+        $msInst = @exec('command -v modsec_rules_file 2>/dev/null') !== '' || is_file('/etc/modsecurity/modsecurity.conf');
+        $crsDir = is_dir('/usr/share/modsecurity-crs') || is_dir('/usr/share/modsecurity_crs');
+        $results['modsecurity'] = ['label' => 'ModSecurity + OWASP CRS', 'status' => ($msInst && $crsDir) ? 'pass' : 'warning', 'message' => ($msInst ? 'ModSecurity' : 'ModSecurity missing') . ($crsDir ? ' + CRS' : ' / CRS missing')];
 
         // Streaming
-        $icecastUp = @exec('systemctl is-active icecast2 2>/dev/null') === 'active';
+        $icecastUp = @exec('systemctl is-active icecast2 2>/dev/null') === 'active' || @exec('systemctl is-active icecast 2>/dev/null') === 'active';
         $shoutcastUp = @exec('systemctl is-active shoutcast 2>/dev/null') === 'active';
+        $shoutcastV1 = @exec('systemctl is-active shoutcast-v1 2>/dev/null') === 'active';
         $streaming = [];
         if ($icecastUp) $streaming[] = 'Icecast';
-        if ($shoutcastUp) $streaming[] = 'SHOUTcast';
-        $results['streaming'] = ['label' => 'Streaming Services', 'status' => !empty($streaming) ? 'pass' : 'info', 'message' => !empty($streaming) ? implode(', ', $streaming) : 'Not configured'];
+        if ($shoutcastUp) $streaming[] = 'SHOUTcast v2';
+        if ($shoutcastV1) $streaming[] = 'SHOUTcast v1';
+        $results['streaming'] = ['label' => 'Streaming Services', 'status' => !empty($streaming) ? 'pass' : 'warning', 'message' => !empty($streaming) ? implode(', ', $streaming) : 'Not configured'];
 
         // Storage
         $storageDir = '/var/www/radiohosting/storage/radio_downloads';

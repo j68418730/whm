@@ -945,6 +945,27 @@ iptables -I INPUT -p tcp --dport 10000:20000 -j ACCEPT 2>/dev/null || true
 log "FIREWALL" "ports" "OK" "Firewall ports opened"
 systemctl restart apache2
 
+# Align Postfix + Dovecot to Maildir in each user's home (panel mail accounts are system users)
+log "MAIL" "configure" "RUNNING" "Aligning Postfix/Dovecot Maildir delivery"
+HOSTNAME_FQDN="$(hostname -f 2>/dev/null || hostname)"
+DOMAIN_NAME="${HOSTNAME_FQDN#*.}"
+[ "$DOMAIN_NAME" = "$HOSTNAME_FQDN" ] && DOMAIN_NAME="$HOSTNAME_FQDN"
+postconf -e "myhostname = $HOSTNAME_FQDN" 2>/dev/null || true
+postconf -e "mydomain = $DOMAIN_NAME" 2>/dev/null || true
+postconf -e "myorigin = \$mydomain" 2>/dev/null || true
+postconf -e "inet_interfaces = all" 2>/dev/null || true
+postconf -e "mydestination = \$myhostname, localhost.\$mydomain, localhost, \$mydomain" 2>/dev/null || true
+postconf -e "home_mailbox = Maildir/" 2>/dev/null || true
+postconf -e "mailbox_command = /usr/lib/dovecot/deliver -c /etc/dovecot/dovecot.conf" 2>/dev/null || true
+postconf -e "smtpd_sasl_auth_enable = yes" 2>/dev/null || true
+postconf -e "smtpd_sasl_type = dovecot" 2>/dev/null || true
+postconf -e "smtpd_sasl_path = private/auth" 2>/dev/null || true
+sed -i 's|^mail_location = .*|mail_location = maildir:~/Maildir|' /etc/dovecot/conf.d/10-mail.conf 2>/dev/null || echo "mail_location = maildir:~/Maildir" >> /etc/dovecot/conf.d/10-mail.conf
+grep -q "unix_listener /var/spool/postfix/private/auth" /etc/dovecot/conf.d/10-master.conf 2>/dev/null || \
+    sed -i 's|unix_listener auth-userdb {|unix_listener /var/spool/postfix/private/auth {\n    mode = 0666\n    user = postfix\n    group = postfix\n}\nunix_listener auth-userdb {|' /etc/dovecot/conf.d/10-master.conf 2>/dev/null || true
+systemctl restart postfix dovecot 2>/dev/null || true
+log "MAIL" "configure" "OK" "Postfix/Dovecot aligned to Maildir"
+
 # 7. Database
 echo "[7/8] Configuring database..."
 log "DATABASE" "setup" "RUNNING" "Creating database and user"
@@ -1042,6 +1063,12 @@ chmod 644 "$PANEL_DIR/.installed"
 # Automation cron
 echo "* * * * * php $PANEL_DIR/public/index.php /admin/automation/run >/dev/null 2>&1" > /etc/cron.d/planet-hosts-automation
 chmod 644 /etc/cron.d/planet-hosts-automation
+
+# Update-check cron (silently refreshes storage/update_available.json every 5 min
+# so the dashboard alert + update page stay current on fresh installs)
+echo "*/5 * * * * root /bin/bash $PANEL_DIR/scripts/check_update.sh >/dev/null 2>&1" > /etc/cron.d/planet-hosts-updates
+chmod 644 /etc/cron.d/planet-hosts-updates
+log "CRON" "update-check" "OK" "Update-check cron installed"
 log "DATABASE" "setup" "OK" "Database configured"
 
 # 8. License activation
@@ -1162,10 +1189,11 @@ cp -r "$PANEL_DIR/theme/assets/img/livechat" "$PANEL_DIR/public/theme/assets/img
 
 # 13. Security Center toolset (install/*.sh modules)
 echo "[13/13] Installing Security Center tools..."
-log "SECURITY" "center" "RUNNING" "Executing install modules 00-15"
+log "SECURITY" "center" "RUNNING" "Executing install modules 00-18"
 for m in 00-prerequisites 01-firewall 02-clamav 03-yara 04-trivy 05-osv \
          06-lynis 07-aide 08-rkhunter 09-chkrootkit 10-logwatch 11-goaccess \
-         12-testssl 13-spamassassin 14-opendkim 15-security-center; do
+         12-testssl 13-spamassassin 14-opendkim 15-logwatchdog 16-web-server \
+         17-streaming 18-mail-security 15-security-center; do
     log "SECURITY" "$m" "RUNNING" "Executing install/$m.sh"
     bash "$PANEL_DIR/install/$m.sh" >>/var/log/planethosts/install.log 2>&1 || \
         log "SECURITY" "$m" "WARN" "install/$m.sh exited non-zero"

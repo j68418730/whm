@@ -40,7 +40,7 @@ if (!function_exists('admin_menu_sections')) {
             ['group' => 'Hosting', 'items' => [
                 ['label' => 'DNS Zones', 'href' => '/admin/dns', 'icon' => 'bi-globe2', 'match' => ['/admin/dns']],
                 ['label' => 'Email', 'href' => '/admin/email', 'icon' => 'bi-envelope', 'match' => ['/admin/email']],
-                ['label' => 'Webmail', 'href' => 'https://planet-hosts.com:2097/', 'icon' => 'bi-envelope-open', 'match' => [], 'ext' => true],
+                ['label' => 'Webmail', 'href' => 'https://planet-hosts.com:2096/', 'icon' => 'bi-envelope-open', 'match' => [], 'ext' => true],
                 ['label' => 'phpMyAdmin', 'href' => '/admin/mysql', 'icon' => 'bi-database', 'match' => ['/admin/mysql']],
                 ['label' => 'FTP', 'href' => '/admin/ftp', 'icon' => 'bi-folder2', 'match' => ['/admin/ftp']],
                 ['label' => 'IP Management', 'href' => '/admin/ip', 'icon' => 'bi-ethernet', 'match' => ['/admin/ip']],
