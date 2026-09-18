@@ -1,6 +1,6 @@
 {
-  "version": "1.3.7",
-  "version_code": 1370,
+  "version": "1.3.8",
+  "version_code": 1380,
   "channel": "stable",
   "release_date": "2026-09-18",
   "release_type": "Core Release",
@@ -10,8 +10,8 @@
   "requires_reboot": false,
   "requires_services_restart": ["apache2"],
   "migrations": ["2026_09_18_terminal_package_access.sql"],
-  "download": "https://codeload.github.com/j68418730/whm/tar.gz/638e794",
-  "checksum": "f367e991b7a2896d0a92ab961a2885b08703afd94e40f0103c0731ad9341bb11",
-  "target_sha": "638e794",
-  "release_notes": "Terminal package access controls: hosting_packages now carries shell_access (disabled/jailed/normal), terminal, ssh_access, sftp, api_shell, cron. Package editor (edit + create) has a Shell & Terminal Access card. /user/terminal is gated on the package permission (denied view + API block when disabled). Feature lists already had ssh_access/terminal/cron_jobs/git_access/api_access flags. Verified: testacct (jailed+terminal) gets real PTY shell; with terminal=0 the customer sees 'Terminal Not Available' and session create returns an error. Migration 2026_09_18_terminal_package_access."
+  "download": "https://codeload.github.com/j68418730/whm/tar.gz/a2a9292",
+  "checksum": "9f44012908ecf9664b099f33e1d4b4b8bbdf60334d4623a4865e9c1f082d22e2",
+  "target_sha": "a2a9292",
+  "release_notes": "FIXES test-server 404s: install_debian.sh generated Apache vhosts with 'DocumentRoot ...; ServerName ...' on ONE line (invalid Apache syntax — the ';' makes ServerName part of DocumentRoot) for panel ports 2086/2087/2096, producing a broken vhost where every panel page returned 404. Fixed by splitting to separate lines (matches the working live vhost). The RHEL installer (installer/install.sh) previously created only a port-80 vhost and NO panel ports, so the panel was unreachable on 2082/2086/2087/2096 — it now writes radiohosting-panel-ports.conf with AllowOverride All + front-controller rewrite + Listen directives. Both verified bash-syntax clean; the generated vhost now matches the proven-working live panel-ports.conf."
 }
