@@ -1,12 +1,19 @@
 -- Re-sync radio_streams from streaming_stations (FK-safe, idempotent).
--- TRUNCATE is invalid whenever radio_autodj references radio_streams, so wipe
--- orphaned rows with DELETE and upsert instead.
+-- 1) Widen radio_streams enums to varchar so any streaming_stations value
+--    (active/running/stopped, icecast/shoutcast/shoutcast1/shoutcast2/...)
+--    can be stored without 1265 truncation errors.
+-- 2) TRUNCATE is invalid whenever radio_autodj references radio_streams, so
+--    wipe orphaned rows with DELETE and upsert instead.
+ALTER TABLE radio_streams
+  MODIFY COLUMN server_type varchar(50) NOT NULL DEFAULT 'icecast',
+  MODIFY COLUMN status varchar(50) NOT NULL DEFAULT 'stopped';
+
 DELETE rs FROM radio_streams rs
 LEFT JOIN streaming_stations ss ON ss.id = rs.id
 WHERE ss.id IS NULL;
 
 INSERT INTO radio_streams (id, user_id, server_type, port, password, config_path, status, listener_count, bandwidth_used, created_at, updated_at, server_name, mount_point, bitrate, format, max_listeners, public_server, plain_password, autodj_enabled, ssl_enabled)
-SELECT ss.id, ss.user_id, ss.server_type, ss.port, ss.password, ss.config_path, ss.status, ss.listener_count, ss.bandwidth_used, ss.created_at, ss.updated_at, ss.server_name, ss.mount_point, ss.bitrate, ss.format, ss.max_listeners, ss.public_server, ss.plain_password, COALESCE(ss.autodj_enabled, 0), COALESCE(ss.ssl_enabled, 0)
+SELECT ss.id, ss.user_id, ss.server_type, ss.port, ss.password, ss.config_path, ss.status, ss.listener_count, 0, ss.created_at, ss.updated_at, ss.server_name, ss.mount_point, ss.bitrate, ss.format, ss.max_listeners, ss.public_server, ss.plain_password, COALESCE(ss.autodj_enabled, 0), COALESCE(ss.ssl_enabled, 0)
 FROM streaming_stations ss
 ON DUPLICATE KEY UPDATE
   user_id = VALUES(user_id), server_type = VALUES(server_type), port = VALUES(port),
