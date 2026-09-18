@@ -311,6 +311,86 @@ class UserController extends Controller
     }
 
     public function terminal() { $u = $this->loadUser(); return $this->view('user.terminal', ['user' => $u, 'hosting' => $this->hostingUser, 'title' => 'Terminal']); }
+
+    /** Create a PTY terminal session for the logged-in customer (runs as their Linux account). */
+    public function terminalCreate()
+    {
+        $u = $this->loadUser();
+        if (!$this->hostingUser) { $this->response->json(['ok' => false, 'error' => 'No hosting account'])->send(); exit; }
+        $cols = (int)($_POST['cols'] ?? 80);
+        $rows = (int)($_POST['rows'] ?? 24);
+        try {
+            $svc = new \Services\TerminalSessionService();
+            $s = $svc->create('customer', $this->hostingUser, $this->hostingUser->username . '@' . ($this->hostingUser->domain ?: gethostname()), $cols, $rows);
+            $this->response->json(['ok' => true, 'session' => $s])->send();
+        } catch (\Exception $e) {
+            $this->response->json(['ok' => false, 'error' => $e->getMessage()])->send();
+        }
+        exit;
+    }
+
+    /** Validate that a session belongs to the current customer. */
+    protected function ownTerminalSession($sid)
+    {
+        $u = $this->loadUser();
+        if (!$this->hostingUser) return null;
+        $sid = preg_replace('/[^a-f0-9]/', '', (string)$sid);
+        $svc = new \Services\TerminalSessionService();
+        $s = $svc->session($sid);
+        if (!$s || ($s['user'] ?? '') !== $this->hostingUser->username) return null;
+        return $s;
+    }
+
+    public function terminalStream($sid)
+    {
+        $s = $this->ownTerminalSession($sid);
+        $sid = preg_replace('/[^a-f0-9]/', '', (string)$sid);
+        if (!$s) { header('Content-Type: text/event-stream'); echo "event: error\ndata: Unauthorized\n\n"; exit; }
+        $svc = new \Services\TerminalSessionService();
+        header('Content-Type: text/event-stream'); header('Cache-Control: no-cache'); header('X-Accel-Buffering: no');
+        $offset = (int)($_GET['offset'] ?? 0);
+        $lastPing = time(); $lastEof = 0;
+        while (true) {
+            if (connection_aborted()) break;
+            $res = $svc->outputSince($sid, $offset);
+            if ($res['data'] !== '') { echo "data: " . base64_encode($res['data']) . "\n\n"; @ob_flush(); @flush(); $offset = $res['offset']; $lastPing = time(); $lastEof = 0; }
+            if ($res['eof']) { $lastEof++; if ($lastEof >= 3) { echo "event: end\ndata: session\n\n"; @ob_flush(); @flush(); break; } }
+            if (time() - $lastPing > 15) { echo ": ping\n\n"; @ob_flush(); @flush(); $lastPing = time(); }
+            usleep(150000);
+        }
+        exit;
+    }
+
+    public function terminalInput($sid)
+    {
+        $s = $this->ownTerminalSession($sid);
+        $sid = preg_replace('/[^a-f0-9]/', '', (string)$sid);
+        if (!$s) { $this->response->json(['ok' => false])->send(); exit; }
+        $svc = new \Services\TerminalSessionService();
+        $bytes = base64_decode($_POST['data'] ?? '', true) ?: '';
+        $this->response->json(['ok' => $svc->input($sid, $bytes)])->send();
+        exit;
+    }
+
+    public function terminalResize($sid)
+    {
+        $s = $this->ownTerminalSession($sid);
+        $sid = preg_replace('/[^a-f0-9]/', '', (string)$sid);
+        if (!$s) { $this->response->json(['ok' => false])->send(); exit; }
+        $svc = new \Services\TerminalSessionService();
+        $this->response->json(['ok' => $svc->resize($sid, (int)($_POST['cols'] ?? 80), (int)($_POST['rows'] ?? 24))])->send();
+        exit;
+    }
+
+    public function terminalKill($sid)
+    {
+        $s = $this->ownTerminalSession($sid);
+        $sid = preg_replace('/[^a-f0-9]/', '', (string)$sid);
+        if (!$s) { $this->response->json(['ok' => false])->send(); exit; }
+        $svc = new \Services\TerminalSessionService();
+        $this->response->json(['ok' => $svc->kill($sid)])->send();
+        exit;
+    }
     public function ftp() { $u = $this->loadUser(); $accts = []; $dirs = []; if ($this->hostingUser) { try { $accts = $this->db->table('ftp_accounts')->where('hosting_user_id', $this->hostingUser->id)->get() ?: []; $home = '/home/' . $this->hostingUser->username; $scan = @scandir($home); if ($scan) { foreach ($scan as $f) { if ($f[0] === '.' || !is_dir($home . '/' . $f)) continue; $subs = []; $subScan = @scandir($home . '/' . $f); if ($subScan) { foreach ($subScan as $sf) { if ($sf[0] === '.' || !is_dir($home . '/' . $f . '/' . $sf)) continue; $subs[] = $f . '/' . $sf; } } $dirs[] = ['name' => $f, 'path' => $f, 'children' => $subs]; } } } catch (\Exception $e) {} } return $this->view('user.ftp', ['user' => $u, 'hosting' => $this->hostingUser, 'package' => $this->package, 'ftpAccounts' => $accts, 'ftpDirs' => $dirs, 'title' => 'FTP Manager']); }
     public function ftpCreate() { $u = $this->loadUser(); if (!$this->hostingUser) { header('Location: /user/ftp'); exit; } $username = strtolower(preg_replace('/[^a-z0-9_]/', '', $_POST['username'] ?? '')); $password = $_POST['password'] ?? ''; $dir = trim($_POST['directory'] ?? 'public_html'); $perms = $_POST['permissions'] ?? 'read_write'; $quota = $_POST['quota'] ?? 'unlimited'; $ssl = (int)($_POST['ssl_enabled'] ?? 1); if (!$username || !$password) { $_SESSION['error'] = 'Username and password required.'; header('Location: /user/ftp'); exit; } if (strlen($password) < 6) { $_SESSION['error'] = 'Password must be at least 6 characters.'; header('Location: /user/ftp'); exit; } $reserved = ['admin','root','administrator','superuser','system','sys','www','web','test','user','guest','demo','ftp','mail','mysql','backup','support','info','hostmaster','postmaster','webmaster','nobody','daemon','bin']; if (in_array($username, $reserved)) { $_SESSION['error'] = "Username '{$username}' is reserved."; header('Location: /user/ftp'); exit; } if (str_contains($dir, '..')) { $_SESSION['error'] = 'Invalid directory path.'; header('Location: /user/ftp'); exit; } $fullUser = $this->hostingUser->username . '_' . $username; $existing = $this->db->table('ftp_accounts')->where('username', $fullUser)->first(); if ($existing) { $_SESSION['error'] = "FTP user '{$fullUser}' already exists."; header('Location: /user/ftp'); exit; } try { $this->db->table('ftp_accounts')->insertGetId(['hosting_user_id' => $this->hostingUser->id, 'username' => $fullUser, 'password_hash' => password_hash($password, PASSWORD_DEFAULT), 'directory' => $dir, 'permissions' => $perms, 'quota' => $quota, 'ssl_enabled' => $ssl]); $_SESSION['success'] = "FTP user '{$fullUser}' created."; @exec("sudo mkdir -p /home/{$this->hostingUser->username}/{$dir} 2>/dev/null; sudo useradd -m -d /home/{$this->hostingUser->username}/{$dir} -s /bin/bash {$fullUser} 2>/dev/null; echo '{$password}' | sudo passwd --stdin {$fullUser} 2>/dev/null; sudo mkdir -p /etc/vsftpd_user_conf 2>/dev/null && echo 'local_root=/home/{$this->hostingUser->username}/{$dir}' | sudo tee /etc/vsftpd_user_conf/{$fullUser} >/dev/null"); } catch (\Exception $e) { $_SESSION['error'] = 'Failed to create FTP user.'; } header('Location: /user/ftp'); exit; }
     public function ftpPassword($id) { $u = $this->loadUser(); if ($this->hostingUser) { $pw = $_POST['password'] ?? ''; if (strlen($pw) >= 6) { try { $acct = $this->db->table('ftp_accounts')->where('id', $id)->where('hosting_user_id', $this->hostingUser->id)->first(); if ($acct) { $this->db->table('ftp_accounts')->where('id', $id)->update(['password_hash' => password_hash($pw, PASSWORD_DEFAULT)]); @exec("echo '{$pw}' | sudo passwd --stdin {$acct->username} 2>/dev/null"); $_SESSION['success'] = 'FTP password changed.'; } } catch (\Exception $e) {} } } header('Location: /user/ftp'); exit; }

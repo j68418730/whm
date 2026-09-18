@@ -118,6 +118,11 @@ $router->get('/user/php-switcher', 'User\Controllers\UserController@phpSwitcher'
 $router->post('/user/php-switcher', 'User\Controllers\UserController@phpSwitcher');
 $router->get('/user/tools', 'User\Controllers\UserController@tools');
 $router->get('/user/terminal', 'User\Controllers\UserController@terminal');
+$router->post('/user/terminal/session', 'User\Controllers\UserController@terminalCreate');
+$router->get('/user/terminal/stream/{sid}', 'User\Controllers\UserController@terminalStream');
+$router->post('/user/terminal/input/{sid}', 'User\Controllers\UserController@terminalInput');
+$router->post('/user/terminal/resize/{sid}', 'User\Controllers\UserController@terminalResize');
+$router->post('/user/terminal/kill/{sid}', 'User\Controllers\UserController@terminalKill');
 $router->get('/user/installer', 'User\Controllers\UserController@installer');
 $router->post('/user/installer/install', 'User\Controllers\UserController@installerInstall');
 $router->get('/user/ftp', 'User\Controllers\UserController@ftp');

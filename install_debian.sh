@@ -1207,6 +1207,18 @@ www-data ALL=(ALL) NOPASSWD: /bin/mkdir, /bin/cp, /usr/sbin/a2ensite, /usr/sbin/
 SUDOER
 chmod 440 /etc/sudoers.d/www-data-radio
 
+# www-data sudoers for the Terminal PTY daemon (spawn as ANY Linux user;
+# ROOT sessions -> root, customer/reseller -> that account. OS enforces isolation).
+cat > /etc/sudoers.d/radiohosting-terminal << 'TERM_SUDOER'
+Defaults:www-data !use_pty
+www-data ALL=(ALL:ALL) NOPASSWD: /usr/bin/php /var/www/radiohosting/scripts/terminal_daemon.php
+www-data ALL=(ALL:ALL) NOPASSWD: /usr/bin/php8.4 /var/www/radiohosting/scripts/terminal_daemon.php
+www-data ALL=(ALL:ALL) NOPASSWD: /usr/bin/php8.3 /var/www/radiohosting/scripts/terminal_daemon.php
+www-data ALL=(ALL:ALL) NOPASSWD: /usr/bin/php8.2 /var/www/radiohosting/scripts/terminal_daemon.php
+TERM_SUDOER
+chmod 440 /etc/sudoers.d/radiohosting-terminal
+log "SUDOERS" "terminal" "OK" "Terminal PTY daemon sudoers installed"
+
 cat > /etc/sudoers.d/radiohosting-update << 'SUDOER'
 # Allow WHM UI triggered self-update/rollback
 www-data ALL=(root) NOPASSWD: /bin/bash __PANEL_DIR__/scripts/update.sh

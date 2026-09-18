@@ -101,6 +101,10 @@ class SecurityToolsService
             'logwatchdog' => ['label' => 'Log Size Watchdog', 'binary' => 'find',
                 'script' => '15-logwatchdog', 'status' => 'logwatchdog', 'log' => 'logwatchdog',
                 'scan' => 'sudo /usr/local/bin/ph-logwatchdog', 'group' => 'logs'],
+            'terminal' => ['label' => 'Terminal (PTY shell)', 'binary' => 'bash',
+                'script' => '00-prerequisites', 'status' => 'terminal', 'log' => 'security-center',
+                'scan' => 'sudo -n /usr/bin/php8.4 -r "\$d=[0=>[\"pty\",\"r\"],1=>[\"pty\",\"w\"],2=>[\"pty\",\"w\"]]; \$p=@proc_open([\"/bin/bash\",\"-c\",\"echo PTTYOK\"],\$d,\$pp); if(!\$p){exit(1);} usleep(300000); echo stream_get_contents(\$pp[1]); proc_close(\$p);" 2>/dev/null', 'group' => 'core',
+                'service' => '', 'config' => '/var/www/radiohosting/scripts/terminal_daemon.php'],
         ];
     }
 
