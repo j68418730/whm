@@ -1,6 +1,6 @@
 {
-  "version": "1.3.5",
-  "version_code": 1350,
+  "version": "1.3.6",
+  "version_code": 1360,
   "channel": "stable",
   "release_date": "2026-09-18",
   "release_type": "Core Release",
@@ -10,8 +10,8 @@
   "requires_reboot": false,
   "requires_services_restart": ["apache2"],
   "migrations": ["2026_07_15_sync_radio_streams.sql"],
-  "download": "https://codeload.github.com/j68418730/whm/tar.gz/623cac1",
-  "checksum": "9d4ca21986d5fce962e00a8c66e84d7a68a49d9279a2b3d7b47fe9969821217e",
-  "target_sha": "623cac1",
-  "release_notes": "Security Center 8-state detection: every required component (firewalld, fail2ban, ModSecurity+OWASP CRS, YARA, ClamAV, Trivy, OSV, Lynis, AIDE, rkhunter, chkrootkit, testssl, Logwatch, GoAccess, log watchdog, SpamAssassin, OpenDKIM, Apache, Nginx, Icecast, SHOUTcast v1/v2) reports missing/installed/configured/running/healthy/update/failed/not-detected with reliable binary+service+config probes. New installer modules 16-web-server/17-streaming/18-mail-security. Installer (RHEL) now installs Postfix+Dovecot (Maildir) + SHOUTcast. Fixed live mail delivery (home_mailbox Maildir + Dovecot mail_location). Webmail menu port fixed to 2096. /api/version exposes update state so the dashboard alert banner works. Updater install button uses unquoted sudo path (matches sudoers NOPASSWD). Setup wizard validates required components."
+  "download": "https://codeload.github.com/j68418730/whm/tar.gz/007eade",
+  "checksum": "8586397006ed474ebc9af8829d50533d0f7f92c566fbb3690be029754d0aa288",
+  "target_sha": "007eade",
+  "release_notes": "Terminal rework: real interactive PTY terminal (no fake command box). Browser -> SSE stream -> PTY session daemon (proc_open pty) -> Linux shell. ROOT sessions unrestricted; customer/reseller sessions run as that Linux account via runuser (OS-enforced isolation, verified: cannot read /etc/shadow or other homes). Session lifecycle: create/stream/input/resize/kill/list. New UI with ANSI color renderer + full keyboard (Ctrl+C/D/Z, arrows, Tab, Home/End). Wired into /admin/terminal, /admin/server/terminal, /user/terminal. Audit logging, Security Center entry, Server Health PTY test (actually opens a PTY), installer sudoers + Setup Wizard verification. Legacy exec() endpoints disabled."
 }
