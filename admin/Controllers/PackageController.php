@@ -120,6 +120,12 @@ class PackageController extends Controller
             'dj_accounts' => (int)$this->request->post('dj_accounts', 0),
             'is_active' => 1,
             'has_software' => $this->request->post('has_software', '0') === '1' ? 1 : 0,
+            'shell_access' => in_array($this->request->post('shell_access', 'disabled'), ['disabled','jailed','normal']) ? $this->request->post('shell_access', 'disabled') : 'disabled',
+            'terminal' => $this->request->post('terminal') === 'on' || $this->request->post('terminal') === '1' ? 1 : 0,
+            'ssh_access' => $this->request->post('ssh_access') === 'on' || $this->request->post('ssh_access') === '1' ? 1 : 0,
+            'sftp' => $this->request->post('sftp') === 'on' || $this->request->post('sftp') === '1' ? 1 : 0,
+            'api_shell' => $this->request->post('api_shell') === 'on' || $this->request->post('api_shell') === '1' ? 1 : 0,
+            'cron' => $this->request->post('cron') === 'on' || $this->request->post('cron') === '1' ? 1 : 0,
         ];
         $this->db->table('hosting_packages')->insertGetId($data);
         $_SESSION['success_message'] = 'Package created.';
@@ -164,6 +170,13 @@ class PackageController extends Controller
             'dj_accounts' => (int)$this->request->post('dj_accounts', 0),
             'is_active' => $this->request->post('is_active') === 'on' ? 1 : (($this->request->post('is_active') ?? '') === '1' ? 1 : 0),
             'has_software' => $this->request->post('has_software', '0') === '1' ? 1 : 0,
+            // Shell / Terminal access controls
+            'shell_access' => in_array($this->request->post('shell_access', 'disabled'), ['disabled','jailed','normal']) ? $this->request->post('shell_access', 'disabled') : 'disabled',
+            'terminal' => $this->request->post('terminal') === 'on' || $this->request->post('terminal') === '1' ? 1 : 0,
+            'ssh_access' => $this->request->post('ssh_access') === 'on' || $this->request->post('ssh_access') === '1' ? 1 : 0,
+            'sftp' => $this->request->post('sftp') === 'on' || $this->request->post('sftp') === '1' ? 1 : 0,
+            'api_shell' => $this->request->post('api_shell') === 'on' || $this->request->post('api_shell') === '1' ? 1 : 0,
+            'cron' => $this->request->post('cron') === 'on' || $this->request->post('cron') === '1' ? 1 : 0,
         ];
         $this->db->table('hosting_packages')->where('id', $id)->update($data);
         $_SESSION['success_message'] = 'Package updated.';

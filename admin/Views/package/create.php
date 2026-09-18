@@ -358,6 +358,26 @@ foreach ($genFeatures as $k=>$l):
 </div>
 </div>
 
+<!-- Shell & Terminal Access -->
+<div style="margin:12px 0;border:1px solid rgba(10,132,255,.2);border-radius:8px;padding:12px">
+<h4 style="color:var(--accent);font-size:14px;margin-bottom:8px">Shell &amp; Terminal Access</h4>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:12px">
+<div class="form-group"><label style="font-size:11px">Shell Access</label>
+<select name="shell_access" style="width:100%;padding:3px 6px;font-size:11px">
+<option value="disabled" selected>Disabled</option>
+<option value="jailed">Jailed Shell</option>
+<option value="normal">Normal Shell</option>
+</select></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 12px;font-size:12px;margin-top:6px">
+<label class="feature-check"><input type="checkbox" name="terminal" value="1" style="accent-color:var(--primary,#008cff)"> Terminal</label>
+<label class="feature-check"><input type="checkbox" name="ssh_access" value="1" style="accent-color:var(--primary,#008cff)"> SSH Access</label>
+<label class="feature-check"><input type="checkbox" name="sftp" value="1" style="accent-color:var(--primary,#008cff)"> SFTP</label>
+<label class="feature-check"><input type="checkbox" name="api_shell" value="1" style="accent-color:var(--primary,#008cff)"> API Shell</label>
+<label class="feature-check"><input type="checkbox" name="cron" value="1" checked style="accent-color:var(--primary,#008cff)"> Cron Jobs</label>
+</div>
+</div>
+
 <!-- Streaming Package -->
 <div style="margin:12px 0;border:1px solid rgba(10,132,255,.2);border-radius:8px;overflow:hidden">
 <div style="background:rgba(10,132,255,.06);padding:8px 12px;font-size:13px;font-weight:600;color:var(--accent)">

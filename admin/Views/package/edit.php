@@ -348,6 +348,27 @@ foreach ($genFeatures as $k=>$l):
 </div>
 </div>
 
+<div class="pkg-card" style="border-color:rgba(10,132,255,.2)">
+<h4><i class="bi bi-terminal" style="color:#0A84FF"></i> Shell &amp; Terminal Access</h4>
+<div class="pkg-grid">
+<div class="form-group"><label class="form-label">Shell Access</label>
+<select name="shell_access" class="form-select">
+<option value="disabled" <?php echo (($package->shell_access ?? 'disabled') === 'disabled') ? 'selected' : ''; ?>>Disabled</option>
+<option value="jailed" <?php echo (($package->shell_access ?? 'disabled') === 'jailed') ? 'selected' : ''; ?>>Jailed Shell</option>
+<option value="normal" <?php echo (($package->shell_access ?? 'disabled') === 'normal') ? 'selected' : ''; ?>>Normal Shell</option>
+</select>
+<small style="color:#64748b;font-size:10px">Jailed = customer restricted to their own home dir. Normal = unrestricted (dangerous).</small></div>
+</div>
+<div class="pkg-feat" style="margin-top:8px">
+<label class="feature-check"><input type="checkbox" name="terminal" value="1" <?php echo !empty($package->terminal) ? 'checked' : ''; ?> style="accent-color:var(--primary,#008cff)"> Terminal</label>
+<label class="feature-check"><input type="checkbox" name="ssh_access" value="1" <?php echo !empty($package->ssh_access) ? 'checked' : ''; ?> style="accent-color:var(--primary,#008cff)"> SSH Access</label>
+<label class="feature-check"><input type="checkbox" name="sftp" value="1" <?php echo !empty($package->sftp) ? 'checked' : ''; ?> style="accent-color:var(--primary,#008cff)"> SFTP</label>
+<label class="feature-check"><input type="checkbox" name="api_shell" value="1" <?php echo !empty($package->api_shell) ? 'checked' : ''; ?> style="accent-color:var(--primary,#008cff)"> API Shell</label>
+<label class="feature-check"><input type="checkbox" name="cron" value="1" <?php echo (($package->cron ?? 1)) ? 'checked' : ''; ?> style="accent-color:var(--primary,#008cff)"> Cron Jobs</label>
+</div>
+<div style="font-size:11px;color:var(--text_muted,#64748b);margin-top:6px">Controls what this package's accounts can do. The Feature List above controls what shows in the panel; these control the Linux + panel enforcement.</div>
+</div>
+
 <!-- Streaming Package -->
 <div class="pkg-card" style="border-color:rgba(167,139,250,.2)">
 <h4><i class="bi bi-broadcast-pin" style="color:#a78bfa"></i> Streaming Package</h4>
