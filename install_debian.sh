@@ -79,7 +79,24 @@ if [ "$EUID" -ne 0 ]; then echo "Run as root."; exit 1; fi
 
 SERVER_IP=$(get_server_ip)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PANEL_DIR="/var/www/radiohosting"
+PANEL_DIR="/var/www/Planethostpanel"
+
+# Pick a PHP CLI that has pdo_mysql (migrations need it; distro default may not).
+resolve_php() {
+    PHP_BIN="${PH_PHP_BIN:-}"
+    if [ -z "$PHP_BIN" ] || [ ! -x "$PHP_BIN" ]; then
+        for c in php8.2 php8.4 php8.3 php8.1 php8.5 php; do
+            p="$(command -v "$c" 2>/dev/null || true)"
+            if [ -z "$p" ] && [ -x "/usr/bin/$c" ]; then p="/usr/bin/$c"; fi
+            if [ -n "$p" ] && "$p" -r 'exit(extension_loaded("pdo_mysql") ? 0 : 1);' >/dev/null 2>&1; then
+                PHP_BIN="$p"; break
+            fi
+        done
+        [ -n "$PHP_BIN" ] || PHP_BIN="$(command -v php || echo /usr/bin/php)"
+    fi
+}
+resolve_php
+log "INSTALLER" "php" "OK" "Using PHP: $PHP_BIN"
 
 clear
 echo "=============================================="
@@ -148,7 +165,51 @@ rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
 systemctl enable --now apache2 mariadb postfix dovecot vsftpd named
 HTTPD_INSTALLED=1; MARIADB_INSTALLED=1; PHP_INSTALLED=1
 FIREWALLD_INSTALLED=1
+# Pin the CLI default to a PHP with pdo_mysql so update.sh/migrate work.
+resolve_php
+update-alternatives --set php "$PHP_BIN" 2>/dev/null || true
 log "STACK" "install" "OK" "Web stack installed"
+
+# 2b. Multi-PHP: install every version 5.6 -> newest (Sury repo) so the
+#     PHP Version Switcher works out of the box on a fresh install.
+log "PHP" "sury" "RUNNING" "Adding Sury PHP repository"
+if [ ! -f /etc/apt/trusted.gpg.d/php-archive-keyring.gpg ]; then
+    curl -fsSL https://packages.sury.org/php/apt.gpg 2>/dev/null | gpg --dearmor -o /etc/apt/trusted.gpg.d/php-archive-keyring.gpg 2>/dev/null || true
+fi
+if [ -f /etc/apt/trusted.gpg.d/php-archive-keyring.gpg ]; then
+    echo "deb https://packages.sury.org/php/ ${DEBIAN_VERSION} main" > /etc/apt/sources.list.d/sury-php.list
+    apt update -qq 2>/dev/null || true
+else
+    log "PHP" "sury" "WARN" "Sury key not installed - multi-PHP skipped"
+fi
+log "PHP" "sury" "OK" "Sury PHP repository ready"
+
+if [ -f /etc/apt/sources.list.d/sury-php.list ]; then
+    log "PHP" "multi" "RUNNING" "Installing PHP 5.6 through 8.5 (fpm + core modules)"
+    for V in 5.6 7.0 7.1 7.2 7.3 7.4 8.0 8.1 8.2 8.3 8.4 8.5; do
+        if ! apt-cache policy "php$V" 2>/dev/null | grep -q Candidate; then
+            log "PHP" "$V" "SKIP" "php$V not available in repository"
+            continue
+        fi
+        PKGLIST=""
+        for m in fpm cli common curl gd json mbstring mysql opcache readline xml zip; do
+            PKGLIST="$PKGLIST php$V-$m"
+        done
+        DEBIAN_FRONTEND=noninteractive apt-get install -y $PKGLIST >/dev/null 2>&1 || {
+            for p in $PKGLIST; do
+                DEBIAN_FRONTEND=noninteractive apt-get install -y "$p" >/dev/null 2>&1 || true
+            done
+        }
+        if [ -d "/etc/php/$V/fpm" ]; then
+            systemctl enable --now "php$V-fpm" 2>/dev/null || true
+        fi
+        log "PHP" "$V" "OK" "php$V installed"
+    done
+    # Re-resolve the CLI default now that every version exists.
+    resolve_php
+    update-alternatives --set php "$PHP_BIN" 2>/dev/null || true
+    log "PHP" "multi" "OK" "PHP 5.6-8.5 installed"
+fi
 
 # 3. Streaming stack
 echo "[3/8] Installing streaming stack..."
@@ -163,7 +224,7 @@ server {
     listen 8080 default_server;
     listen [::]:8080 default_server;
     server_name _;
-    root /var/www/radiohosting/public;
+    root __PANEL_DIR__/public;
     index index.php index.html;
     location / {
         try_files $uri $uri/ /index.php?$args;
@@ -182,9 +243,16 @@ systemctl enable --now nginx 2>/dev/null || true
 
 # Install SHOUTcast DNAS v2
 log "SHOUTCAST" "install" "RUNNING" "Installing SHOUTcast DNAS"
-if [ -f "$SCRIPT_DIR/sc_serv2_linux_x64-latest.tar.gz" ]; then
+SC2_TAR=""
+for _cand in \
+    "$SCRIPT_DIR/sc_serv2_linux_x64-latest.tar.gz" \
+    "$SCRIPT_DIR/shoutcast-server/shoucast-v2/sc_serv2_linux_x64-latest.tar.gz" \
+    "$SCRIPT_DIR/shoutcast-server/shoucast-v2/sc_serv2_linux-latest.tar.gz"; do
+    if [ -f "$_cand" ]; then SC2_TAR="$_cand"; break; fi
+done
+if [ -n "$SC2_TAR" ]; then
     mkdir -p /opt/planethosts/shoutcast /var/log/shoutcast
-    tar xzf "$SCRIPT_DIR/sc_serv2_linux_x64-latest.tar.gz" -C /opt/planethosts/shoutcast 2>/dev/null
+    tar xzf "$SC2_TAR" -C /opt/planethosts/shoutcast 2>/dev/null
     chmod 755 /opt/planethosts/shoutcast/sc_serv 2>/dev/null
     cat > /opt/planethosts/shoutcast/sc_serv.conf << "SCEOF"
 serveradmin=admin@planet-hosts.com
@@ -216,20 +284,28 @@ UNIT
     systemctl enable --now shoutcast 2>/dev/null || true
     log "SHOUTCAST" "install" "OK" "SHOUTcast installed on port 8000"
 else
-    log "SHOUTCAST" "install" "SKIP" "sc_serv2_linux_x64-latest.tar.gz not found in script dir"
+    log "SHOUTCAST" "install" "SKIP" "SHOUTcast v2 tarball not found (script dir or shoutcast-server/)"
 fi
 
 # Install SHOUTcast DNAS v1 (32-bit)
 log "SHOUTCAST" "install" "RUNNING" "Installing SHOUTcast DNAS v1"
-if [ -f "$SCRIPT_DIR/sc_serv1_linux_x86-latest.tar.gz" ] || [ -f "$SCRIPT_DIR/sc_serv1" ]; then
+SC1_SRC=""
+if [ -f "$SCRIPT_DIR/sc_serv1_linux_x86-latest.tar.gz" ]; then
+    SC1_SRC="$SCRIPT_DIR/sc_serv1_linux_x86-latest.tar.gz"
+elif [ -f "$SCRIPT_DIR/shoutcast-server/shoutcastv-1/Radio/sc_serv" ]; then
+    SC1_SRC="$SCRIPT_DIR/shoutcast-server/shoutcastv-1/Radio/sc_serv"
+elif [ -f "$SCRIPT_DIR/sc_serv1" ]; then
+    SC1_SRC="$SCRIPT_DIR/sc_serv1"
+fi
+if [ -n "$SC1_SRC" ]; then
     dpkg --add-architecture i386 2>/dev/null || true
     apt update -qq 2>/dev/null
     apt install -y -qq libc6:i386 libstdc++6:i386 2>/dev/null || true
     mkdir -p /opt/planethosts/shoutcast1 /var/log/shoutcast/v1
-    if [ -f "$SCRIPT_DIR/sc_serv1_linux_x86-latest.tar.gz" ]; then
-        tar xzf "$SCRIPT_DIR/sc_serv1_linux_x86-latest.tar.gz" -C /opt/planethosts/shoutcast1 2>/dev/null
+    if [[ "$SC1_SRC" == *.tar.gz ]]; then
+        tar xzf "$SC1_SRC" -C /opt/planethosts/shoutcast1 2>/dev/null
     else
-        cp "$SCRIPT_DIR/sc_serv1" /opt/planethosts/shoutcast1/sc_serv 2>/dev/null
+        cp "$SC1_SRC" /opt/planethosts/shoutcast1/sc_serv 2>/dev/null
     fi
     chmod +x /opt/planethosts/shoutcast1/sc_serv 2>/dev/null
     cat > /opt/planethosts/shoutcast1/sc_serv.conf << 'SC1EOF'
@@ -518,7 +594,7 @@ log "NODEJS" "install" "OK" "Node.js $(node --version) npm $(npm --version) inst
 
 # Planet Push Server (WebSocket for real-time chat/desktop)
 log "PUSHSERVER" "install" "RUNNING" "Installing Planet Push Server"
-mkdir -p /var/www/radiohosting/scripts
+mkdir -p "$PANEL_DIR/scripts"
 cat > /etc/systemd/system/planet-push.service << 'PUSHEOF'
 [Unit]
 Description=Planet Hosts Push Server (WebSocket)
@@ -527,8 +603,8 @@ After=network.target mysql.service
 [Service]
 Type=simple
 User=debian
-WorkingDirectory=/var/www/radiohosting
-EnvironmentFile=/var/www/radiohosting/.env
+WorkingDirectory=__PANEL_DIR__
+EnvironmentFile=__PANEL_DIR__/.env
 ExecStart=/usr/bin/php scripts/websocket-server.php
 Environment=WS_HOST=0.0.0.0
 Environment=WS_PORT=8081
@@ -557,9 +633,9 @@ Wants=mariadb.service
 [Service]
 Type=simple
 User=root
-ExecStart=/usr/bin/php /var/www/radiohosting/services/DjPortListener.php start
-ExecStop=/usr/bin/php /var/www/radiohosting/services/DjPortListener.php stop
-ExecReload=/usr/bin/php /var/www/radiohosting/services/DjPortListener.php restart
+ExecStart=/usr/bin/php __PANEL_DIR__/services/DjPortListener.php start
+ExecStop=/usr/bin/php __PANEL_DIR__/services/DjPortListener.php stop
+ExecReload=/usr/bin/php __PANEL_DIR__/services/DjPortListener.php restart
 Restart=on-failure
 RestartSec=10
 StandardOutput=append:/var/log/ph-dj-listener.log
@@ -581,7 +657,7 @@ After=network.target mysql.service
 
 [Service]
 Type=oneshot
-ExecStart=/var/www/radiohosting/backup.sh run
+ExecStart=__PANEL_DIR__/backup.sh run
 StandardOutput=journal
 StandardError=journal
 BKPEOF
@@ -611,7 +687,7 @@ After=network.target mysql.service
 
 [Service]
 Type=oneshot
-ExecStart=/var/www/radiohosting/monitor.sh
+ExecStart=__PANEL_DIR__/monitor.sh
 StandardOutput=journal
 StandardError=journal
 MONEOF
@@ -641,7 +717,7 @@ After=network.target mysql.service
 
 [Service]
 Type=oneshot
-ExecStart=/var/www/radiohosting/quota_enforce.sh
+ExecStart=__PANEL_DIR__/quota_enforce.sh
 StandardOutput=journal
 StandardError=journal
 QUOEOF
@@ -671,7 +747,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/var/www/radiohosting/security.sh scan
+ExecStart=__PANEL_DIR__/security.sh scan
 StandardOutput=journal
 StandardError=journal
 SECEOF
@@ -802,18 +878,18 @@ chmod -R 755 "$PANEL_DIR"
 
 # Deploy system scripts (backup, monitor, security, quota, storage)
 log "SCRIPTS" "deploy" "RUNNING" "Deploying system scripts"
-mkdir -p /var/www/radiohosting/scripts
-mkdir -p /var/www/radiohosting/services
-cp -r "$SCRIPT_DIR/scripts/." /var/www/radiohosting/scripts/ 2>/dev/null || true
-cp -r "$SCRIPT_DIR/services/." /var/www/radiohosting/services/ 2>/dev/null || true
-chmod +x /var/www/radiohosting/scripts/*.sh 2>/dev/null || true
-chmod +x /var/www/radiohosting/services/*.php 2>/dev/null || true
-chown -R www-data:www-data /var/www/radiohosting/scripts /var/www/radiohosting/services 2>/dev/null || true
+mkdir -p "$PANEL_DIR/scripts"
+mkdir -p "$PANEL_DIR/services"
+cp -r "$SCRIPT_DIR/scripts/." "$PANEL_DIR/scripts/" 2>/dev/null || true
+cp -r "$SCRIPT_DIR/services/." "$PANEL_DIR/services/" 2>/dev/null || true
+chmod +x "$PANEL_DIR/scripts/"*.sh 2>/dev/null || true
+chmod +x "$PANEL_DIR/services/"*.php 2>/dev/null || true
+chown -R www-data:www-data "$PANEL_DIR/scripts" "$PANEL_DIR/services" 2>/dev/null || true
 log "SCRIPTS" "deploy" "OK" "System scripts deployed"
 
 # Run storage setup
 log "STORAGE" "setup" "RUNNING" "Setting up storage directories"
-bash /var/www/radiohosting/scripts/setup_storage.sh 2>/dev/null || true
+bash "$PANEL_DIR/scripts/setup_storage.sh" 2>/dev/null || true
 log "STORAGE" "setup" "OK" "Storage directories created"
 
 log "PANEL" "deploy" "OK" "Panel files deployed"
@@ -855,6 +931,10 @@ firewall-cmd --permanent --add-port=6000-10000/tcp 2>/dev/null || true
 firewall-cmd --permanent --add-port=27000-28000/tcp 2>/dev/null || true
 firewall-cmd --permanent --add-port=25560-25660/tcp 2>/dev/null || true
 firewall-cmd --permanent --add-port=10000-20000/tcp 2>/dev/null || true
+# Mail ports (Postfix SMTP + Dovecot IMAP/POP3)
+firewall-cmd --permanent --add-port={25/tcp,465/tcp,587/tcp,110/tcp,143/tcp,993/tcp,995/tcp} 2>/dev/null || true
+# Panel + DJ/Chat ports
+firewall-cmd --permanent --add-port={2089/tcp,2100/tcp,2101/tcp} 2>/dev/null || true
 firewall-cmd --reload 2>/dev/null || true
 iptables -I INPUT -p tcp --dport 5000 -j ACCEPT 2>/dev/null || true
 iptables -I INPUT -p tcp --dport 5001 -j ACCEPT 2>/dev/null || true
@@ -888,14 +968,13 @@ for s in "$SCRIPT_DIR"/plugins/*/database/schema.sql; do
   [ -f "$s" ] && mysql -u root radiohosting < "$s" 2>/dev/null || true
 done
 
-# Run migrations
+# Run migrations (ledger-based runner bootstraps base tables first)
 log "DATABASE" "migrations" "RUNNING" "Running migrations"
-for m in "$SCRIPT_DIR"/database/migrations/*.sql; do
-  [ -f "$m" ] && mysql -u root radiohosting < "$m" 2>/dev/null || true
-done
-for m in "$SCRIPT_DIR"/database/migrations/*.php; do
-  [ -f "$m" ] && php "$m" 2>/dev/null || true
-done
+if ! "$PHP_BIN" "$PANEL_DIR/scripts/migrate.php" --run-all --db=radiohosting --fail-on-error; then
+    log "DATABASE" "migrations" "FAIL" "One or more migrations failed"
+    rollback "database"
+    cleanup_and_exit 1
+fi
 log "DATABASE" "migrations" "OK" "Migrations applied"
 
 # Add account_licenses table for license key management
@@ -941,14 +1020,20 @@ DB_PASSWORD=$DB_PASS
 ENV
 chmod 600 "$PANEL_DIR/.env"
 
-# phpMyAdmin auto-login as root
-php -r "
-\$c = file_get_contents('/etc/phpmyadmin/config.inc.php');
-\$search = \"\\\$cfg['Servers'][\\\$i]['auth_type'] = 'cookie';\";
-\$replace = \"\\\$cfg['Servers'][\\\$i]['auth_type'] = 'config';\n\\\$cfg['Servers'][\\\$i]['user'] = 'root';\n\\\$cfg['Servers'][\\\$i]['password'] = '$DB_PASS';\";
-file_put_contents('/etc/phpmyadmin/config.inc.php', str_replace(\$search, \$replace, \$c));
-echo 'phpMyAdmin config set.\n';
-"
+# Runtime DB credentials for privileged panel scripts (provision.sh, auto_ssl.sh, ...)
+cat > "$PANEL_DIR/db_creds.sh" <<CREDS
+DB_ROOT_USER='root'
+DB_ROOT_PASS='$DB_PASS'
+DB_USER='radiouser'
+DB_PASS='$DB_PASS'
+CREDS
+chown www-data:www-data "$PANEL_DIR/db_creds.sh"
+chmod 600 "$PANEL_DIR/db_creds.sh"
+log "DATABASE" "db_creds" "OK" "Runtime DB credentials written"
+
+# phpMyAdmin auto-login via the panel signon session (pma_autologin.php),
+# not a baked-in root password that can silently drift from MySQL.
+bash "$PANEL_DIR/scripts/apply_phpmyadmin_signon.sh" 2>/dev/null || log "PHPMYADMIN" "signon" "WARN" "apply_phpmyadmin_signon.sh failed"
 
 mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$DB_PASS'; GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION; FLUSH PRIVILEGES;"
 echo $(date +%s) > "$PANEL_DIR/.installed"
@@ -1042,8 +1127,8 @@ printf 'ProxyPass /hub/ http://localhost:5000/hub/\nProxyPassReverse /hub/ http:
 # 12. DJ & Chat dedicated ports
 echo "[12/12] Setting up DJ (2100) and Chat (2101) ports..."
 log "APACHE" "extra-ports" "RUNNING" "Configuring DJ and Chat ports"
-printf '<VirtualHost *:2100>\n    DocumentRoot /var/www/radiohosting/public\n    ServerName %s\n    <Directory /var/www/radiohosting/public>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n</VirtualHost>\n' "$SERVER_IP" > /etc/apache2/sites-available/dj-panel.conf
-printf '<VirtualHost *:2101>\n    DocumentRoot /var/www/radiohosting/public\n    ServerName %s\n    <Directory /var/www/radiohosting/public>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n</VirtualHost>\n' "$SERVER_IP" > /etc/apache2/sites-available/chat-panel.conf
+printf '<VirtualHost *:2100>\n    DocumentRoot %s\n    ServerName %s\n    <Directory %s>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n</VirtualHost>\n' "$PANEL_DIR/public" "$SERVER_IP" "$PANEL_DIR/public" > /etc/apache2/sites-available/dj-panel.conf
+printf '<VirtualHost *:2101>\n    DocumentRoot %s\n    ServerName %s\n    <Directory %s>\n        Options Indexes FollowSymLinks\n        AllowOverride All\n        Require all granted\n    </Directory>\n</VirtualHost>\n' "$PANEL_DIR/public" "$SERVER_IP" "$PANEL_DIR/public" > /etc/apache2/sites-available/chat-panel.conf
 printf '\nListen 2100\nListen 2101\n' >> /etc/apache2/ports.conf
 a2ensite dj-panel.conf chat-panel.conf 2>/dev/null
 # Full firewalld configuration: allow all panel, web, mail, FTP, streaming ports
@@ -1074,6 +1159,70 @@ rm -rf "$PANEL_DIR/public/theme" 2>/dev/null
 cp -r "$PANEL_DIR/theme" "$PANEL_DIR/public/theme" 2>/dev/null || true
 cp -r "$PANEL_DIR/theme/themes" "$PANEL_DIR/public/theme/themes" 2>/dev/null || true
 cp -r "$PANEL_DIR/theme/assets/img/livechat" "$PANEL_DIR/public/theme/assets/img/livechat" 2>/dev/null || true
+
+# 13. Security Center toolset (install/*.sh modules)
+echo "[13/13] Installing Security Center tools..."
+log "SECURITY" "center" "RUNNING" "Executing install modules 00-15"
+for m in 00-prerequisites 01-firewall 02-clamav 03-yara 04-trivy 05-osv \
+         06-lynis 07-aide 08-rkhunter 09-chkrootkit 10-logwatch 11-goaccess \
+         12-testssl 13-spamassassin 14-opendkim 15-security-center; do
+    log "SECURITY" "$m" "RUNNING" "Executing install/$m.sh"
+    bash "$PANEL_DIR/install/$m.sh" >>/var/log/planethosts/install.log 2>&1 || \
+        log "SECURITY" "$m" "WARN" "install/$m.sh exited non-zero"
+    log "SECURITY" "$m" "DONE" "Finished install/$m.sh"
+done
+log "SECURITY" "center" "OK" "Security Center tools installed"
+
+# www-data sudoers for account provisioning + UI self-update (MAIN parity)
+cat > /etc/sudoers.d/www-data-radio << 'SUDOER'
+www-data ALL=(ALL) NOPASSWD: /bin/mkdir, /bin/cp, /usr/sbin/a2ensite, /usr/sbin/a2dissite, /usr/bin/systemctl, /bin/rm, /usr/bin/rm, /usr/sbin/useradd, /usr/sbin/passwd, /bin/chown, /usr/bin/tee, /usr/bin/touch, /bin/chmod
+SUDOER
+chmod 440 /etc/sudoers.d/www-data-radio
+
+cat > /etc/sudoers.d/radiohosting-update << 'SUDOER'
+# Allow WHM UI triggered self-update/rollback
+www-data ALL=(root) NOPASSWD: /bin/bash __PANEL_DIR__/scripts/update.sh
+SUDOER
+chmod 440 /etc/sudoers.d/radiohosting-update
+
+visudo -c >/dev/null 2>&1 || log "SUDO" "validate" "WARN" "visudo -c reported a problem"
+log "SUDO" "radiohosting" "OK" "www-data sudoers for provisioning and update configured"
+
+# Web terminal: let the panel run a real root shell (sudo yum/apt/...)
+if [ -f "$PANEL_DIR/scripts/apply_terminal_sudo.sh" ]; then
+    bash "$PANEL_DIR/scripts/apply_terminal_sudo.sh" 2>/dev/null || log "SUDO" "terminal" "WARN" "apply_terminal_sudo.sh failed"
+fi
+
+# Rewrite generated-config references so new installs use the $PANEL_DIR name.
+# (Master + the live server keep using the old path; this only runs at install time.)
+log "RENAME" "panel" "RUNNING" "Pointing generated configs at $PANEL_DIR"
+for _f in \
+    /etc/nginx/sites-available/planet-proxy \
+    /etc/apache2/sites-available/radiohosting.conf \
+    /etc/apache2/sites-available/dj-panel.conf \
+    /etc/apache2/sites-available/chat-panel.conf \
+    /etc/systemd/system/planet-push.service \
+    /etc/systemd/system/ph-dj-listener.service \
+    /etc/systemd/system/planet-backup.service \
+    /etc/systemd/system/planet-monitor.service \
+    /etc/systemd/system/planet-quota.service \
+    /etc/systemd/system/planet-security.service \
+    /etc/sudoers.d/radiohosting-update \
+    /etc/sudoers.d/www-data-radio; do
+    [ -f "$_f" ] && sed -i "s#__PANEL_DIR__#$PANEL_DIR#g; s#/var/www/radiohosting#$PANEL_DIR#g" "$_f" 2>/dev/null || true
+done
+[ -f "$PANEL_DIR/.env" ] && sed -i "s#/var/www/radiohosting#$PANEL_DIR#g" "$PANEL_DIR/.env" 2>/dev/null || true
+systemctl daemon-reload
+systemctl restart planet-push ph-dj-listener 2>/dev/null || true
+
+# Rewrite the path in the deployed app tree (PHP/scripts/config) for consistency.
+grep -rl --include='*.php' --include='*.sh' --include='*.conf' --include='*.json' \
+    '/var/www/radiohosting' "$PANEL_DIR" 2>/dev/null \
+    | grep -v -E '/\.git(/|$)|/vendor(/|$)|/node_modules(/|$)' \
+    | while IFS= read -r _f; do
+        sed -i "s#/var/www/radiohosting#$PANEL_DIR#g" "$_f" 2>/dev/null || true
+    done
+log "RENAME" "panel" "OK" "Panel installed at $PANEL_DIR"
 
 echo ""
 echo "=============================================="

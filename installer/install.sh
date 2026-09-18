@@ -152,12 +152,24 @@ echo "[3/12] Configuring firewall..."
 log "FIREWALL" "setup" "RUNNING" "Installing and configuring firewall"
 install_required "firewalld" firewalld
 systemctl enable --now firewalld
+# Web / SSH
 firewall-cmd --permanent --add-service=http || true
 firewall-cmd --permanent --add-service=https || true
 firewall-cmd --permanent --add-service=ssh || true
+# Panel ports
+for port in 2082/tcp 2083/tcp 2086/tcp 2087/tcp 2089/tcp 2096/tcp 2100/tcp 2101/tcp; do
+    firewall-cmd --permanent --add-port="$port" || true
+done
+# Mail (Postfix SMTP + Dovecot IMAP/POP3)
+for port in 25/tcp 465/tcp 587/tcp 110/tcp 143/tcp 993/tcp 995/tcp; do
+    firewall-cmd --permanent --add-port="$port" || true
+done
+# Icecast / streaming
 firewall-cmd --permanent --add-port=8000/tcp || true
 firewall-cmd --permanent --add-port=8001/tcp || true
 firewall-cmd --permanent --add-port=8080/tcp || true
+# FTP
+firewall-cmd --permanent --add-port=21/tcp || true
 firewall-cmd --reload || true
 FIREWALLD_INSTALLED=1
 log "FIREWALL" "setup" "OK" "Firewall configured"

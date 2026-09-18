@@ -52,6 +52,9 @@ class ServerOverviewController extends Controller
         $checks[] = ['name' => 'DNS Server', 'test' => $this->checkService('bind9', 'named'), 'severity' => 'high'];
         $checks[] = ['name' => 'SSH', 'test' => $this->checkService('ssh', 'sshd'), 'severity' => 'high'];
         $checks[] = ['name' => 'Icecast', 'test' => $this->checkService('icecast2', 'icecast'), 'severity' => 'low'];
+        $checks[] = ['name' => 'SHOUTcast v2', 'test' => $this->checkService('shoutcast'), 'severity' => 'low'];
+        $checks[] = ['name' => 'SHOUTcast v1', 'test' => $this->checkService('shoutcast-v1'), 'severity' => 'low'];
+        $checks[] = ['name' => 'Cron', 'test' => $this->checkService('cron', 'crond'), 'severity' => 'low'];
         // Detect all PHP-FPM versions
         $phpServices = $this->detectPhpVersions();
         foreach ($phpServices as $ps) {
