@@ -401,8 +401,61 @@ EOF
 if [ -f /etc/httpd/conf.d/welcome.conf ]; then
     mv /etc/httpd/conf.d/welcome.conf /etc/httpd/conf.d/welcome.conf.disabled || true
 fi
+
+# Panel ports (cPanel-style: 2082/2086/2087/2096) + webmail portal
+for _pp in 2082 2086 2087 2096; do
+    if ! grep -q "Listen ${_pp}" /etc/httpd/conf/httpd.conf 2>/dev/null; then
+        echo "Listen ${_pp}" >> /etc/httpd/conf/httpd.conf
+    fi
+done
+cat > /etc/httpd/conf.d/radiohosting-panel-ports.conf <<PHEOF
+<VirtualHost *:2082>
+    DocumentRoot $PANEL_DIR/public
+    ServerName $SERVER_IP
+    <Directory $PANEL_DIR/public>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    RewriteEngine On
+    RewriteRule ^/$ /portal_user.php [L]
+</VirtualHost>
+<VirtualHost *:2086>
+    DocumentRoot $PANEL_DIR/public
+    ServerName $SERVER_IP
+    <Directory $PANEL_DIR/public>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    RewriteEngine On
+    RewriteRule ^/$ /portal_reseller.php [L]
+</VirtualHost>
+<VirtualHost *:2087>
+    DocumentRoot $PANEL_DIR/public
+    ServerName $SERVER_IP
+    <Directory $PANEL_DIR/public>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    RewriteEngine On
+    RewriteRule ^/$ /admin/login [L,R=302]
+</VirtualHost>
+<VirtualHost *:2096>
+    DocumentRoot $PANEL_DIR/public
+    ServerName $SERVER_IP
+    <Directory $PANEL_DIR/public>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    RewriteEngine On
+    RewriteRule ^/$ /portal_webmail.php [L]
+</VirtualHost>
+PHEOF
 systemctl restart httpd
-log "APACHE" "vhost" "OK" "Virtual host created"
+log "APACHE" "vhost" "OK" "Virtual host created (panel ports 2082/2086/2087/2096)"
 
 # --- Step 11: Database Setup ---
 echo ""
