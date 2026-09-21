@@ -1,6 +1,6 @@
 {
-  "version": "1.4.1",
-  "version_code": 1410,
+  "version": "1.4.2",
+  "version_code": 1420,
   "channel": "stable",
   "release_date": "2026-09-18",
   "release_type": "Core Release",
@@ -10,8 +10,8 @@
   "requires_reboot": false,
   "requires_services_restart": ["apache2"],
   "migrations": ["2026_09_18_terminal_package_access.sql"],
-  "download": "https://codeload.github.com/j68418730/whm/tar.gz/2f99ecf",
-  "checksum": "b2ec70f66abcb32686ebfd8bc9dd5e3e80981d99d7c6ff1e5e74d031d30dfc5c",
-  "target_sha": "2f99ecf",
-  "release_notes": "ONE-LINER INSTALLER: /latest bootstrap (public/latest + scripts/latest.sh). Fresh install on a supported server is now: 'cd /home && curl -o latest -L https://planet-hosts.com/latest && sh latest'. The bootstrap auto-detects the OS (Debian/Ubuntu -> install_debian.sh; AlmaLinux/Rocky/CentOS/Fedora -> installer/install.sh; FreeBSD later), fetches VERSION.json from GitHub, downloads the official release tarball (kept on GitHub, NOT stored on the server), verifies its SHA-256 checksum, extracts it, and runs the correct installer. Verified live: https://planet-hosts.com/latest returns 200, and the full fetch -> checksum -> extract flow passes (134MB package, both installers + SHOUTcast binary present)."
+  "download": "https://codeload.github.com/j68418730/whm/tar.gz/084fef9",
+  "checksum": "17102a62cfc32a4f7e3102cbc464b1c9877e3ec5a9b8d1bdcc30e300e2c1047f",
+  "target_sha": "084fef9",
+  "release_notes": "FIX: admin 'Login as User' (/admin/account/show -> login-as) was landing on the reseller/master account instead of the intended client. Root cause: UserController::loadUser() had a loose fallback to $hostings[0] (the master 'planethosts' reseller account) whenever the sudo session id didn't match by id/email/name — exactly the 'logs into their reseller account not their client account' symptom. Fix: loginAs now stores the exact sudo_login_user_id, loadUser() resolves that id FIRST (and the unsafe $hostings[0] fallback was removed), and exitSudo clears the new keys. Verified live: login-as planethosts -> 'Welcome back, Jamie', suggawayz -> Edward, testacct -> Test — each lands on the correct client dashboard."
 }
