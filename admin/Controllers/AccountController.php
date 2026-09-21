@@ -1074,6 +1074,8 @@ class AccountController extends Controller
         unset($_SESSION['sudo_login']);
         unset($_SESSION['sudo_admin_id']);
         unset($_SESSION['sudo_admin_user']);
+        unset($_SESSION['sudo_login_user_id']);
+        unset($_SESSION['sudo_login_username']);
         $this->response->redirect('/admin/dashboard');
         exit;
     }
@@ -1081,16 +1083,21 @@ class AccountController extends Controller
     public function loginAs($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $account = $this->db->table('hosting_users')->where('id', $id)->first();
-        if (!$account) { $this->response->redirect('/admin/account'); exit; }
+        $account = $this->db->table('hosting_users')->where('id', (int)$id)->first();
+        if (!$account) { $_SESSION['error_message'] = 'Account not found.'; $this->response->redirect('/admin/account'); exit; }
         // Sudo: keep admin session, switch user context
         $_SESSION['sudo_login'] = true;
         $_SESSION['sudo_admin_id'] = $this->auth->user()->id;
         $_SESSION['sudo_admin_user'] = $this->auth->user();
+        // Store the exact target hosting_user id so the portal resolves THIS account,
+        // never a reseller/master via the fallback.
+        $_SESSION['sudo_login_user_id'] = (int)$account->id;
+        $_SESSION['sudo_login_username'] = $account->username;
         $user = (object)[
-            'id' => $account->id,
+            'id' => (int)$account->id,
             'email' => $account->email,
             'name' => $account->first_name ?: $account->username,
+            'username' => $account->username,
             'is_admin' => false,
         ];
         $session = \Core\Application::getInstance()->get('session');

@@ -27,9 +27,15 @@ class UserController extends Controller
         if (!$this->auth->check()) { $this->response->redirect('/?login'); exit; }
         $user = $this->auth->user();
         $hostings = $this->db->table('hosting_users')->get() ?: [];
-        // Try to find by ID first (sudo/Login as User mode)
-        if (!empty($user->id)) {
-            foreach ($hostings as $h) { if ($h->id == $user->id) { $this->hostingUser = $h; break; } }
+        $isSudo = !empty($_SESSION['sudo_login']);
+        // In sudo/login-as mode we know the EXACT target account — use it first so we
+        // never resolve to a reseller/master via a loose email/name match.
+        if ($isSudo && !empty($_SESSION['sudo_login_user_id'])) {
+            foreach ($hostings as $h) { if ((int)$h->id === (int)$_SESSION['sudo_login_user_id']) { $this->hostingUser = $h; break; } }
+        }
+        // Otherwise match by id, then email, then name.
+        if (!$this->hostingUser && !empty($user->id)) {
+            foreach ($hostings as $h) { if ((int)$h->id === (int)$user->id) { $this->hostingUser = $h; break; } }
         }
         if (!$this->hostingUser && !empty($user->email)) {
             foreach ($hostings as $h) { if ($h->email === $user->email) { $this->hostingUser = $h; break; } }
@@ -37,10 +43,8 @@ class UserController extends Controller
         if (!$this->hostingUser && !empty($user->name)) {
             foreach ($hostings as $h) { if ($h->username === $user->name || $h->first_name === $user->name) { $this->hostingUser = $h; break; } }
         }
-        $isSudo = !empty($_SESSION['sudo_login']);
-        if (!$this->hostingUser && !empty($hostings) && $isSudo) {
-            $this->hostingUser = $hostings[0];
-        }
+        // No loose fallback to $hostings[0] — that silently logged admin into a
+        // reseller/master account instead of the intended client.
         if (!$this->hostingUser) {
             $this->response->redirect('/?login=notfound');
             exit;
