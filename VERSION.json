@@ -1,6 +1,6 @@
 {
-  "version": "1.4.0",
-  "version_code": 1400,
+  "version": "1.4.1",
+  "version_code": 1410,
   "channel": "stable",
   "release_date": "2026-09-18",
   "release_type": "Core Release",
@@ -10,8 +10,8 @@
   "requires_reboot": false,
   "requires_services_restart": ["apache2"],
   "migrations": ["2026_09_18_terminal_package_access.sql"],
-  "download": "https://codeload.github.com/j68418730/whm/tar.gz/373dde3",
-  "checksum": "d6c8035df7d2a5ba3d1aab9535b564148c2cbfa5f402b15bb26bf49d08ddb7d0",
-  "target_sha": "373dde3",
-  "release_notes": "AUTOSSL: fully automated monthly certificate renewal. New scripts/autossl_cron.php scans all certs (ssl_certs + /etc/letsencrypt/live), syncs the inventory to ssl_certs, and renews any certificate expiring within the configured window (default 30 days) via 'certbot renew --cert-name'. Self-gates to once per interval (default 30 days / monthly) through automation_settings.autossl_last_run; --force bypasses the gate. Writes ssl_log + storage/autossl_last_run.json. Monthly cron installed (0 3 1 * *) in both install_debian.sh and the RHEL installer. AutoSSL admin page rebuilt: enable toggle, notification email, renew-days + interval-days, last-run info, and a certificate table with days-left badges; the 'Run AutoSSL Sweep Now' button forces a sweep. Automation settings save persists all autossl_* keys. Verified live: sweep checks 8 certs, syncs all into ssl_certs, renews only expiring ones, and the monthly gate skips a re-run."
+  "download": "https://codeload.github.com/j68418730/whm/tar.gz/2f99ecf",
+  "checksum": "b2ec70f66abcb32686ebfd8bc9dd5e3e80981d99d7c6ff1e5e74d031d30dfc5c",
+  "target_sha": "2f99ecf",
+  "release_notes": "ONE-LINER INSTALLER: /latest bootstrap (public/latest + scripts/latest.sh). Fresh install on a supported server is now: 'cd /home && curl -o latest -L https://planet-hosts.com/latest && sh latest'. The bootstrap auto-detects the OS (Debian/Ubuntu -> install_debian.sh; AlmaLinux/Rocky/CentOS/Fedora -> installer/install.sh; FreeBSD later), fetches VERSION.json from GitHub, downloads the official release tarball (kept on GitHub, NOT stored on the server), verifies its SHA-256 checksum, extracts it, and runs the correct installer. Verified live: https://planet-hosts.com/latest returns 200, and the full fetch -> checksum -> extract flow passes (134MB package, both installers + SHOUTcast binary present)."
 }
