@@ -161,10 +161,12 @@ try {
 <td><span class="badge-s <?php echo $cls; ?>"><span class="st-dot <?php echo $cls; ?>"></span><?php echo htmlspecialchars(ucfirst((string)$status)); ?></span><?php if ($unit): ?><span style="color:#5d7897;font-size:10px;margin-left:8px"><?php echo htmlspecialchars($unit); ?></span><?php endif; ?></td>
 <td>
 <?php if ($unit): ?>
+<div style="display:flex;gap:5px;flex-wrap:wrap">
+<a href="/admin/service/start/<?php echo urlencode($unit); ?>" class="btn-mini g" onclick="return confirm('Start <?php echo htmlspecialchars($name); ?>?')"><i class="bi bi-play-fill"></i> Start</a>
+<a href="/admin/service/stop/<?php echo urlencode($unit); ?>" class="btn-mini" style="background:#ed3d4e;border-color:#ed3d4e;color:#fff" onclick="return confirm('Stop <?php echo htmlspecialchars($name); ?>?')"><i class="bi bi-stop-fill"></i> Stop</a>
 <a href="/admin/service/restart/<?php echo urlencode($unit); ?>" class="btn-mini y" onclick="return confirm('Restart <?php echo htmlspecialchars($name); ?>?')"><i class="bi bi-arrow-clockwise"></i> Restart</a>
-<?php if ($ok): ?><a href="/admin/service/stop/<?php echo urlencode($unit); ?>" class="btn-mini" onclick="return confirm('Stop <?php echo htmlspecialchars($name); ?>?')"><i class="bi bi-stop"></i></a>
-<?php else: ?><a href="/admin/service/start/<?php echo urlencode($unit); ?>" class="btn-mini g"><i class="bi bi-play"></i></a><?php endif; ?>
-<?php endif; ?>
+</div>
+<?php else: ?><span style="color:#5d7897;font-size:11px">—</span><?php endif; ?>
 </td>
 </tr>
 <?php endforeach; ?>

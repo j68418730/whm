@@ -43,6 +43,8 @@ class ServerOverviewController extends Controller
             'Firewall' => ['firewalld'],
             'Nginx' => ['nginx'],
             'Cron' => ['cron', 'crond'],
+            'MariaDB' => ['mariadb', 'mysql'],
+            'Redis' => ['redis-server', 'redis'],
         ];
         $svcStatus = is_array($serverStats['service_status'] ?? null) ? $serverStats['service_status'] : [];
         $services = [];
