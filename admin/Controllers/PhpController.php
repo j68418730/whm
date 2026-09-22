@@ -72,11 +72,36 @@ class PhpController extends Controller
             $rows = $this->db->table('php_domain_extensions')->get() ?: [];
             foreach ($rows as $r) $domainExts[$r->domain][] = $r->extension;
         } catch (\Exception $e) {}
+
+        // Detect ALL installed PHP versions + their loaded extensions
+        $versions = [];
+        $versionBin = $this->request->get('version', '');
+        exec('ls /usr/bin/php* 2>/dev/null', $bins);
+        foreach ($bins as $b) {
+            if (preg_match('#/php([0-9]+\.[0-9]+)$#', $b, $m)) {
+                $v = $m[1];
+                $verOut = @shell_exec(escapeshellarg($b) . ' -r "echo PHP_VERSION;" 2>/dev/null');
+                $extOut = @shell_exec(escapeshellarg($b) . ' -r "echo implode(\",\", get_loaded_extensions());" 2>/dev/null');
+                $exts = $extOut ? explode(',', $extOut) : [];
+                $versions[$v] = [
+                    'binary' => $b,
+                    'php_version' => $verOut ?: $v,
+                    'loaded' => $exts,
+                    'available' => array_diff($allExts, $exts),
+                ];
+            }
+        }
+        ksort($versions);
+        // Current selected version (default: the CLI default php)
+        $selVersion = $versionBin ?: (trim((string)@shell_exec('php -r "echo PHP_MAJOR_VERSION.\".\".PHP_MINOR_VERSION;" 2>/dev/null')) ?: PHP_VERSION);
+        $selBin = $versions[$selVersion]['binary'] ?? '/usr/bin/php';
+
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         return $this->view('admin.php.index', [
             'user' => $user, 'loaded' => $loaded, 'available' => $avail,
             'domains' => $domains, 'domainExts' => $domainExts, 'allExts' => $allExts,
-            'phpStats' => ['enabled_extensions' => count($loaded), 'available_versions' => explode('.', PHP_VERSION)],
+            'versions' => $versions, 'selected_version' => $selVersion, 'selected_binary' => $selBin,
+            'phpStats' => ['enabled_extensions' => count($loaded), 'php_versions' => count($versions), 'available_versions' => explode('.', PHP_VERSION)],
             'theme_settings' => $theme_settings, 'title' => 'PHP Manager'
         ]);
     }
@@ -112,13 +137,23 @@ class PhpController extends Controller
         ]);
     }
 
-    public function install($ext)
+    public function install($ext, $version = null)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $ext = basename($ext);
-        $output = shell_exec("apt install -y php-{$ext} 2>&1") ?: shell_exec("pecl install {$ext} 2>&1");
-        $_SESSION['success_message'] = "Installing {$ext}... Output saved.";
-        $this->response->redirect('/admin/php');
+        $version = preg_replace('/[^0-9.]/', '', (string)$version);
+        // Version-specific package: php8.2-mbstring, php7.4-xml, etc. Fall back to php-{ext}
+        $pkg = $version ? "php{$version}-{$ext}" : "php-{$ext}";
+        $out = shell_exec("apt-get install -y " . escapeshellarg($pkg) . " 2>&1");
+        if (!$out || str_contains($out, 'E: Unable to locate package') || str_contains($out, 'Unable to locate')) {
+            // Try generic php-{ext} as fallback
+            $out2 = shell_exec("apt-get install -y php-{$ext} 2>&1");
+            $out = ($out ?? '') . "\n[fallback]\n" . ($out2 ?? '');
+        }
+        // Enable the extension in the version's FPM ini if it exists
+        $iniGlob = glob("/etc/php/{$version}/fpm/conf.d/*.ini");
+        $_SESSION['success_message'] = "Installing {$pkg}" . ($version ? " (PHP {$version})" : '') . "… " . (str_contains($out, 'Setting up') || !str_contains($out, 'Unable to') ? 'Complete.' : 'See output.');
+        $this->response->redirect('/admin/php?version=' . urlencode($version));
         exit;
     }
 

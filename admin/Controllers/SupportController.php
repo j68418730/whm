@@ -96,7 +96,55 @@ class SupportController extends Controller
         $cats = $this->db->table('kb_categories')->get() ?: [];
         $catNames = [];
         foreach ($cats as $c) $catNames[$c->id] = $c->name;
-        return $this->view('admin.support.kb', ['user' => $user, 'title' => 'Knowledgebase', 'theme_settings' => $this->theme(), 'articles' => $articles, 'cats' => $cats, 'catNames' => $catNames]);
+        $kbEnabled = $this->setting('kb_enabled');
+        $kbUrl = $this->setting('kb_public_url') ?: ('https://' . ($_SERVER['HTTP_HOST'] ?? '') . '/kb');
+        return $this->view('admin.support.kb', ['user' => $user, 'title' => 'Knowledgebase', 'theme_settings' => $this->theme(), 'articles' => $articles, 'cats' => $cats, 'catNames' => $catNames, 'kbEnabled' => $kbEnabled, 'kbUrl' => $kbUrl]);
+    }
+
+    public function kbToggle()
+    {
+        $this->guard();
+        $enabled = $this->request->post('enabled', '0') ? '1' : '0';
+        $this->saveSetting('kb_enabled', $enabled);
+        $_SESSION['success_message'] = $enabled ? 'Public knowledgebase enabled.' : 'Public knowledgebase disabled.';
+        $this->response->redirect('/admin/support/kb');
+    }
+
+    /** Public-facing knowledgebase at /kb (respects the enable toggle). */
+    public function publicKb()
+    {
+        $kbEnabled = $this->setting('kb_enabled');
+        if ($kbEnabled !== '1') {
+            http_response_code(404);
+            echo '<!doctype html><html><head><meta charset="utf-8"><title>Not found</title></head><body style="background:#0a0f1a;color:#e0e0e0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh"><div style="text-align:center"><h1>404</h1><p>Knowledgebase is disabled.</p></div></body></html>';
+            exit;
+        }
+        $articles = $this->db->table('kb_articles')->where('is_published', 1)->orderBy('id', 'DESC')->get() ?: [];
+        $cats = $this->db->table('kb_categories')->get() ?: [];
+        $catNames = [];
+        foreach ($cats as $c) $catNames[$c->id] = $c->name;
+        // Render the standalone public page directly (no admin/user layout wrapper)
+        $viewFile = BASE_PATH . '/user/Views/kb/index.php';
+        if (is_file($viewFile)) { require $viewFile; exit; }
+        echo 'Knowledgebase unavailable.';
+        exit;
+    }
+
+    protected function setting($key)
+    {
+        try {
+            $row = $this->db->table('automation_settings')->where('setting_key', $key)->first();
+            return $row ? $row->setting_value : null;
+        } catch (\Exception $e) { return null; }
+    }
+
+    protected function saveSetting($key, $value)
+    {
+        try {
+            $existing = $this->db->table('automation_settings')->where('setting_key', $key)->first();
+            if ($existing) $this->db->table('automation_settings')->where('id', $existing->id)->update(['setting_value' => $value]);
+            else $this->db->table('automation_settings')->insertGetId(['setting_key' => $key, 'setting_value' => $value]);
+        } catch (\Exception $e) {}
     }
 
     public function kbCategoryStore()

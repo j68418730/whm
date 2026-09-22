@@ -29,6 +29,7 @@ class FtpController extends Controller
         return $this->view('admin.ftp.index', [
             'user' => $user, 'title' => 'FTP',
             'ftpStats' => ['ftp_server' => 'VSFTPD', 'active' => $active],
+            'serverIp' => $_SERVER['SERVER_ADDR'] ?? '15.204.114.226',
             'hostingUsers' => $hostingUsers,
             'ftpAccounts' => $ftpAccounts,
             'userMap' => $userMap,

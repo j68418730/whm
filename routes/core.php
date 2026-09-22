@@ -54,7 +54,8 @@ $router->get('/admin/reseller', 'Admin\Controllers\ResellerController@index');
 $router->get('/admin/dns', 'Admin\Controllers\DnsController@index');
 $router->get('/admin/email', 'Admin\Controllers\EmailController@index');
 $router->post('/admin/email/account/create', 'Admin\Controllers\EmailController@createAccount');
-$router->get('/admin/email/account/delete/{id}', 'Admin\Controllers\EmailController@deleteAccount');
+        $router->get('/admin/email/account/delete/{id}', 'Admin\Controllers\EmailController@deleteAccount');
+        $router->post('/admin/email/account/password/{id}', 'Admin\Controllers\EmailController@changePassword');
 $router->post('/admin/email/forwarder/create', 'Admin\Controllers\EmailController@createForwarder');
 $router->get('/admin/email/forwarder/delete/{id}', 'Admin\Controllers\EmailController@deleteForwarder');
 $router->post('/admin/email/autoresponder/set', 'Admin\Controllers\EmailController@setAutoresponder');
@@ -162,6 +163,7 @@ $router->post('/admin/notifications/delete/{id}', 'Admin\Controllers\Notificatio
 $router->post('/admin/notifications/mark-all-read', 'Admin\Controllers\NotificationsController@markAllRead');
 $router->get('/admin/notifications/api/latest', 'Admin\Controllers\NotificationsController@apiLatest');
 $router->get('/admin/php/install/{ext}', 'Admin\Controllers\PhpController@install');
+        $router->get('/admin/php/install/{ext}/{version}', 'Admin\Controllers\PhpController@install');
 $router->get('/admin/plugins', 'Admin\Controllers\PluginsController@index');
 $router->get('/admin/plugins/toggle/{id}', 'Admin\Controllers\PluginsController@toggle');
 $router->post('/admin/plugins/upload', 'Admin\Controllers\PluginsController@upload');
@@ -272,6 +274,7 @@ $router->post('/admin/livechat/group/store', 'Admin\Controllers\LiveChatControll
 $router->get('/admin/livechat/group/delete/{id}', 'Admin\Controllers\LiveChatController@groupDelete');
 $router->post('/admin/livechat/track', 'Admin\Controllers\LiveChatController@track');
 $router->get('/admin/livechat/visitors/online', 'Admin\Controllers\LiveChatController@visitorsOnline');
+        $router->get('/admin/livechat/export', 'Admin\Controllers\LiveChatController@export');
 $router->get('/admin/livechat/waiting-count', 'Admin\Controllers\LiveChatController@waitingCount');
 // -- Migration & Restore Center routes --
 $router->get('/admin/migration', 'Admin\Controllers\MigrationController@index');
@@ -647,6 +650,8 @@ $router->post('/admin/support/tickets/reply/{id}', 'Admin\Controllers\SupportCon
 $router->get('/admin/support/tickets/close/{id}', 'Admin\Controllers\SupportController@ticketClose');
 $router->get('/admin/support/tickets/delete/{id}', 'Admin\Controllers\SupportController@ticketDelete');
 $router->get('/admin/support/kb', 'Admin\Controllers\SupportController@kb');
+        $router->post('/admin/support/kb/toggle', 'Admin\Controllers\SupportController@kbToggle');
+        $router->get('/kb', 'Admin\Controllers\SupportController@publicKb');
 $router->post('/admin/support/kb/category/store', 'Admin\Controllers\SupportController@kbCategoryStore');
 $router->get('/admin/support/kb/category/delete/{id}', 'Admin\Controllers\SupportController@kbCategoryDelete');
 $router->post('/admin/support/kb/category/update/{id}', 'Admin\Controllers\SupportController@kbCategoryUpdate');
@@ -818,6 +823,10 @@ $router->post('/setup/{step}/post', 'Admin\Controllers\SetupController@postStep'
 
 // DJ Management Routes
 $router->get('/admin/dj', 'Admin\Controllers\DjController@index');
+        $router->get('/admin/autodj', 'Admin\Controllers\AutodjController@index');
+        $router->get('/admin/autodj/start-all', 'Admin\Controllers\AutodjController@startAll');
+        $router->get('/admin/autodj/stop-all', 'Admin\Controllers\AutodjController@stopAll');
+        $router->get('/admin/autodj/restart-all', 'Admin\Controllers\AutodjController@restartAll');
 $router->get('/admin/dj/create', 'Admin\Controllers\DjController@create');
 $router->post('/admin/dj/store', 'Admin\Controllers\DjController@store');
 $router->get('/admin/dj/show/{id}', 'Admin\Controllers\DjController@show');

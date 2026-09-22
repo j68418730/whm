@@ -10,6 +10,6 @@
 <a href="/admin/apache/stop" class="btn danger">⏹ Stop</a>
 <a href="/admin/apache/start" class="btn primary">▶ Start</a>
 </div>
-<div class="card"><h3 style="color:var(--accent)">Server Information</h3>
+<div class="card"><h3 style="color:var(--accent)">Apache</h3>
 <p style="color:var(--text-secondary);margin-top:8px">Apache is the web server that serves your hosting panel and client websites. Use the controls above to manage the service.</p>
 </div>

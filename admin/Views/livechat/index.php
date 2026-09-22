@@ -46,6 +46,9 @@ select option{background:#0a0f1a;color:#e0e0e0}
 <div><h3 style="font-size:11px;color:var(--text-muted);margin:0">Active</h3><div class="value" style="font-size:18px;color:#4ade80"><?php echo count($active); ?></div></div>
 <div><h3 style="font-size:11px;color:var(--text-muted);margin:0">Visitors</h3><div class="value" style="font-size:18px;color:#60a5fa"><?php echo count($visitors); ?></div></div>
 <div><h3 style="font-size:11px;color:var(--text-muted);margin:0">Canned</h3><div class="value" style="font-size:18px"><?php echo count($canned); ?></div></div>
+<div style="grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;padding-top:8px">
+<a href="/admin/livechat/export" class="btn btn-sm" style="background:rgba(0,140,255,.15);border:1px solid rgba(0,140,255,.25);color:#0A84FF;text-decoration:none"><i class="bi bi-download"></i> Export Chat Logs</a>
+</div>
 </div>
 
 <div class="chat-layout">

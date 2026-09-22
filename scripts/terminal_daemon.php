@@ -67,10 +67,14 @@ $env['USER'] = $linuxUser;
 $env['SHELL'] = '/bin/bash';
 $env['PWD'] = $home;
 
-$argvCmd = ['/bin/bash', '--noprofile', '--norc', '-i'];
+// Spawn the shell on a real PTY. Wrap with `script` so bash gets a proper
+// controlling terminal + job control (otherwise: "cannot set terminal process
+// group ... Inappropriate ioctl for device", no Ctrl+Z/fg/bg).
+$innerCmd = '/bin/bash --noprofile --norc -i';
 if ($linuxUser !== 'root') {
-    $argvCmd = ['/usr/sbin/runuser', '-u', $linuxUser, '--', '/bin/bash', '--noprofile', '--norc', '-i'];
+    $innerCmd = '/usr/sbin/runuser -u ' . escapeshellarg($linuxUser) . ' -- /bin/bash --noprofile --norc -i';
 }
+$argvCmd = ['/usr/bin/script', '-qefc', $innerCmd, '/dev/null'];
 
 $proc = @proc_open(
     $argvCmd,

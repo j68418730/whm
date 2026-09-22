@@ -389,4 +389,44 @@ class LiveChatController extends Controller
         $this->response->send();
         exit;
     }
+
+    /** GET /admin/livechat/export — download chat history as CSV. */
+    public function export()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $sessions = $this->db->table('chat_sessions')->orderBy('id', 'DESC')->get() ?: [];
+        $msgsBySession = [];
+        try {
+            $pdo = $this->db->pdo();
+            $q = $pdo->query("SELECT id, session_id, sender_type, sender_name, message, file_url, created_at FROM chat_messages ORDER BY id ASC");
+            foreach ($q->fetchAll(\PDO::FETCH_OBJ) as $m) { $msgsBySession[$m->session_id][] = $m; }
+        } catch (\Exception $e) {}
+
+        $filename = 'livechat-export-' . date('Y-m-d') . '.csv';
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        $out = fopen('php://output', 'w');
+        fputcsv($out, ['Session', 'Department', 'Visitor', 'Email', 'Status', 'Started', 'Ended', 'Messages']);
+
+        foreach ($sessions as $s) {
+            $msgs = $msgsBySession[$s->id] ?? [];
+            $lines = [];
+            foreach ($msgs as $m) {
+                $who = ($m->sender_type ?? '') === 'operator' ? 'Op' : 'Visitor';
+                $lines[] = '[' . date('Y-m-d H:i', strtotime($m->created_at ?? 'now')) . '] ' . $who . ': ' . ($m->message ?? '');
+            }
+            fputcsv($out, [
+                '#' . $s->id,
+                $s->department ?? '',
+                $s->visitor_name ?? '',
+                $s->visitor_email ?? '',
+                $s->status ?? '',
+                $s->created_at ?? '',
+                $s->closed_at ?? '',
+                implode("\n", $lines),
+            ]);
+        }
+        fclose($out);
+        exit;
+    }
 }

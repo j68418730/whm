@@ -11,6 +11,22 @@
 <div class="stat-card"><h3>Available</h3><div class="value"><?php echo count(array_filter($ips, function($i) { return !$i->assigned_to; })); ?></div></div>
 </div>
 
+<div class="card" style="margin-bottom:20px">
+<h3 style="color:var(--accent);margin-bottom:12px"><i class="bi bi-diagram-3"></i> IP Pool — who's on each IP</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px">
+<?php if (!empty($ips)): foreach ($ips as $ip): $owner = ($ip->assigned_to && isset($accountMap[$ip->assigned_to])) ? $accountMap[$ip->assigned_to] : null; ?>
+<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:<?php echo $owner ? 'rgba(22,131,255,.08)' : 'rgba(100,116,139,.08)'; ?>;border:1px solid <?php echo $owner ? 'rgba(22,131,255,.2)' : 'rgba(100,116,139,.15)'; ?>">
+<div style="width:34px;height:34px;border-radius:8px;display:grid;place-items:center;font-size:17px;background:<?php echo $owner ? 'rgba(22,131,255,.15)' : 'rgba(100,116,139,.15)'; ?>"><?php echo $owner ? '🖥' : '🔹'; ?></div>
+<div style="flex:1;min-width:0">
+<div style="font-family:monospace;font-size:12px;color:#e2e8f0"><?php echo htmlspecialchars($ip->ip_address); ?></div>
+<div style="font-size:11px;color:<?php echo $owner ? '#4ade80' : '#8ea8c5'; ?>"><?php echo $owner ? '→ ' . htmlspecialchars($owner->username) : 'Available'; ?></div>
+</div>
+<a href="<?php echo $owner ? '/admin/account/show/' . (int)$ip->assigned_to : '/admin/ip/assign/' . (int)$ip->id; ?>" style="color:<?php echo $owner ? '#1683ff' : '#4ade80'; ?>;font-size:16px;text-decoration:none" title="<?php echo $owner ? 'View ' . htmlspecialchars($owner->username) : 'Assign this IP'; ?>"><?php echo $owner ? '👤' : '➕'; ?></a>
+</div>
+<?php endforeach; else: ?><div style="color:#8ea8c5;font-size:13px;grid-column:1/-1;text-align:center;padding:20px">No IPs in the pool yet. Add one below.</div><?php endif; ?>
+</div>
+</div>
+
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
 <div class="card">
 <h3 style="color:var(--accent);margin-bottom:12px">Add IP to Pool</h3>
