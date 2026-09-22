@@ -8,17 +8,17 @@
     "layouts": ["1-col", "2-col", "3-col"],
     "widget_zones": ["header", "top", "left", "center", "right", "footer"],
     "colors": {
-        "primary": "#008cff",
+        "primary": "#1683ff",
         "secondary": "#3bb8ff",
-        "bg": "#02050e",
-        "sidebar_bg": "#0b1728",
-        "card_bg": "rgba(8,16,28,.6)",
-        "text": "#e0e0e0",
-        "text_muted": "#64748b",
-        "border": "rgba(0,191,255,.1)",
-        "success": "#4ade80",
-        "warning": "#facc15",
-        "danger": "#f87171"
+        "bg": "#04101f",
+        "sidebar_bg": "#071a30",
+        "card_bg": "linear-gradient(145deg,#0b1f39,#08192d)",
+        "text": "#e8f1ff",
+        "text_muted": "#8ea8c5",
+        "border": "#17385b",
+        "success": "#16d17e",
+        "warning": "#f4ac15",
+        "danger": "#ff4757"
     },
     "fonts": {
         "body": "'Inter', sans-serif",
