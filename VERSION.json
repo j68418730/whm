@@ -1,6 +1,6 @@
 {
-  "version": "1.4.3",
-  "version_code": 1430,
+  "version": "1.4.4",
+  "version_code": 1440,
   "channel": "stable",
   "release_date": "2026-09-18",
   "release_type": "Core Release",
@@ -10,8 +10,8 @@
   "requires_reboot": false,
   "requires_services_restart": ["apache2"],
   "migrations": ["2026_09_18_terminal_package_access.sql"],
-  "download": "https://codeload.github.com/j68418730/whm/tar.gz/e60a87c",
-  "checksum": "c761afebd22a2bb0af2f5c23193d1a888e2fc8789adc55244de7235f42e1e0fa",
-  "target_sha": "e60a87c",
-  "release_notes": "Admin account list (/admin/account) redesign: each owner group is now a centered, collapsible card with a 'OwnerName N accounts' header (click to expand/collapse), its own repeated column header row, and a ••• separator between groups. Header padding tightened so the reseller name sits close to the account table. Also fixed the 'Total Accounts' stat, which previously counted owner groups instead of accounts (showed 1 for 4 accounts)."
+  "download": "https://codeload.github.com/j68418730/whm/tar.gz/96bf061",
+  "checksum": "6015b8413dce5184384fbbdd82d051f4e2c994be5f649027694c5b7eabb26400",
+  "target_sha": "96bf061",
+  "release_notes": "Admin account list (/admin/account) redesigned to a cleaner modern dashboard style matching the preview: 6 stat cards (Total/Active/Suspended/Terminated/Total Packages/Disk Usage), a filter bar (search + package + status dropdowns), and an account table with colored package tags, status dots, disk + bandwidth progress bars, IP address, created date/time, and compact icon action buttons (manage / login-as / unsuspend / suspend / delete / edit). Keeps the collapsible owner-group headers ('Planet Hosts 4 accounts'). Added package + status filters in the controller. Bottom quick-action cards + quick tips panel. Verified live with real data (2.1 GB total disk, per-account usage bars)."
 }
