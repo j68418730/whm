@@ -299,6 +299,49 @@ function filterMenu(q){q=q.toLowerCase().trim();document.querySelectorAll('.side
     x.send();
 })();
 
+// Global Server Email alert banner - pops on ANY admin page when a new
+// server-email alert arrives (same style as the update banner).
+(function() {
+    var lastSeenId = 0;
+    var shown = {};
+    var alertBar = null;
+    function escAlert(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+    function ensureBar() {
+        if (alertBar) return alertBar;
+        alertBar = document.createElement('div');
+        alertBar.id = 'serverEmailAlertBar';
+        alertBar.style.cssText = 'display:none;background:linear-gradient(90deg,#b91c1c,#f59e0b);color:#fff;text-align:center;padding:10px 16px;font-size:13px;font-weight:600;position:sticky;top:0;z-index:99998';
+        document.body.insertBefore(alertBar, document.body.firstChild);
+        return alertBar;
+    }
+    function pollServerAlerts() {
+        var x = new XMLHttpRequest();
+        x.open('GET', '/admin/notifications/api/server-email?after=' + lastSeenId, true);
+        x.onload = function() {
+            try {
+                var d = JSON.parse(x.responseText);
+                var alerts = d.alerts || [];
+                if (!alerts.length) return;
+                var newest = 0;
+                alerts.forEach(function(a) {
+                    if (a.id > newest) newest = a.id;
+                    if (shown[a.id]) return;
+                    shown[a.id] = true;
+                    if (a.id > lastSeenId) {
+                        ensureBar();
+                        alertBar.style.display = '';
+                        alertBar.innerHTML = '&#x1f4e8; <strong>Server Email:</strong> ' + escAlert(a.title) + ' &mdash; ' + escAlert(a.message) + ' <a href="/admin/email?tab=accounts" style="color:#fff;text-decoration:underline;margin-left:8px">View</a> <a href="#" onclick="this.closest(\'#serverEmailAlertBar\').style.display=\'none\';return false" style="color:rgba(255,255,255,.7);text-decoration:none;margin-left:8px">&#x2715;</a>';
+                    }
+                });
+                if (newest > lastSeenId) lastSeenId = newest;
+            } catch(e) {}
+        };
+        x.send();
+    }
+    pollServerAlerts();
+    setInterval(pollServerAlerts, 15000);
+})();
+
 // Support status auto-check every 30s
 setInterval(function() {
     fetch('/admin/support-status').then(function(r){return r.json()}).then(function(d){setSupportStatus(d.status)}).catch(function(){});
