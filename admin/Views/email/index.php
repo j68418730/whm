@@ -153,6 +153,21 @@
 <?php if (!empty($serverEmail)): ?>
 <div style="margin-top:12px;padding:10px 14px;border-radius:8px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);font-size:12px;color:#4ade80"><i class="bi bi-bell-fill"></i> Watching <strong><?php echo htmlspecialchars($serverEmail); ?></strong> — new mail triggers alerts.</div>
 <?php endif; ?>
+
+<div id="se-alerts" style="margin-top:12px">
+<h4 style="font-size:13px;color:#e8f1ff;margin:0 0 8px"><i class="bi bi-bell"></i> Recent Server Email Alerts</h4>
+<?php if (!empty($recentAlerts)): ?>
+<?php foreach ($recentAlerts as $al): ?>
+<div style="padding:8px 12px;border-radius:7px;background:rgba(0,140,255,.06);border:1px solid rgba(0,140,255,.14);margin-bottom:6px;font-size:12px">
+<div style="color:#e8f1ff;font-weight:600"><i class="bi bi-envelope-exclamation"></i> <?php echo htmlspecialchars($al->title); ?></div>
+<div style="color:#9ab0ca;margin-top:3px"><?php echo htmlspecialchars($al->message); ?></div>
+<small style="color:#5d7897"><?php echo htmlspecialchars($al->created_at); ?></small>
+</div>
+<?php endforeach; ?>
+<?php else: ?>
+<div style="color:#64748b;font-size:12px">No alerts yet. Send a test email to the server email to see one pop up here.</div>
+<?php endif; ?>
+</div>
 </div>
 
 <?php
@@ -325,4 +340,40 @@ g.style.display=vis?'':'none';
 }
 (function(){var s=document.getElementById('emSearch');if(s)s.addEventListener('input',emApply);var d=document.getElementById('emDomain');if(d)d.addEventListener('change',emApply);})();
 function toggleEmGroup(el){el.closest('.em-group').classList.toggle('collapsed');}
+
+/* Live Server Email alert polling: pops a toast when a new alert arrives */
+(function(){
+  var lastId = 0;
+  var seen = {};
+  var toastWrap = document.createElement('div');
+  toastWrap.style.cssText = 'position:fixed;top:70px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:360px';
+  document.body.appendChild(toastWrap);
+
+  function showToast(a){
+    var el = document.createElement('div');
+    el.style.cssText = 'background:linear-gradient(145deg,#0b1f39,#08192d);border:1px solid rgba(22,131,255,.45);border-radius:10px;padding:13px 16px;box-shadow:0 10px 30px rgba(0,0,0,.45);color:#e8f1ff;font-size:13px;animation:sePop .25s ease';
+    el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><strong style="font-size:13px">📬 '+esc(a.title)+'</strong><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:0;color:#9ab0ca;cursor:pointer;font-size:15px;line-height:1">×</button></div><div style="color:#9ab0ca;margin-top:5px;line-height:1.4">'+esc(a.message)+'</div>';
+    toastWrap.appendChild(el);
+    setTimeout(function(){ el.style.opacity='0'; el.style.transition='opacity .4s'; setTimeout(function(){ el.remove(); },400); }, 12000);
+  }
+  function esc(s){ var d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+  // Seed with the highest existing id
+  try { var seeds = document.querySelectorAll('#se-alerts [data-alid]'); seeds.forEach(function(s){ var i=parseInt(s.getAttribute('data-alid'),10); if(i>lastId) lastId=i; }); } catch(e){}
+
+  setInterval(function(){
+    fetch('/admin/notifications/api/server-email?after='+lastId).then(function(r){return r.json();}).then(function(d){
+      (d.alerts||[]).forEach(function(a){
+        if(seen[a.id]) return; seen[a.id]=true;
+        if(a.id>lastId) lastId=a.id;
+        if(a.type==='server_email') showToast(a);
+      });
+      // Re-render recent list (prepend new ones)
+      if(d.alerts && d.alerts.length){
+        var box=document.getElementById('se-alerts');
+        if(box){ d.alerts.slice(0,8).reverse().forEach(function(a){ /* placeholder; full re-render on load */ }); }
+      }
+    }).catch(function(){});
+  }, 15000);
+})();
 </script>
