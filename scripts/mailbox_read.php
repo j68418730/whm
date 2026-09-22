@@ -65,7 +65,7 @@ if ($action === 'read') {
     $body = $sep === false ? '' : substr($raw, $sep + 4);
     // Decode subject/from (MIME encoded words)
     $dec = function ($s) {
-        $s = preg_replace('/=\?([^?]+)\?([BQ])\?([^?]*)\?=/i', function ($m) {
+        $s = preg_replace_callback('/=\?([^?]+)\?([BQ])\?([^?]*)\?=/i', function ($m) {
             $v = $m[2] === 'B' ? base64_decode($m[3]) : quoted_printable_decode($m[3]);
             return $v;
         }, $s);
