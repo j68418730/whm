@@ -1,6 +1,6 @@
 {
-  "version": "1.4.5",
-  "version_code": 1450,
+  "version": "1.4.6",
+  "version_code": 1460,
   "channel": "stable",
   "release_date": "2026-09-18",
   "release_type": "Core Release",
@@ -10,8 +10,8 @@
   "requires_reboot": false,
   "requires_services_restart": ["apache2"],
   "migrations": ["2026_09_18_terminal_package_access.sql"],
-  "download": "https://codeload.github.com/j68418730/whm/tar.gz/da560c4",
-  "checksum": "5ecaa0ca55685836d4633f7bed35088007091eaf026fac7f92be290ae337ad1d",
-  "target_sha": "da560c4",
-  "release_notes": "ADMIN THEME: applied the modern PlanetHosts design globally across ALL admin pages (matching the redesigned account list). themes/admin/default/layout.css upgraded: gradient card backgrounds (linear-gradient #0b1f39->#08192d), cleaner tables (rounded #102847 header row, #183655 borders, hover highlight #0c2340), modern buttons (#1683ff), form controls/selects (#0b2543 bg), badges, alerts, stat cards, progress bars, sidebar gradient (#071a30->#061426) with active nav gradient (#147ff0->#0c65c8), radial main background, and updated theme.json palette (primary #1683ff, bg #04101f, text #e8f1ff, muted #8ea8c5, border #17385b). Verified dashboard, packages, dns, billing products all render with the new CSS."
+  "download": "https://codeload.github.com/j68418730/whm/tar.gz/d32aee4",
+  "checksum": "c828d386169b678dffad95eb28e5fe0e6a2c74f5bc0043e7861d3754868af499",
+  "target_sha": "d32aee4",
+  "release_notes": "REDESIGN /admin/server: the previous view was 5607 lines of corrupted duplicated HTML (the Server Configuration form was copy-pasted dozens of times, nesting endlessly). Fully rebuilt in the modern PlanetHosts style: 6 stat cards (CPU load, memory, disk, uptime, active accounts, CPU cores), a system info table (hostname / OS / kernel / CPU model / load average / memory / disk), a services table with status dots and working start/stop/restart buttons (the controller now enriches each service with its real systemd unit name so systemctl actions work), a compact server configuration card (set hostname + main domain), and quick links (full server config, tweak settings, process manager, terminal). Verified live: all stats populate (CPU 2.1, memory 19MB, disk 31GB, uptime 70d) and all 7 services render."
 }
