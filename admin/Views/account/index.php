@@ -5,12 +5,30 @@
 <div class="alert alert-danger"><?php echo htmlspecialchars($_SESSION['error_message'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['error_message']); ?></div>
 <?php endif; ?>
 
+<style>
+.acct-group{margin-bottom:22px;border:1px solid var(--border,rgba(0,191,255,.08));border-radius:12px;overflow:hidden;background:var(--card_bg,rgba(8,16,28,.6))}
+.acct-group-head{display:flex;align-items:center;justify-content:center;gap:10px;padding:9px 18px;background:linear-gradient(135deg,rgba(0,191,255,.10),rgba(0,140,255,.03));border-bottom:1px solid var(--border,rgba(0,191,255,.08));cursor:pointer;user-select:none;transition:.15s}
+.acct-group-head:hover{background:linear-gradient(135deg,rgba(0,191,255,.16),rgba(0,140,255,.06))}
+.acct-group-head .g-title{font-weight:700;font-size:14px;color:var(--accent,#008cff);letter-spacing:.3px}
+.acct-group-head .g-count{background:rgba(0,140,255,.15);color:#38bdf8;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700}
+.acct-group-head .g-toggle{color:#64748b;font-size:11px;transition:transform .2s;margin-left:4px}
+.acct-group.collapsed .g-toggle{transform:rotate(-90deg)}
+.acct-group.collapsed .acct-table-wrap{display:none}
+.acct-table-wrap{overflow-x:auto;margin-top:0}
+.acct-table-wrap table{width:100%;margin:0}
+.acct-table-wrap thead th{padding-top:6px;padding-bottom:6px}
+.acct-table-wrap tbody tr:first-child td{padding-top:8px}
+.acct-group-sep{height:14px;display:flex;align-items:center;justify-content:center}
+.acct-group-sep::after{content:'•••';color:#334155;font-size:10px;letter-spacing:6px}
+.acct-owner-cell{white-space:nowrap;font-size:11px;color:#94a3b8}
+</style>
+
 <div class="page-header">
 <div class="d-flex justify-content-between align-items-center">
 <h2 style="margin:0; color:var(--accent, #008cff)">👥 Account Management</h2>
 <a href="/admin/account/create" class="btn btn-primary"><i class="bi bi-plus me-2"></i> Create Account</a>
 </div>
-<div style="margin-top:8px;font-size:13px;color:var(--text_muted)">Group by <strong style="color:var(--accent)">Ownership</strong> — accounts are listed under their <strong>Owner</strong> (Root, or the reseller that manages them).</div>
+<div style="margin-top:8px;font-size:13px;color:var(--text_muted)">Accounts grouped by <strong style="color:var(--accent)">Owner</strong>. Click a group header to expand/collapse.</div>
 </div>
 
 <div class="card" style="margin-bottom:14px;padding:12px">
@@ -33,9 +51,10 @@
 </div>
 
 <?php
-$totalAccounts = count($accountGroups ?? []);
+$allAccounts = $accountGroups ?? [];
+$totalAccounts = count($accounts ?? []);
 $activeCount = 0; $suspendedCount = 0; $terminatedCount = 0;
-foreach (($accountGroups ?? []) as $group) {
+foreach ($allAccounts as $group) {
     foreach ($group as $a) {
         $st = $a->status ?? 'active';
         if ($st === 'active') $activeCount++;
@@ -50,14 +69,24 @@ foreach (($accountGroups ?? []) as $group) {
 <div class="stat-card"><h3>Suspended</h3><div class="value" style="color:var(--warning, #facc15)"><?php echo $suspendedCount; ?></div></div>
 <div class="stat-card"><h3>Terminated</h3><div class="value" style="color:var(--danger, #f87171)"><?php echo $terminatedCount; ?></div></div>
 </div>
-</div>
 
-<div class="table-responsive">
+<?php
+$groupCount = count($allAccounts);
+$gi = 0;
+foreach ($allAccounts as $ownerName => $group):
+    $gi++;
+    $groupAccounts = count($group);
+?>
+<div class="acct-group" data-owner="<?php echo htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8'); ?>">
+<div class="acct-group-head" onclick="toggleGroup(this)">
+<span class="g-title"><?php echo htmlspecialchars($ownerName); ?></span>
+<span class="g-count"><?php echo $groupAccounts; ?> account<?php echo $groupAccounts === 1 ? '' : 's'; ?></span>
+<span class="g-toggle"><i class="bi bi-chevron-down"></i></span>
+</div>
+<div class="acct-table-wrap">
 <table class="table table-bordered align-middle mb-0">
 <thead><tr><th>Owner</th><th>Username</th><th>Domain</th><th>Package</th><th>Products / Services</th><th>Disk</th><th>Last Order</th><th>Status</th><th>Actions</th></tr></thead>
 <tbody>
-<?php foreach ($accountGroups as $ownerName => $group): ?>
-<tr><td colspan="9" style="background:rgba(0,191,255,.1);border-top:1px solid rgba(0,191,255,.2);padding:12px;font-weight:600;color:var(--primary, #008cff);font-size:13px;"><?php echo htmlspecialchars($ownerName); ?> <span class="badge bg-primary"><?php echo count($group); ?> accounts</span></td></tr>
 <?php foreach ($group as $a): ?>
 <?php
 $pkg = $packageMap[$a->package_id] ?? null;
@@ -66,9 +95,10 @@ $svcCount = count($svcs);
 $svcActive = count(array_filter($svcs, function($s) { return $s->status === 'active'; }));
 $lastOrder = $latestOrderByUser[(int)$a->id] ?? null;
 $disk = $diskUsageByUser[$a->username] ?? '-';
+$ownerCell = $a->reseller_id ? ('Reseller #' . $a->reseller_id) : 'Root';
 ?>
 <tr>
-<td style="width:120px"><?php echo htmlspecialchars($a->reseller_id ? 'Reseller #' . $a->reseller_id : 'Root'); ?></td>
+<td class="acct-owner-cell"><?php echo htmlspecialchars($ownerCell); ?></td>
 <td><strong><?php echo htmlspecialchars($a->username); ?></strong>
 <?php if (isset($a->no_auto_suspend) && (int)$a->no_auto_suspend === 1): ?><br><span class="badge bg-danger" style="font-size:10px">No auto-suspend</span><?php endif; ?>
 </td>
@@ -95,12 +125,22 @@ $disk = $diskUsageByUser[$a->username] ?? '-';
 </td>
 </tr>
 <?php endforeach; ?>
-<?php endforeach; ?>
 </tbody>
 </table>
 </div>
+</div>
+<?php if ($gi < $groupCount): ?>
+<div class="acct-group-sep"></div>
+<?php endif; ?>
+<?php endforeach; ?>
 
-<div class="mt-4">
-<p class="text-muted small">Accounts grouped by owner. Use the owner filter or search to find specific accounts.</p>
-</div>
-</div>
+<?php if (empty($allAccounts)): ?>
+<div class="card" style="text-align:center;padding:30px;color:#64748b">No accounts found.</div>
+<?php endif; ?>
+
+<script>
+function toggleGroup(head) {
+    head.closest('.acct-group').classList.toggle('collapsed');
+}
+// Collapse all groups with 0 accounts? No — keep all expanded by default.
+</script>
