@@ -55,6 +55,26 @@ class NotificationsController extends Controller
         exit;
     }
 
+    /** GET /admin/notifications/api/server-email - server-email alerts since an id (for the email page live feed). */
+    public function apiServerEmail()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { exit; }
+        $afterId = (int)($_GET['after'] ?? 0);
+        $pdo = $this->db->pdo();
+        if ($afterId > 0) {
+            $q = $pdo->prepare("SELECT * FROM notifications WHERE type='server_email' AND id > ? ORDER BY id ASC LIMIT 10");
+            $q->execute([$afterId]);
+            $rows = $q->fetchAll(\PDO::FETCH_OBJ) ?: [];
+        } else {
+            $rows = $this->db->table('notifications')->where('type', 'server_email')->orderBy('id', 'DESC')->limit(10)->get() ?: [];
+        }
+        $latest = 0;
+        foreach ($rows as $r) if ($r->id > $latest) $latest = $r->id;
+        $this->response->json(['alerts' => $rows, 'latest' => $latest]);
+        $this->response->send();
+        exit;
+    }
+
     public function index()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }

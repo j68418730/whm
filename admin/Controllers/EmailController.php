@@ -75,12 +75,13 @@ class EmailController extends Controller
         $dovecot = trim(shell_exec('systemctl is-active dovecot 2>/dev/null') ?: 'unknown');
         $domains = $this->db->table('hosting_users')->get() ?: [];
         // Server-email alert config
-        $serverEmail = ''; $serverAlertEmail = '';
+        $serverEmail = ''; $serverAlertEmail = ''; $recentAlerts = [];
         try {
             $r = $this->db->table('automation_settings')->where('setting_key', 'server_email')->first();
             if ($r) $serverEmail = $r->setting_value;
             $r = $this->db->table('automation_settings')->where('setting_key', 'server_email_alert_email')->first();
             if ($r) $serverAlertEmail = $r->setting_value;
+            $recentAlerts = $this->db->table('notifications')->where('type', 'server_email')->orderBy('id', 'DESC')->limit(8)->get() ?: [];
         } catch (\Exception $e) {}
 
         return $this->view('admin.email.index', [
@@ -89,6 +90,7 @@ class EmailController extends Controller
             'autoresponders' => $autoresponders, 'spam' => $spam,
             'queueSize' => $queueSize, 'postfix' => $postfix, 'dovecot' => $dovecot,
             'serverEmail' => $serverEmail, 'serverAlertEmail' => $serverAlertEmail,
+            'recentAlerts' => $recentAlerts,
             'domains' => $domains,
             'theme_settings' => json_decode($user->theme_settings ?? '{}', true),
         ]);

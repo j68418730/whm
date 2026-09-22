@@ -166,6 +166,7 @@ $router->post('/admin/notifications/mark-read/{id}', 'Admin\Controllers\Notifica
 $router->post('/admin/notifications/delete/{id}', 'Admin\Controllers\NotificationsController@delete');
 $router->post('/admin/notifications/mark-all-read', 'Admin\Controllers\NotificationsController@markAllRead');
 $router->get('/admin/notifications/api/latest', 'Admin\Controllers\NotificationsController@apiLatest');
+        $router->get('/admin/notifications/api/server-email', 'Admin\Controllers\NotificationsController@apiServerEmail');
 $router->get('/admin/php/install/{ext}', 'Admin\Controllers\PhpController@install');
         $router->get('/admin/php/install/{ext}/{version}', 'Admin\Controllers\PhpController@install');
 $router->get('/admin/plugins', 'Admin\Controllers\PluginsController@index');
