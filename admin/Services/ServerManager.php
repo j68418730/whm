@@ -135,6 +135,14 @@ class ServerManager
             'DNS' => ['bind9', 'named', 'unbound'],
             'SSH' => ['ssh', 'sshd'],
             'Icecast' => ['icecast2', 'icecast'],
+            'SHOUTcast v2' => ['shoutcast'],
+            'SHOUTcast v1' => ['shoutcast-v1'],
+            'Fail2Ban' => ['fail2ban'],
+            'Firewall' => ['firewalld'],
+            'Nginx' => ['nginx'],
+            'Cron' => ['cron', 'crond'],
+            'MariaDB' => ['mariadb', 'mysql'],
+            'Redis' => ['redis-server', 'redis'],
         ];
         $status = [];
         foreach ($candidates as $label => $names) {

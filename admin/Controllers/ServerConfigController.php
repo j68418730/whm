@@ -141,23 +141,33 @@ class ServerConfigController extends Controller
         $this->response->redirect('/admin/serverconfig');
     }
 
-    public function serviceStart($name)
+public function serviceStart($name)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         shell_exec("systemctl unmask {$name} 2>/dev/null; systemctl start {$name} 2>&1");
-        $this->response->redirect('/admin/serverconfig');
+        $this->response->redirect($this->backUrl());
     }
     public function serviceStop($name)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         shell_exec("systemctl stop {$name} 2>&1");
-        $this->response->redirect('/admin/serverconfig');
+        $this->response->redirect($this->backUrl());
     }
     public function serviceRestart($name)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         shell_exec("systemctl restart {$name} 2>&1");
-        $this->response->redirect('/admin/serverconfig');
+        $this->response->redirect($this->backUrl());
+    }
+
+    /** Redirect back to the page the admin came from (default: server overview). */
+    protected function backUrl()
+    {
+        $ref = $_SERVER['HTTP_REFERER'] ?? '';
+        if ($ref && str_contains($ref, '/admin/')) {
+            return $ref;
+        }
+        return '/admin/server';
     }
 
     public function tweak()
