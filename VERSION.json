@@ -1,6 +1,6 @@
 {
-  "version": "1.4.4",
-  "version_code": 1440,
+  "version": "1.4.5",
+  "version_code": 1450,
   "channel": "stable",
   "release_date": "2026-09-18",
   "release_type": "Core Release",
@@ -10,8 +10,8 @@
   "requires_reboot": false,
   "requires_services_restart": ["apache2"],
   "migrations": ["2026_09_18_terminal_package_access.sql"],
-  "download": "https://codeload.github.com/j68418730/whm/tar.gz/96bf061",
-  "checksum": "6015b8413dce5184384fbbdd82d051f4e2c994be5f649027694c5b7eabb26400",
-  "target_sha": "96bf061",
-  "release_notes": "Admin account list (/admin/account) redesigned to a cleaner modern dashboard style matching the preview: 6 stat cards (Total/Active/Suspended/Terminated/Total Packages/Disk Usage), a filter bar (search + package + status dropdowns), and an account table with colored package tags, status dots, disk + bandwidth progress bars, IP address, created date/time, and compact icon action buttons (manage / login-as / unsuspend / suspend / delete / edit). Keeps the collapsible owner-group headers ('Planet Hosts 4 accounts'). Added package + status filters in the controller. Bottom quick-action cards + quick tips panel. Verified live with real data (2.1 GB total disk, per-account usage bars)."
+  "download": "https://codeload.github.com/j68418730/whm/tar.gz/da560c4",
+  "checksum": "5ecaa0ca55685836d4633f7bed35088007091eaf026fac7f92be290ae337ad1d",
+  "target_sha": "da560c4",
+  "release_notes": "ADMIN THEME: applied the modern PlanetHosts design globally across ALL admin pages (matching the redesigned account list). themes/admin/default/layout.css upgraded: gradient card backgrounds (linear-gradient #0b1f39->#08192d), cleaner tables (rounded #102847 header row, #183655 borders, hover highlight #0c2340), modern buttons (#1683ff), form controls/selects (#0b2543 bg), badges, alerts, stat cards, progress bars, sidebar gradient (#071a30->#061426) with active nav gradient (#147ff0->#0c65c8), radial main background, and updated theme.json palette (primary #1683ff, bg #04101f, text #e8f1ff, muted #8ea8c5, border #17385b). Verified dashboard, packages, dns, billing products all render with the new CSS."
 }
