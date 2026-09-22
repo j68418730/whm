@@ -74,12 +74,21 @@ class EmailController extends Controller
         $postfix = trim(shell_exec('systemctl is-active postfix 2>/dev/null') ?: 'unknown');
         $dovecot = trim(shell_exec('systemctl is-active dovecot 2>/dev/null') ?: 'unknown');
         $domains = $this->db->table('hosting_users')->get() ?: [];
+        // Server-email alert config
+        $serverEmail = ''; $serverAlertEmail = '';
+        try {
+            $r = $this->db->table('automation_settings')->where('setting_key', 'server_email')->first();
+            if ($r) $serverEmail = $r->setting_value;
+            $r = $this->db->table('automation_settings')->where('setting_key', 'server_email_alert_email')->first();
+            if ($r) $serverAlertEmail = $r->setting_value;
+        } catch (\Exception $e) {}
 
         return $this->view('admin.email.index', [
             'user' => $user, 'title' => 'Email', 'tab' => $tab,
             'accounts' => $accounts, 'forwarders' => $forwarders,
             'autoresponders' => $autoresponders, 'spam' => $spam,
             'queueSize' => $queueSize, 'postfix' => $postfix, 'dovecot' => $dovecot,
+            'serverEmail' => $serverEmail, 'serverAlertEmail' => $serverAlertEmail,
             'domains' => $domains,
             'theme_settings' => json_decode($user->theme_settings ?? '{}', true),
         ]);
@@ -225,6 +234,96 @@ class EmailController extends Controller
         } else {
             $_SESSION['error_message'] = 'Account not found or password too short (min 6 chars).';
         }
+        $this->response->redirect('/admin/email?tab=accounts');
+    }
+
+    /** Run the maildir helper as root (www-data has NOPASSWD /bin/bash). */
+    protected function runMailboxHelper($args)
+    {
+        $helper = BASE_PATH . '/scripts/mailbox_read.php';
+        $parts = array_map('escapeshellarg', array_merge(['/usr/bin/php8.4', $helper], $args));
+        $cmd = 'sudo -n /bin/bash -c ' . escapeshellarg(implode(' ', $parts)) . ' 2>/dev/null';
+        $out = @shell_exec($cmd);
+        return $out ? json_decode($out, true) : null;
+    }
+
+    /** GET /admin/email/mailbox/{id} - root reads a mailbox's messages (spam/abuse checks). */
+    public function readMailbox($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $sqlite = $this->mailDb();
+        $email = ''; $mbId = (int)$id;
+        if ($sqlite) {
+            $stmt = $sqlite->prepare("SELECT username FROM mailbox WHERE id = ?");
+            $stmt->execute([$mbId]);
+            $row = $stmt->fetch(\PDO::FETCH_OBJ);
+            if ($row) $email = $row->username;
+        }
+        if ($email === '') {
+            $acct = $this->db->table('mail_accounts')->where('id', $mbId)->first();
+            $email = $acct->email ?? '';
+        }
+        if ($email === '') { $_SESSION['error_message'] = 'Mailbox not found.'; $this->response->redirect('/admin/email?tab=accounts'); exit; }
+
+        [$u, $d] = array_pad(explode('@', $email, 2), 2, '');
+        $messages = $this->runMailboxHelper(['list', $d, $u]) ?: [];
+        $count = $this->runMailboxHelper(['count', $d, $u]);
+
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        return $this->view('admin.email.mailbox', [
+            'user' => $user, 'title' => 'Mailbox: ' . $email,
+            'email' => $email, 'messages' => $messages, 'count' => $count,
+            'theme_settings' => $theme_settings,
+        ]);
+    }
+
+    /** GET /admin/email/mailbox/{id}/read/{file} - view a single message. */
+    public function readMessage($id, $file)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $user = $this->auth->user();
+        $sqlite = $this->mailDb();
+        $email = '';
+        if ($sqlite) {
+            $stmt = $sqlite->prepare("SELECT username FROM mailbox WHERE id = ?");
+            $stmt->execute([(int)$id]);
+            $row = $stmt->fetch(\PDO::FETCH_OBJ);
+            if ($row) $email = $row->username;
+        }
+        if ($email === '') { $this->response->redirect('/admin/email?tab=accounts'); exit; }
+        [$u, $d] = array_pad(explode('@', $email, 2), 2, '');
+        $msg = $this->runMailboxHelper(['read', $d, $u, basename($file)]) ?: [];
+        $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        return $this->view('admin.email.message', [
+            'user' => $user, 'title' => 'Message', 'email' => $email, 'msg' => $msg,
+            'theme_settings' => $theme_settings,
+        ]);
+    }
+
+    /** POST /admin/email/server-email/set - set which mailbox is the "server email". */
+    public function setServerEmail()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $email = $this->request->post('email', '');
+        if ($email !== '') {
+            $existing = $this->db->table('automation_settings')->where('setting_key', 'server_email')->first();
+            if ($existing) $this->db->table('automation_settings')->where('id', $existing->id)->update(['setting_value' => $email]);
+            else $this->db->table('automation_settings')->insertGetId(['setting_key' => 'server_email', 'setting_value' => $email]);
+            $_SESSION['success_message'] = $email . " set as Server Email. New mail to it will trigger alerts.";
+        }
+        $this->response->redirect('/admin/email?tab=accounts');
+    }
+
+    /** POST /admin/email/server-email/alert-to - set a forward email for alert notifications. */
+    public function setServerAlertEmail()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $email = $this->request->post('email', '');
+        $existing = $this->db->table('automation_settings')->where('setting_key', 'server_email_alert_email')->first();
+        if ($existing) $this->db->table('automation_settings')->where('id', $existing->id)->update(['setting_value' => $email]);
+        else $this->db->table('automation_settings')->insertGetId(['setting_key' => 'server_email_alert_email', 'setting_value' => $email]);
+        $_SESSION['success_message'] = 'Alert notification email updated.';
         $this->response->redirect('/admin/email?tab=accounts');
     }
 }

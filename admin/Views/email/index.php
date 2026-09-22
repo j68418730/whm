@@ -134,6 +134,27 @@
 </div>
 </div>
 
+<div class="panel form-card" style="max-width:720px">
+<h4><i class="bi bi-bell"></i> Server Email &amp; Alerts</h4>
+<p style="color:var(--muted);font-size:12px;margin:0 0 12px">Pick a mailbox to watch as the <strong style="color:#e8f1ff">Server Email</strong>. Whenever a new email lands in it, an alert is created: <em>"New email to admin@planet-hosts.com — Subject: Domain not working"</em>.</p>
+<form method="POST" action="/admin/email/server-email/set" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+<div style="flex:1;min-width:220px"><label>Server Email</label>
+<select name="email">
+<option value="">— None —</option>
+<?php foreach ($accounts as $a): ?><option value="<?php echo htmlspecialchars($a->email); ?>" <?php echo ($serverEmail ?? '') === $a->email ? 'selected' : ''; ?>><?php echo htmlspecialchars($a->email); ?></option><?php endforeach; ?>
+</select></div>
+<div><label>Alert To (optional email)</label><input name="alert_to" value="" placeholder="Forward alert email to..."></div>
+<button type="submit" class="btn-create" style="border:0"><i class="bi bi-check-lg"></i> Save</button>
+</form>
+<form method="POST" action="/admin/email/server-email/alert-to" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-top:10px">
+<div style="flex:1;min-width:220px"><label>Forward Alerts To (SMTP email)</label><input name="email" value="<?php echo htmlspecialchars($serverAlertEmail ?? ''); ?>" placeholder="admin@planet-hosts.com"></div>
+<button type="submit" class="btn-create" style="background:#244361;border:0"><i class="bi bi-send"></i> Set Alert Email</button>
+</form>
+<?php if (!empty($serverEmail)): ?>
+<div style="margin-top:12px;padding:10px 14px;border-radius:8px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);font-size:12px;color:#4ade80"><i class="bi bi-bell-fill"></i> Watching <strong><?php echo htmlspecialchars($serverEmail); ?></strong> — new mail triggers alerts.</div>
+<?php endif; ?>
+</div>
+
 <?php
 $groups = [];
 foreach ($accounts as $a) { $groups[$a->domain ?: 'Other'][] = $a; }
@@ -161,6 +182,10 @@ foreach ($accounts as $a) { $groups[$a->domain ?: 'Other'][] = $a; }
 <input name="password" type="password" placeholder="New password" required minlength="6">
 <button class="act g" title="Save Password" type="submit" onclick="return confirm('Change password for <?php echo htmlspecialchars($a->email); ?>?')"><i class="bi bi-check-lg"></i></button>
 </form>
+<a class="act b" href="/admin/email/mailbox/<?php echo (int)$a->id; ?>" title="Read Mailbox (root override)"><i class="bi bi-envelope-open"></i></a>
+<?php if (($serverEmail ?? '') === $a->email): ?>
+<span class="st-dot" style="background:#16d987"></span>
+<?php endif; ?>
 <a class="act r" href="/admin/email/account/delete/<?php echo (int)$a->id; ?>" title="Delete" onclick="return confirm('Delete mailbox <?php echo htmlspecialchars($a->email); ?> permanently?')"><i class="bi bi-trash"></i></a>
 </td>
 </tr>
