@@ -56,8 +56,34 @@ class BrandingController extends Controller
                 else $this->db->table('automation_settings')->insertGetId(['setting_key' => 'company_logo', 'setting_value' => $v]);
             }
         }
+        // Keep webmail (SnappyMail) branding in sync with the primary site
+        $this->syncWebmailBranding();
         $_SESSION['success_message'] = 'Branding saved.';
         $this->response->redirect('/admin/branding');
+    }
+
+    /**
+     * Pull the primary-site brand (company_name) into SnappyMail's config so the
+     * webmail title/loading text matches the site (e.g. "Planet-Hosts Mail").
+     */
+    protected function syncWebmailBranding()
+    {
+        $cfg = BASE_PATH . '/public/snappymail/data/_data_/_default_/configs/application.ini';
+        if (!is_file($cfg)) return;
+        $name = trim((string)$this->request->post('company_name', ''));
+        if ($name === '') {
+            $r = $this->db->table('automation_settings')->where('setting_key', 'company_name')->first();
+            $name = trim((string)($r->setting_value ?? ''));
+        }
+        if ($name === '') return;
+        $webmailTitle = $name . ' Mail';
+        $ini = (string)file_get_contents($cfg);
+        $ini = preg_replace('/^title = ".*"/m', 'title = "' . addcslashes($webmailTitle, '"\\') . '"', $ini);
+        $ini = preg_replace('/^loading_description = ".*"/m', 'loading_description = "' . addcslashes($webmailTitle, '"\\') . '"', $ini);
+        file_put_contents($cfg, $ini);
+        // Clear SnappyMail cache so the new branding shows immediately
+        $cacheDirs = glob(BASE_PATH . '/public/snappymail/data/_data_/_default_/cache/*', GLOB_ONLYDIR);
+        foreach ((array)$cacheDirs as $d) { exec('rm -rf ' . escapeshellarg($d) . ' 2>/dev/null'); }
     }
 
     public function logo()

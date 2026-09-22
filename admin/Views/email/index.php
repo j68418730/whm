@@ -16,7 +16,7 @@
 <a href="/admin/email?tab=spam" style="padding:8px 16px;border-radius:6px 6px 0 0;text-decoration:none;font-size:14px;<?php echo $tab==='spam'?'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff':'color:var(--text-secondary)'; ?>">🛡️ Spam</a>
 <a href="/admin/email?tab=queue" style="padding:8px 16px;border-radius:6px 6px 0 0;text-decoration:none;font-size:14px;<?php echo $tab==='queue'?'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff':'color:var(--text-secondary)'; ?>">📨 Mail Queue</a>
 <span style="flex:1"></span>
-<a href="/snappymail/" target="_blank" style="padding:8px 18px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;background:linear-gradient(135deg,#147ff0,#0c65c8);color:#fff;display:inline-flex;align-items:center;gap:7px"><i class="bi bi-envelope-paper"></i> Planet Hosts Mail</a>
+<a href="https://<?php echo htmlspecialchars($_SERVER['SERVER_NAME'] ?? 'localhost'); ?>:2096/" target="_blank" style="padding:8px 18px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;background:linear-gradient(135deg,#147ff0,#0c65c8);color:#fff;display:inline-flex;align-items:center;gap:7px"><i class="bi bi-envelope-paper"></i> Planet Hosts Mail</a>
 </div>
 
 <?php if ($tab === 'accounts'): ?>
