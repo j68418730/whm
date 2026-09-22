@@ -69,7 +69,7 @@ class Application
     protected function loadCoreRoutes()
     {
         $router = $this->services['router'];
-        foreach (['core', 'user'] as $route) {
+        foreach (['core', 'user', 'admin'] as $route) {
             $routesFile = $this->basePath . '/routes/' . $route . '.php';
             if (is_file($routesFile)) {
                 require $routesFile;

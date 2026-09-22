@@ -15,6 +15,8 @@
 <a href="/admin/email?tab=autoresponders" style="padding:8px 16px;border-radius:6px 6px 0 0;text-decoration:none;font-size:14px;<?php echo $tab==='autoresponders'?'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff':'color:var(--text-secondary)'; ?>">🤖 Autoresponder</a>
 <a href="/admin/email?tab=spam" style="padding:8px 16px;border-radius:6px 6px 0 0;text-decoration:none;font-size:14px;<?php echo $tab==='spam'?'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff':'color:var(--text-secondary)'; ?>">🛡️ Spam</a>
 <a href="/admin/email?tab=queue" style="padding:8px 16px;border-radius:6px 6px 0 0;text-decoration:none;font-size:14px;<?php echo $tab==='queue'?'background:rgba(0,191,255,.1);color:#00bfff;border-bottom:2px solid #008cff':'color:var(--text-secondary)'; ?>">📨 Mail Queue</a>
+<span style="flex:1"></span>
+<a href="/snappymail/" target="_blank" style="padding:8px 18px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;background:linear-gradient(135deg,#147ff0,#0c65c8);color:#fff;display:inline-flex;align-items:center;gap:7px"><i class="bi bi-envelope-paper"></i> Planet Hosts Mail</a>
 </div>
 
 <?php if ($tab === 'accounts'): ?>
@@ -31,7 +33,14 @@
 <table><tr><th>Email</th><th>Domain</th><th>Quota</th><th>Created</th><th></th></tr>
 <?php if (!empty($accounts)): foreach ($accounts as $a): ?>
 <tr><td><?php echo htmlspecialchars($a->email); ?></td><td><?php echo htmlspecialchars($a->domain); ?></td><td><?php echo $a->quota_mb; ?> MB</td><td><?php echo $a->created_at; ?></td>
-<td><a href="/admin/email/account/delete/<?php echo $a->id; ?>" class="btn btn-sm danger" onclick="return confirm('Delete?')">Delete</a></td></tr>
+<td style="white-space:nowrap">
+<button class="btn btn-sm secondary" onclick="var f=document.getElementById('pw<?php echo $a->id; ?>');f.classList.toggle('hidden');f.querySelector('input').focus();">🔑 Change Password</button>
+<form id="pw<?php echo $a->id; ?>" class="hidden" method="POST" action="/admin/email/account/password/<?php echo $a->id; ?>" style="display:inline-flex;gap:4px;margin-left:6px">
+<input name="password" type="password" placeholder="New password" required minlength="6" style="width:130px;padding:5px 8px;border-radius:6px;border:1px solid #1c3d60;background:#0c2340;color:#e2e8f0;font-size:12px">
+<button type="submit" class="btn btn-sm primary" onclick="return confirm('Change password for <?php echo htmlspecialchars($a->email); ?>?')">Save</button>
+</form>
+<a href="/admin/email/account/delete/<?php echo $a->id; ?>" class="btn btn-sm danger" onclick="return confirm('Delete?')">Delete</a>
+</td></tr>
 <?php endforeach; else: ?><tr><td colspan="5" style="text-align:center;padding:20px;color:#64748b">No mail accounts.</td></tr>
 <?php endif; ?></table>
 

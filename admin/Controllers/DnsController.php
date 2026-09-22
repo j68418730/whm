@@ -27,10 +27,12 @@ class DnsController extends Controller
         $user = $this->auth->user();
         $zones = $this->dns->getZones();
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
+        $bindStatus = trim(shell_exec('systemctl is-active bind9 2>/dev/null') ?: 'unknown');
         return $this->view('admin.dns.index', [
             'user' => $user,
             'zones' => $zones,
             'dnsStats' => ['total_zones' => count($zones), 'active_zones' => count($zones), 'total_records' => 0],
+            'bindStatus' => $bindStatus,
             'theme_settings' => $theme_settings
         ]);
     }

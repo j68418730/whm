@@ -17,12 +17,56 @@ class EmailController extends Controller
         $this->db = $app->get('db');
     }
 
+    /** Open the PostfixAdmin SQLite DB (the real mail store). */
+    protected function mailDb()
+    {
+        $file = '/var/vmail/postfixadmin.db';
+        if (!is_readable($file)) return null;
+        try {
+            return new \PDO('sqlite:' . $file, null, null, [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]);
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /** Generate a {BLF-CRYPT} bcrypt hash matching PostfixAdmin. */
+    protected function mailHash($password)
+    {
+        $hash = trim((string)@shell_exec('htpasswd -bnBC 10 "" ' . escapeshellarg($password) . ' 2>/dev/null | tr -d ":\n"'));
+        return '{BLF-CRYPT}' . $hash;
+    }
+
+    /** Sync a mailbox row into the panel's MySQL table (UI mirror). */
+    protected function syncMailAccount($email, $domain, $password, $quota)
+    {
+        $existing = $this->db->table('mail_accounts')->where('email', $email)->first();
+        $data = ['email' => $email, 'domain' => $domain, 'quota_mb' => (int)$quota];
+        if ($password !== null) {
+            $data['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+            $data['password_plain'] = $password;
+        }
+        if ($existing) $this->db->table('mail_accounts')->where('id', $existing->id)->update($data);
+        else $this->db->table('mail_accounts')->insertGetId($data);
+    }
+
     public function index()
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
         $user = $this->auth->user();
         $tab = $this->request->get('tab', 'accounts');
-        $accounts = $this->db->table('mail_accounts')->get() ?: [];
+        // Read mailboxes from PostfixAdmin SQLite (source of truth)
+        $accounts = [];
+        $sqlite = $this->mailDb();
+        if ($sqlite) {
+            try {
+                $rows = $sqlite->query("SELECT id, username, full_name, local_part, domain, quota, active, created FROM mailbox ORDER BY username")->fetchAll(\PDO::FETCH_OBJ);
+                foreach ($rows as $r) $accounts[] = (object)[
+                    'id' => $r->id, 'email' => $r->username, 'domain' => $r->domain,
+                    'quota_mb' => (int)($r->quota / 1024), 'created_at' => $r->created,
+                ];
+            } catch (\Exception $e) {}
+        }
+        if (!$accounts) $accounts = $this->db->table('mail_accounts')->get() ?: [];
         $forwarders = $this->db->table('mail_forwarders')->get() ?: [];
         $autoresponders = $this->db->table('mail_autoresponder')->get() ?: [];
         $spam = $this->db->table('mail_spam')->get() ?: [];
@@ -47,19 +91,22 @@ class EmailController extends Controller
         $email = $this->request->post('email', '');
         $domain = $this->request->post('domain', '');
         $password = $this->request->post('password', '');
-        $full = $email . '@' . $domain;
-        if ($email && $domain && $password) {
-            $this->db->table('mail_accounts')->insertGetId([
-                'email' => $full, 'domain' => $domain,
-                'password_hash' => password_hash($password, PASSWORD_DEFAULT),
-                'password_plain' => $password,
-                'quota_mb' => (int)$this->request->post('quota', 1000),
-            ]);
-            // Create system user for IMAP auth
-            $safe = escapeshellarg($email);
-            exec("useradd -m -d /home/{$safe} -s /sbin/nologin {$safe} 2>/dev/null");
-            exec("echo {$safe}:" . escapeshellarg($password) . " | chpasswd 2>/dev/null");
-            $_SESSION['success_message'] = "Account {$full} created.";
+        $full = strtolower(trim($email)) . '@' . strtolower(trim($domain));
+        if ($email && $domain && strlen($password) >= 6) {
+            $sqlite = $this->mailDb();
+            $local = explode('@', $full)[0];
+            if ($sqlite) {
+                $stmt = $sqlite->prepare("INSERT INTO mailbox (username, password, password_encode, full_name, maildir, quota, local_part, domain, active) VALUES (?, ?, '{BLF-CRYPT}', ?, ?, ?, ?, ?, 1)");
+                $stmt->execute([$full, $this->mailHash($password), $local, strtolower($domain) . '/' . $local . '/', 1048576 * (int)$this->request->post('quota', 1000), $local, strtolower($domain)]);
+                // Ensure maildir exists
+                @exec('mkdir -p ' . escapeshellarg('/var/vmail/' . strtolower($domain) . '/' . $local));
+                @exec('chown -R 5000:8 ' . escapeshellarg('/var/vmail/' . strtolower($domain) . '/' . $local));
+            }
+            // Sync mirror for the panel UI
+            $this->syncMailAccount($full, $domain, $password, (int)$this->request->post('quota', 1000));
+            $_SESSION['success_message'] = "Account {$full} created (wired to PostfixAdmin/Dovecot).";
+        } else {
+            $_SESSION['error_message'] = 'Username, domain and password (min 6 chars) required.';
         }
         $this->response->redirect('/admin/email?tab=accounts');
     }
@@ -67,7 +114,20 @@ class EmailController extends Controller
     public function deleteAccount($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $this->db->table('mail_accounts')->where('id', $id)->delete();
+        $acct = $this->db->table('mail_accounts')->where('id', (int)$id)->first();
+        $email = $acct->email ?? '';
+        // Delete from PostfixAdmin SQLite (the real store)
+        $sqlite = $this->mailDb();
+        if ($sqlite && $email) {
+            $stmt = $sqlite->prepare("DELETE FROM mailbox WHERE username = ?");
+            $stmt->execute([$email]);
+        }
+        // Delete alias too if present
+        if ($sqlite && $email) {
+            $stmt = $sqlite->prepare("DELETE FROM alias WHERE address = ?");
+            $stmt->execute([$email]);
+        }
+        $this->db->table('mail_accounts')->where('id', (int)$id)->delete();
         $this->response->redirect('/admin/email?tab=accounts');
     }
 
@@ -125,5 +185,37 @@ class EmailController extends Controller
         shell_exec('postsuper -d ALL 2>/dev/null');
         $_SESSION['success_message'] = 'Mail queue cleared.';
         $this->response->redirect('/admin/email?tab=queue');
+    }
+
+    public function changePassword($id)
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $acct = $this->db->table('mail_accounts')->where('id', (int)$id)->first();
+        $password = $this->request->post('password', '');
+        if (!$acct) {
+            // Try by SQLite row id if it isn't in the mirror
+            $sqlite = $this->mailDb();
+            if ($sqlite) {
+                $stmt = $sqlite->prepare("SELECT username FROM mailbox WHERE id = ?");
+                $stmt->execute([(int)$id]);
+                $row = $stmt->fetch(\PDO::FETCH_OBJ);
+                if ($row) $acct = (object)['email' => $row->username];
+            }
+        }
+        if ($acct && strlen($password) >= 6) {
+            $email = $acct->email;
+            // Update the real store (PostfixAdmin SQLite)
+            $sqlite = $this->mailDb();
+            if ($sqlite) {
+                $stmt = $sqlite->prepare("UPDATE mailbox SET password = ?, password_encode = '{BLF-CRYPT}', modified = CURRENT_TIMESTAMP WHERE username = ?");
+                $stmt->execute([$this->mailHash($password), $email]);
+            }
+            // Sync the panel mirror
+            $this->syncMailAccount($email, explode('@', $email)[1] ?? '', $password, 1000);
+            $_SESSION['success_message'] = "Password changed for {$email} (Dovecot/Postfix).";
+        } else {
+            $_SESSION['error_message'] = 'Account not found or password too short (min 6 chars).';
+        }
+        $this->response->redirect('/admin/email?tab=accounts');
     }
 }

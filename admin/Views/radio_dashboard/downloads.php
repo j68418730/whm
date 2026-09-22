@@ -40,6 +40,14 @@ require_once __DIR__ . '/../../../core/ServerCreds.php'; endforeach; ?>
 </div>
 
 <div class="card">
+<h3>🖥️ Nodes &amp; Broadcast Software</h3>
+<p style="color:#64748b;font-size:12px;margin:0 0 12px">Download the built broadcast nodes / desktop connectors for your DJs.</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<a href="/downloads/Planet%20Hosts%20Studio%20Setup%201.0.0.exe" class="btn btn-p" style="text-decoration:none"><i class="bi bi-box"></i> Planet Hosts Studio <span style="opacity:.7">(Windows)</span></a>
+</div>
+</div>
+
+<div class="card">
 <h3>All Downloads</h3>
 <table>
 <tr><th>File</th><th>Station</th><th>Size</th><th>Uploaded</th><th>Actions</th></tr>

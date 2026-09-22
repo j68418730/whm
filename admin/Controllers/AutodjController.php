@@ -91,4 +91,64 @@ class AutodjController extends Controller
             'theme_settings' => $theme_settings
         ]);
     }
+
+    /** Start AutoDJ for all stations. */
+    public function startAll()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $started = 0; $failed = 0;
+        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
+        $stations = $pdo->query("SELECT ss.*, hu.username AS user_username FROM streaming_stations ss LEFT JOIN hosting_users hu ON hu.id=ss.user_id")->fetchAll(\PDO::FETCH_OBJ);
+        foreach ($stations as $s) {
+            try {
+                $cfg = $pdo->query("SELECT playlist_ids FROM radio_autodj_config WHERE station_id=" . (int)$s->id)->fetch(\PDO::FETCH_OBJ);
+                $playlistIds = ($cfg && !empty($cfg->playlist_ids)) ? json_decode($cfg->playlist_ids, true) ?: [] : [];
+                $player = new \Services\RadioAutoDJPlayer($s, $s->user_username ?: 'testacct', $playlistIds);
+                $player->start();
+                $started++;
+            } catch (\Throwable $e) { $failed++; }
+        }
+        $_SESSION['success_message'] = "AutoDJ started for {$started} station(s)" . ($failed ? ", {$failed} failed" : '') . '.';
+        $this->response->redirect('/admin/autodj');
+    }
+
+    /** Stop AutoDJ for all stations. */
+    public function stopAll()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $stopped = 0; $failed = 0;
+        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
+        $stations = $pdo->query("SELECT ss.*, hu.username AS user_username FROM streaming_stations ss LEFT JOIN hosting_users hu ON hu.id=ss.user_id")->fetchAll(\PDO::FETCH_OBJ);
+        foreach ($stations as $s) {
+            try {
+                $cfg = $pdo->query("SELECT playlist_ids FROM radio_autodj_config WHERE station_id=" . (int)$s->id)->fetch(\PDO::FETCH_OBJ);
+                $playlistIds = ($cfg && !empty($cfg->playlist_ids)) ? json_decode($cfg->playlist_ids, true) ?: [] : [];
+                $player = new \Services\RadioAutoDJPlayer($s, $s->user_username ?: 'testacct', $playlistIds);
+                $player->stop();
+                $stopped++;
+            } catch (\Throwable $e) { $failed++; }
+        }
+        $_SESSION['success_message'] = "AutoDJ stopped for {$stopped} station(s)" . ($failed ? ", {$failed} failed" : '') . '.';
+        $this->response->redirect('/admin/autodj');
+    }
+
+    /** Restart AutoDJ for all stations. */
+    public function restartAll()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $done = 0; $failed = 0;
+        $pdo = new \PDO('mysql:host=localhost;dbname=radiohosting;charset=utf8mb4', \db_user(), \db_pass());
+        $stations = $pdo->query("SELECT ss.*, hu.username AS user_username FROM streaming_stations ss LEFT JOIN hosting_users hu ON hu.id=ss.user_id")->fetchAll(\PDO::FETCH_OBJ);
+        foreach ($stations as $s) {
+            try {
+                $cfg = $pdo->query("SELECT playlist_ids FROM radio_autodj_config WHERE station_id=" . (int)$s->id)->fetch(\PDO::FETCH_OBJ);
+                $playlistIds = ($cfg && !empty($cfg->playlist_ids)) ? json_decode($cfg->playlist_ids, true) ?: [] : [];
+                $player = new \Services\RadioAutoDJPlayer($s, $s->user_username ?: 'testacct', $playlistIds);
+                $player->stop(); usleep(400000); $player->start();
+                $done++;
+            } catch (\Throwable $e) { $failed++; }
+        }
+        $_SESSION['success_message'] = "AutoDJ restarted for {$done} station(s)" . ($failed ? ", {$failed} failed" : '') . '.';
+        $this->response->redirect('/admin/autodj');
+    }
 }

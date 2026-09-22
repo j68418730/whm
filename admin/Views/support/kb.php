@@ -10,6 +10,27 @@ select option{background:#0a0f1a;color:#e0e0e0}
 <a class="btn primary" onclick="document.getElementById('artForm').classList.toggle('hidden')">+ Article</a>
 </div>
 </div>
+
+<?php $kbEnabled = !empty($kbEnabled); $kbUrl = $kbUrl ?? ('https://' . ($_SERVER['HTTP_HOST'] ?? '') . '/kb'); ?>
+<div class="card" style="max-width:560px;margin-bottom:14px">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div>
+<h4 style="margin:0 0 4px;color:#fff">Public Knowledgebase</h4>
+<p style="margin:0;font-size:12px;color:var(--text_muted,#64748b)">When enabled, clients can browse the KB at the public link below. Add this link to your site (footer, help menu, billing page).</p>
+</div>
+<span class="badge" style="background:<?php echo $kbEnabled ? 'rgba(74,222,128,.15);color:#4ade80' : 'rgba(248,113,113,.15);color:#f87171'; ?>"><?php echo $kbEnabled ? '● Enabled' : '○ Disabled'; ?></span>
+</div>
+<form method="POST" action="/admin/support/kb/toggle" style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
+<label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" name="enabled" value="1" <?php echo $kbEnabled ? 'checked' : ''; ?> onchange="this.form.submit()"> Enable public KB</label>
+</form>
+<?php if ($kbEnabled): ?>
+<div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<input readonly value="<?php echo htmlspecialchars($kbUrl); ?>" style="flex:1;min-width:200px;padding:9px 12px;border-radius:7px;border:1px solid rgba(0,191,255,.15);background:rgba(0,0,0,.35);color:#4ade80;font-family:monospace;font-size:12px">
+<button class="btn btn-sm primary" type="button" onclick="navigator.clipboard.writeText('<?php echo htmlspecialchars($kbUrl); ?>');this.textContent='✓ Copied';setTimeout(()=>this.textContent='Copy',1200)">Copy</button>
+<a class="btn btn-sm secondary" href="<?php echo htmlspecialchars($kbUrl); ?>" target="_blank">Open</a>
+</div>
+<?php endif; ?>
+</div>
 <div id="catForm" class="card hidden" style="max-width:400px;margin-bottom:12px">
 <form method="POST" action="/admin/support/kb/category/store">
 <div class="form-group"><label>Category Name</label><input name="name" required></div>

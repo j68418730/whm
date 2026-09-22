@@ -65,4 +65,9 @@
 <div style="font-size:14px;font-weight:600;color:var(--text-primary)">Refunds</div>
 <div style="font-size:24px;font-weight:700;color:var(--accent)"><?php echo $refundCount ?? 0; ?></div>
 </a>
+<a href="/admin/support/kb" class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;text-align:center;text-decoration:none;gap:6px;transition:.15s;border:1px solid <?php echo $kbEnabled ? 'rgba(74,222,128,.35)' : 'rgba(248,113,113,.3)'; ?>">
+<div style="font-size:32px">📚</div>
+<div style="font-size:14px;font-weight:600;color:var(--text-primary)">Knowledgebase</div>
+<div style="font-size:12px;font-weight:600;color:<?php echo $kbEnabled ? '#4ade80' : '#f87171'; ?>"><?php echo $kbEnabled ? '● Enabled' : '○ Disabled'; ?></div>
+</a>
 </div>

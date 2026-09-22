@@ -133,7 +133,17 @@ class BillingController extends Controller
             'refundCount' => $refundCount,
             'totalCollected' => $totalCollected, 'outstandingBalance' => $outstandingBalance,
             'monthlyRecurring' => $monthlyRecurring,
+            'kbEnabled' => $this->kbEnabled(),
         ]);
+    }
+
+    /** Read the public-KB toggle from automation_settings. */
+    protected function kbEnabled()
+    {
+        try {
+            $row = $this->db->table('automation_settings')->where('setting_key', 'kb_enabled')->first();
+            return $row && $row->setting_value === '1';
+        } catch (\Exception $e) { return false; }
     }
 
     // ── Shopping Cart Integration ──

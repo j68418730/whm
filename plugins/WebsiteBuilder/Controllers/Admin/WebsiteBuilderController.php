@@ -46,7 +46,7 @@ class WebsiteBuilderController extends Controller
         $sites = $this->db->table('wb_sites')->orderBy('created_at', 'DESC')->get() ?: [];
         $ownerDomains = [];
         try {
-            $rows = $this->db->pdo()->query("SELECT id, username, email, domain FROM hosting_users")->fetchAll(PDO::FETCH_OBJ);
+            $rows = $this->db->pdo()->query("SELECT id, username, email, domain FROM hosting_users")->fetchAll(\PDO::FETCH_OBJ);
             foreach ($rows as $u) $ownerDomains[(int)$u->id] = $u;
         } catch (\Exception $e) {
             $ownerDomains = [];

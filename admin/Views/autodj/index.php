@@ -56,6 +56,12 @@
   <div class="ad-stat"><div class="v purple"><?php echo (int)$autodjStats['total_playlists']; ?></div><div class="l">Playlists</div></div>
 </div>
 
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 18px">
+<a href="/admin/autodj/start-all" class="btn btn-sm" style="background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.25);text-decoration:none" onclick="return confirm('Start AutoDJ on ALL stations?')"><i class="bi bi-play-fill"></i> Start All</a>
+<a href="/admin/autodj/stop-all" class="btn btn-sm" style="background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.25);text-decoration:none" onclick="return confirm('Stop AutoDJ on ALL stations?')"><i class="bi bi-stop-fill"></i> Stop All</a>
+<a href="/admin/autodj/restart-all" class="btn btn-sm" style="background:rgba(250,204,21,.15);color:#facc15;border:1px solid rgba(250,204,21,.25);text-decoration:none" onclick="return confirm('Restart AutoDJ on ALL stations?')"><i class="bi bi-arrow-clockwise"></i> Restart All</a>
+</div>
+
 <?php if (empty($grouped)): ?>
 <div class="empty">No streaming stations found. Create a stream first under <a href="/admin/streams" style="color:#0A84FF">Streams</a>.</div>
 <?php else: ?>
