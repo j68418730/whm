@@ -29,11 +29,11 @@ class EmailController extends Controller
         }
     }
 
-    /** Generate a {BLF-CRYPT} bcrypt hash matching PostfixAdmin. */
+    /** Generate a bcrypt hash matching PostfixAdmin (raw hash; scheme goes in password_encode). */
     protected function mailHash($password)
     {
         $hash = trim((string)@shell_exec('htpasswd -bnBC 10 "" ' . escapeshellarg($password) . ' 2>/dev/null | tr -d ":\n"'));
-        return '{BLF-CRYPT}' . $hash;
+        return $hash;
     }
 
     /** Sync a mailbox row into the panel's MySQL table (UI mirror). */
@@ -114,20 +114,29 @@ class EmailController extends Controller
     public function deleteAccount($id)
     {
         if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
-        $acct = $this->db->table('mail_accounts')->where('id', (int)$id)->first();
-        $email = $acct->email ?? '';
-        // Delete from PostfixAdmin SQLite (the real store)
+        $email = '';
+        // The list shows SQLite mailbox ids -> resolve email from the real store
         $sqlite = $this->mailDb();
+        if ($sqlite) {
+            $stmt = $sqlite->prepare("SELECT username FROM mailbox WHERE id = ?");
+            $stmt->execute([(int)$id]);
+            $row = $stmt->fetch(\PDO::FETCH_OBJ);
+            if ($row) $email = $row->username;
+        }
+        // Fallback: MySQL mirror row by id
+        if ($email === '') {
+            $acct = $this->db->table('mail_accounts')->where('id', (int)$id)->first();
+            $email = $acct->email ?? '';
+        }
+        // Delete from PostfixAdmin SQLite (the real store)
         if ($sqlite && $email) {
             $stmt = $sqlite->prepare("DELETE FROM mailbox WHERE username = ?");
             $stmt->execute([$email]);
-        }
-        // Delete alias too if present
-        if ($sqlite && $email) {
             $stmt = $sqlite->prepare("DELETE FROM alias WHERE address = ?");
             $stmt->execute([$email]);
         }
-        $this->db->table('mail_accounts')->where('id', (int)$id)->delete();
+        $this->db->table('mail_accounts')->where('email', $email)->delete();
+        $_SESSION['success_message'] = $email ? "Mailbox {$email} deleted." : 'Mailbox not found.';
         $this->response->redirect('/admin/email?tab=accounts');
     }
 
