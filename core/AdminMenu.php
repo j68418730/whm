@@ -143,6 +143,8 @@ if (!function_exists('render_admin_menu_sections')) {
                    . $groupHtml
                    . '</div>';
         }
+        // Bottom spacer so the menu doesn't run right into the sidebar edge
+        $html .= '<div class="nav-spacer" style="height:22px"></div>';
         return $html;
     }
 }
