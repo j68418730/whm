@@ -1,6 +1,6 @@
 {
-  "version": "1.4.9",
-  "version_code": 1490,
+  "version": "1.5.0",
+  "version_code": 1500,
   "channel": "stable",
   "release_date": "2026-09-18",
   "release_type": "Core Release",
@@ -8,10 +8,10 @@
   "require_version_code": 1300,
   "php_required": ">=7.4",
   "requires_reboot": false,
-  "requires_services_restart": ["apache2"],
+  "requires_services_restart": ["apache2", "postfix", "dovecot"],
   "migrations": ["2026_09_18_terminal_package_access.sql"],
-  "download": "https://codeload.github.com/j68418730/whm/tar.gz/71a2381",
-  "checksum": "35f3f2bd6c6c5b41598b302d6206a91f17a2b55b99483a6670970011698f21a9",
-  "target_sha": "71a2381",
-  "release_notes": "Large batch of admin fixes and redesigns. Terminal: fixed 'cannot set terminal process group' by launching bash via `script -qefc` for a real controlling tty + job control. Routes: Application now also loads routes/admin.php, fixing /admin/domains (was redirecting to Dashboard) plus radio settings, streams, radio_dashboard and AutoSSL-run (22 routes total). LiveChat: /admin/livechat/export now returns a CSV download instead of 404. WebsiteBuilder: /sites fixed (was 500 - unqualified PDO::FETCH in namespaced controller). AutoDJ: added /admin/autodj page with Start All / Stop All / Restart All controls (verified restart-all works). PHP Manager: now lists all 12 installed PHP versions (5.6-8.5) with a version selector and per-version extension install (apt php{X.Y}-{ext}). Email: rewired to the real mail system (PostfixAdmin SQLite /var/vmail/postfixadmin.db with {BLF-CRYPT} bcrypt); accounts now read from the live mailbox store; added per-account Change Password that updates Dovecot auth. Support KB: added enable/disable toggle for a public /kb page plus a billing-dashboard card showing KB status. MySQL: removed redundant Database Access card. FTP: added Connect via FTP card (File Explorer / FTPS / FileZilla). IP: added IP Pool card showing who is assigned to each IP. Radio Downloads: added Planet Hosts Studio node download (installer hosted). DNS: redesigned with zone cards and BIND9 status. Apache: removed Server Information card. SnappyMail: rebranded to 'Planet Hosts Mail'."
+  "download": "https://codeload.github.com/j68418730/whm/tar.gz/bea13c2",
+  "checksum": "5fba184c7c9070100d2671c2dcc2ea88f957601213f505726a2f5e7c5e29a0ad",
+  "target_sha": "bea13c2",
+  "release_notes": "Email & Webmail overhaul. Webmail (SnappyMail): rebranded to 'Planet Hosts Mail' with a custom PlanetHosts theme (dark navy #0b1f39 / #1683ff) pulled from the primary site branding (admin/branding company_name syncs into the webmail title). Webmail is now served at the root of port 2096 and the /snappymail/ path is hidden (redirects to :2096) on the panel and main site. Email administration page now mirrors the /admin/account design (stats cards, mailbox groups by domain, search/filter, icon actions). Email wired to the real mail system (PostfixAdmin SQLite with {BLF-CRYPT}); accounts read from the live mailbox store; per-account Change Password updates Dovecot auth. Root mailbox read (password override): admins can open any mailbox and view messages (subject/from/date/body/raw) for spam/abuse investigations. Server Email alerts: designate any mailbox as the Server Email; a cron checks it every minute and creates alerts ('New email to X - From: Y | Subject: Z'); a global sticky banner pops on every admin page when a new alert arrives (like the update banner). Also fixed a critical mail delivery bug: Postfix virtual mailbox map now delivers into Maildir/ so mail is visible in Dovecot/webmail (was delivering to a path Dovecot never read)."
 }
