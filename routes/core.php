@@ -259,6 +259,7 @@ $router->get('/admin/settings/update', 'Admin\Controllers\SettingsController@upd
 $router->get('/livechat', 'Admin\Controllers\LiveChatController@portal');
 $router->post('/livechat', 'Admin\Controllers\LiveChatController@portal');
 $router->get('/admin/livechat', 'Admin\Controllers\LiveChatController@index');
+        $router->post('/admin/livechat/links', 'Admin\Controllers\LiveChatController@saveLinks');
 $router->get('/admin/livechat/messages/{sessionId}', 'Admin\Controllers\LiveChatController@messages');
 $router->post('/admin/livechat/send', 'Admin\Controllers\LiveChatController@send');
 $router->post('/admin/livechat/initiate', 'Admin\Controllers\LiveChatController@initiate');
