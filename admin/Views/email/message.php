@@ -27,7 +27,7 @@
 <h1><?php echo htmlspecialchars($msg['subject'] ?? '(no subject)'); ?></h1>
 <small><?php echo htmlspecialchars($email); ?></small>
 </div>
-<a class="btn-back" href="/admin/email/mailbox/<?php echo htmlspecialchars($_GET['id'] ?? ''); ?>"><i class="bi bi-arrow-left"></i> Back to Mailbox</a>
+<a class="btn-back" href="/admin/email/mailbox/<?php echo (int)($mbId ?? 0); ?>"><i class="bi bi-arrow-left"></i> Back to Mailbox</a>
 </div>
 
 <div class="card">

@@ -62,7 +62,7 @@
 <td><?php echo htmlspecialchars($m['from'] ?: '—'); ?></td>
 <td style="white-space:nowrap;color:#819ab7"><?php echo htmlspecialchars($m['date'] ?: '—'); ?></td>
 <td class="actions" style="white-space:nowrap">
-<a class="act b" href="/admin/email/mailbox/<?php echo (int)$_GET['id'] ?? ''; ?>/read/<?php echo urlencode($m['file']); ?>" title="Read"><i class="bi bi-eye"></i></a>
+<a class="act b" href="/admin/email/mailbox/<?php echo (int)($mbId ?? 0); ?>/read/<?php echo urlencode($m['file']); ?>" title="Read"><i class="bi bi-eye"></i></a>
 </td>
 </tr>
 <?php endforeach; else: ?>

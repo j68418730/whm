@@ -275,7 +275,7 @@ class EmailController extends Controller
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         return $this->view('admin.email.mailbox', [
             'user' => $user, 'title' => 'Mailbox: ' . $email,
-            'email' => $email, 'messages' => $messages, 'count' => $count,
+            'email' => $email, 'mbId' => $mbId, 'messages' => $messages, 'count' => $count,
             'theme_settings' => $theme_settings,
         ]);
     }
@@ -298,7 +298,7 @@ class EmailController extends Controller
         $msg = $this->runMailboxHelper(['read', $d, $u, basename($file)]) ?: [];
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         return $this->view('admin.email.message', [
-            'user' => $user, 'title' => 'Message', 'email' => $email, 'msg' => $msg,
+            'user' => $user, 'title' => 'Message', 'email' => $email, 'mbId' => (int)$id, 'msg' => $msg,
             'theme_settings' => $theme_settings,
         ]);
     }
