@@ -1,6 +1,6 @@
 {
-  "version": "1.4.8",
-  "version_code": 1480,
+  "version": "1.4.9",
+  "version_code": 1490,
   "channel": "stable",
   "release_date": "2026-09-18",
   "release_type": "Core Release",
@@ -10,8 +10,8 @@
   "requires_reboot": false,
   "requires_services_restart": ["apache2"],
   "migrations": ["2026_09_18_terminal_package_access.sql"],
-  "download": "https://codeload.github.com/j68418730/whm/tar.gz/f7d8d95",
-  "checksum": "c4a6c13b5de4e21518142f7c341f63e63df6a5abc40f5c77a4af77db3abe53e3",
-  "target_sha": "f7d8d95",
-  "release_notes": "LiveChat Links tab rebuilt per spec. Support Links now only Status Page (configurable URL); removed Main Site / WHM Panel / Admin Panel / Billing Portal / GitHub. External Tools: Google Analytics and Google Search Console now have code fields that generate a ready-to-copy embed/meta snippet (with Copy button), and Cloudflare Dashboard + SSL Server Test URLs are configurable. Social Media: each channel (Twitter/X, Facebook, Instagram, Discord, YouTube) now has an Enable toggle + URL field for linkback on the customer site, persisted to automation_settings.livechat_social_links. Removed the Chat History card entirely (Closed Chats / All Chats / Export / Visitor History were 404s). Added POST /admin/livechat/links route + saveLinks() handler. Verified live: save persists GA code, GSC meta, status URL and social JSON."
+  "download": "https://codeload.github.com/j68418730/whm/tar.gz/71a2381",
+  "checksum": "35f3f2bd6c6c5b41598b302d6206a91f17a2b55b99483a6670970011698f21a9",
+  "target_sha": "71a2381",
+  "release_notes": "Large batch of admin fixes and redesigns. Terminal: fixed 'cannot set terminal process group' by launching bash via `script -qefc` for a real controlling tty + job control. Routes: Application now also loads routes/admin.php, fixing /admin/domains (was redirecting to Dashboard) plus radio settings, streams, radio_dashboard and AutoSSL-run (22 routes total). LiveChat: /admin/livechat/export now returns a CSV download instead of 404. WebsiteBuilder: /sites fixed (was 500 - unqualified PDO::FETCH in namespaced controller). AutoDJ: added /admin/autodj page with Start All / Stop All / Restart All controls (verified restart-all works). PHP Manager: now lists all 12 installed PHP versions (5.6-8.5) with a version selector and per-version extension install (apt php{X.Y}-{ext}). Email: rewired to the real mail system (PostfixAdmin SQLite /var/vmail/postfixadmin.db with {BLF-CRYPT} bcrypt); accounts now read from the live mailbox store; added per-account Change Password that updates Dovecot auth. Support KB: added enable/disable toggle for a public /kb page plus a billing-dashboard card showing KB status. MySQL: removed redundant Database Access card. FTP: added Connect via FTP card (File Explorer / FTPS / FileZilla). IP: added IP Pool card showing who is assigned to each IP. Radio Downloads: added Planet Hosts Studio node download (installer hosted). DNS: redesigned with zone cards and BIND9 status. Apache: removed Server Information card. SnappyMail: rebranded to 'Planet Hosts Mail'."
 }
