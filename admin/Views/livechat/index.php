@@ -167,43 +167,72 @@ select option{background:#0a0f1a;color:#e0e0e0}
 
 <!-- Tab: Links -->
 <div id="tab-links" class="tab-content">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-
-<div class="card">
-<h4 style="margin:0 0 12px;font-size:14px">🔗 Support Links</h4>
-<div class="canned-item"><a href="https://planet-hosts.com" target="_blank" style="color:var(--accent);text-decoration:none">🌐 Main Site</a></div>
-<div class="canned-item"><a href="https://planet-hosts.com:2083" target="_blank" style="color:var(--accent);text-decoration:none">🔑 WHM Panel</a></div>
-<div class="canned-item"><a href="https://planet-hosts.com:2087" target="_blank" style="color:var(--accent);text-decoration:none">⚙️ Admin Panel</a></div>
-<div class="canned-item"><a href="https://billing.planet-hosts.com" target="_blank" style="color:var(--accent);text-decoration:none">💳 Billing Portal</a></div>
-<div class="canned-item"><a href="https://status.planet-hosts.com" target="_blank" style="color:var(--accent);text-decoration:none">📊 Status Page</a></div>
+<?php if (isset($_SESSION['success_message'])): ?>
+<div class="alert alert-success" style="background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2);border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:13px"><?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?></div>
+<?php endif; ?>
+<style>
+.lk-card{background:var(--card_bg,rgba(8,16,28,.6));border:1px solid rgba(0,191,255,.1);border-radius:10px;padding:18px;margin-bottom:14px}
+.lk-card h4{margin:0 0 14px;font-size:14px}
+.lk-field{margin-bottom:12px}
+.lk-field label{display:block;font-size:11px;color:var(--text-muted);font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+.lk-field input[type=text],.lk-field input[type=url],.lk-field input[type=password]{width:100%;padding:9px 12px;border-radius:7px;border:1px solid rgba(0,191,255,.12);background:rgba(0,0,0,.35);color:#e0e0e0;font-size:13px;outline:none}
+.lk-field input:focus{border-color:var(--accent)}
+.lk-toggle{display:flex;align-items:center;gap:9px;margin-bottom:10px;cursor:pointer;font-size:13px;color:#e0e0e0}
+.lk-toggle input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent)}
+.lk-code{background:rgba(0,0,0,.45);border:1px solid rgba(0,191,255,.12);border-radius:7px;padding:10px;font-family:monospace;font-size:12px;color:#4ade80;white-space:pre-wrap;word-break:break-all;margin:4px 0 8px}
+.lk-btn{background:rgba(0,140,255,.15);border:1px solid rgba(0,140,255,.25);color:#0A84FF;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer}
+.lk-btn:hover{background:rgba(0,140,255,.25)}
+.lk-save{background:var(--accent,#008cff);border:0;color:#fff;border-radius:7px;padding:11px 22px;font-weight:650;cursor:pointer;font-size:14px}
+.lk-save:hover{opacity:.9}
+.lk-social{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid rgba(0,191,255,.08);border-radius:8px;margin-bottom:8px;background:rgba(255,255,255,.02)}
+.lk-social .s-ic{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;font-size:16px;background:rgba(0,140,255,.12);flex-shrink:0}
+.lk-social .s-tog{display:flex;align-items:center;gap:6px;font-size:12px;color:#e0e0e0;white-space:nowrap}
+.lk-social input[type=url]{flex:1;padding:8px 10px;border-radius:6px;border:1px solid rgba(0,191,255,.12);background:rgba(0,0,0,.35);color:#e0e0e0;font-size:12px;outline:none}
+.lk-social input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px}
+</style>
+<form method="POST" action="/admin/livechat/links">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+<div>
+<div class="lk-card">
+<h4>🔗 Support Links</h4>
+<div class="lk-field"><label>Status Page URL</label><input type="url" name="status_url" value="<?php echo htmlspecialchars($links['livechat_status_url'] ?? 'https://status.planet-hosts.com', ENT_QUOTES, 'UTF-8'); ?>" placeholder="https://status.planet-hosts.com"></div>
 </div>
-
-<div class="card">
-<h4 style="margin:0 0 12px;font-size:14px">🛠️ External Tools</h4>
-<div class="canned-item"><a href="https://www.google.com/webmasters/tools" target="_blank" style="color:var(--accent);text-decoration:none">🔍 Google Search Console</a></div>
-<div class="canned-item"><a href="https://analytics.google.com" target="_blank" style="color:var(--accent);text-decoration:none">📈 Google Analytics</a></div>
-<div class="canned-item"><a href="https://developers.cloudflare.com" target="_blank" style="color:var(--accent);text-decoration:none">☁️ Cloudflare Dashboard</a></div>
-<div class="canned-item"><a href="https://github.com/j68418730/whm" target="_blank" style="color:var(--accent);text-decoration:none">📦 GitHub Repository</a></div>
-<div class="canned-item"><a href="https://www.ssllabs.com/ssltest" target="_blank" style="color:var(--accent);text-decoration:none">🔒 SSL Server Test</a></div>
+<div class="lk-card">
+<h4>🛠️ External Tools</h4>
+<div class="lk-field"><label>Google Analytics</label>
+<input type="text" name="ga_code" value="<?php echo htmlspecialchars($links['livechat_ga_code'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="G-XXXXXXXXXX">
+<?php $ga = $links['livechat_ga_code'] ?? ''; if ($ga): ?>
+<div class="lk-code" id="gaCode">&lt;!-- Google Analytics 4 --&gt;<br>&lt;script async src="https://www.googletagmanager.com/gtag/js?id=<?php echo htmlspecialchars($ga); ?>"&gt;&lt;/script&gt;<br>&lt;script&gt;<br>window.dataLayer = window.dataLayer || [];<br>function gtag(){dataLayer.push(arguments);}<br>gtag('js', new Date());<br>gtag('config', '<?php echo htmlspecialchars($ga); ?>');<br>&lt;/script&gt;</div>
+<button type="button" class="lk-btn" onclick="copyLk('gaCode')">📋 Copy embed code</button>
+<?php endif; ?>
 </div>
-
-<div class="card">
-<h4 style="margin:0 0 12px;font-size:14px">📱 Social Media</h4>
-<div class="canned-item"><a href="https://twitter.com/planethosts" target="_blank" style="color:var(--accent);text-decoration:none">🐦 Twitter / X</a></div>
-<div class="canned-item"><a href="https://facebook.com/planethosts" target="_blank" style="color:var(--accent);text-decoration:none">📘 Facebook</a></div>
-<div class="canned-item"><a href="https://instagram.com/planethosts" target="_blank" style="color:var(--accent);text-decoration:none">📸 Instagram</a></div>
-<div class="canned-item"><a href="https://discord.gg/planethosts" target="_blank" style="color:var(--accent);text-decoration:none">💬 Discord</a></div>
-<div class="canned-item"><a href="https://youtube.com/@planethosts" target="_blank" style="color:var(--accent);text-decoration:none">🎥 YouTube</a></div>
+<div class="lk-field"><label>Google Search Console (meta tag)</label>
+<input type="text" name="gsc_code" value="<?php echo htmlspecialchars($links['livechat_gsc_code'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="google-site-verification=xxx">
+<?php $gsc = $links['livechat_gsc_code'] ?? ''; if ($gsc): ?>
+<div class="lk-code" id="gscCode">&lt;meta name="google-site-verification" content="<?php echo htmlspecialchars($gsc); ?>" /&gt;</div>
+<button type="button" class="lk-btn" onclick="copyLk('gscCode')">📋 Copy meta tag</button>
+<?php endif; ?>
 </div>
-
-<div class="card">
-<h4 style="margin:0 0 12px;font-size:14px">📋 Chat History</h4>
-<div class="canned-item"><a href="/admin/livechat?filter=closed" style="color:var(--accent);text-decoration:none">📁 Closed Chats</a></div>
-<div class="canned-item"><a href="/admin/livechat?filter=all" style="color:var(--accent);text-decoration:none">📂 All Chats</a></div>
-<div class="canned-item"><a href="/admin/livechat/export" style="color:var(--accent);text-decoration:none">📤 Export Chat Logs</a></div>
-<div class="canned-item"><a href="/admin/livechat/visitors" style="color:var(--accent);text-decoration:none">👤 Visitor History</a></div>
+<div class="lk-field"><label>Cloudflare Dashboard URL</label><input type="url" name="cloudflare_url" value="<?php echo htmlspecialchars($links['livechat_cloudflare_url'] ?? 'https://dash.cloudflare.com', ENT_QUOTES, 'UTF-8'); ?>"></div>
+<div class="lk-field"><label>SSL Server Test URL</label><input type="url" name="ssl_url" value="<?php echo htmlspecialchars($links['livechat_ssl_url'] ?? 'https://www.ssllabs.com/ssltest', ENT_QUOTES, 'UTF-8'); ?>"></div>
 </div>
-
+</div>
+<div>
+<div class="lk-card">
+<h4>📱 Social Media (linkback on your site)</h4>
+<?php foreach (($social ?? []) as $key => $s): ?>
+<div class="lk-social">
+<span class="s-ic"><i class="bi bi-<?php echo htmlspecialchars($s['icon'] ?? 'link-45deg'); ?>"></i></span>
+<label class="s-tog"><input type="checkbox" name="social_<?php echo $key; ?>_enabled" value="1" <?php echo !empty($s['enabled']) ? 'checked' : ''; ?>> Enable</label>
+<input type="url" name="social_<?php echo $key; ?>_url" value="<?php echo htmlspecialchars($s['url'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="https://<?php echo htmlspecialchars($key); ?>.com/yourhandle">
+</div>
+<?php endforeach; ?>
+<div style="font-size:11px;color:var(--text-muted);margin-top:8px">Enable + set a URL for each social channel, then place the follow/linkback icons on your website. A widget/shortcode is available once enabled.</div>
+</div>
+</div>
+</div>
+<div style="margin-top:6px"><button type="submit" class="lk-save">💾 Save Links</button></div>
+</form>
 </div>
 
 <div class="card" style="max-width:100%">
@@ -429,5 +458,9 @@ function copyEmbedCode() {
 function copyTrackCode() {
     var el = document.getElementById('trackCodeBox');
     if (el) { navigator.clipboard.writeText(el.textContent); alert('Tracking code copied!'); }
+}
+function copyLk(id) {
+    var el = document.getElementById(id);
+    if (el) { navigator.clipboard.writeText(el.textContent).then(function(){ if(typeof showToast==='function')showToast('Copied!'); else alert('Copied!'); }); }
 }
 </script>

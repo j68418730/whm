@@ -57,12 +57,75 @@ class LiveChatController extends Controller
         $visitors = $deduped;
         $canned = $this->db->table('chat_canned_responses')->get() ?: [];
         $groups = $this->db->table('chat_operator_groups')->get() ?: [];
+
+        // Links tab settings (social linkbacks, analytics, status URL)
+        $links = [];
+        foreach (($this->db->table('automation_settings')->get() ?: []) as $r) { $links[$r->setting_key] = $r->setting_value; }
+        $social = [];
+        $socialRaw = $links['livechat_social_links'] ?? '';
+        if ($socialRaw) { $social = json_decode($socialRaw, true) ?: []; }
+        $defaults = [
+            'twitter' => ['label' => 'Twitter / X', 'icon' => 'twitter-x', 'enabled' => 0, 'url' => ''],
+            'facebook' => ['label' => 'Facebook', 'icon' => 'facebook', 'enabled' => 0, 'url' => ''],
+            'instagram' => ['label' => 'Instagram', 'icon' => 'instagram', 'enabled' => 0, 'url' => ''],
+            'discord' => ['label' => 'Discord', 'icon' => 'discord', 'enabled' => 0, 'url' => ''],
+            'youtube' => ['label' => 'YouTube', 'icon' => 'youtube', 'enabled' => 0, 'url' => ''],
+        ];
+        foreach ($defaults as $k => $d) { $social[$k] = array_merge($d, $social[$k] ?? []); }
+
         return $this->view('admin.livechat.index', [
             'user' => $user, 'title' => 'Live Chat', 'sessions' => $sessions,
             'waiting' => $waiting, 'active' => $active, 'visitors' => $visitors,
             'canned' => $canned, 'groups' => $groups,
+            'links' => $links,
+            'social' => $social,
             'theme_settings' => json_decode($user->theme_settings ?? '{}', true),
         ]);
+    }
+
+    /** POST /admin/livechat/links — save Links tab settings (social, analytics, status URL). */
+    public function saveLinks()
+    {
+        if (!$this->auth->check() || !$this->auth->isAdmin()) { $this->response->redirect('/admin/login'); exit; }
+        $settings = [];
+
+        $statusUrl = trim((string)$this->request->post('status_url', ''));
+        if ($statusUrl) $settings['livechat_status_url'] = $statusUrl;
+
+        $gaCode = trim((string)$this->request->post('ga_code', ''));
+        if ($gaCode) $settings['livechat_ga_code'] = $gaCode;
+
+        $gscCode = trim((string)$this->request->post('gsc_code', ''));
+        if ($gscCode) $settings['livechat_gsc_code'] = $gscCode;
+
+        $cloudflareUrl = trim((string)$this->request->post('cloudflare_url', ''));
+        if ($cloudflareUrl) $settings['livechat_cloudflare_url'] = $cloudflareUrl;
+
+        $sslUrl = trim((string)$this->request->post('ssl_url', ''));
+        if ($sslUrl) $settings['livechat_ssl_url'] = $sslUrl;
+
+        // Social links
+        $keys = ['twitter','facebook','instagram','discord','youtube'];
+        $social = [];
+        foreach ($keys as $k) {
+            $social[$k] = [
+                'enabled' => $this->request->post("social_{$k}_enabled") === '1' ? 1 : 0,
+                'url' => trim((string)$this->request->post("social_{$k}_url", '')),
+            ];
+        }
+        $settings['livechat_social_links'] = json_encode($social);
+
+        foreach ($settings as $key => $val) {
+            $existing = $this->db->table('automation_settings')->where('setting_key', $key)->first();
+            if ($existing) {
+                $this->db->table('automation_settings')->where('setting_key', $key)->update(['setting_value' => $val]);
+            } else {
+                $this->db->table('automation_settings')->insertGetId(['setting_key' => $key, 'setting_value' => $val]);
+            }
+        }
+        $_SESSION['success_message'] = 'Links saved.';
+        $this->response->redirect('/admin/livechat?tab=links');
+        exit;
     }
 
     public function messages($sessionId)
