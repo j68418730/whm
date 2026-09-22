@@ -1,6 +1,6 @@
 {
-  "version": "1.4.6",
-  "version_code": 1460,
+  "version": "1.4.7",
+  "version_code": 1470,
   "channel": "stable",
   "release_date": "2026-09-18",
   "release_type": "Core Release",
@@ -10,8 +10,8 @@
   "requires_reboot": false,
   "requires_services_restart": ["apache2"],
   "migrations": ["2026_09_18_terminal_package_access.sql"],
-  "download": "https://codeload.github.com/j68418730/whm/tar.gz/d32aee4",
-  "checksum": "c828d386169b678dffad95eb28e5fe0e6a2c74f5bc0043e7861d3754868af499",
-  "target_sha": "d32aee4",
-  "release_notes": "REDESIGN /admin/server: the previous view was 5607 lines of corrupted duplicated HTML (the Server Configuration form was copy-pasted dozens of times, nesting endlessly). Fully rebuilt in the modern PlanetHosts style: 6 stat cards (CPU load, memory, disk, uptime, active accounts, CPU cores), a system info table (hostname / OS / kernel / CPU model / load average / memory / disk), a services table with status dots and working start/stop/restart buttons (the controller now enriches each service with its real systemd unit name so systemctl actions work), a compact server configuration card (set hostname + main domain), and quick links (full server config, tweak settings, process manager, terminal). Verified live: all stats populate (CPU 2.1, memory 19MB, disk 31GB, uptime 70d) and all 7 services render."
+  "download": "https://codeload.github.com/j68418730/whm/tar.gz/550f0b4",
+  "checksum": "4ff0afb286122d23daa66528a01a18773bc735b1dd1b26405e2e14bd5490cb4e",
+  "target_sha": "550f0b4",
+  "release_notes": "Server page service fixes: SHOUTcast v1 and v2 (plus Fail2Ban, Firewall, Nginx, Cron, MariaDB, Redis) were missing from the services list because ServerManager::getServiceStatus() only detected 7 core services — expanded to 14. Every service now shows clear labeled Start / Stop / Restart buttons (previously an icon-only stop button rendered as a blank square). Service start/stop/restart actions now redirect back to the referring admin page (/admin/server) instead of dumping the admin to /admin/serverconfig. Verified live: all 14 services render, and restarting shoutcast works and returns to /admin/server."
 }
