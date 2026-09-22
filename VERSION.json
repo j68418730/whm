@@ -1,6 +1,6 @@
 {
-  "version": "1.4.2",
-  "version_code": 1420,
+  "version": "1.4.3",
+  "version_code": 1430,
   "channel": "stable",
   "release_date": "2026-09-18",
   "release_type": "Core Release",
@@ -10,8 +10,8 @@
   "requires_reboot": false,
   "requires_services_restart": ["apache2"],
   "migrations": ["2026_09_18_terminal_package_access.sql"],
-  "download": "https://codeload.github.com/j68418730/whm/tar.gz/084fef9",
-  "checksum": "17102a62cfc32a4f7e3102cbc464b1c9877e3ec5a9b8d1bdcc30e300e2c1047f",
-  "target_sha": "084fef9",
-  "release_notes": "FIX: admin 'Login as User' (/admin/account/show -> login-as) was landing on the reseller/master account instead of the intended client. Root cause: UserController::loadUser() had a loose fallback to $hostings[0] (the master 'planethosts' reseller account) whenever the sudo session id didn't match by id/email/name — exactly the 'logs into their reseller account not their client account' symptom. Fix: loginAs now stores the exact sudo_login_user_id, loadUser() resolves that id FIRST (and the unsafe $hostings[0] fallback was removed), and exitSudo clears the new keys. Verified live: login-as planethosts -> 'Welcome back, Jamie', suggawayz -> Edward, testacct -> Test — each lands on the correct client dashboard."
+  "download": "https://codeload.github.com/j68418730/whm/tar.gz/e60a87c",
+  "checksum": "c761afebd22a2bb0af2f5c23193d1a888e2fc8789adc55244de7235f42e1e0fa",
+  "target_sha": "e60a87c",
+  "release_notes": "Admin account list (/admin/account) redesign: each owner group is now a centered, collapsible card with a 'OwnerName N accounts' header (click to expand/collapse), its own repeated column header row, and a ••• separator between groups. Header padding tightened so the reseller name sits close to the account table. Also fixed the 'Total Accounts' stat, which previously counted owner groups instead of accounts (showed 1 for 4 accounts)."
 }
