@@ -31,6 +31,8 @@ class AccountController extends Controller
 
         $resellerId = (int)$this->request->get('reseller_id', 0);
         $search = trim((string)$this->request->get('search', ''));
+        $statusFilter = trim((string)$this->request->get('status', ''));
+        $packageFilter = (int)$this->request->get('package', 0);
 
         $sql = "SELECT * FROM hosting_users";
         $where = [];
@@ -38,6 +40,14 @@ class AccountController extends Controller
         if ($resellerId) {
             $where[] = "reseller_id = ?";
             $params[] = $resellerId;
+        }
+        if ($statusFilter && in_array($statusFilter, ['active','suspended','terminated','pending'])) {
+            $where[] = "status = ?";
+            $params[] = $statusFilter;
+        }
+        if ($packageFilter) {
+            $where[] = "package_id = ?";
+            $params[] = $packageFilter;
         }
         if ($search) {
             $where[] = "(username LIKE ? OR domain LIKE ? OR email LIKE ? OR first_name LIKE ? OR last_name LIKE ?)";
@@ -111,6 +121,8 @@ class AccountController extends Controller
             'accountsStats' => $accountsStats,
             'reseller_id' => $resellerId,
             'search' => $search,
+            'status_filter' => $statusFilter,
+            'package_filter' => $packageFilter,
             'resellers' => $resellers,
             'servicesByUser' => $servicesByUser,
             'productsById' => $productsById,
