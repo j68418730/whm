@@ -28,10 +28,38 @@ class ServerOverviewController extends Controller
         $manager = new ServerManager();
         $serverStats = $manager->getStats();
 
+        // Enrich service status with the actual systemd unit name for start/stop/restart
+        $svcUnits = [
+            'Web Server' => ['apache2', 'httpd', 'nginx'],
+            'Database' => ['mariadb', 'mysql'],
+            'Mail' => ['postfix', 'exim', 'dovecot'],
+            'FTP' => ['vsftpd', 'pure-ftpd', 'proftpd'],
+            'DNS' => ['bind9', 'named', 'unbound'],
+            'SSH' => ['ssh', 'sshd'],
+            'Icecast' => ['icecast2', 'icecast'],
+            'SHOUTcast v2' => ['shoutcast'],
+            'SHOUTcast v1' => ['shoutcast-v1'],
+            'Fail2Ban' => ['fail2ban'],
+            'Firewall' => ['firewalld'],
+            'Nginx' => ['nginx'],
+            'Cron' => ['cron', 'crond'],
+        ];
+        $svcStatus = is_array($serverStats['service_status'] ?? null) ? $serverStats['service_status'] : [];
+        $services = [];
+        foreach ($svcStatus as $label => $st) {
+            $units = $svcUnits[$label] ?? [];
+            $unit = '';
+            foreach ($units as $u) {
+                if (trim((string)shell_exec("systemctl is-active {$u} 2>/dev/null")) === 'active') { $unit = $u; break; }
+            }
+            $services[] = ['label' => $label, 'status' => $st, 'unit' => $unit];
+        }
+
         $theme_settings = json_decode($user->theme_settings ?? '{}', true);
         return $this->view('admin.server.index', [
             'user' => $user,
             'serverStats' => $serverStats,
+            'services' => $services,
             'theme_settings' => $theme_settings
         ]);
     }
