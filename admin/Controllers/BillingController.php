@@ -675,6 +675,33 @@ JS;
         $this->guard();
         $status = $this->request->post('status', 'pending');
         $this->db->table('billing_orders')->where('id', $id)->update(['status' => $status]);
+        // Auto-trigger Alexa skill deploy when an order for the Alexa product becomes active
+        if ($status === 'active') {
+            $order = $this->db->table('billing_orders')->where('id', (int)$id)->first();
+            if ($order && $order->product_id) {
+                $prod = $this->db->table('billing_products')->where('id', (int)$order->product_id)->first();
+                if ($prod && ($prod->type === 'alexa' || stripos($prod->name ?? '', 'alexa') !== false)) {
+                    // Find the customer's station (prefer the account's stream; fall back to any active station owned by the user)
+                    $station = null;
+                    try {
+                        $st = $this->db->pdo()->prepare("SELECT id, name FROM streaming_stations WHERE user_id = ? ORDER BY id ASC LIMIT 1");
+                        $st->execute([(int)$order->user_id]);
+                        $station = $st->fetch(\PDO::FETCH_OBJ);
+                    } catch (\Exception $e) {}
+                    if ($station) {
+                        $gen = BASE_PATH . '/scripts/alexa_generate.php';
+                        $deploy = BASE_PATH . '/scripts/alexa_deploy.php';
+                        if (is_file($gen) && is_file($deploy)) {
+                            $cmd = '/usr/bin/php8.4 ' . escapeshellarg($deploy) . ' ' . (int)$station->id . ' > ' . escapeshellarg(BASE_PATH . '/storage/alexa_deploy.log') . ' 2>&1 &';
+                            @shell_exec($cmd);
+                            $_SESSION['success_message'] = "Order #{$id} active — Alexa skill for '{$station->name}' is being deployed (see storage/alexa_deploy.log).";
+                            $this->response->redirect('/admin/billing/orders');
+                            return;
+                        }
+                    }
+                }
+            }
+        }
         $_SESSION['success_message'] = "Order #{$id} updated to {$status}.";
         $this->response->redirect('/admin/billing/orders');
     }
