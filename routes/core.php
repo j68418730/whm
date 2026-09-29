@@ -681,7 +681,9 @@ $router->post('/admin/settings/security/save', 'Admin\Controllers\SettingsContro
 $router->get('/admin/settings/api', 'Admin\Controllers\SettingsController@api');
 $router->post('/admin/settings/api/save', 'Admin\Controllers\SettingsController@apiSave');
 $router->get('/admin/settings/localization', 'Admin\Controllers\SettingsController@localization');
-$router->post('/admin/settings/localization/save', 'Admin\Controllers\SettingsController@localizationSave');
+        $router->post('/admin/settings/localization/save', 'Admin\Controllers\SettingsController@localizationSave');
+        $router->get('/admin/settings/alexa', 'Admin\Controllers\SettingsController@alexa');
+        $router->post('/admin/settings/alexa/save', 'Admin\Controllers\SettingsController@alexaSave');
 
 // -- Automation routes --
 $router->get('/admin/automation', 'Admin\Controllers\AutomationController@index');

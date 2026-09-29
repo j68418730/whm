@@ -206,18 +206,55 @@ class SettingsController extends Controller
         $this->response->redirect('/admin/settings/api');
     }
 
-    public function localization()
+public function localization()
     {
         $this->guard();
         return $this->view('admin.settings.localization', [
-            'user' => $this->user(), 'title' => 'Localization', 'theme_settings' => $this->theme(),
-            'language' => $this->getSetting('language', 'en'),
+            'user' => $this->user(), 'title' => 'Localization', 'theme_settings' => $this->theme(), 'currentTab' => 'localization',
+            'default_locale' => $this->getSetting('default_locale', 'en-US'),
+            'default_timezone' => $this->getSetting('default_timezone', 'America/New_York'),
+            'default_currency' => $this->getSetting('default_currency', 'USD'),
             'date_format' => $this->getSetting('date_format', 'Y-m-d'),
-            'time_format' => $this->getSetting('time_format', 'H:i:s'),
-            'currency' => $this->getSetting('currency', 'USD'),
-            'currency_symbol' => $this->getSetting('currency_symbol', '$'),
-            'timezone' => $this->getSetting('timezone', 'UTC'),
+            'time_format' => $this->getSetting('time_format', 'h:i A'),
+            'week_start' => $this->getSetting('week_start', 'Monday'),
         ]);
+    }
+
+    public function alexa()
+    {
+        $this->guard();
+        return $this->view('admin.settings.alexa', [
+            'user' => $this->user(), 'title' => 'Alexa', 'theme_settings' => $this->theme(), 'currentTab' => 'alexa',
+            'alexa_enabled' => $this->getSetting('alexa_enabled', '0'),
+            'alexa_aws_region' => $this->getSetting('alexa_aws_region', 'us-east-1'),
+            'alexa_aws_account_id' => $this->getSetting('alexa_aws_account_id', ''),
+            'alexa_skill_url_base' => $this->getSetting('alexa_skill_url_base', 'https://planet-hosts.com'),
+            'alexa_skill_price' => $this->getSetting('alexa_skill_price', '99.00'),
+            'alexa_privacy_url' => $this->getSetting('alexa_privacy_url', ''),
+            'alexa_terms_url' => $this->getSetting('alexa_terms_url', ''),
+            'alexa_ask_cli_path' => $this->getSetting('alexa_ask_cli_path', ''),
+            'alexa_ask_profile' => $this->getSetting('alexa_ask_profile', 'default'),
+            'alexa_lambda_arn' => $this->getSetting('alexa_lambda_arn', ''),
+            'alexa_product_name' => $this->getSetting('alexa_product_name', 'Amazon Alexa'),
+        ]);
+    }
+
+    public function alexaSave()
+    {
+        $this->guard();
+        foreach (['alexa_enabled','alexa_aws_region','alexa_aws_account_id','alexa_skill_url_base','alexa_skill_price','alexa_privacy_url','alexa_terms_url','alexa_ask_cli_path','alexa_ask_profile','alexa_lambda_arn','alexa_product_name'] as $k) {
+            $this->setSetting($k, $this->request->post($k, ''));
+        }
+        // Test ASK CLI availability if path provided
+        $ask = $this->request->post('alexa_ask_cli_path', '');
+        $askStatus = 'not_configured';
+        if ($ask !== '') {
+            $out = @shell_exec(escapeshellarg($ask) . ' --version 2>&1');
+            $askStatus = ($out && str_contains($out, '@')) ? 'ok' : 'error';
+        }
+        $this->setSetting('alexa_ask_cli_status', $askStatus);
+        $_SESSION['success_message'] = 'Alexa settings saved. ASK CLI status: ' . $askStatus;
+        $this->response->redirect('/admin/settings/alexa');
     }
 
     public function localizationSave()
