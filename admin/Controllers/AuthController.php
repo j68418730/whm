@@ -95,6 +95,29 @@ class AuthController extends Controller
         exit;
     }
 
+    /** Render a legal page (terms / privacy / cookie) from theme/pages/. */
+    public function legalPage()
+    {
+        $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+        $slug = trim(strtolower($uri), '/');
+        $map = ['terms-of-service' => 'terms', 'terms' => 'terms',
+                'privacy-policy' => 'privacy', 'privacy' => 'privacy',
+                'cookie-policy' => 'cookie'];
+        $page = basename($map[$slug] ?? '');
+        $themeFile = BASE_PATH . '/theme/pages/' . $page . '.php';
+        if (!is_file($themeFile)) { header('Location: /'); exit; }
+        $user = $this->auth->user();
+        $loggedIn = $this->auth->check();
+        $app = \Core\Application::getInstance();
+        $db = $app->get('db');
+        ob_start();
+        require $themeFile;
+        $content = ob_get_clean();
+        $this->response->setContent($content);
+        $this->response->send();
+        exit;
+    }
+
     /**
      * Show login form
      */

@@ -569,9 +569,9 @@ $safeText3 = htmlspecialchars($rv->text ?? '', ENT_QUOTES, 'UTF-8');
 <div class="footer-bottom">
 <p>&copy; 2026 Planet-Hosts. All rights reserved.</p>
 <div>
-<a href="#">Terms of Service</a>
-<a href="#">Privacy Policy</a>
-<a href="#">Cookie Policy</a>
+<a href="/terms">Terms of Service</a>
+<a href="/privacy">Privacy Policy</a>
+<a href="/cookie-policy">Cookie Policy</a>
 </div>
 </div>
 </div>

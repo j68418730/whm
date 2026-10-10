@@ -10,6 +10,11 @@ if (!isset($router)) {
 // Core WHM Routes (non-plugin)
 $router->get('/', 'Admin\Controllers\AuthController@landing');
 $router->get('/product/{id}', 'Admin\Controllers\AuthController@productPage');
+        $router->get('/terms', 'Admin\Controllers\AuthController@legalPage');
+        $router->get('/terms-of-service', 'Admin\Controllers\AuthController@legalPage');
+        $router->get('/privacy', 'Admin\Controllers\AuthController@legalPage');
+        $router->get('/privacy-policy', 'Admin\Controllers\AuthController@legalPage');
+        $router->get('/cookie-policy', 'Admin\Controllers\AuthController@legalPage');
 $router->get('/admin', 'Admin\Controllers\DashboardController@index');
 $router->get('/admin/login', 'Admin\Controllers\AuthController@login');
 $router->post('/admin/login/post', 'Admin\Controllers\AuthController@postLogin');
