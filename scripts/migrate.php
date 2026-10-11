@@ -109,7 +109,10 @@ function db_connect(string $dbName): PDO
     return new PDO($dsn, $user, $pass, [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::MYSQL_ATTR_MULTI_STATEMENTS => true,
+        // Buffered results so SELECT (applied_files) doesn't block later INSERTs
+        // (avoids "General error: 2014 Cannot execute queries while other unbuffered
+        // queries are active" when the migration ledger is written on the same conn).
+        PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
     ]);
 }
 
@@ -117,21 +120,51 @@ function migration_pdo(PDO $pdo, string $sql): ?int
 {
     // Returns MariaDB error code on failure, null on success.
     // PDO::exec() cannot reliably run multiple statements in one call on
-    // MariaDB 11.x / PHP 8.x (fails with 1064 or only runs the first one).
-    // So split into individual statements and run them sequentially.
+    // MariaDB 11.x / PHP 8.x (fails with 1064 or only runs the first one),
+    // and statement types like CALL / INSERT..SELECT can leave the connection
+    // with an active result set causing "2014 Cannot execute queries while other
+    // unbuffered queries are active" on the NEXT statement.
+    // So: split into statements and run each on a DISPOSABLE connection, fully
+    // isolating result-state between statements.
+    $schemas = null;
     $firstError = null;
     foreach (split_sql_statements($sql) as $stmt) {
         if (trim($stmt) === '') continue;
+        $conn = clone_connection($pdo, $schemas);
         try {
-            $pdo->exec($stmt);
+            $conn->exec($stmt);
         } catch (PDOException $e) {
             $info = $e->errorInfo ?? [];
             $code = (int)($info[1] ?? 0);
             if ($firstError === null) $firstError = $code;
+            unset($conn);
             return $code;
         }
+        unset($conn);
     }
     return $firstError;
+}
+
+/** Open a fresh connection to the same server/db as $pdo (for isolation). */
+function clone_connection(PDO $pdo, &$schemaCache): PDO
+{
+    if ($schemaCache === null) {
+        $schemaCache = [
+            'host' => getenv('DB_HOST') ?: '127.0.0.1',
+            'port' => getenv('DB_PORT') ?: '3306',
+            'user' => getenv('DB_USERNAME') ?: 'radiouser',
+            'pass' => getenv('DB_PASSWORD') ?: '',
+        ];
+    }
+    // Use the same database as $pdo
+    $db = $pdo->query('SELECT DATABASE()')->fetchColumn();
+    if (!$db) $db = getenv('DB_DATABASE') ?: 'radiohosting';
+    return new \PDO("mysql:host={$schemaCache['host']};port={$schemaCache['port']};dbname={$db};charset=utf8mb4",
+        $schemaCache['user'], $schemaCache['pass'], [
+            \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+            \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+            \PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
+        ]);
 }
 
 /**
@@ -196,7 +229,9 @@ function ensure_ledger(PDO $pdo): void
 
 function applied_files(PDO $pdo): array
 {
-    $rows = $pdo->query("SELECT file, success FROM migrations")->fetchAll();
+    $stmt = $pdo->query("SELECT file, success FROM migrations");
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->closeCursor(); // release the result so later writes on the same conn work
     $ok = [];
     foreach ($rows as $r) {
         if ((int)$r['success'] === 1) { $ok[$r['file']] = true; }
@@ -206,10 +241,27 @@ function applied_files(PDO $pdo): array
 
 function record_applied(PDO $pdo, string $file, bool $success, ?string $error = null): void
 {
-    $stmt = $pdo->prepare("INSERT INTO migrations (file, applied_at, success, error)
+    // Use a FRESH connection for the ledger write. The main PDO may still have an
+    // open (unbuffered) result from executing migration SQL or a CALL/PROCEDURE,
+    // which makes a concurrent INSERT on the same connection throw PDO 2014.
+    // IMPORTANT: connect to the SAME database the main $pdo is using (not .env's
+    // DB_DATABASE), so the ledger lands in the right schema on --run--all/--db=.
+    $host = getenv('DB_HOST') ?: '127.0.0.1';
+    $port = getenv('DB_PORT') ?: '3306';
+    $user = getenv('DB_USERNAME') ?: 'radiouser';
+    $pass = getenv('DB_PASSWORD') ?: '';
+    $db = $pdo->query('SELECT DATABASE()')->fetchColumn();
+    if (!$db) { $db = getenv('DB_DATABASE') ?: 'radiohosting'; }
+    $ledger = new \PDO("mysql:host={$host};port={$port};dbname={$db};charset=utf8mb4", $user, $pass, [
+        \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+        \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+        \PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
+    ]);
+    $stmt = $ledger->prepare("INSERT INTO migrations (file, applied_at, success, error)
         VALUES (?, NOW(), ?, ?)
         ON DUPLICATE KEY UPDATE success = VALUES(success), error = VALUES(error)");
     $stmt->execute([$file, $success ? 1 : 0, $error]);
+    unset($stmt, $ledger);
 }
 
 function bootstrap_tables(PDO $pdo, $out = null): void
