@@ -1074,6 +1074,16 @@ GRANT ALL PRIVILEGES ON radiohosting.* TO 'radiouser'@'localhost';
 FLUSH PRIVILEGES;
 MYSQL
 
+# .env MUST exist before migrate.php runs (it refuses to start without BASE_PATH/.env).
+cat > "$PANEL_DIR/.env" <<ENV
+DB_HOST=localhost; DB_PORT=3306
+DB_DATABASE=radiohosting
+DB_USERNAME=radiouser
+DB_PASSWORD=$DB_PASS
+ENV
+chmod 600 "$PANEL_DIR/.env"
+log "DATABASE" "env" "OK" ".env written before migrations"
+
 # Import schemas
 log "DATABASE" "schema" "RUNNING" "Importing schemas"
 mysql -u root radiohosting < "$SCRIPT_DIR/database/install.sql" 2>/dev/null || true
@@ -1126,15 +1136,6 @@ INSERT INTO hosting_packages (name, type, description, feature_list_id, max_doma
 ('Monthly Pro', 'web_hosting', 'Monthly plan with full access to all features - $30.99/month', 1, -1, -1, 30.99, 89.97, 167.95, 310.99, 0.00, 204800, 2048000, -1, -1, -1, -1, -1, -1, 500, 320, 51200, 20, 30.99, 3, 1);
 MYSQL
 log "PACKAGES" "create" "OK" "Default packages created"
-
-# .env
-cat > "$PANEL_DIR/.env" <<ENV
-DB_HOST=localhost; DB_PORT=3306
-DB_DATABASE=radiohosting
-DB_USERNAME=radiouser
-DB_PASSWORD=$DB_PASS
-ENV
-chmod 600 "$PANEL_DIR/.env"
 
 # Runtime DB credentials for privileged panel scripts (provision.sh, auto_ssl.sh, ...)
 cat > "$PANEL_DIR/db_creds.sh" <<CREDS
