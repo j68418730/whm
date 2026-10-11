@@ -242,7 +242,10 @@ if [ "$KEEP_PACKAGES" -eq 1 ]; then
     log "PACKAGES" "Skipping package purge (--keep-packages)"
 else
     log "PACKAGES" "Purging Planet Hosts packages"
-    PKGS="apache2 apache2-bin apache2-data apache2-utils libapache2-mod-security2 \
+    # Only purge packages that are actually installed - a single unresolvable
+    # name in one apt invocation aborts the WHOLE batch (apt exits 100 and leaves
+    # everything installed).
+    CANDIDATES="apache2 apache2-bin apache2-data apache2-utils libapache2-mod-security2 \
           mariadb-server mariadb-client mariadb-common \
           php8.5 php8.4 php8.3 php8.2 php8.1 php8.0 php7.4 php7.3 php7.2 php7.1 php7.0 php5.6 \
           php php-cli php-common php-fpm php-mysql php-curl php-gd php-intl php-mbstring php-xml php-zip \
@@ -252,9 +255,19 @@ else
           certbot python3-certbot-apache nginx nginx-common \
           jailkit quota quotatool steamcmd nodejs npm \
           phpmyadmin snappymail goaccess logwatch opendkim \
-          spamassassin clamav yara-tools trivy \
-          sonar-scanner logwatchdog 2>/dev/null || true"
-    run apt-get purge -y -qq $PKGS 2>/dev/null || true
+          spamassassin clamav \
+          trivy"
+    TO_PURGE=""
+    for p in $CANDIDATES; do
+        if dpkg -l "$p" 2>/dev/null | grep -qE "^ii\s+$p\s"; then
+            TO_PURGE="$TO_PURGE $p"
+        else
+            log "PACKAGES" "skip" "$p not installed"
+        fi
+    done
+    if [ -n "$TO_PURGE" ]; then
+        run apt-get purge -y $TO_PURGE 2>/dev/null || log "PACKAGES" "WARNING" "apt purge failed for some packages"
+    fi
     run apt-get autoremove -y -qq 2>/dev/null || true
     run apt-get clean 2>/dev/null || true
     log "PACKAGES" "Packages purged"
