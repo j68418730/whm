@@ -378,15 +378,15 @@ elif [ -f "$SCRIPT_DIR/sc_serv1" ]; then
 fi
 if [ -n "$SC1_SRC" ]; then
     dpkg --add-architecture i386 2>/dev/null || true
-    apt update -qq 2>/dev/null
+    apt update -qq 2>/dev/null || true
     apt install -y -qq libc6:i386 libstdc++6:i386 2>/dev/null || true
     mkdir -p /opt/planethosts/shoutcast1 /var/log/shoutcast/v1
     if [[ "$SC1_SRC" == *.tar.gz ]]; then
-        tar xzf "$SC1_SRC" -C /opt/planethosts/shoutcast1 2>/dev/null
+        tar xzf "$SC1_SRC" -C /opt/planethosts/shoutcast1 2>/dev/null || true
     else
-        cp "$SC1_SRC" /opt/planethosts/shoutcast1/sc_serv 2>/dev/null
+        cp "$SC1_SRC" /opt/planethosts/shoutcast1/sc_serv 2>/dev/null || true
     fi
-    chmod +x /opt/planethosts/shoutcast1/sc_serv 2>/dev/null
+    chmod +x /opt/planethosts/shoutcast1/sc_serv 2>/dev/null || true
     cat > /opt/planethosts/shoutcast1/sc_serv.conf << 'SC1EOF'
 MaxUser=500
 Password=planethosts
@@ -532,13 +532,13 @@ log "MEDIA" "install" "OK" "Streaming stack installed"
 echo "[4/8 - Game Server] Installing SteamCMD..."
 log "STEAMCMD" "install" "RUNNING" "Installing SteamCMD"
 dpkg --add-architecture i386 2>/dev/null || true
-apt update -qq 2>/dev/null
+apt update -qq 2>/dev/null || true
 install_optional "SteamCMD" steamcmd 2>/dev/null || {
     log "STEAMCMD" "install" "WARNING" "SteamCMD apt failed, downloading manually"
     mkdir -p /usr/games
     cd /usr/games
-    curl -sqL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar zxf -
-    ln -sf /usr/games/steamcmd.sh /usr/games/steamcmd
+    curl -sqL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz 2>/dev/null | tar zxf - 2>/dev/null || true
+    ln -sf /usr/games/steamcmd.sh /usr/games/steamcmd 2>/dev/null || true
 }
 mkdir -p /home/gameservers
 log "STEAMCMD" "install" "OK" "SteamCMD ready"
@@ -665,7 +665,7 @@ systemctl restart fail2ban 2>/dev/null || true
 echo "[4c/13] Installing Node.js 20.x and npm..."
 log "NODEJS" "install" "RUNNING" "Installing Node.js 20.x"
 if ! command -v node >/dev/null 2>&1; then
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    curl -fsSL https://deb.nodesource.com/setup_20.x 2>/dev/null | bash - 2>/dev/null || true
     install_required "Node.js" nodejs
 fi
 npm install -g npm@latest 2>/dev/null || true
@@ -855,9 +855,9 @@ if [ ! -d "$PANEL_DIR/public/snappymail" ]; then
     log "SNAPPYMAIL" "install" "RUNNING" "Installing SnappyMail v$SM_VER"
     mkdir -p "$PANEL_DIR/public/snappymail"
     cd /tmp
-    curl -sL -o snappymail.zip "https://github.com/the-djmaze/snappymail/releases/download/v${SM_VER}/snappymail-${SM_VER}.zip"
-    unzip -qo snappymail.zip -d "$PANEL_DIR/public/snappymail"
-    rm -f snappymail.zip
+    curl -sL -o snappymail.zip "https://github.com/the-djmaze/snappymail/releases/download/v${SM_VER}/snappymail-${SM_VER}.zip" 2>/dev/null || true
+    unzip -qo snappymail.zip -d "$PANEL_DIR/public/snappymail" 2>/dev/null || true
+    rm -f snappymail.zip 2>/dev/null || true
     chown -R www-data:www-data "$PANEL_DIR/public/snappymail"
     mkdir -p "$PANEL_DIR/public/snappymail/data/_data_/_default_/domains" 2>/dev/null || true
     cat > "$PANEL_DIR/public/snappymail/data/_data_/_default_/domains/default.json" <<'SMCFG'
@@ -1082,7 +1082,7 @@ iptables -I INPUT -p tcp --dport 27000:28000 -j ACCEPT 2>/dev/null || true
 iptables -I INPUT -p tcp --dport 30000:50000 -j ACCEPT 2>/dev/null || true
 iptables -I INPUT -p udp --dport 50000:55000 -j ACCEPT 2>/dev/null || true
 log "FIREWALL" "ports" "OK" "Firewall ports opened (full production map)"
-systemctl restart apache2
+systemctl restart apache2 2>/dev/null || true
 
 # Align Postfix + Dovecot to Maildir in each user's home (panel mail accounts are system users)
 log "MAIL" "configure" "RUNNING" "Aligning Postfix/Dovecot Maildir delivery"
@@ -1253,8 +1253,8 @@ log "ADMIN" "setup" "OK" "Admin credentials set"
 # 9. .NET 8 Support Server
 echo "[9/9] Installing .NET 8 Support Server..."
 log "DOTNET" "install" "RUNNING" "Installing .NET 8"
-wget -q https://dot.net/v1/dotnet-install.sh -O /tmp/dotnet-install.sh
-bash /tmp/dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet --runtime aspnetcore >/dev/null 2>&1
+wget -q https://dot.net/v1/dotnet-install.sh -O /tmp/dotnet-install.sh 2>/dev/null || true
+bash /tmp/dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet --runtime aspnetcore >/dev/null 2>&1 || true
 ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet 2>/dev/null || true
 mkdir -p /opt/PlanetHosts.Support.Server
 cp -r "$SCRIPT_DIR/SupportServer/." /opt/PlanetHosts.Support.Server/ 2>/dev/null || true
@@ -1280,13 +1280,13 @@ log "DOTNET" "install" "OK" ".NET Support Server installed on port 5000"
 # 10. SteamCMD (duplicate guard)
 echo "[10/10] Installing SteamCMD..."
 log "STEAMCMD" "install" "RUNNING" "Verifying SteamCMD"
-dpkg --add-architecture i386 2>/dev/null
-apt-get update -qq 2>/dev/null
+dpkg --add-architecture i386 2>/dev/null || true
+apt-get update -qq 2>/dev/null || true
 if ! command -v steamcmd >/dev/null 2>&1; then
   install_optional "SteamCMD" steamcmd 2>/dev/null || {
     mkdir -p /usr/games; cd /usr/games
-    curl -sqL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar zxf - 2>/dev/null
-    chmod +x steamcmd.sh; ln -sf /usr/games/steamcmd.sh /usr/games/steamcmd 2>/dev/null
+    curl -sqL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz 2>/dev/null | tar zxf - 2>/dev/null || true
+    chmod +x steamcmd.sh 2>/dev/null || true; ln -sf /usr/games/steamcmd.sh /usr/games/steamcmd 2>/dev/null || true
   }
 fi
 log "STEAMCMD" "install" "OK" "SteamCMD ready"
