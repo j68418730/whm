@@ -145,6 +145,24 @@ echo "[2/10] Installing Apache, PHP, MariaDB, services, and jailkit..."
 log "STACK" "install" "RUNNING" "Installing web stack"
 # Detect Debian version and set PHP package names
 DEBIAN_VERSION=$(lsb_release -sc)
+
+# Ensure the Sury PHP repo is present BEFORE any php8.2+ package install, so a
+# fresh Debian base (which ships no php8.2 packages) can resolve them. The later
+# multi-PHP step re-uses the same repo for 5.6-8.5.
+if [[ "$DEBIAN_VERSION" == "trixie" ]] || [[ "$DEBIAN_VERSION" == "bookworm" ]]; then
+    log "PHP" "sury" "RUNNING" "Adding Sury PHP repository (pre-requisite)"
+    if [ ! -f /etc/apt/trusted.gpg.d/php-archive-keyring.gpg ]; then
+        curl -fsSL https://packages.sury.org/php/apt.gpg 2>/dev/null | gpg --dearmor -o /etc/apt/trusted.gpg.d/php-archive-keyring.gpg 2>/dev/null || true
+    fi
+    if [ -f /etc/apt/trusted.gpg.d/php-archive-keyring.gpg ]; then
+        echo "deb https://packages.sury.org/php/ ${DEBIAN_VERSION} main" > /etc/apt/sources.list.d/sury-php.list
+        apt update -qq 2>/dev/null || true
+        log "PHP" "sury" "OK" "Sury PHP repository ready (pre-install)"
+    else
+        log "PHP" "sury" "WARN" "Sury key not installed - php8.x may fail to resolve"
+    fi
+fi
+
 if [[ "$DEBIAN_VERSION" == "trixie" ]] || [[ "$DEBIAN_VERSION" == "bookworm" ]]; then
     # Debian 12/13 - PHP 8.2+ packages are in php8.2-* format
     PHP_PKGS="php8.2 php8.2-cli php8.2-common php8.2-curl php8.2-gd php8.2-intl php8.2-mbstring php8.2-mysql php8.2-xml php8.2-zip php8.2-bcmath php8.2-bz2 php8.2-ctype php8.2-exif php8.2-fileinfo php8.2-ftp php8.2-imap php8.2-ldap php8.2-opcache php8.2-redis php8.2-sockets php8.2-tokenizer php8.2-xmlreader php8.2-xsl php8.2-apcu php8.2-imagick php8.2-soap php8.2-fpm"
