@@ -116,13 +116,69 @@ function db_connect(string $dbName): PDO
 function migration_pdo(PDO $pdo, string $sql): ?int
 {
     // Returns MariaDB error code on failure, null on success.
-    try {
-        $pdo->exec($sql);
-        return null;
-    } catch (PDOException $e) {
-        $info = $e->errorInfo ?? [];
-        return (int)($info[1] ?? 0);
+    // PDO::exec() cannot reliably run multiple statements in one call on
+    // MariaDB 11.x / PHP 8.x (fails with 1064 or only runs the first one).
+    // So split into individual statements and run them sequentially.
+    $firstError = null;
+    foreach (split_sql_statements($sql) as $stmt) {
+        if (trim($stmt) === '') continue;
+        try {
+            $pdo->exec($stmt);
+        } catch (PDOException $e) {
+            $info = $e->errorInfo ?? [];
+            $code = (int)($info[1] ?? 0);
+            if ($firstError === null) $firstError = $code;
+            return $code;
+        }
     }
+    return $firstError;
+}
+
+/**
+ * Split SQL text into individual statements, tolerating:
+ *  - MySQL `--` and `#` comments
+ *  - Multi-line statements with no trailing semicolon
+ *  - Statements that already end with `;`
+ *  - `DELIMITER $$` ... `DELIMITER ;` blocks (stored procedures) — passed whole
+ * Statements are separated by a semicolon that is either at a line end
+ * (optionally followed by whitespace) or on its own line.
+ */
+function split_sql_statements(string $sql): array
+{
+    $out = [];
+    $lineBuf = '';
+    $delim = ';';
+    foreach (preg_split('/\r\n|\r|\n/', $sql) as $line) {
+        $trim = rtrim($line);
+        $t = ltrim($trim);
+        // Handle DELIMITER directives
+        if (preg_match('/^DELIMITER\s+(\S+)/i', $t, $m)) {
+            // flush whatever accumulated before the directive
+            if (trim($lineBuf) !== '') { $out[] = $lineBuf; $lineBuf = ''; }
+            $delim = $m[1];
+            continue;
+        }
+        // Skip pure comment lines
+        if (str_starts_with($t, '--') || str_starts_with($t, '#')) {
+            // keep block comments (-- ... within a procedure body is dropped, safe)
+            continue;
+        }
+        $lineBuf .= $trim . "\n";
+        // A statement ends when the line ends with the current delimiter
+        if ($delim === ';') {
+            if (preg_match('/;\s*$/', $trim)) { $out[] = $lineBuf; $lineBuf = ''; }
+        } else {
+            // In a DELIMITER block: statement ends at the delimiter token at line end.
+            // The delimiter token is client-side only — strip it before sending to server.
+            if (preg_match('/' . preg_quote($delim, '/') . '\s*$/', $trim)) {
+                $out[] = rtrim(preg_replace('/' . preg_quote($delim, '/') . '\s*$/u', '', $lineBuf));
+                $lineBuf = '';
+                $delim = ';';
+            }
+        }
+    }
+    if (trim($lineBuf) !== '') $out[] = $lineBuf;
+    return $out;
 }
 
 // Errors that mean "this already happened" for schema migrations.
