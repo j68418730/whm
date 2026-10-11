@@ -35,8 +35,13 @@ if (!in_array('must_change_password', $cols)) {
     echo "admins.must_change_password already exists\n";
 }
 
-// keep is_active in sync with legacy status column
-$pdo->exec("UPDATE admins SET is_active = IF(status = 'active', 1, 0)");
+// keep is_active in sync with legacy status column (only if the status column exists)
+try {
+    $statusCols = $pdo->query("SHOW COLUMNS FROM admins")->fetchAll(\PDO::FETCH_COLUMN);
+    if (in_array('status', (array)$statusCols, true)) {
+        $pdo->exec("UPDATE admins SET is_active = IF(status = 'active', 1, 0)");
+    }
+} catch (\Exception $e) { echo "status sync skipped: {$e->getMessage()}\n"; }
 
 // give existing root/kane/spectre admins the super role
 $pdo->exec("UPDATE admins SET role = 'super' WHERE username IN ('root', 'kane', 'spectre')");

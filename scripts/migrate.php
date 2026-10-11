@@ -119,34 +119,61 @@ function db_connect(string $dbName): PDO
 function migration_pdo(PDO $pdo, string $sql): ?int
 {
     // Returns MariaDB error code on failure, null on success.
-    // PDO::exec() cannot reliably run multiple statements in one call on
-    // MariaDB 11.x / PHP 8.x (fails with 1064 or only runs the first one),
-    // and statement types like CALL / INSERT..SELECT can leave the connection
-    // with an active result set causing "2014 Cannot execute queries while other
-    // unbuffered queries are active" on the NEXT statement.
-    // So: split into statements and run each on a DISPOSABLE connection, fully
-    // isolating result-state between statements.
-    $schemas = null;
+    // One dedicated connection for the WHOLE file so session-scoped state
+    // (@vars, PREPARE, FOREIGN_KEY_CHECKS) persists between statements the way
+    // the mysql CLI behaves. Splits on statement boundaries ourselves because
+    // PDO::exec() cannot run multiple statements in one call.
+    //
+    // To avoid "2014 Cannot execute queries while other unbuffered queries are
+    // active" (from statement types that leave a result set), we use buffered
+    // queries and consume/discard any pending result after each statement.
+    $cc = null;
+    $conn = clone_connection($pdo, $cc, true);
     $firstError = null;
     foreach (split_sql_statements($sql) as $stmt) {
         if (trim($stmt) === '') continue;
-        $conn = clone_connection($pdo, $schemas);
         try {
             $conn->exec($stmt);
+            // Consume/discard any pending result set so the next exec on this
+            // conn works (PREPARE/EXECUTE/CALL leave an active result that a
+            // bare `DO 0` does not always clear).
+            try { $conn->query('SELECT 1')->fetchAll(); } catch (\PDOException $e) {}
+            try { $conn->query('DO 0'); } catch (\PDOException $e) {}
         } catch (PDOException $e) {
             $info = $e->errorInfo ?? [];
             $code = (int)($info[1] ?? 0);
             if ($firstError === null) $firstError = $code;
+            // "2014 Cannot execute queries while other unbuffered queries are
+            // active" is session-state left by a PREPARE/EXECUTE inside the
+            // file. Retry the whole file once on a brand-new connection, which
+            // resets that state and lets the migration complete.
+            if ($code === 2014) {
+                unset($conn);
+                $cc2 = null;
+                $conn2 = clone_connection($pdo, $cc2, true);
+                $retryError = null;
+                foreach (split_sql_statements($sql) as $stmt2) {
+                    if (trim($stmt2) === '') continue;
+                    try { $conn2->exec($stmt2); } catch (\PDOException $e2) {
+                        $i2 = $e2->errorInfo ?? [];
+                        $retryError = (int)($i2[1] ?? 0);
+                        break;
+                    }
+                }
+                unset($conn2);
+                if ($retryError === null) return null; // succeeded on retry
+                $firstError = $retryError;
+            }
             unset($conn);
-            return $code;
+            return $firstError;
         }
-        unset($conn);
     }
+    unset($conn);
     return $firstError;
 }
 
-/** Open a fresh connection to the same server/db as $pdo (for isolation). */
-function clone_connection(PDO $pdo, &$schemaCache): PDO
+/** Open a fresh connection to the same server/db as $pdo (session-isolated). */
+function clone_connection(PDO $pdo, &$schemaCache = null, bool $fkOff = true): PDO
 {
     if ($schemaCache === null) {
         $schemaCache = [
@@ -156,15 +183,16 @@ function clone_connection(PDO $pdo, &$schemaCache): PDO
             'pass' => getenv('DB_PASSWORD') ?: '',
         ];
     }
-    // Use the same database as $pdo
     $db = $pdo->query('SELECT DATABASE()')->fetchColumn();
     if (!$db) $db = getenv('DB_DATABASE') ?: 'radiohosting';
-    return new \PDO("mysql:host={$schemaCache['host']};port={$schemaCache['port']};dbname={$db};charset=utf8mb4",
+    $conn = new \PDO("mysql:host={$schemaCache['host']};port={$schemaCache['port']};dbname={$db};charset=utf8mb4",
         $schemaCache['user'], $schemaCache['pass'], [
             \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
             \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
             \PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
         ]);
+    if ($fkOff) { try { $conn->exec('SET FOREIGN_KEY_CHECKS = 0'); } catch (\PDOException $e) {} }
+    return $conn;
 }
 
 /**
