@@ -1120,6 +1120,17 @@ class SetupController extends Controller
 
     protected function step21()
     {
+        // Final readiness gate: verify the install actually converged before
+        // writing install.lock (Phase 13 - prevent silently-broken installs).
+        $check = $this->runInstallVerification();
+        if ($check !== null) {
+            $ok = $check['ok'];
+            $detail = $check['detail'];
+            if (!$ok) {
+                $_SESSION['error_message'] = 'Installation verification failed. <strong>' . implode('; ', $detail) . '</strong> — re-run the installer or fix the listed items before completing. (Step 21 readiness gate)';
+                return $this->renderStep(21, []);
+            }
+        }
         // Create install lock
         $lockFile = BASE_PATH . '/config/install.lock';
         if (!is_file($lockFile)) {
@@ -1134,6 +1145,26 @@ class SetupController extends Controller
 
         $this->setSd('setup_complete', true);
         return $this->renderStep(21, []);
+    }
+
+    /**
+     * Run the machine-readable install verification (scripts/verify_install.php).
+     * Returns null when unavailable (non-fatal — some installs run without it),
+     * otherwise a summary array.
+     */
+    protected function runInstallVerification(): ?array
+    {
+        $verifier = BASE_PATH . '/scripts/verify_install.php';
+        if (!is_file($verifier)) return null;
+        $php = defined('PHP_BINARY') ? escapeshellarg(PHP_BINARY) : 'php';
+        $out = @shell_exec($php . ' ' . escapeshellarg($verifier) . ' 2>&1');
+        if (!$out || preg_match('/Usage:|Exception|Parse error/i', (string)$out)) return null;
+        // Parse the readable PASS/FAIL lines
+        $fails = []; $ok = true;
+        foreach (preg_split('/\r\n|\r|\n/', (string)$out) as $line) {
+            if (preg_match('/^\S+\s+FAIL\s+(.+)$/', trim($line), $m)) { $ok = false; $fails[] = $m[1]; }
+        }
+        return ['ok' => $ok, 'detail' => $fails, 'raw' => $out];
     }
 
     // ─── SKIP CSRF FOR SETUP ───
