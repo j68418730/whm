@@ -1,17 +1,17 @@
 {
-  "version": "1.5.0",
-  "version_code": 1500,
+  "version": "1.5.1",
+  "version_code": 1510,
   "channel": "stable",
-  "release_date": "2026-09-18",
+  "release_date": "2026-10-11",
   "release_type": "Core Release",
-  "security": false,
+  "security": true,
   "require_version_code": 1300,
   "php_required": ">=7.4",
   "requires_reboot": false,
-  "requires_services_restart": ["apache2", "postfix", "dovecot"],
-  "migrations": ["2026_09_18_terminal_package_access.sql"],
-  "download": "https://codeload.github.com/j68418730/whm/tar.gz/bea13c2",
-  "checksum": "5fba184c7c9070100d2671c2dcc2ea88f957601213f505726a2f5e7c5e29a0ad",
-  "target_sha": "bea13c2",
-  "release_notes": "Release 1.5.0 - Email & Webmail overhaul plus the full redesign batch. WEBMAIL: SnappyMail rebranded to 'Planet Hosts Mail' with a custom PlanetHosts theme (dark navy #0b1f39 / #1683ff) pulled from the primary site branding (admin/branding company_name syncs into the webmail title); webmail served at the root of port 2096 and the /snappymail/ path hidden (redirects to :2096) on the panel and main site. EMAIL ADMIN: page mirrors the /admin/account design (stats cards, mailbox groups by domain, search/filter, icon actions); wired to the real mail system (PostfixAdmin SQLite with {BLF-CRYPT}); accounts read from the live mailbox store; per-account Change Password updates Dovecot auth. MAILBOX READ (password override): admins open any mailbox and view messages (subject/from/date/body/raw) for spam/abuse investigations. SERVER EMAIL ALERTS: designate any mailbox as the Server Email; a cron checks every minute and creates alerts ('New email to X - From: Y | Subject: Z'); a global sticky banner pops on every admin page when a new alert arrives (like the update banner). FIXES: critical mail delivery bug fixed (Postfix virtual mailbox map now delivers into Maildir/ so mail is visible in Dovecot/webmail); LiveChat export CSV; websitebuilder /sites 500; /admin/domains + 21 routes loading routes/admin.php; AutoDJ page with Start/Stop/Restart All; PHP Manager all 12 versions with per-version extension install; Terminal PTY job-control fix. REDESIGNS: DNS (zone cards + BIND9 status), Apache (removed Server Information), MySQL (removed Database Access), FTP (Connect via FTP card), IP (IP Pool card showing assignment), Radio Downloads (Planet Hosts Studio node download), Email page mirror of /admin/account, admin menu bottom spacer."
+  "requires_services_restart": ["apache2", "mariadb"],
+  "migrations": ["2026_09_18_terminal_package_access.sql", "2026_09_22_api_keys_name.sql", "2026_09_29_alexa_skill.sql"],
+  "download": "https://codeload.github.com/j68418730/whm/tar.gz/f0b8d9f",
+  "checksum": "39846d31fa2e24356e71aa91c716240a08e00e23aca599c671d5d60b7ba77e69",
+  "target_sha": "f0b8d9f",
+  "release_notes": "Release 1.5.1 - Installer & updater migration-engine fixes (heals stale/incomplete installs). CRITICAL FIX: bootstrap.sql had reserved-word column names (databases, terminal, game, radio, etc. in feature_lists) that made CREATE TABLE fail with 1064 under PDO/strict mode on every fresh install, so base tables were never created and ~107 dependent tables cascaded missing. bootstrap.sql rebuilt as the complete idempotent 231-table base schema wrapped in SET FOREIGN_KEY_CHECKS=0. migrate.php fixed to run SQL statement-by-statement (PDO cannot multi-statement on MariaDB 11/PHP 8), handle DELIMITER stored procedures, use one connection per file (preserves session vars for PREPARE/EXECUTE), set buffered queries (fixes PDO 2014 crash), and write the migration ledger to the actual target DB (was writing to .env DB_DATABASE). Legacy migrations with fragile AFTER <col> clauses / non-idempotent DROPs / hardcoded DB names made tolerant. Added scripts/verify_install.php + INSTALL_MANIFEST.json: machine-readable post-install verification (required tables, config keys, writable dirs, services, source files, migration ledger). VERIFIED: a fresh install DB now converges to 84/84 migrations (0 failed) + 231 tables; Test server healed from 124 tables to 231 with all admin module pages returning 200; verification 6/6 PASS. Also: icecast2 + nginx enabled, PHP 5.6-8.5 installed on Test."
 }
