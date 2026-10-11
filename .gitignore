@@ -66,3 +66,18 @@ update_*.php
 set_*.php
 fix_*.php
 migration_fix.sql
+
+# Private keys / certificates - never commit (GitHub restricts repos containing them)
+*.key
+*.pem
+*.p12
+*.pfx
+*.keystore
+*.jks
+
+# License/credential generators - developer only
+generate_package_license_keys.php
+account_license_generator.php
+gen_test_license.php
+gen_hash.php
+
