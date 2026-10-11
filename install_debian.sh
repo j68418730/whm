@@ -149,15 +149,28 @@ DEBIAN_VERSION=$(lsb_release -sc)
 # Ensure the Sury PHP repo is present BEFORE any php8.2+ package install, so a
 # fresh Debian base (which ships no php8.2 packages) can resolve them. The later
 # multi-PHP step re-uses the same repo for 5.6-8.5.
+# The dearmored keyring ships bundled with the installer so a fresh box does not
+# need gpg installed. No gpg/network dependency: just copy it into trusted.gpg.d.
 if [[ "$DEBIAN_VERSION" == "trixie" ]] || [[ "$DEBIAN_VERSION" == "bookworm" ]]; then
     log "PHP" "sury" "RUNNING" "Adding Sury PHP repository (pre-requisite)"
-    if [ ! -f /etc/apt/trusted.gpg.d/php-archive-keyring.gpg ]; then
-        curl -fsSL https://packages.sury.org/php/apt.gpg 2>/dev/null | gpg --dearmor -o /etc/apt/trusted.gpg.d/php-archive-keyring.gpg 2>/dev/null || true
-    fi
+    install_key=0
     if [ -f /etc/apt/trusted.gpg.d/php-archive-keyring.gpg ]; then
+        install_key=1
+    elif [ -f "$SCRIPT_DIR/installer/php-archive-keyring.gpg" ]; then
+        cp "$SCRIPT_DIR/installer/php-archive-keyring.gpg" /etc/apt/trusted.gpg.d/php-archive-keyring.gpg 2>/dev/null && install_key=1
+    else
+        # Fallback (no network/gpg needed if bundled key is present; this is just a safety net)
+        curl -fsSL https://packages.sury.org/php/apt.gpg 2>/dev/null | gpg --dearmor -o /etc/apt/trusted.gpg.d/php-archive-keyring.gpg 2>/dev/null || true
+        [ -f /etc/apt/trusted.gpg.d/php-archive-keyring.gpg ] && install_key=1
+    fi
+    if [ "$install_key" -eq 1 ]; then
         echo "deb https://packages.sury.org/php/ ${DEBIAN_VERSION} main" > /etc/apt/sources.list.d/sury-php.list
-        apt update -qq 2>/dev/null || true
-        log "PHP" "sury" "OK" "Sury PHP repository ready (pre-install)"
+        apt-get update -qq >/dev/null 2>&1 || true
+        if apt-cache policy php8.2-cli 2>/dev/null | grep -q Candidate; then
+            log "PHP" "sury" "OK" "Sury PHP repository ready (pre-install) - php8.2 resolves"
+        else
+            log "PHP" "sury" "WARN" "Sury repo added but php8.2 still unresolved"
+        fi
     else
         log "PHP" "sury" "WARN" "Sury key not installed - php8.x may fail to resolve"
     fi
@@ -192,7 +205,11 @@ log "STACK" "install" "OK" "Web stack installed"
 #     PHP Version Switcher works out of the box on a fresh install.
 log "PHP" "sury" "RUNNING" "Adding Sury PHP repository"
 if [ ! -f /etc/apt/trusted.gpg.d/php-archive-keyring.gpg ]; then
-    curl -fsSL https://packages.sury.org/php/apt.gpg 2>/dev/null | gpg --dearmor -o /etc/apt/trusted.gpg.d/php-archive-keyring.gpg 2>/dev/null || true
+    if [ -f "$SCRIPT_DIR/installer/php-archive-keyring.gpg" ]; then
+        cp "$SCRIPT_DIR/installer/php-archive-keyring.gpg" /etc/apt/trusted.gpg.d/php-archive-keyring.gpg 2>/dev/null || true
+    else
+        curl -fsSL https://packages.sury.org/php/apt.gpg 2>/dev/null | gpg --dearmor -o /etc/apt/trusted.gpg.d/php-archive-keyring.gpg 2>/dev/null || true
+    fi
 fi
 if [ -f /etc/apt/trusted.gpg.d/php-archive-keyring.gpg ]; then
     echo "deb https://packages.sury.org/php/ ${DEBIAN_VERSION} main" > /etc/apt/sources.list.d/sury-php.list
