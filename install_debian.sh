@@ -10,6 +10,36 @@ LOG_DIR="/var/log/planethosts"
 HTTPD_INSTALLED=0; MARIADB_INSTALLED=0; PHP_INSTALLED=0
 FIREWALLD_INSTALLED=0; ICECAST_INSTALLED=0; LIQUIDSOAP_INSTALLED=0
 EZSTREAM_INSTALLED=0; FFMPEG_INSTALLED=0; PHPMYADMIN_INSTALLED=0
+PH_INSTALL_COMPLETE=0; PH_SUMMARY_SHOWN=0
+
+# Print a checklist of what did/did not get installed, plus the Setup Wizard link.
+# Shown on SUCCESS (end of installer) and on FAILURE (partial install state) so the
+# user always knows where they are before visiting /setup.
+show_install_summary() {
+    local status="$1"
+    local yes="[installed]"; local no="[missing]"
+    echo ""
+    echo "=============================================="
+    echo " Planet Hosts Install Summary - $status"
+    echo "=============================================="
+    echo " Installed components:"
+    printf "  %-11s Apache       %-11s MariaDB       %-11s PHP\n" \
+        "$([ "${HTTPD_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")" \
+        "$([ "${MARIADB_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")" \
+        "$([ "${PHP_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")"
+    printf "  %-11s Firewalld    %-11s Icecast       %-11s Liquidsoap\n" \
+        "$([ "${FIREWALLD_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")" \
+        "$([ "${ICECAST_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")" \
+        "$([ "${LIQUIDSOAP_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")"
+    printf "  %-11s ezstream     %-11s FFmpeg        %-11s phpMyAdmin\n" \
+        "$([ "${EZSTREAM_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")" \
+        "$([ "${FFMPEG_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")" \
+        "$([ "${PHPMYADMIN_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")"
+    echo ""
+    echo " Next step: complete the Setup Wizard to finish Panel configuration:"
+    echo "   http://${SERVER_IP:-SERVER_IP}/setup"
+    echo ""
+}
 
 log() {
     local module="$1" action="$2" status="$3" msg="$4"
@@ -45,8 +75,22 @@ rollback() {
 cleanup_and_exit() {
     local code=$1
     log "INSTALLER" "exit" "$code" "Installer finished with code $code"
+    if [ "$code" != "0" ] && [ "$PH_SUMMARY_SHOWN" != "1" ]; then
+        show_install_summary "FAILED (code $code)"
+        PH_SUMMARY_SHOWN=1
+    fi
     exit "$code"
 }
+
+# Catch unguarded `set -e` exits so a partial install still reports its state.
+print_summary_on_exit() {
+    local rc=$?
+    if [ "$PH_INSTALL_COMPLETE" != "1" ] && [ "$PH_SUMMARY_SHOWN" != "1" ]; then
+        show_install_summary "FAILED (code $rc)"
+        PH_SUMMARY_SHOWN=1
+    fi
+}
+trap print_summary_on_exit EXIT
 
 get_server_ip() {
     PUBLIC_IP=$(curl -s --max-time 5 https://ifconfig.me/ip 2>/dev/null || \
@@ -1378,16 +1422,13 @@ echo " Admin Login: root"
 echo " Admin Password: $ADMIN_PASS"
 echo " DB Password: $DB_PASS"
 echo ""
-echo "Installed Components:"
-echo "  Apache: $HTTPD_INSTALLED    MariaDB: $MARIADB_INSTALLED    PHP: $PHP_INSTALLED"
-echo "  Firewalld: $FIREWALLD_INSTALLED    Icecast: $ICECAST_INSTALLED"
-echo "  Liquidsoap: $LIQUIDSOAP_INSTALLED    ezstream: $EZSTREAM_INSTALLED"
-echo "  FFmpeg: $FFMPEG_INSTALLED    phpMyAdmin: $PHPMYADMIN_INSTALLED"
-echo ""
 echo " Services: Apache, MariaDB, Postfix, Dovecot,"
 echo "           VSFTPD, Bind9, Icecast2, Firewalld, Fail2ban,"
 echo "           SHOUTcast DNAS (port 8000), nginx (port 8080),"
 echo "           .NET 8 Support Server (port 5000)"
+
+PH_INSTALL_COMPLETE=1
+show_install_summary "SUCCESS"
 
 log "INSTALLER" "finish" "OK" "Installation complete"
 cleanup_and_exit 0

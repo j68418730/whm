@@ -3637,5 +3637,4 @@ CREATE TABLE IF NOT EXISTS `widget_layouts` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_layout` (`user_id`,`layout_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-[?9001l[?1004l
 SET FOREIGN_KEY_CHECKS = 1;
