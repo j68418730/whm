@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "description": "Planet Hosts installation verification manifest (machine-readable).",
+  "tables": [
+    "hosting_users", "billing_products", "billing_orders", "billing_services",
+    "streaming_stations", "radio_streams", "radio_requests", "radio_dj_streams",
+    "tickets", "ticket_replies", "chat_messages", "chat_sessions", "chat_rooms",
+    "chatbox_rooms", "chatbox_messages", "game_servers", "game_types", "game_packages",
+    "hosting_domains", "hosting_packages", "domains", "mail_accounts",
+    "todos", "notifications", "api_keys", "feature_lists", "wb_sites", "wb_pages",
+    "wb_templates", "wb_themes", "studio_settings", "studio_support_requests",
+    "reviews", "ssl_certs", "ssl_log", "migration_adapters", "user_roles",
+    "ftp_accounts", "port_ranges", "stream_ports", "autodj_playlists"
+  ],
+  "config": ["DB_HOST", "DB_PORT", "DB_DATABASE", "DB_USERNAME", "DB_PASSWORD"],
+  "writable": ["storage", "storage/logs", "public/uploads", "storage/terminal"],
+  "services": ["apache2", "mariadb", "postfix", "dovecot", "bind9", "icecast2", "nginx", "fail2ban"],
+  "files": [
+    "admin/Controllers/AccountController.php",
+    "admin/Controllers/BillingController.php",
+    "admin/Controllers/DomainController.php",
+    "admin/Controllers/EmailController.php",
+    "plugins/GameServers/GameServersPlugin.php",
+    "plugins/Radio/RadioPlugin.php",
+    "plugins/WebsiteBuilder/WebsiteBuilderPlugin.php",
+    "routes/core.php", "routes/admin.php", "core/Application.php",
+    "scripts/migrate.php", "database/bootstrap.sql", "config/install.lock"
+  ]
+}

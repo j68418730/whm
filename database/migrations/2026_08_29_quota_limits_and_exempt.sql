@@ -16,9 +16,9 @@ UPDATE hosting_packages
 --    supports ADD COLUMN IF NOT EXISTS). These back the admin toggles on
 --    admin/Views/account/show.php.
 ALTER TABLE hosting_users
-    ADD COLUMN IF NOT EXISTS no_auto_suspend TINYINT(1) NOT NULL DEFAULT 0 AFTER suspended_by;
+    ADD COLUMN IF NOT EXISTS no_auto_suspend TINYINT(1) NOT NULL DEFAULT 0;
 ALTER TABLE hosting_users
-    ADD COLUMN IF NOT EXISTS allow_suspension TINYINT(1) NOT NULL DEFAULT 1 AFTER no_auto_suspend;
+    ADD COLUMN IF NOT EXISTS allow_suspension TINYINT(1) NOT NULL DEFAULT 1;
 
 -- 3. Permanently exempt the primary domain account and suggawatz from ANY
 --    disk/bandwidth quota auto-suspension. Both flags together guarantee the
