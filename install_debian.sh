@@ -142,7 +142,7 @@ resolve_php() {
 resolve_php
 log "INSTALLER" "php" "OK" "Using PHP: $PHP_BIN"
 
-clear
+clear 2>/dev/null || true
 echo "=============================================="
 echo " Planet Hosts - Debian 12 Installer v$INSTALLER_VERSION"
 echo " Server IP: $SERVER_IP"
