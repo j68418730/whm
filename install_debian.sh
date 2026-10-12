@@ -1111,9 +1111,18 @@ log "DATABASE" "setup" "RUNNING" "Creating database and user"
 ADMIN_PASS="$(hostname)-$(openssl rand -base64 6 | tr -d '=+/')"
 DB_PASS="$(openssl rand -base64 12)"
 
+# Reinstall-safe root auth: if a previous run set a root password, reset root to
+# unix_socket (OS-root passwordless) so the `mysql -u root` calls below always work.
+# On a fresh box this is already the default (no-op). The later ALTER re-secures
+# root with the generated password for live-server parity.
+mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED VIA unix_socket; FLUSH PRIVILEGES;" 2>/dev/null || true
+
+# Force-recreate the app user on EVERY run: CREATE USER IF NOT EXISTS leaves a
+# stale password from a prior run, breaking migrate.php until the DB is recreated.
 mysql -u root <<MYSQL || { log "DATABASE" "create" "FAIL" "Failed to create database"; rollback "database"; cleanup_and_exit 1; }
 CREATE DATABASE IF NOT EXISTS radiohosting CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS 'radiouser'@'localhost' IDENTIFIED BY '$DB_PASS';
+ALTER USER 'radiouser'@'localhost' IDENTIFIED BY '$DB_PASS';
 GRANT ALL PRIVILEGES ON radiohosting.* TO 'radiouser'@'localhost';
 FLUSH PRIVILEGES;
 MYSQL
@@ -1230,7 +1239,14 @@ else
     echo "=============================================="
     echo " Include your server IP ($SERVER_IP) in the email."
     echo "=============================================="
-    read -t 30 -p "Paste license key (or press Enter to skip): " LICENSE_CONTENT
+    LICENSE_CONTENT=""
+    # Only prompt when stdin is interactive (headless/nohup installs skip instead
+    # of blocking + aborting, which would leave setup wizard untouched).
+    if [ -t 0 ] && [ -t 1 ]; then
+        read -t 30 -p "Paste license key (or press Enter to skip): " LICENSE_CONTENT
+    else
+        log "LICENSE" "activate" "INFO" "Non-interactive install - license activation skipped (wizard can activate later)"
+    fi
     if [ -n "$LICENSE_CONTENT" ]; then
         echo "$LICENSE_CONTENT" > "$PANEL_DIR/license.key"
         log "LICENSE" "activate" "OK" "License key saved"
