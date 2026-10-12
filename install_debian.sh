@@ -989,12 +989,16 @@ cat > /etc/apache2/sites-available/radiohosting.conf <<VHOST
         Require all granted
         DirectoryIndex index.php index.html
     </Directory>
+    <FilesMatch \.php$>
+        SetHandler "proxy:unix:/run/php/php8.2-fpm.sock|fcgi://localhost/"
+    </FilesMatch>
     ErrorLog /var/log/apache2/radiohosting_error.log
     CustomLog /var/log/apache2/radiohosting_access.log combined
 </VirtualHost>
 VHOST
 a2dissite 000-default 2>/dev/null || true
 a2ensite radiohosting; a2enmod rewrite
+a2enmod proxy proxy_fcgi 2>/dev/null || true
 # phpmyadmin conf name varies by Debian version
 if [ -f /etc/apache2/conf-available/phpmyadmin.conf ]; then
     a2enconf phpmyadmin
