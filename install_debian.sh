@@ -1125,6 +1125,10 @@ ensure_mariadb_root_unix_socket() {
     pkill -9 -f mariadbd-safe 2>/dev/null || true
     pkill -9 -f mysqld_safe 2>/dev/null || true
     pkill -9 -f mariadbd 2>/dev/null || true
+    systemctl reset-failed mariadb 2>/dev/null || true
+    # MASK so systemd does NOT auto-respawn mariadbd and steal the socket while
+    # the skip-grant instance starts (this is why a bare stop+pkill failed).
+    systemctl mask mariadb 2>/dev/null || true
     sleep 6
     rm -f /run/mysqld/mysqld.sock /run/mysqld/mysqld.pid 2>/dev/null
     setsid mariadbd-safe --skip-grant-tables --skip-networking --user=mysql >/dev/null 2>&1 < /dev/null &
@@ -1143,6 +1147,7 @@ ensure_mariadb_root_unix_socket() {
     pkill -9 -f mariadbd 2>/dev/null || true
     sleep 3
     rm -f /run/mysqld/mysqld.sock /run/mysqld/mysqld.pid 2>/dev/null
+    systemctl unmask mariadb 2>/dev/null || true
     systemctl start mariadb 2>/dev/null || true
     sleep 6
     mysql -u root -e "SELECT 1;" >/dev/null 2>&1 && log "DATABASE" "root" "OK" "Root reset to unix_socket" \
