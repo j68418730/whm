@@ -14,6 +14,7 @@ ALTER TABLE radio_streams
   ADD COLUMN IF NOT EXISTS `autodj_enabled` tinyint(1) DEFAULT 0,
   ADD COLUMN IF NOT EXISTS `ssl_enabled` tinyint(1) DEFAULT 0,
   ADD COLUMN IF NOT EXISTS `pid_file` varchar(255) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `server_name` varchar(255) DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS `mount_point` varchar(100) DEFAULT '/live',
   ADD COLUMN IF NOT EXISTS `bitrate` int(11) DEFAULT 128,
   ADD COLUMN IF NOT EXISTS `format` varchar(20) DEFAULT 'mp3',
