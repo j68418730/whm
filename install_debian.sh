@@ -1111,11 +1111,44 @@ log "DATABASE" "setup" "RUNNING" "Creating database and user"
 ADMIN_PASS="$(hostname)-$(openssl rand -base64 6 | tr -d '=+/')"
 DB_PASS="$(openssl rand -base64 12)"
 
-# Reinstall-safe root auth: if a previous run set a root password, reset root to
-# unix_socket (OS-root passwordless) so the `mysql -u root` calls below always work.
-# On a fresh box this is already the default (no-op). The later ALTER re-secures
-# root with the generated password for live-server parity.
-mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED VIA unix_socket; FLUSH PRIVILEGES;" 2>/dev/null || true
+# Reinstall-safe root auth: ensure passwordless unix_socket root BEFORE the
+# `mysql -u root` calls below. On a fresh box the Debian default is unix_socket
+# (no-op). If a previous run locked root with a password, recover via a brief
+# skip-grant-tables restart (the only way into a locked instance).
+ensure_mariadb_root_unix_socket() {
+    if mysql -u root -e "SELECT 1;" >/dev/null 2>&1; then
+        mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED VIA unix_socket; FLUSH PRIVILEGES;" 2>/dev/null || true
+        return 0
+    fi
+    log "DATABASE" "root" "RUNNING" "Root locked - recovering via skip-grant-tables"
+    systemctl stop mariadb 2>/dev/null || true
+    pkill -9 -f mariadbd-safe 2>/dev/null || true
+    pkill -9 -f mysqld_safe 2>/dev/null || true
+    pkill -9 -f mariadbd 2>/dev/null || true
+    sleep 6
+    rm -f /run/mysqld/mysqld.sock /run/mysqld/mysqld.pid 2>/dev/null
+    setsid mariadbd-safe --skip-grant-tables --skip-networking --user=mysql >/dev/null 2>&1 < /dev/null &
+    for _t in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+        [ -S /run/mysqld/mysqld.sock ] && break
+        sleep 1
+    done
+    if [ -S /run/mysqld/mysqld.sock ]; then
+        mysql --protocol=SOCKET --socket=/run/mysqld/mysqld.sock -u root \
+            -e "FLUSH PRIVILEGES; ALTER USER 'root'@'localhost' IDENTIFIED VIA unix_socket; FLUSH PRIVILEGES;" 2>/dev/null || true
+        mysqladmin --protocol=SOCKET --socket=/run/mysqld/mysqld.sock -u root shutdown 2>/dev/null || true
+        sleep 5
+    fi
+    pkill -9 -f mariadbd-safe 2>/dev/null || true
+    pkill -9 -f mysqld_safe 2>/dev/null || true
+    pkill -9 -f mariadbd 2>/dev/null || true
+    sleep 3
+    rm -f /run/mysqld/mysqld.sock /run/mysqld/mysqld.pid 2>/dev/null
+    systemctl start mariadb 2>/dev/null || true
+    sleep 6
+    mysql -u root -e "SELECT 1;" >/dev/null 2>&1 && log "DATABASE" "root" "OK" "Root reset to unix_socket" \
+        || log "DATABASE" "root" "WARN" "Could not reset root - install may fail"
+}
+ensure_mariadb_root_unix_socket
 
 # Force-recreate the app user on EVERY run: CREATE USER IF NOT EXISTS leaves a
 # stale password from a prior run, breaking migrate.php until the DB is recreated.
