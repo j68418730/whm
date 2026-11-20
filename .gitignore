@@ -81,3 +81,26 @@ account_license_generator.php
 gen_test_license.php
 gen_hash.php
 
+# .NET build artifacts
+bin/
+obj/
+
+# Runtime state - never commit (see AGENTS.md)
+config/install.lock
+storage/*
+!storage/.gitkeep
+!storage/radio/**/.gitkeep
+public/uploads/*
+
+# Logs and runtime files
+*.log
+*.pid
+
+# Environment files (all variants)
+.env.*
+!.env.example
+
+# Server-generated config
+config/*.pem
+!config/license_public.pem
+
