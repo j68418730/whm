@@ -10,7 +10,7 @@
     "todos", "notifications", "api_keys", "feature_lists", "wb_sites", "wb_pages",
     "wb_templates", "wb_themes", "studio_settings", "studio_support_requests",
     "reviews", "ssl_certs", "ssl_log", "migration_adapters", "user_roles",
-    "ftp_accounts", "port_ranges", "stream_ports", "autodj_playlists"
+    "ftp_accounts", "port_ranges", "stream_ports", "radio_autodj_playlists"
   ],
   "config": ["DB_HOST", "DB_PORT", "DB_DATABASE", "DB_USERNAME", "DB_PASSWORD"],
   "writable": ["storage", "storage/logs", "public/uploads", "storage/terminal"],

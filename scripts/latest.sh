@@ -7,8 +7,9 @@
 #
 # What it does:
 #   1. Detects the OS from /etc/os-release.
-#   2. Fetches the current release manifest (VERSION.json) from GitHub.
-#   3. Downloads the official release tarball (kept on GitHub).
+#   2. Fetches the current release manifest (VERSION.json) from the self-hosted
+#      mirror on planet-hosts.com first, falling back to GitHub.
+#   3. Downloads the official release tarball (self-hosted mirror, else GitHub).
 #   4. Extracts it and runs the correct installer for this OS.
 #
 # Supported now:  Debian / Ubuntu
@@ -18,7 +19,8 @@
 set -e
 
 BASE_URL="https://raw.githubusercontent.com/j68418730/whm/master"
-LATEST_URL="${LATEST_URL:-$BASE_URL/VERSION.json}"
+SELF_BASE="https://planet-hosts.com/releases"
+LATEST_URL="${LATEST_URL:-$SELF_BASE/VERSION.json}"
 WORKDIR="${WORKDIR:-/home}"
 LOG_FILE="$WORKDIR/planet-hosts-install.log"
 
@@ -80,14 +82,18 @@ if [ -z "$DOWNLOAD_URL" ]; then
     exit 1
 fi
 
-# --- Download the release tarball (kept on GitHub, not the server) ---
+# --- Download the release tarball (self-hosted mirror preferred) ---
 TARBALL="$WORKDIR/planet-hosts-$VERSION.tar.gz"
 EXTRACT_DIR="$WORKDIR/planet-hosts-src"
 
 log "Downloading Planet Hosts $VERSION package..."
 if ! curl -fsSL -m 600 -o "$TARBALL" "$DOWNLOAD_URL"; then
-    echo "ERROR: Package download failed from $DOWNLOAD_URL"
-    exit 1
+    MIRROR_URL="$SELF_BASE/planet-hosts-$VERSION.tar.gz"
+    log "Primary download failed - trying mirror $MIRROR_URL"
+    if ! curl -fsSL -m 600 -o "$TARBALL" "$MIRROR_URL"; then
+        echo "ERROR: Package download failed from $DOWNLOAD_URL and $MIRROR_URL"
+        exit 1
+    fi
 fi
 echo "Downloaded $(du -h "$TARBALL" | cut -f1)."
 

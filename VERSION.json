@@ -8,10 +8,17 @@
   "require_version_code": 1300,
   "php_required": ">=7.4",
   "requires_reboot": false,
-  "requires_services_restart": ["apache2", "mariadb"],
-  "migrations": ["2026_09_18_terminal_package_access.sql", "2026_09_22_api_keys_name.sql", "2026_09_29_alexa_skill.sql"],
-  "download": "https://codeload.github.com/j68418730/whm/tar.gz/d5c299b",
-  "checksum": "b3c3e2137b09e6f5b3a8df35f01d76c8ecd74df636da5987b60258544c4e7580",
-  "target_sha": "d5c299b",
+  "requires_services_restart": [
+    "apache2",
+    "mariadb"
+  ],
+  "migrations": [
+    "2026_09_18_terminal_package_access.sql",
+    "2026_09_22_api_keys_name.sql",
+    "2026_09_29_alexa_skill.sql"
+  ],
+  "download": "https://planet-hosts.com/releases/planet-hosts-1.5.1.tar.gz",
+  "checksum": "1dbf81fdeb9195b01496990074e5994371414f3cf6c173debdaab3e2366b5e66",
+  "target_sha": "5253955",
   "release_notes": "Release 1.5.1 - Installer & updater migration-engine fixes (heals stale/incomplete installs). CRITICAL FIX: bootstrap.sql had reserved-word column names (databases, terminal, game, radio, etc. in feature_lists) that made CREATE TABLE fail with 1064 under PDO/strict mode on every fresh install, so base tables were never created and ~107 dependent tables cascaded missing. bootstrap.sql rebuilt as the complete idempotent 231-table base schema wrapped in SET FOREIGN_KEY_CHECKS=0. migrate.php fixed to run SQL statement-by-statement (PDO cannot multi-statement on MariaDB 11/PHP 8), handle DELIMITER stored procedures, use one connection per file (preserves session vars for PREPARE/EXECUTE), set buffered queries (fixes PDO 2014 crash), and write the migration ledger to the actual target DB (was writing to .env DB_DATABASE). Legacy migrations with fragile AFTER <col> clauses / non-idempotent DROPs / hardcoded DB names made tolerant. Added scripts/verify_install.php + INSTALL_MANIFEST.json: machine-readable post-install verification (required tables, config keys, writable dirs, services, source files, migration ledger). VERIFIED: a fresh install DB now converges to 84/84 migrations (0 failed) + 231 tables; Test server healed from 124 tables to 231 with all admin module pages returning 200; verification 6/6 PASS. Also: icecast2 + nginx enabled, PHP 5.6-8.5 installed on Test."
 }

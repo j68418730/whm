@@ -10,6 +10,36 @@ LOG_DIR="/var/log/planethosts"
 HTTPD_INSTALLED=0; MARIADB_INSTALLED=0; PHP_INSTALLED=0
 FIREWALLD_INSTALLED=0; ICECAST_INSTALLED=0; LIQUIDSOAP_INSTALLED=0
 EZSTREAM_INSTALLED=0; FFMPEG_INSTALLED=0; PHPMYADMIN_INSTALLED=0
+PH_INSTALL_COMPLETE=0; PH_SUMMARY_SHOWN=0
+
+# Print a checklist of what did/did not get installed, plus the Setup Wizard link.
+# Shown on SUCCESS (end of installer) and on FAILURE (partial install state) so the
+# user always knows where they are before visiting /setup.
+show_install_summary() {
+    local status="$1"
+    local yes="[installed]"; local no="[missing]"
+    echo ""
+    echo "=============================================="
+    echo " Planet Hosts Install Summary - $status"
+    echo "=============================================="
+    echo " Installed components:"
+    printf "  %-11s Apache       %-11s MariaDB       %-11s PHP\n" \
+        "$([ "${HTTPD_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")" \
+        "$([ "${MARIADB_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")" \
+        "$([ "${PHP_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")"
+    printf "  %-11s Firewalld    %-11s Icecast       %-11s Liquidsoap\n" \
+        "$([ "${FIREWALLD_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")" \
+        "$([ "${ICECAST_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")" \
+        "$([ "${LIQUIDSOAP_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")"
+    printf "  %-11s ezstream     %-11s FFmpeg        %-11s phpMyAdmin\n" \
+        "$([ "${EZSTREAM_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")" \
+        "$([ "${FFMPEG_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")" \
+        "$([ "${PHPMYADMIN_INSTALLED:-0}" = 1 ] && echo "$yes" || echo "$no")"
+    echo ""
+    echo " Next step: complete the Setup Wizard to finish Panel configuration:"
+    echo "   http://${SERVER_IP:-SERVER_IP}/setup"
+    echo ""
+}
 
 log() {
     local module="$1" action="$2" status="$3" msg="$4"
@@ -45,8 +75,22 @@ rollback() {
 cleanup_and_exit() {
     local code=$1
     log "INSTALLER" "exit" "$code" "Installer finished with code $code"
+    if [ "$code" != "0" ] && [ "$PH_SUMMARY_SHOWN" != "1" ]; then
+        show_install_summary "FAILED (code $code)"
+        PH_SUMMARY_SHOWN=1
+    fi
     exit "$code"
 }
+
+# Catch unguarded `set -e` exits so a partial install still reports its state.
+print_summary_on_exit() {
+    local rc=$?
+    if [ "$PH_INSTALL_COMPLETE" != "1" ] && [ "$PH_SUMMARY_SHOWN" != "1" ]; then
+        show_install_summary "FAILED (code $rc)"
+        PH_SUMMARY_SHOWN=1
+    fi
+}
+trap print_summary_on_exit EXIT
 
 get_server_ip() {
     PUBLIC_IP=$(curl -s --max-time 5 https://ifconfig.me/ip 2>/dev/null || \
@@ -98,7 +142,7 @@ resolve_php() {
 resolve_php
 log "INSTALLER" "php" "OK" "Using PHP: $PHP_BIN"
 
-clear
+clear 2>/dev/null || true
 echo "=============================================="
 echo " Planet Hosts - Debian 12 Installer v$INSTALLER_VERSION"
 echo " Server IP: $SERVER_IP"
@@ -145,6 +189,37 @@ echo "[2/10] Installing Apache, PHP, MariaDB, services, and jailkit..."
 log "STACK" "install" "RUNNING" "Installing web stack"
 # Detect Debian version and set PHP package names
 DEBIAN_VERSION=$(lsb_release -sc)
+
+# Ensure the Sury PHP repo is present BEFORE any php8.2+ package install, so a
+# fresh Debian base (which ships no php8.2 packages) can resolve them. The later
+# multi-PHP step re-uses the same repo for 5.6-8.5.
+# The dearmored keyring ships bundled with the installer so a fresh box does not
+# need gpg installed. No gpg/network dependency: just copy it into trusted.gpg.d.
+if [[ "$DEBIAN_VERSION" == "trixie" ]] || [[ "$DEBIAN_VERSION" == "bookworm" ]]; then
+    log "PHP" "sury" "RUNNING" "Adding Sury PHP repository (pre-requisite)"
+    install_key=0
+    if [ -f /etc/apt/trusted.gpg.d/php-archive-keyring.gpg ]; then
+        install_key=1
+    elif [ -f "$SCRIPT_DIR/installer/php-archive-keyring.gpg" ]; then
+        cp "$SCRIPT_DIR/installer/php-archive-keyring.gpg" /etc/apt/trusted.gpg.d/php-archive-keyring.gpg 2>/dev/null && install_key=1
+    else
+        # Fallback (no network/gpg needed if bundled key is present; this is just a safety net)
+        curl -fsSL https://packages.sury.org/php/apt.gpg 2>/dev/null | gpg --dearmor -o /etc/apt/trusted.gpg.d/php-archive-keyring.gpg 2>/dev/null || true
+        [ -f /etc/apt/trusted.gpg.d/php-archive-keyring.gpg ] && install_key=1
+    fi
+    if [ "$install_key" -eq 1 ]; then
+        echo "deb https://packages.sury.org/php/ ${DEBIAN_VERSION} main" > /etc/apt/sources.list.d/sury-php.list
+        apt-get update -qq >/dev/null 2>&1 || true
+        if apt-cache policy php8.2-cli 2>/dev/null | grep -q Candidate; then
+            log "PHP" "sury" "OK" "Sury PHP repository ready (pre-install) - php8.2 resolves"
+        else
+            log "PHP" "sury" "WARN" "Sury repo added but php8.2 still unresolved"
+        fi
+    else
+        log "PHP" "sury" "WARN" "Sury key not installed - php8.x may fail to resolve"
+    fi
+fi
+
 if [[ "$DEBIAN_VERSION" == "trixie" ]] || [[ "$DEBIAN_VERSION" == "bookworm" ]]; then
     # Debian 12/13 - PHP 8.2+ packages are in php8.2-* format
     PHP_PKGS="php8.2 php8.2-cli php8.2-common php8.2-curl php8.2-gd php8.2-intl php8.2-mbstring php8.2-mysql php8.2-xml php8.2-zip php8.2-bcmath php8.2-bz2 php8.2-ctype php8.2-exif php8.2-fileinfo php8.2-ftp php8.2-imap php8.2-ldap php8.2-opcache php8.2-redis php8.2-sockets php8.2-tokenizer php8.2-xmlreader php8.2-xsl php8.2-apcu php8.2-imagick php8.2-soap php8.2-fpm"
@@ -174,7 +249,11 @@ log "STACK" "install" "OK" "Web stack installed"
 #     PHP Version Switcher works out of the box on a fresh install.
 log "PHP" "sury" "RUNNING" "Adding Sury PHP repository"
 if [ ! -f /etc/apt/trusted.gpg.d/php-archive-keyring.gpg ]; then
-    curl -fsSL https://packages.sury.org/php/apt.gpg 2>/dev/null | gpg --dearmor -o /etc/apt/trusted.gpg.d/php-archive-keyring.gpg 2>/dev/null || true
+    if [ -f "$SCRIPT_DIR/installer/php-archive-keyring.gpg" ]; then
+        cp "$SCRIPT_DIR/installer/php-archive-keyring.gpg" /etc/apt/trusted.gpg.d/php-archive-keyring.gpg 2>/dev/null || true
+    else
+        curl -fsSL https://packages.sury.org/php/apt.gpg 2>/dev/null | gpg --dearmor -o /etc/apt/trusted.gpg.d/php-archive-keyring.gpg 2>/dev/null || true
+    fi
 fi
 if [ -f /etc/apt/trusted.gpg.d/php-archive-keyring.gpg ]; then
     echo "deb https://packages.sury.org/php/ ${DEBIAN_VERSION} main" > /etc/apt/sources.list.d/sury-php.list
@@ -299,15 +378,15 @@ elif [ -f "$SCRIPT_DIR/sc_serv1" ]; then
 fi
 if [ -n "$SC1_SRC" ]; then
     dpkg --add-architecture i386 2>/dev/null || true
-    apt update -qq 2>/dev/null
+    apt update -qq 2>/dev/null || true
     apt install -y -qq libc6:i386 libstdc++6:i386 2>/dev/null || true
     mkdir -p /opt/planethosts/shoutcast1 /var/log/shoutcast/v1
     if [[ "$SC1_SRC" == *.tar.gz ]]; then
-        tar xzf "$SC1_SRC" -C /opt/planethosts/shoutcast1 2>/dev/null
+        tar xzf "$SC1_SRC" -C /opt/planethosts/shoutcast1 2>/dev/null || true
     else
-        cp "$SC1_SRC" /opt/planethosts/shoutcast1/sc_serv 2>/dev/null
+        cp "$SC1_SRC" /opt/planethosts/shoutcast1/sc_serv 2>/dev/null || true
     fi
-    chmod +x /opt/planethosts/shoutcast1/sc_serv 2>/dev/null
+    chmod +x /opt/planethosts/shoutcast1/sc_serv 2>/dev/null || true
     cat > /opt/planethosts/shoutcast1/sc_serv.conf << 'SC1EOF'
 MaxUser=500
 Password=planethosts
@@ -453,13 +532,13 @@ log "MEDIA" "install" "OK" "Streaming stack installed"
 echo "[4/8 - Game Server] Installing SteamCMD..."
 log "STEAMCMD" "install" "RUNNING" "Installing SteamCMD"
 dpkg --add-architecture i386 2>/dev/null || true
-apt update -qq 2>/dev/null
+apt update -qq 2>/dev/null || true
 install_optional "SteamCMD" steamcmd 2>/dev/null || {
     log "STEAMCMD" "install" "WARNING" "SteamCMD apt failed, downloading manually"
     mkdir -p /usr/games
     cd /usr/games
-    curl -sqL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar zxf -
-    ln -sf /usr/games/steamcmd.sh /usr/games/steamcmd
+    curl -sqL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz 2>/dev/null | tar zxf - 2>/dev/null || true
+    ln -sf /usr/games/steamcmd.sh /usr/games/steamcmd 2>/dev/null || true
 }
 mkdir -p /home/gameservers
 log "STEAMCMD" "install" "OK" "SteamCMD ready"
@@ -586,7 +665,7 @@ systemctl restart fail2ban 2>/dev/null || true
 echo "[4c/13] Installing Node.js 20.x and npm..."
 log "NODEJS" "install" "RUNNING" "Installing Node.js 20.x"
 if ! command -v node >/dev/null 2>&1; then
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    curl -fsSL https://deb.nodesource.com/setup_20.x 2>/dev/null | bash - 2>/dev/null || true
     install_required "Node.js" nodejs
 fi
 npm install -g npm@latest 2>/dev/null || true
@@ -776,9 +855,9 @@ if [ ! -d "$PANEL_DIR/public/snappymail" ]; then
     log "SNAPPYMAIL" "install" "RUNNING" "Installing SnappyMail v$SM_VER"
     mkdir -p "$PANEL_DIR/public/snappymail"
     cd /tmp
-    curl -sL -o snappymail.zip "https://github.com/the-djmaze/snappymail/releases/download/v${SM_VER}/snappymail-${SM_VER}.zip"
-    unzip -qo snappymail.zip -d "$PANEL_DIR/public/snappymail"
-    rm -f snappymail.zip
+    curl -sL -o snappymail.zip "https://github.com/the-djmaze/snappymail/releases/download/v${SM_VER}/snappymail-${SM_VER}.zip" 2>/dev/null || true
+    unzip -qo snappymail.zip -d "$PANEL_DIR/public/snappymail" 2>/dev/null || true
+    rm -f snappymail.zip 2>/dev/null || true
     chown -R www-data:www-data "$PANEL_DIR/public/snappymail"
     mkdir -p "$PANEL_DIR/public/snappymail/data/_data_/_default_/domains" 2>/dev/null || true
     cat > "$PANEL_DIR/public/snappymail/data/_data_/_default_/domains/default.json" <<'SMCFG'
@@ -910,12 +989,16 @@ cat > /etc/apache2/sites-available/radiohosting.conf <<VHOST
         Require all granted
         DirectoryIndex index.php index.html
     </Directory>
+    <FilesMatch \.php$>
+        SetHandler "proxy:unix:/run/php/php8.2-fpm.sock|fcgi://localhost/"
+    </FilesMatch>
     ErrorLog /var/log/apache2/radiohosting_error.log
     CustomLog /var/log/apache2/radiohosting_access.log combined
 </VirtualHost>
 VHOST
 a2dissite 000-default 2>/dev/null || true
 a2ensite radiohosting; a2enmod rewrite
+a2enmod proxy proxy_fcgi 2>/dev/null || true
 # phpmyadmin conf name varies by Debian version
 if [ -f /etc/apache2/conf-available/phpmyadmin.conf ]; then
     a2enconf phpmyadmin
@@ -1003,7 +1086,7 @@ iptables -I INPUT -p tcp --dport 27000:28000 -j ACCEPT 2>/dev/null || true
 iptables -I INPUT -p tcp --dport 30000:50000 -j ACCEPT 2>/dev/null || true
 iptables -I INPUT -p udp --dport 50000:55000 -j ACCEPT 2>/dev/null || true
 log "FIREWALL" "ports" "OK" "Firewall ports opened (full production map)"
-systemctl restart apache2
+systemctl restart apache2 2>/dev/null || true
 
 # Align Postfix + Dovecot to Maildir in each user's home (panel mail accounts are system users)
 log "MAIL" "configure" "RUNNING" "Aligning Postfix/Dovecot Maildir delivery"
@@ -1032,12 +1115,69 @@ log "DATABASE" "setup" "RUNNING" "Creating database and user"
 ADMIN_PASS="$(hostname)-$(openssl rand -base64 6 | tr -d '=+/')"
 DB_PASS="$(openssl rand -base64 12)"
 
+# Reinstall-safe root auth: ensure passwordless unix_socket root BEFORE the
+# `mysql -u root` calls below. On a fresh box the Debian default is unix_socket
+# (no-op). If a previous run locked root with a password, recover via a brief
+# skip-grant-tables restart (the only way into a locked instance).
+ensure_mariadb_root_unix_socket() {
+    if mysql -u root -e "SELECT 1;" >/dev/null 2>&1; then
+        mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED VIA unix_socket; FLUSH PRIVILEGES;" 2>/dev/null || true
+        return 0
+    fi
+    log "DATABASE" "root" "RUNNING" "Root locked - recovering via skip-grant-tables"
+    systemctl stop mariadb 2>/dev/null || true
+    pkill -9 -f mariadbd-safe 2>/dev/null || true
+    pkill -9 -f mysqld_safe 2>/dev/null || true
+    pkill -9 -f mariadbd 2>/dev/null || true
+    systemctl reset-failed mariadb 2>/dev/null || true
+    # MASK so systemd does NOT auto-respawn mariadbd and steal the socket while
+    # the skip-grant instance starts (this is why a bare stop+pkill failed).
+    systemctl mask mariadb 2>/dev/null || true
+    sleep 6
+    rm -f /run/mysqld/mysqld.sock /run/mysqld/mysqld.pid 2>/dev/null
+    setsid mariadbd-safe --skip-grant-tables --skip-networking --user=mysql >/dev/null 2>&1 < /dev/null &
+    for _t in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+        [ -S /run/mysqld/mysqld.sock ] && break
+        sleep 1
+    done
+    if [ -S /run/mysqld/mysqld.sock ]; then
+        mysql --protocol=SOCKET --socket=/run/mysqld/mysqld.sock -u root \
+            -e "FLUSH PRIVILEGES; ALTER USER 'root'@'localhost' IDENTIFIED VIA unix_socket; FLUSH PRIVILEGES;" 2>/dev/null || true
+        mysqladmin --protocol=SOCKET --socket=/run/mysqld/mysqld.sock -u root shutdown 2>/dev/null || true
+        sleep 5
+    fi
+    pkill -9 -f mariadbd-safe 2>/dev/null || true
+    pkill -9 -f mysqld_safe 2>/dev/null || true
+    pkill -9 -f mariadbd 2>/dev/null || true
+    sleep 3
+    rm -f /run/mysqld/mysqld.sock /run/mysqld/mysqld.pid 2>/dev/null
+    systemctl unmask mariadb 2>/dev/null || true
+    systemctl start mariadb 2>/dev/null || true
+    sleep 6
+    mysql -u root -e "SELECT 1;" >/dev/null 2>&1 && log "DATABASE" "root" "OK" "Root reset to unix_socket" \
+        || log "DATABASE" "root" "WARN" "Could not reset root - install may fail"
+}
+ensure_mariadb_root_unix_socket
+
+# Force-recreate the app user on EVERY run: CREATE USER IF NOT EXISTS leaves a
+# stale password from a prior run, breaking migrate.php until the DB is recreated.
 mysql -u root <<MYSQL || { log "DATABASE" "create" "FAIL" "Failed to create database"; rollback "database"; cleanup_and_exit 1; }
 CREATE DATABASE IF NOT EXISTS radiohosting CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS 'radiouser'@'localhost' IDENTIFIED BY '$DB_PASS';
+ALTER USER 'radiouser'@'localhost' IDENTIFIED BY '$DB_PASS';
 GRANT ALL PRIVILEGES ON radiohosting.* TO 'radiouser'@'localhost';
 FLUSH PRIVILEGES;
 MYSQL
+
+# .env MUST exist before migrate.php runs (it refuses to start without BASE_PATH/.env).
+cat > "$PANEL_DIR/.env" <<ENV
+DB_HOST=localhost; DB_PORT=3306
+DB_DATABASE=radiohosting
+DB_USERNAME=radiouser
+DB_PASSWORD=$DB_PASS
+ENV
+chmod 600 "$PANEL_DIR/.env"
+log "DATABASE" "env" "OK" ".env written before migrations"
 
 # Import schemas
 log "DATABASE" "schema" "RUNNING" "Importing schemas"
@@ -1092,15 +1232,6 @@ INSERT INTO hosting_packages (name, type, description, feature_list_id, max_doma
 MYSQL
 log "PACKAGES" "create" "OK" "Default packages created"
 
-# .env
-cat > "$PANEL_DIR/.env" <<ENV
-DB_HOST=localhost; DB_PORT=3306
-DB_DATABASE=radiohosting
-DB_USERNAME=radiouser
-DB_PASSWORD=$DB_PASS
-ENV
-chmod 600 "$PANEL_DIR/.env"
-
 # Runtime DB credentials for privileged panel scripts (provision.sh, auto_ssl.sh, ...)
 cat > "$PANEL_DIR/db_creds.sh" <<CREDS
 DB_ROOT_USER='root'
@@ -1150,7 +1281,14 @@ else
     echo "=============================================="
     echo " Include your server IP ($SERVER_IP) in the email."
     echo "=============================================="
-    read -t 30 -p "Paste license key (or press Enter to skip): " LICENSE_CONTENT
+    LICENSE_CONTENT=""
+    # Only prompt when stdin is interactive (headless/nohup installs skip instead
+    # of blocking + aborting, which would leave setup wizard untouched).
+    if [ -t 0 ] && [ -t 1 ]; then
+        read -t 30 -p "Paste license key (or press Enter to skip): " LICENSE_CONTENT
+    else
+        log "LICENSE" "activate" "INFO" "Non-interactive install - license activation skipped (wizard can activate later)"
+    fi
     if [ -n "$LICENSE_CONTENT" ]; then
         echo "$LICENSE_CONTENT" > "$PANEL_DIR/license.key"
         log "LICENSE" "activate" "OK" "License key saved"
@@ -1173,8 +1311,8 @@ log "ADMIN" "setup" "OK" "Admin credentials set"
 # 9. .NET 8 Support Server
 echo "[9/9] Installing .NET 8 Support Server..."
 log "DOTNET" "install" "RUNNING" "Installing .NET 8"
-wget -q https://dot.net/v1/dotnet-install.sh -O /tmp/dotnet-install.sh
-bash /tmp/dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet --runtime aspnetcore >/dev/null 2>&1
+wget -q https://dot.net/v1/dotnet-install.sh -O /tmp/dotnet-install.sh 2>/dev/null || true
+bash /tmp/dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet --runtime aspnetcore >/dev/null 2>&1 || true
 ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet 2>/dev/null || true
 mkdir -p /opt/PlanetHosts.Support.Server
 cp -r "$SCRIPT_DIR/SupportServer/." /opt/PlanetHosts.Support.Server/ 2>/dev/null || true
@@ -1200,13 +1338,13 @@ log "DOTNET" "install" "OK" ".NET Support Server installed on port 5000"
 # 10. SteamCMD (duplicate guard)
 echo "[10/10] Installing SteamCMD..."
 log "STEAMCMD" "install" "RUNNING" "Verifying SteamCMD"
-dpkg --add-architecture i386 2>/dev/null
-apt-get update -qq 2>/dev/null
+dpkg --add-architecture i386 2>/dev/null || true
+apt-get update -qq 2>/dev/null || true
 if ! command -v steamcmd >/dev/null 2>&1; then
   install_optional "SteamCMD" steamcmd 2>/dev/null || {
     mkdir -p /usr/games; cd /usr/games
-    curl -sqL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar zxf - 2>/dev/null
-    chmod +x steamcmd.sh; ln -sf /usr/games/steamcmd.sh /usr/games/steamcmd 2>/dev/null
+    curl -sqL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz 2>/dev/null | tar zxf - 2>/dev/null || true
+    chmod +x steamcmd.sh 2>/dev/null || true; ln -sf /usr/games/steamcmd.sh /usr/games/steamcmd 2>/dev/null || true
   }
 fi
 log "STEAMCMD" "install" "OK" "SteamCMD ready"
@@ -1342,16 +1480,13 @@ echo " Admin Login: root"
 echo " Admin Password: $ADMIN_PASS"
 echo " DB Password: $DB_PASS"
 echo ""
-echo "Installed Components:"
-echo "  Apache: $HTTPD_INSTALLED    MariaDB: $MARIADB_INSTALLED    PHP: $PHP_INSTALLED"
-echo "  Firewalld: $FIREWALLD_INSTALLED    Icecast: $ICECAST_INSTALLED"
-echo "  Liquidsoap: $LIQUIDSOAP_INSTALLED    ezstream: $EZSTREAM_INSTALLED"
-echo "  FFmpeg: $FFMPEG_INSTALLED    phpMyAdmin: $PHPMYADMIN_INSTALLED"
-echo ""
 echo " Services: Apache, MariaDB, Postfix, Dovecot,"
 echo "           VSFTPD, Bind9, Icecast2, Firewalld, Fail2ban,"
 echo "           SHOUTcast DNAS (port 8000), nginx (port 8080),"
 echo "           .NET 8 Support Server (port 5000)"
+
+PH_INSTALL_COMPLETE=1
+show_install_summary "SUCCESS"
 
 log "INSTALLER" "finish" "OK" "Installation complete"
 cleanup_and_exit 0

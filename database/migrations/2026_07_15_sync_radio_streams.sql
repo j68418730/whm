@@ -4,6 +4,24 @@
 --    can be stored without 1265 truncation errors.
 -- 2) TRUNCATE is invalid whenever radio_autodj references radio_streams, so
 --    wipe orphaned rows with DELETE and upsert instead.
+-- 3) radio_streams may still have the OLD install.sql schema (no such columns)
+--    on fresh installs where bootstrap's CREATE IF NOT EXISTS skipped it.
+--    Make it tolerant: add every column referenced below if absent first.
+ALTER TABLE radio_streams
+  ADD COLUMN IF NOT EXISTS `server_type` varchar(50) NOT NULL DEFAULT 'icecast' AFTER `id`,
+  ADD COLUMN IF NOT EXISTS `status` varchar(50) NOT NULL DEFAULT 'stopped' AFTER `password`,
+  ADD COLUMN IF NOT EXISTS `plain_password` varchar(255) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `autodj_enabled` tinyint(1) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `ssl_enabled` tinyint(1) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `pid_file` varchar(255) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `server_name` varchar(255) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `mount_point` varchar(100) DEFAULT '/live',
+  ADD COLUMN IF NOT EXISTS `bitrate` int(11) DEFAULT 128,
+  ADD COLUMN IF NOT EXISTS `format` varchar(20) DEFAULT 'mp3',
+  ADD COLUMN IF NOT EXISTS `max_listeners` int(11) DEFAULT 100,
+  ADD COLUMN IF NOT EXISTS `public_server` tinyint(1) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `bandwidth_used` bigint(20) DEFAULT 0;
+
 ALTER TABLE radio_streams
   MODIFY COLUMN server_type varchar(50) NOT NULL DEFAULT 'icecast',
   MODIFY COLUMN status varchar(50) NOT NULL DEFAULT 'stopped';

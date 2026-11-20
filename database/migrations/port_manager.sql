@@ -98,35 +98,47 @@ INSERT INTO port_ranges (server_id, service_type, name, description, start_port,
 (1, 'webrtc_media', 'WebRTC Media', 'WebRTC UDP media ports', 50000, 55000, 1, 1, 0, 9)
 ON DUPLICATE KEY UPDATE name=name;
 
--- 7. Migrate existing port_allocations if table exists
-SET @has_old = (SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'port_allocations');
-SET @has_streams = (SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'radio_streams');
-
--- Migrate from old port_allocations table (only if the legacy table exists)
-SET @sql_pa = IF(@has_old > 0,
-  'INSERT IGNORE INTO stream_ports (server_id, service_type, customer_id, station_id, port_start, status, allocated_at, created_at)
-   SELECT 1, COALESCE(pa.service_type, ''unknown''), pa.user_id, pa.service_id, pa.port,
-          CASE WHEN pa.status = ''active'' THEN ''assigned'' ELSE pa.status END,
-          pa.created_at, pa.created_at
-   FROM port_allocations pa
-   WHERE pa.port NOT IN (SELECT port_start FROM stream_ports)',
-  'SELECT 1');
-PREPARE stmt_pa FROM @sql_pa;
-EXECUTE stmt_pa;
-DEALLOCATE PREPARE stmt_pa;
-
--- Migrate existing radio streams (only if the legacy table exists)
-SET @sql_rs = IF(@has_streams > 0,
-  'INSERT IGNORE INTO stream_ports (server_id, service_type, customer_id, station_id, port_start, status, allocated_at, created_at)
-   SELECT 1, ''icecast'', s.user_id, s.id, COALESCE(s.port, 14000),
-          ''assigned'', s.created_at, s.created_at
-   FROM radio_streams s
-   WHERE s.port IS NOT NULL
-   AND s.port NOT IN (SELECT port_start FROM stream_ports)',
-  'SELECT 1');
-PREPARE stmt_rs FROM @sql_rs;
-EXECUTE stmt_rs;
-DEALLOCATE PREPARE stmt_rs;
+-- 7. Migrate existing port_allocations / radio_streams if those legacy tables
+--    exist. Wrapped in a stored procedure so the existence checks and the
+--    dynamic INSERTs run inside the DB (survives both mysql CLI and PDO); the
+--    CALL is a single statement with no lingering result set (PDO 2014 safe).
+DROP PROCEDURE IF EXISTS migrate_port_manager;
+DELIMITER $$
+CREATE PROCEDURE migrate_port_manager()
+BEGIN
+    DECLARE has_old INT DEFAULT 0;
+    DECLARE has_streams INT DEFAULT 0;
+    SELECT COUNT(*) INTO has_old FROM information_schema.tables
+        WHERE table_schema = DATABASE() AND table_name = 'port_allocations';
+    SELECT COUNT(*) INTO has_streams FROM information_schema.tables
+        WHERE table_schema = DATABASE() AND table_name = 'radio_streams';
+    SET @sql = NULL;
+    IF has_old > 0 THEN
+        SET @sql = 'INSERT IGNORE INTO stream_ports (server_id, service_type, customer_id, station_id, port_start, status, allocated_at, created_at)
+                    SELECT 1, COALESCE(pa.service_type, ''unknown''), pa.user_id, pa.service_id, pa.port,
+                           CASE WHEN pa.status = ''active'' THEN ''assigned'' ELSE pa.status END,
+                           pa.created_at, pa.created_at
+                    FROM port_allocations pa
+                    WHERE pa.port NOT IN (SELECT port_start FROM stream_ports)';
+        PREPARE stmt_pa FROM @sql;
+        EXECUTE stmt_pa;
+        DEALLOCATE PREPARE stmt_pa;
+    END IF;
+    IF has_streams > 0 THEN
+        SET @sql2 = 'INSERT IGNORE INTO stream_ports (server_id, service_type, customer_id, station_id, port_start, status, allocated_at, created_at)
+                     SELECT 1, ''icecast'', s.user_id, s.id, COALESCE(s.port, 14000),
+                            ''assigned'', s.created_at, s.created_at
+                     FROM radio_streams s
+                     WHERE s.port IS NOT NULL
+                     AND s.port NOT IN (SELECT port_start FROM stream_ports)';
+        PREPARE stmt_rs FROM @sql2;
+        EXECUTE stmt_rs;
+        DEALLOCATE PREPARE stmt_rs;
+    END IF;
+END$$
+DELIMITER ;
+CALL migrate_port_manager();
+DROP PROCEDURE IF EXISTS migrate_port_manager;
 
 -- 8. Mark system ports as reserved
 INSERT IGNORE INTO stream_ports (server_id, service_type, port_start, status, created_at)
@@ -155,5 +167,3 @@ VALUES
 (1, 'system', 2096, 'reserved', NOW()),
 (1, 'system', 2100, 'reserved', NOW()),
 (1, 'system', 2101, 'reserved', NOW());
-
-SELECT 'PORT_MANAGER_MIGRATION_OK' AS result;
