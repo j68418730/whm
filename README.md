@@ -8,7 +8,7 @@ Web hosting control panel with streaming and game server management.
 Navigate to your server's admin port (e.g. `https://your-server:2087`) and log in with your admin credentials.
 
 ### User Panel
-Users access their control panel at `https://your-server:2083` using their hosting account credentials.
+Users access their control panel at `https://your-server:2083` using their hosting account credentials. The dashboard's **Alerts** card shows unread account alerts and lets users dismiss alerts that allow it.
 
 ## Getting Started
 

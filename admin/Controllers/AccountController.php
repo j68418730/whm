@@ -707,10 +707,6 @@ class AccountController extends Controller
         $account = $this->db->table('hosting_users')->where('id', $id)->first();
         if (!$account) { $_SESSION['error_message'] = 'Account not found.'; $this->response->redirect('/admin/account'); exit; }
         $adminId = $this->auth->user()->id;
-        $u = escapeshellarg($account->username);
-        $d = escapeshellarg($account->domain);
-        $h = escapeshellarg("/home/{$account->username}");
-        @exec("sudo /var/www/radiohosting/provision.sh suspend {$u} {$d} {$h} 2>/dev/null >/dev/null &");
         $done = $this->cascadeSuspend((int)$id, $adminId, 'suspended');
         $_SESSION['success_message'] = "Account '{$account->username}' suspended. " . $done;
         $this->response->redirect('/admin/account');
@@ -763,10 +759,6 @@ class AccountController extends Controller
         $account = $this->db->table('hosting_users')->where('id', $id)->first();
         if (!$account) { $_SESSION['error_message'] = 'Account not found.'; $this->response->redirect('/admin/account'); exit; }
         $adminId = $this->auth->user()->id;
-        $u = escapeshellarg($account->username);
-        $d = escapeshellarg($account->domain);
-        $h = escapeshellarg("/home/{$account->username}");
-        @exec("sudo /var/www/radiohosting/provision.sh unsuspend {$u} {$d} {$h} 2>/dev/null >/dev/null &");
         $done = $this->cascadeSuspend((int)$id, $adminId, 'active');
         $_SESSION['success_message'] = "Account '{$account->username}' unsuspended. " . $done;
         $this->response->redirect('/admin/account');
@@ -800,7 +792,7 @@ class AccountController extends Controller
         $account = $this->db->table('hosting_users')->where('id', $userId)->first();
         if (!$account) return;
 
-        // Marks DB rows as suspended/active without re-calling provision (done once above).
+        // Record the panel status before applying the account-level provisioning action.
         $this->db->table('hosting_users')->where('id', $userId)->update([
             'status' => $statusVal,
             'suspended_at' => $state === 'suspended' ? date('Y-m-d H:i:s') : null,
@@ -817,16 +809,27 @@ class AccountController extends Controller
         try {
             $st = $this->db->table('streaming_stations')->where('user_id', $userId)->get() ?: [];
             foreach ($st as $s) {
-                $this->db->table('streaming_stations')->where('id', $s->id)->update(['status' => $statusVal]);
-                // stop/start engine
-                if ($state === 'suspended') {
-                    $engine = strtolower($s->engine ?? 'icecast');
-                    $port = (int)($s->port ?? 0);
-                    if ($engine === 'shoutcast' || $engine === 'shoutcast1' || $engine === 'shoutcast2') {
-                        @exec("pkill -f \"sc_serv.*{$port}\" 2>/dev/null >/dev/null &");
-                    } else {
-                        @exec("sudo systemctl stop icecast2 2>/dev/null >/dev/null &");
+                $station = $this->db->table('streaming_stations')->where('id', $s->id);
+                if ($suspending) {
+                    try {
+                        $engine = strtolower($s->engine ?? 'icecast');
+                        $stationId = (int)$s->id;
+                        if ($engine === 'icecast' && (!empty($s->pid_file) || !empty($s->config_path))) {
+                            \Plugins\Radio\Services\StreamingEngine::getInstance()->stopStation($stationId);
+                        } elseif ($engine === 'icecast') {
+                            @exec("sudo systemctl stop icecast@{$stationId} 2>/dev/null >/dev/null &");
+                        } elseif (in_array($engine, ['shoutcast', 'shoutcast1', 'shoutcast2'], true) && !empty($s->port)) {
+                            $port = (int)$s->port;
+                            if ($port > 0) {
+                                @exec("sudo pkill -f \"sc_serv.*${port}([^0-9]|$)\" 2>/dev/null >/dev/null &");
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        error_log("Failed to stop station {$stationId}: " . $e->getMessage());
                     }
+                    $station->update(['status' => 'suspended']);
+                } elseif ($s->status === 'suspended') {
+                    $station->update(['status' => 'stopped']);
                 }
                 // DJs on this station
                 $djs = $this->db->table('radio_djs')->where('stream_id', $s->id)->get() ?: [];

@@ -19,47 +19,103 @@
 .activity-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
 .activity-item:last-child{border:none}
 .activity-item .time{color:#64748b;white-space:nowrap;font-size:11px}
+
+.dashboard-alerts{margin-bottom:18px}
+.dashboard-alerts-status{margin:8px 0 0;color:#94a3b8;font-size:13px}
+.dashboard-alerts-status:empty,.dashboard-alert-list:empty{margin:0}
+.dashboard-alert-list{display:grid;gap:8px;margin:10px 0 0;padding:0;list-style:none}
+.dashboard-alert-list li{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:10px 12px;border-left:3px solid;border-radius:6px;background:rgba(255,255,255,.04);font-size:13px;overflow-wrap:anywhere}
+.dashboard-alert-list p{margin:3px 0 0;color:#94a3b8;white-space:pre-wrap}
+.dashboard-alert-list button{flex-shrink:0;color:#e0e0e0;background:transparent;border:1px solid #64748b;border-radius:6px;padding:4px 8px;cursor:pointer}
+.dashboard-alert-list button:disabled{opacity:.6;cursor:default}
 </style>
 
 <h2 style="font-size:22px;font-weight:700;margin-bottom:4px">Dashboard</h2>
 <p class="subtitle" style="color:#64748b;font-size:13px;margin-bottom:24px">Welcome back, <?php echo htmlspecialchars(($hosting->first_name ?? $hosting->username) ?: $user->name ?? 'User'); ?></p>
 
-<div id="alertsContainer"></div>
+<section class="dash-card dashboard-alerts" aria-labelledby="dashboard-alerts-title">
+<h3 id="dashboard-alerts-title"><i class="bi bi-bell" aria-hidden="true"></i> Alerts</h3>
+<p id="dashboard-alerts-status" class="dashboard-alerts-status" role="status">Loading alerts…</p>
+<ul id="alertsContainer" class="dashboard-alert-list"></ul>
+</section>
 
 <script>
-function loadAlerts() {
-    var x = new XMLHttpRequest();
-    x.open('GET', '/user/alert/fetch', true);
-    x.onload = function() {
-        try {
-            var data = JSON.parse(x.responseText);
-            var html = '';
-            var types = {'info':'ℹ️','warning':'⚠️','success':'✅','danger':'⛔'};
-            var colors = {'info':'#0A84FF','warning':'#facc15','success':'#4ade80','danger':'#f87171'};
-            data.forEach(function(a) {
-                var canDel = a.can_delete !== 0;
-                html += '<div class="alert-item" data-id="' + a.id + '" style="display:flex;align-items:start;gap:10px;padding:12px 16px;background:rgba(8,16,28,.85);border:1px solid ' + colors[a.type] + '33;border-radius:10px;margin-bottom:10px;border-left:3px solid ' + colors[a.type] + '">';
-                html += '<div style="font-size:18px;margin-top:1px">' + (types[a.type] || 'ℹ️') + '</div>';
-                html += '<div style="flex:1"><strong style="font-size:13px;color:' + colors[a.type] + '">' + a.title + '</strong>';
-                html += '<p style="font-size:12px;color:#94a3b8;margin:2px 0 0">' + a.message + '</p></div>';
-                if (canDel) html += '<a href="#" style="color:#64748b;text-decoration:none;font-size:16px;padding:2px" onclick="return dismissAlert(' + a.id + ',this)">✕</a>';
-                html += '</div>';
-            });
-            document.getElementById('alertsContainer').innerHTML = html;
-        } catch(e) {}
-    };
-    x.send();
-}
-loadAlerts();
-setInterval(loadAlerts, 15000);
+(function () {
+    const list = document.getElementById('alertsContainer');
+    const status = document.getElementById('dashboard-alerts-status');
+    const colors = {info: '#0A84FF', warning: '#facc15', success: '#4ade80', danger: '#f87171'};
+    let pendingLoad;
+    let pendingDismissals = 0;
 
-function dismissAlert(id, el) {
-    var x = new XMLHttpRequest();
-    x.open('GET', '/user/alert/dismiss/' + id, true);
-    x.onload = function() { if (x.status === 200) { var item = el.closest('.alert-item'); if (item) item.remove(); } };
-    x.send();
-    return false;
-}
+    function renderAlert(alert) {
+        const item = document.createElement('li');
+        item.style.borderLeftColor = colors[alert.type] || colors.info;
+
+        const body = document.createElement('div');
+        const title = document.createElement('strong');
+        title.textContent = alert.title;
+        const message = document.createElement('p');
+        message.textContent = alert.message;
+        body.append(title, message);
+        item.append(body);
+
+        if (Number(alert.can_delete) === 1) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = 'Dismiss';
+            button.setAttribute('aria-label', 'Dismiss alert: ' + alert.title);
+            button.addEventListener('click', function () {
+                dismissAlert(alert.id, item, button);
+            });
+            item.append(button);
+        }
+        return item;
+    }
+
+    async function loadAlerts() {
+        if (pendingLoad || pendingDismissals) return;
+        const request = new AbortController();
+        pendingLoad = request;
+        try {
+            const response = await fetch('/user/alert/fetch', {signal: request.signal});
+            if (!response.ok) throw new Error('Alert request failed');
+            const alerts = await response.json();
+            if (request.signal.aborted) return;
+
+            list.replaceChildren(...alerts.map(renderAlert));
+            status.textContent = alerts.length ? '' : 'No unread alerts.';
+        } catch (error) {
+            if (!request.signal.aborted) status.textContent = 'Could not refresh alerts.';
+        } finally {
+            if (pendingLoad === request) pendingLoad = null;
+        }
+    }
+
+    async function dismissAlert(id, item, button) {
+        button.disabled = true;
+        pendingDismissals++;
+        if (pendingLoad) {
+            pendingLoad.abort();
+            pendingLoad = null;
+        }
+        try {
+            const response = await fetch('/user/alert/dismiss/' + encodeURIComponent(id));
+            if (!response.ok || (await response.text()).trim() !== 'OK') {
+                throw new Error('Alert dismissal failed');
+            }
+            item.remove();
+            status.textContent = list.childElementCount ? '' : 'No unread alerts.';
+        } catch (error) {
+            status.textContent = 'Could not dismiss the alert.';
+            button.disabled = false;
+        } finally {
+            pendingDismissals--;
+        }
+    }
+
+    loadAlerts();
+    setInterval(loadAlerts, 15000);
+})();
 </script>
 
 <div id="supportStatusBar" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(8,16,28,.85);border:1px solid rgba(0,191,255,.08);border-radius:10px;margin-bottom:18px;font-size:13px;cursor:pointer" onclick="window.location='/user/tickets'">
