@@ -392,6 +392,7 @@ $router->get('/admin/account/modify/{id}', 'Admin\Controllers\AccountController@
 $router->post('/admin/account/store', 'Admin\Controllers\AccountController@store');
 $router->get('/admin/account/show/{id}', 'Admin\Controllers\AccountController@show');
 $router->get('/admin/account/suspend/{id}', 'Admin\Controllers\AccountController@suspend');
+$router->post('/admin/account/suspend/{id}', 'Admin\Controllers\AccountController@suspend');
 $router->get('/admin/account/unsuspend/{id}', 'Admin\Controllers\AccountController@unsuspend');
 $router->post('/admin/account/allow-suspension/{id}', 'Admin\Controllers\AccountController@allowSuspension');
 $router->post('/admin/account/toggle-no-auto-suspend/{id}', 'Admin\Controllers\AccountController@toggleNoAutoSuspend');
